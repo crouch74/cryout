@@ -1,0 +1,70 @@
+scenario:
+  id: mvp_witness_dignity
+  name: "Witness & Dignity"
+  description: "High pressure in MENA (focusing on Palestine). Evolving climate risks in the Global South."
+  
+  initial_state:
+    temperature: 2
+    civic_space: NARROWED
+    resources:
+      solidarity: 2
+      evidence: 2
+      capacity: 1
+    
+    regions:
+      MENA:
+        vulnerability: 
+          CLIMATE: 1
+          WAR: 3
+        starting_tokens:
+          - { type: displacement, count: 2 }
+        active_locks: []
+      SouthAsia:
+        vulnerability:
+          CLIMATE: 3
+          POVERTY: 2
+        starting_tokens: []
+      PacificIslands:
+        vulnerability:
+          CLIMATE: 3
+        starting_tokens: []
+      SubSaharanAfrica:
+        vulnerability:
+          CLIMATE: 2
+          POVERTY: 3
+        starting_tokens: []
+      LatinAmerica:
+        vulnerability:
+          POVERTY: 2
+          SPEECH_INFO: 2
+        starting_tokens: []
+      Europe:
+        vulnerability: {}
+      NorthAmerica:
+        vulnerability: {}
+        
+    fronts:
+      WAR: { pressure: 6, protection: 2, impact: 4 }
+      CLIMATE: { pressure: 3, protection: 3, impact: 2 }
+      RIGHTS: { pressure: 5, protection: 3, impact: 3 }
+      SPEECH_INFO: { pressure: 4, protection: 4, impact: 2 }
+      POVERTY: { pressure: 5, protection: 2, impact: 4 }
+      ENERGY: { pressure: 3, protection: 4, impact: 2 }
+      CULTURE: { pressure: 2, protection: 5, impact: 1 }
+
+  special_rules:
+    - id: witness_window
+      name: "Witness Window"
+      trigger: "action.resolve and action.id == 'cancel_disinfo'"
+      condition: "global.resources.evidence >= 3"
+      effects:
+        - log: { emoji: "🛡️", message: "Witness Window active: Disinformation token cancelled using Evidence." }
+        # Custom logic handled in engine via DSL hook
+    
+    - id: aid_corridor
+      name: "Aid Corridor"
+      trigger: "phase.world.end"
+      condition: "fronts.WAR.pressure >= 8 and not has_lock(MENA, 'aid_access')"
+      effects:
+        - log: { emoji: "❌", message: "WAR pressure triggered Aid Corridor lock in MENA." }
+        - add_lock: { region: MENA, lock_type: aid_access }

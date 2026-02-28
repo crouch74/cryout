@@ -1,0 +1,62 @@
+decks:
+  capture_engine:
+    - id: extraction_offensive
+      tags: [EXTRACTION, MILITARIZATION]
+      text: "Foreign corporations secure resource rights under military protection."
+      satire_level: 2
+      effects:
+        - log: { emoji: "🛡️", message: "Capture Engine: Extraction Offensive" }
+        - modify_track: { target: fronts.ENERGY.pressure, delta: 1, clamp: {min:0, max:10} }
+        - modify_track: { target: fronts.WAR.pressure, delta: 1, clamp: {min:0, max:10} }
+      choice_offer:
+        prompt: "COMPROMISE OFFER: Grant tax immunity to lower WAR pressure immediately, but increase future POVERTY."
+        options:
+          - label: "Accept Deal"
+            effects:
+              - log: { emoji: "🤝", message: "Deal Accepted: WAR pressure reduced, but POVERTY pressure increased." }
+              - modify_track: { target: fronts.WAR.pressure, delta: -1, clamp: {min:0, max:10} }
+              - modify_track: { target: fronts.POVERTY.pressure, delta: 1, clamp: {min:0, max:10} }
+              - add_token: { target: global, token_type: compromise_debt, count: 1 }
+          - label: "Reject Deal"
+            effects:
+              - log: { emoji: "❌", message: "Deal Rejected. The system advances its agenda." }
+
+    - id: algorithm_amplification
+      tags: [CONTROL, MANUFACTURED_CONSENT]
+      text: "Social media platforms prioritize divisive outrage to maximize engagement."
+      satire_level: 2
+      effects:
+        - log: { emoji: "📣", message: "Capture Engine: Algorithm Amplification" }
+        - modify_track: { target: fronts.SPEECH_INFO.pressure, delta: 2, clamp: {min:0, max:10} }
+        - add_token: { region: ANY, token_type: disinformation, count: 2 }
+
+  crisis:
+    - id: unprecedented_heatwave
+      tags: [CLIMATE, MEGA_EVENT]
+      text: "A once-in-a-century heatwave that now happens every three years."
+      effects:
+        - log: { emoji: "🔥", message: "Crisis: Unprecedented Heatwave" }
+        - modify_track: { target: global.temperature, delta: 1, clamp: {min:0, max:10} }
+        - modify_track: { target: fronts.CLIMATE.impact, delta: 2, clamp: {min:0, max:10} }
+        - add_token: { region: SouthAsia, token_type: displacement, count: 1 }
+
+  culture:
+    - id: underground_festival
+      tags: [ART, MORALE]
+      text: "A pop-up music festival organized in defiance of curfew."
+      effects:
+        - log: { emoji: "🎭", message: "Culture Card Played: Underground Festival" }
+        - modify_track: { target: global.resources.solidarity, delta: 2, clamp: {min:0, max:10} }
+        # Reduce burnout for current player by 2
+        - modify_track: { target: player.burnout, delta: -2, clamp: {min:0, max:player.burnout_max} }
+
+  charter:
+    - id: right_to_information
+      tags: [RIGHTS, SPEECH_INFO]
+      text: "Global standard mandating algorithmic transparency and free press."
+      prerequisites:
+        - condition: "global.resources.evidence >= 5"
+        - condition: "fronts.SPEECH_INFO.protection >= 6"
+      effects:
+        - log: { emoji: "⚖️", message: "Charter Ratified: Right to Information!" }
+        - remove_lock: { region: ANY, lock_type: censorship, count: 2 }

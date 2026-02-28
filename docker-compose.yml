@@ -1,0 +1,37 @@
+services:
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    ports:
+      - "5174:5173"
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    profiles:
+      - dev
+      - all
+
+  frontend-prod:
+    build: .
+    ports:
+      - "8080:80"
+    profiles:
+      - prod
+
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./backend:/app
+      - ./content:/app/content
+    command: uvicorn server:app --host 0.0.0.0 --port 8000 --reload
+    profiles:
+      - dev
+      - prod
+      - all
+
+volumes:
+  node_modules:
