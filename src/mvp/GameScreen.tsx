@@ -13,11 +13,9 @@ import { LanguageSwitcher } from '../components/LanguageSwitcher.tsx';
 import type { Locale } from '../i18n/index.ts';
 import { getCivicSpaceLabel, getEndingTierLabel, getRoleName, t } from '../i18n/index.ts';
 import { ActionBoard } from './ActionBoard.tsx';
+import { BOARD_FRONT_RAIL, BOARD_PHASE_RAIL, BOARD_REGION_BLUEPRINT } from './boardBlueprint.ts';
 import { DebugOverlay } from './DebugOverlay.tsx';
 import { DealModal } from './DealModal.tsx';
-import { KpiChips } from './KpiChips.tsx';
-import { NowBar } from './NowBar.tsx';
-import { PhaseProgress } from './PhaseProgress.tsx';
 import { RegionDrawer } from './RegionDrawer.tsx';
 import { TraceDrawer } from './TraceDrawer.tsx';
 import type { ToastMessage } from './ToastStack.tsx';
@@ -37,7 +35,6 @@ import {
   ThemePlate,
   WaxSealLock,
 } from './tabletop.tsx';
-import { FRONT_THEMES, REGION_THEMES } from './worldMap.ts';
 import type { GameViewState } from './urlState.ts';
 
 interface GameScreenProps {
@@ -74,11 +71,69 @@ function getBoardActionLabel(state: EngineState) {
       : t('ui.game.drawWorldCards', 'Draw World Cards');
   }
 
+  if (state.phase === 'COALITION') {
+    return t('ui.game.commitCoalitionIntent', 'Commit Coalition Intent');
+  }
+
   if (state.phase === 'END') {
     return t('ui.game.closeRound', 'Close Round');
   }
 
   return t('ui.game.civicTheatre', 'Civic Theatre');
+}
+
+function getBoardActionDisabled(state: EngineState) {
+  if (state.phase === 'WORLD') {
+    return false;
+  }
+
+  if (state.phase === 'COALITION') {
+    return !state.players.every((player) => player.ready);
+  }
+
+  if (state.phase === 'END') {
+    return false;
+  }
+
+  return true;
+}
+
+function runBoardAction(state: EngineState, onCommand: (command: EngineCommand) => void) {
+  if (state.phase === 'WORLD') {
+    if (state.stagedWorldPhase.status === 'drawn') {
+      onCommand({ type: 'AdoptResolution' });
+      return;
+    }
+
+    onCommand({ type: 'DrawWorldCards' });
+    return;
+  }
+
+  if (state.phase === 'COALITION') {
+    onCommand({ type: 'CommitCoalitionIntent' });
+    return;
+  }
+
+  if (state.phase === 'END') {
+    onCommand({ type: 'ResolveEndPhase' });
+  }
+}
+
+function getOpenTrayTitle(viewState: GameViewState) {
+  switch (viewState.openTray) {
+    case 'scenario':
+      return t('ui.game.scenarioDeskSections', 'Scenario desk sections');
+    case 'actions':
+      return t('ui.game.plannedMoves', 'Planned Moves');
+    case 'player':
+      return t('ui.game.playerMat', 'Player Mat');
+    case 'notes':
+      return t('ui.game.meetingNotes', 'Meeting Notes');
+    case 'deck':
+      return t('ui.game.crisisDeck', 'Crisis Deck');
+    default:
+      return t('ui.game.civicTheatre', 'Civic Theatre');
+  }
 }
 
 export function GameScreen({
@@ -99,15 +154,20 @@ export function GameScreen({
   const ending = getEndingTierSummary(state);
   const focusedPlayer = state.players[viewState.focusedSeat] ?? state.players[0];
   const selectedEvent = state.eventLog.find((event) => event.seq === viewState.eventSeq) ?? null;
-  const visibleEvents = state.eventLog.slice().reverse().slice(0, 5);
+  const visibleEvents = state.eventLog.slice().reverse().slice(0, 6);
   const archivedEventCount = Math.max(0, state.eventLog.length - visibleEvents.length);
   const previousStateRef = useRef<EngineState | null>(null);
   const [pulsedResources, setPulsedResources] = useState<ResourceType[]>([]);
-  const [worldPhaseSelected, setWorldPhaseSelected] = useState(false);
   const pulseTimerRef = useRef<number | null>(null);
   const activeSeatTone = seatTone(focusedPlayer.seat);
   const activeCrisis = state.stagedWorldPhase.activeCrisisId ? content.cards[state.stagedWorldPhase.activeCrisisId] : null;
   const stagedCaptureCard = state.stagedWorldPhase.captureCardId ? content.cards[state.stagedWorldPhase.captureCardId] : null;
+  const frontEntries = BOARD_FRONT_RAIL.map(({ id, shortLabel }) => ({
+    id,
+    shortLabel,
+    front: state.fronts[id],
+    name: content.fronts[id].name,
+  }));
 
   const pulseResources = (resources: ResourceType[]) => {
     const uniqueResources = Array.from(new Set(resources));
@@ -140,7 +200,6 @@ export function GameScreen({
       }
 
       if (previousState.phase !== state.phase || previousState.round !== state.round) {
-        setWorldPhaseSelected(false);
         onToast({
           tone: state.phase === 'LOSS' ? 'error' : 'success',
           title:
@@ -151,10 +210,6 @@ export function GameScreen({
           dismissAfterMs: 2600,
         });
       }
-    }
-
-    if (state.stagedWorldPhase.status === 'drawn') {
-      setWorldPhaseSelected(true);
     }
 
     previousStateRef.current = state;
@@ -172,50 +227,17 @@ export function GameScreen({
     onCommand(command);
   };
 
-  const kpiItems = [
-    {
-      id: 'temperature',
-      label: t('ui.game.temperature', 'Temperature'),
-      value: `+${state.temperature}°C`,
-      detail: t(
-        'ui.game.temperatureDetail',
-        'Band {{band}}. {{count}} crisis card{{plural}} on the next world resolution.',
-        {
-          band: band.band,
-          count: band.crisisCount,
-          plural: band.crisisCount === 1 ? '' : 's',
-        },
-      ),
-      severity: state.temperature <= 3 ? 'normal' as const : state.temperature <= 5 ? 'elevated' as const : state.temperature <= 7 ? 'high' as const : 'critical' as const,
-      gaugePercent: Math.min(100, (state.temperature / 10) * 100),
-    },
-    {
-      id: 'civic-space',
-      label: t('ui.game.civicSpace', 'Civic Space'),
-      value: getCivicSpaceLabel(state.civicSpace),
-      detail: t('ui.game.civicSpaceDetail', 'Tracks how much organizing room remains for the coalition.'),
-      severity: state.civicSpace === 'OPEN' ? 'normal' as const : state.civicSpace === 'NARROWED' ? 'elevated' as const : state.civicSpace === 'OBSTRUCTED' ? 'high' as const : 'critical' as const,
-      gaugePercent: ({ OPEN: 10, NARROWED: 35, OBSTRUCTED: 60, REPRESSED: 85, CLOSED: 100 }[state.civicSpace] ?? 50),
-    },
-    {
-      id: 'charter',
-      label: t('ui.game.charter', 'Charter'),
-      value: `${ending.ratifiedClauses} ${t('ui.game.ratified', 'ratified')}`,
-      detail: t('ui.game.charterDetail', 'Outcome track: {{tier}}.', { tier: getEndingTierLabel(ending.tier) }),
-      severity: ending.ratifiedClauses >= 4 ? 'normal' as const : ending.ratifiedClauses >= 2 ? 'elevated' as const : 'high' as const,
-      gaugePercent: Math.min(100, (ending.ratifiedClauses / 6) * 100),
-    },
-  ];
+  const boardActionDisabled = getBoardActionDisabled(state);
 
   return (
-    <TableSurface className="tabletop-game" data-seat={activeSeatTone} data-mobile-tray={viewState.mobileTray}>
-      <header className="tabletop-game-header">
+    <TableSurface className="tabletop-game board-first-table" data-seat={activeSeatTone} data-open-tray={viewState.openTray}>
+      <header className="tabletop-game-header board-top-strip">
         <EngravedHeader
           eyebrow={surface === 'local' ? t('ui.game.localSurface', 'Local Table') : t('ui.game.roomSurface', 'Room {{roomId}}', { roomId: roomId ?? '—' })}
           title={content.scenario.name}
           detail={content.scenario.moralCenter}
           actions={
-            <div className="header-control-stack">
+            <div className="header-control-stack board-strip-actions">
               <LanguageSwitcher locale={locale} onChange={onLocaleChange} />
               <TabletopControls />
               <div className="header-action-plates">
@@ -230,44 +252,256 @@ export function GameScreen({
             </div>
           }
         />
-        <div className="header-status-row">
-          <PhaseProgress phase={state.phase} />
-          <KpiChips items={kpiItems} />
-        </div>
       </header>
 
-      <NowBar
-        state={state}
-        onCommand={onCommand}
-        worldPhaseSelected={worldPhaseSelected}
-        setWorldPhaseSelected={setWorldPhaseSelected}
-      />
+      <main className="board-first-stage">
+        <CivicBoard className="civic-board-replica">
+          <div className="board-identity-ribbon">
+            <span>{t('ui.game.civicTheatre', 'Civic Theatre')}</span>
+            <span>
+              {t('ui.game.roundSummary', 'Round {{round}} of {{roundLimit}} | {{surface}} | {{description}}', {
+                round: state.round,
+                roundLimit: state.roundLimit,
+                surface:
+                  surface === 'local'
+                    ? t('ui.game.localSurface', 'Local Table')
+                    : t('ui.game.roomSurface', 'Room {{roomId}}', { roomId: roomId ?? '—' }),
+                description: getBoardActionLabel(state),
+              })}
+            </span>
+          </div>
 
-      <div className="tabletop-layout">
-        <aside className="tabletop-folio-area">
-          <nav aria-label={t('ui.game.scenarioDeskSections', 'Scenario desk sections')}>
+          <div className="board-rail board-rail-phase" aria-label={t('ui.game.turnProgress', 'Turn progress')}>
+            {BOARD_PHASE_RAIL.map((label, index) => {
+              const activeLabel =
+                state.phase === 'WORLD'
+                  ? 'World'
+                  : state.phase === 'COALITION'
+                    ? 'Coalition'
+                    : state.phase === 'COMPROMISE'
+                      ? 'Compromise'
+                      : 'Resolve';
+              const activeIndex = BOARD_PHASE_RAIL.indexOf(activeLabel);
+              return (
+                <div
+                  key={label}
+                  className={`board-rail-step ${index === activeIndex ? 'is-active' : index < activeIndex ? 'is-complete' : ''}`}
+                >
+                  <span>{label}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="board-rail board-rail-fronts" aria-label={t('ui.game.fronts', 'Fronts')}>
+            {frontEntries.map(({ id, front, name, shortLabel }) => (
+              <button
+                key={id}
+                type="button"
+                className={`front-rail-chip ${front.collapsed ? 'is-collapsed' : ''}`}
+                onClick={() => onViewStateChange({ openTray: 'scenario', scenarioSection: 'fronts' })}
+              >
+                <span>{shortLabel}</span>
+                <strong>{front.pressure}/{front.protection}/{front.impact}</strong>
+                <small>{name}</small>
+              </button>
+            ))}
+          </div>
+
+          <div className="board-side-well board-side-well-left">
+            <DeckStack
+              label={t('ui.game.crisisDeck', 'Crisis Deck')}
+              deckName={t('ui.game.crisisDeck', 'Crisis Deck')}
+              drawCount={state.decks.crisis.drawPile.length}
+              activeCount={state.stagedWorldPhase.crisisCardIds.length}
+              locked={state.phase !== 'WORLD'}
+              disabled={state.phase !== 'WORLD' || state.stagedWorldPhase.status === 'drawn'}
+              onClick={() => runBoardAction(state, onCommand)}
+            />
+            <PaperSheet tone="docket" className="board-mini-docket">
+              <span className="engraved-eyebrow">{t('ui.game.captureDocket', 'Capture Docket')}</span>
+              <strong>{stagedCaptureCard?.name ?? t('ui.game.pendingDraw', 'Awaiting draw')}</strong>
+              <p>{stagedCaptureCard?.text ?? t('ui.game.pendingDrawBody', 'Draw the world cards to place the current capture docket on the board.')}</p>
+            </PaperSheet>
+          </div>
+
+          <section className="board-map-theatre" aria-label={t('ui.game.civicTheatre', 'Civic Theatre')}>
+            <div className="board-metric-cluster">
+              <article className="printed-meter">
+                <span className="engraved-eyebrow">{t('ui.game.temperature', 'Temperature')}</span>
+                <strong>+{state.temperature}°C</strong>
+                <small>
+                  {t('ui.game.temperatureDetail', 'Band {{band}}. {{count}} crisis card{{plural}} on the next world resolution.', {
+                    band: band.band,
+                    count: band.crisisCount,
+                    plural: band.crisisCount === 1 ? '' : 's',
+                  })}
+                </small>
+              </article>
+              <article className="printed-meter">
+                <span className="engraved-eyebrow">{t('ui.game.civicSpace', 'Civic Space')}</span>
+                <strong>{getCivicSpaceLabel(state.civicSpace)}</strong>
+                <small>{t('ui.game.charter', 'Charter')}: {ending.ratifiedClauses}</small>
+              </article>
+            </div>
+
+            <div className="tabletop-map-grid board-replica-grid">
+              {Object.values(state.regions).map((region) => {
+                const blueprint = BOARD_REGION_BLUEPRINT[region.id];
+                const totalPressure = region.tokens.displacement + region.tokens.disinfo + region.locks.length;
+                const severity = totalPressure <= 1 ? 'low' : totalPressure <= 3 ? 'medium' : totalPressure <= 5 ? 'high' : 'critical';
+                return (
+                  <article
+                    key={region.id}
+                    className={`tabletop-region-card printed-territory ${viewState.regionId === region.id ? 'is-active' : ''} ${blueprint.themeClass}`}
+                    style={
+                      {
+                        gridArea: blueprint.area,
+                        '--territory-accent': blueprint.accent,
+                        '--territory-tilt': `${blueprint.tilt}deg`,
+                      } as CSSProperties
+                    }
+                    data-pressure={severity}
+                  >
+                    <button
+                      type="button"
+                      className="tabletop-region-trigger printed-territory-button"
+                      onClick={() => onViewStateChange({ regionId: region.id })}
+                    >
+                      <span className="printed-territory-caption">{blueprint.shortLabel}</span>
+                      <strong>{content.regions[region.id].name}</strong>
+                      <div className="territory-token-cluster" aria-hidden="true">
+                        <span className="token-glyph token-glyph-disc">{region.tokens.displacement}</span>
+                        <span className="token-glyph token-glyph-cube">{region.tokens.disinfo}</span>
+                        <span className="token-glyph token-glyph-bar">{region.locks.length}</span>
+                        <span className="token-glyph token-glyph-mat">{region.institutions.length}</span>
+                      </div>
+                    </button>
+                  </article>
+                );
+              })}
+            </div>
+
+            <div className="board-bottom-cards">
+              {state.players.map((player) => (
+                <button
+                  key={player.seat}
+                  type="button"
+                  className={`program-rail-card ${player.seat === focusedPlayer.seat ? 'is-active' : ''}`}
+                  onClick={() => onViewStateChange({ focusedSeat: player.seat, openTray: 'player' })}
+                >
+                  <span className="engraved-eyebrow">{t('ui.home.seatLabel', 'Seat {{seat}}', { seat: player.seat + 1 })}</span>
+                  <strong>{getRoleName(player.roleId)}</strong>
+                  <small>{player.queuedIntents.length} {t('ui.game.plannedMoves', 'Planned Moves')}</small>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <aside className="board-side-well board-side-well-right">
+            {activeCrisis ? (
+              <CrisisCard
+                title={activeCrisis.name}
+                body={activeCrisis.text}
+                tag={t('ui.game.activeCrisis', 'Active Crisis')}
+                emoji={activeCrisis.emoji}
+                className="active-crisis-card"
+              />
+            ) : (
+              <PaperSheet tone="docket" className="board-mini-docket">
+                <span className="engraved-eyebrow">{t('ui.game.activeCrisis', 'Active Crisis')}</span>
+                <strong>{t('ui.game.pendingDraw', 'Awaiting draw')}</strong>
+                <p>{t('ui.game.drawResolutionLead', 'Open the crisis deck, reveal the current draw, and place the active card on the board.')}</p>
+              </PaperSheet>
+            )}
+
+            <PaperSheet tone="docket" className="board-mini-docket">
+              <span className="engraved-eyebrow">{t('ui.game.charter', 'Charter')}</span>
+              <strong>{ending.ratifiedClauses} {t('ui.game.ratified', 'ratified')}</strong>
+              <p>{t('ui.game.charterDetail', 'Outcome track: {{tier}}.', { tier: getEndingTierLabel(ending.tier) })}</p>
+            </PaperSheet>
+
+            <button
+              type="button"
+              className="board-resolve-well"
+              disabled={boardActionDisabled}
+              onClick={() => runBoardAction(state, onCommand)}
+            >
+              <span className="engraved-eyebrow">{t('ui.game.resolve', 'Resolve')}</span>
+              <strong>{getBoardActionLabel(state)}</strong>
+              {boardActionDisabled ? <WaxSealLock label={t('ui.game.sealed', 'Sealed')} /> : null}
+            </button>
+          </aside>
+        </CivicBoard>
+
+        <aside className="board-drawer-shell" aria-label={getOpenTrayTitle(viewState)}>
+          <div className="board-drawer-tabs" role="tablist" aria-label={t('ui.game.coalitionDeskSections', 'Coalition desk sections')}>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={viewState.openTray === 'scenario'}
+              className={viewState.openTray === 'scenario' ? 'is-active' : ''}
+              onClick={() => onViewStateChange({ openTray: viewState.openTray === 'scenario' ? 'none' : 'scenario' })}
+            >
+              {t('ui.game.brief', 'Brief')}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={viewState.openTray === 'actions'}
+              className={viewState.openTray === 'actions' ? 'is-active' : ''}
+              onClick={() => onViewStateChange({ openTray: viewState.openTray === 'actions' ? 'none' : 'actions' })}
+            >
+              {t('ui.game.plannedMoves', 'Planned Moves')}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={viewState.openTray === 'player'}
+              className={viewState.openTray === 'player' ? 'is-active' : ''}
+              onClick={() => onViewStateChange({ openTray: viewState.openTray === 'player' ? 'none' : 'player' })}
+            >
+              {t('ui.game.playerMat', 'Player Mat')}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={viewState.openTray === 'notes'}
+              className={viewState.openTray === 'notes' ? 'is-active' : ''}
+              onClick={() => onViewStateChange({ openTray: viewState.openTray === 'notes' ? 'none' : 'notes' })}
+            >
+              {t('ui.game.meetingNotes', 'Meeting Notes')}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={viewState.openTray === 'deck'}
+              className={viewState.openTray === 'deck' ? 'is-active' : ''}
+              onClick={() => onViewStateChange({ openTray: viewState.openTray === 'deck' ? 'none' : 'deck' })}
+            >
+              {t('ui.game.crisisDeck', 'Crisis Deck')}
+            </button>
+          </div>
+
+          {viewState.openTray === 'scenario' ? (
             <DocumentFolio
               title={t('ui.game.scenarioDeskSections', 'Scenario desk sections')}
-              activeId={viewState.folioSection}
+              activeId={viewState.scenarioSection}
               sections={[
                 { id: 'brief', label: t('ui.game.brief', 'Brief') },
                 { id: 'fronts', label: t('ui.game.fronts', 'Fronts') },
                 { id: 'charter', label: t('ui.game.charterPanel', 'Charter') },
               ]}
-              onSelect={(folioSection) => onViewStateChange({ folioSection, mobileTray: 'folio' })}
+              onSelect={(scenarioSection) => onViewStateChange({ scenarioSection, openTray: 'scenario' })}
             >
-              {viewState.folioSection === 'brief' ? (
+              {viewState.scenarioSection === 'brief' ? (
                 <div className="folio-stack">
-                  <PaperSheet tone="plain">
+                  <PaperSheet tone="slip">
                     <span className="engraved-eyebrow">{t('ui.game.situation', 'Situation')}</span>
                     <h3>{content.scenario.name}</h3>
                     <p>{content.scenario.introduction}</p>
                   </PaperSheet>
-                  <PaperSheet tone="plain">
-                    <span className="engraved-eyebrow">{t('ui.game.moralCenter', 'Moral Center')}</span>
-                    <p>{content.scenario.moralCenter}</p>
-                  </PaperSheet>
-                  <PaperSheet tone="plain">
+                  <PaperSheet tone="slip">
                     <span className="engraved-eyebrow">{t('ui.game.specialRules', 'Special Rules')}</span>
                     <div className="rule-slip-list">
                       {content.scenario.specialRuleChips.map((chip) => {
@@ -285,14 +519,14 @@ export function GameScreen({
                 </div>
               ) : null}
 
-              {viewState.folioSection === 'fronts' ? (
+              {viewState.scenarioSection === 'fronts' ? (
                 <div className="folio-stack">
-                  {Object.values(state.fronts).map((front) => (
-                    <PaperSheet key={front.id} tone="plain" className="front-ledger">
+                  {frontEntries.map(({ id, front, name }) => (
+                    <PaperSheet key={id} tone="slip" className="front-ledger">
                       <div className="front-ledger-header">
                         <div>
-                          <span className="engraved-eyebrow">{t(`ui.frontPatterns.${front.id}`, FRONT_THEMES[front.id].pattern)}</span>
-                          <h3>{content.fronts[front.id].name}</h3>
+                          <span className="engraved-eyebrow">{name}</span>
+                          <h3>{id}</h3>
                         </div>
                         <span>{front.collapsed ? t('ui.game.collapse', 'Collapse') : t('ui.game.coalitionHolds', 'Coalition Holds')}</span>
                       </div>
@@ -306,10 +540,10 @@ export function GameScreen({
                 </div>
               ) : null}
 
-              {viewState.folioSection === 'charter' ? (
+              {viewState.scenarioSection === 'charter' ? (
                 <div className="folio-stack">
                   {Object.values(state.charter).map((clause) => (
-                    <PaperSheet key={clause.id} tone="plain" className={`charter-slip charter-${clause.status}`}>
+                    <PaperSheet key={clause.id} tone="slip" className={`charter-slip charter-${clause.status}`}>
                       <span className="engraved-eyebrow">{clause.status}</span>
                       <h3>{content.charter[clause.id].title}</h3>
                       <p>{content.charter[clause.id].description}</p>
@@ -318,246 +552,128 @@ export function GameScreen({
                 </div>
               ) : null}
             </DocumentFolio>
-          </nav>
-        </aside>
+          ) : null}
 
-        <main className="tabletop-board-area">
-          <CivicBoard>
-            <div className="board-banner">
-              <span>{t('ui.game.civicTheatre', 'Civic Theatre')}</span>
-              <span>{t('ui.game.roundSummary', 'Round {{round}} of {{roundLimit}} | {{surface}} | {{description}}', {
-                round: state.round,
-                roundLimit: state.roundLimit,
-                surface: surface === 'local' ? t('ui.game.localSurface', 'Local Table') : t('ui.game.roomSurface', 'Room {{roomId}}', { roomId: roomId ?? '—' }),
-                description: getBoardActionLabel(state),
-              })}</span>
-            </div>
+          {viewState.openTray === 'actions' ? (
+            <ActionBoard
+              seat={focusedPlayer.seat}
+              state={state}
+              content={content}
+              player={focusedPlayer}
+              onCommand={onCommand}
+              onQueueAction={queueAction}
+            />
+          ) : null}
 
-            <div className="board-top-row">
-              <div className="board-deck-well">
-                <DeckStack
-                  label={t('ui.game.crisisDeck', 'Crisis Deck')}
-                  deckName={t('ui.game.crisisDeck', 'Crisis Deck')}
-                  drawCount={state.decks.crisis.drawPile.length}
-                  activeCount={state.stagedWorldPhase.crisisCardIds.length}
-                  locked={state.phase !== 'WORLD'}
-                  disabled={state.phase !== 'WORLD' || state.stagedWorldPhase.status === 'drawn'}
-                  onClick={() => onCommand({ type: 'DrawWorldCards' })}
+          {viewState.openTray === 'player' ? (
+            <PaperSheet tone="mat" className="player-mat-sheet board-player-mat" aria-describedby="player-mat-passive">
+              <div className="player-mat-header">
+                <div>
+                  <span className="engraved-eyebrow">{t('ui.game.playerMat', 'Player Mat')}</span>
+                  <h3>{getRoleName(focusedPlayer.roleId)}</h3>
+                </div>
+                <div className="seat-selector-row" aria-label={t('ui.game.activeSeat', 'Active seat')}>
+                  {state.players.map((player) => (
+                    <button
+                      key={player.seat}
+                      type="button"
+                      className={`seat-selector ${player.seat === focusedPlayer.seat ? 'is-active' : ''} ${player.ready ? 'is-ready' : ''}`}
+                      onClick={() => onViewStateChange({ focusedSeat: player.seat, openTray: 'player' })}
+                    >
+                      {player.seat + 1}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <p id="player-mat-passive" className="player-mat-passive">{content.roles[focusedPlayer.roleId].passive}</p>
+
+              <div className="player-mat-resources" aria-label={t('ui.game.sharedResources', 'Shared resources')}>
+                {RESOURCE_KEYS.map((resource) => (
+                  <div key={resource} className={pulsedResources.includes(resource) ? 'is-pulsed' : ''}>
+                    <TokenStack
+                      label={t(`ui.game.${resource}`, resource)}
+                      count={state.resources[resource]}
+                      shape={RESOURCE_META[resource].shape}
+                      icon={RESOURCE_META[resource].icon}
+                    />
+                  </div>
+                ))}
+                <TokenStack
+                  label={t('ui.game.compromiseDebt', 'Compromise Debt')}
+                  count={state.globalTokens.compromise_debt ?? 0}
+                  shape="disc"
+                  icon="◉"
                 />
-                <PaperSheet tone="note" className="capture-docket">
-                  <span className="engraved-eyebrow">{t('ui.game.captureDocket', 'Capture Docket')}</span>
-                  <strong>{stagedCaptureCard?.name ?? t('ui.game.pendingDraw', 'Awaiting draw')}</strong>
-                  <p>{stagedCaptureCard?.text ?? t('ui.game.pendingDrawBody', 'Draw the world cards to place the current capture docket on the board.')}</p>
+              </div>
+
+              <div className="player-mat-wells">
+                <PaperSheet tone="slip" className="player-mat-well">
+                  <span className="engraved-eyebrow">{t('ui.actionBoard.burnout', 'Burnout {{current}}/{{max}}', { current: focusedPlayer.burnout, max: focusedPlayer.maxBurnout })}</span>
+                  <strong>{focusedPlayer.burnoutState}</strong>
+                </PaperSheet>
+                <PaperSheet tone="slip" className="player-mat-well">
+                  <span className="engraved-eyebrow">{t('ui.actionBoard.slotsLeft', 'Slots left {{count}}', { count: focusedPlayer.actionsRemaining })}</span>
+                  <strong>{t('ui.game.plannedMoves', 'Planned Moves')}</strong>
                 </PaperSheet>
               </div>
 
-              <div className="board-stage">
-                {activeCrisis ? (
-                  <CrisisCard
-                    title={activeCrisis.name}
-                    body={activeCrisis.text}
-                    tag={t('ui.game.activeCrisis', 'Active Crisis')}
-                    emoji={activeCrisis.emoji}
-                    className="active-crisis-card"
-                  />
-                ) : (
-                  <PaperSheet tone="note" className="crisis-slot">
-                    <span className="engraved-eyebrow">{t('ui.game.activeCrisis', 'Active Crisis')}</span>
-                    <h3>{t('ui.game.pendingDraw', 'Awaiting draw')}</h3>
-                    <p>{t('ui.game.drawResolutionLead', 'Open the crisis deck, reveal the current draw, and place the active card on the board.')}</p>
-                  </PaperSheet>
-                )}
-                {state.stagedWorldPhase.crisisCardIds.length > 1 ? (
-                  <div className="staged-crisis-stack">
-                    <span className="engraved-eyebrow">{t('ui.game.stagedCrises', 'Staged Crises')}</span>
-                    <strong>{state.stagedWorldPhase.crisisCardIds.length}</strong>
-                  </div>
-                ) : null}
-              </div>
-
-              <PaperSheet tone="plain" className="board-phase-track">
-                <span className="engraved-eyebrow">{t('ui.game.turnProgress', 'Turn progress')}</span>
-                <PhaseProgress phase={state.phase} />
-              </PaperSheet>
-            </div>
-
-            <div className="tabletop-map-grid">
-              {Object.values(state.regions).map((region) => {
-                const regionTheme = REGION_THEMES[region.id];
-                const totalPressure = region.tokens.displacement + region.tokens.disinfo + region.locks.length;
-                return (
-                  <article
-                    key={region.id}
-                    className={`tabletop-region-card ${viewState.regionId === region.id ? 'is-active' : ''}`}
-                    style={{ gridArea: regionTheme.area } as CSSProperties}
-                    data-pressure={totalPressure <= 1 ? 'low' : totalPressure <= 3 ? 'medium' : totalPressure <= 5 ? 'high' : 'critical'}
-                  >
-                    <button type="button" className="tabletop-region-trigger" onClick={() => onViewStateChange({ regionId: region.id })}>
-                      <span className="engraved-eyebrow">{regionTheme.strapline}</span>
-                      <strong>{content.regions[region.id].name}</strong>
-                      <div className="tabletop-region-metrics">
-                        <span>{t('ui.game.displacement', 'Displacement')}: {region.tokens.displacement}</span>
-                        <span>{t('ui.game.disinfo', 'Disinfo')}: {region.tokens.disinfo}</span>
-                        <span>{t('ui.game.locks', 'Locks')}: {region.locks.length}</span>
-                        <span>{t('ui.game.institutions', 'Institutions')}: {region.institutions.length}</span>
-                      </div>
-                    </button>
-                  </article>
-                );
-              })}
-            </div>
-
-            <div className="board-edge-strip">
-              <button
-                type="button"
-                className="board-edge-action"
-                disabled={
-                  (state.phase === 'WORLD' && state.stagedWorldPhase.status !== 'drawn')
-                  || (state.phase !== 'WORLD' && state.phase !== 'END')
-                }
-                onClick={() => {
-                  if (state.phase === 'WORLD') {
-                    onCommand({ type: 'AdoptResolution' });
-                  } else if (state.phase === 'END') {
-                    onCommand({ type: 'ResolveEndPhase' });
-                  }
-                }}
-              >
-                <span className="engraved-eyebrow">{t('ui.game.boardEdge', 'Board Edge')}</span>
-                <strong>{getBoardActionLabel(state)}</strong>
-                {state.phase === 'WORLD' && state.stagedWorldPhase.status !== 'drawn' ? <WaxSealLock label={t('ui.game.sealed', 'Sealed')} /> : null}
-              </button>
-            </div>
-          </CivicBoard>
-        </main>
-
-        <aside className="tabletop-play-area">
-          <PaperSheet tone="plain" className="play-area-sheet">
-            <div className="play-area-nav" role="tablist" aria-label={t('ui.game.coalitionDeskSections', 'Coalition desk sections')}>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={viewState.playAreaSection === 'moves'}
-                className={viewState.playAreaSection === 'moves' ? 'is-active' : ''}
-                onClick={() => onViewStateChange({ playAreaSection: 'moves', mobileTray: 'moves' })}
-              >
-                {t('ui.game.plannedMoves', 'Planned Moves')}
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={viewState.playAreaSection === 'notes'}
-                className={viewState.playAreaSection === 'notes' ? 'is-active' : ''}
-                onClick={() => onViewStateChange({ playAreaSection: 'notes', mobileTray: 'moves' })}
-              >
-                {t('ui.game.meetingNotes', 'Meeting Notes')}
-              </button>
-            </div>
-
-            {viewState.playAreaSection === 'moves' ? (
-              <ActionBoard
-                seat={focusedPlayer.seat}
-                state={state}
-                content={content}
-                player={focusedPlayer}
-                onCommand={onCommand}
-                onQueueAction={queueAction}
+              <CommitMarker
+                label={focusedPlayer.ready ? t('ui.status.ready', 'Ready') : t('ui.status.planning', 'Planning')}
+                active={focusedPlayer.ready}
+                disabled={state.phase !== 'COALITION' || focusedPlayer.actionsRemaining !== 0}
+                onClick={() => onCommand({ type: 'SetReady', seat: focusedPlayer.seat, ready: !focusedPlayer.ready })}
               />
-            ) : null}
+            </PaperSheet>
+          ) : null}
 
-            {viewState.playAreaSection === 'notes' ? (
-              <NotesPad title={t('ui.game.meetingNotes', 'Meeting Notes')} overflowCount={archivedEventCount}>
-                {visibleEvents.map((event) => (
-                  <button
-                    key={event.seq}
-                    type="button"
-                    className={`meeting-note-slip ${viewState.eventSeq === event.seq ? 'is-active' : ''}`}
-                    onClick={() => onViewStateChange({ eventSeq: event.seq })}
-                  >
-                    <span className="engraved-eyebrow">
-                      {t('ui.game.phaseLabel', '{{phase}} phase', { phase: t(`ui.phases.${event.phase}`, event.phase) })}
-                    </span>
-                    <strong>{event.emoji} {event.message}</strong>
-                    <span>{event.causedBy.slice(-1)[0]}</span>
-                  </button>
-                ))}
-              </NotesPad>
-            ) : null}
-          </PaperSheet>
-
-          <PaperSheet tone="mat" className="player-mat-sheet" aria-describedby="player-mat-passive">
-            <div className="player-mat-header">
-              <div>
-                <span className="engraved-eyebrow">{t('ui.game.playerMat', 'Player Mat')}</span>
-                <h3>{getRoleName(focusedPlayer.roleId)}</h3>
-              </div>
-              <div className="seat-selector-row" aria-label={t('ui.game.activeSeat', 'Active seat')}>
-                {state.players.map((player) => (
-                  <button
-                    key={player.seat}
-                    type="button"
-                    className={`seat-selector ${player.seat === focusedPlayer.seat ? 'is-active' : ''} ${player.ready ? 'is-ready' : ''}`}
-                    onClick={() => onViewStateChange({ focusedSeat: player.seat, mobileTray: 'playerMat' })}
-                  >
-                    {player.seat + 1}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <p id="player-mat-passive" className="player-mat-passive">{content.roles[focusedPlayer.roleId].passive}</p>
-
-            <div className="player-mat-resources" aria-label={t('ui.game.sharedResources', 'Shared resources')}>
-              {RESOURCE_KEYS.map((resource) => (
-                <div key={resource} className={pulsedResources.includes(resource) ? 'is-pulsed' : ''}>
-                  <TokenStack
-                    label={t(`ui.game.${resource}`, resource)}
-                    count={state.resources[resource]}
-                    shape={RESOURCE_META[resource].shape}
-                    icon={RESOURCE_META[resource].icon}
-                  />
-                </div>
+          {viewState.openTray === 'notes' ? (
+            <NotesPad title={t('ui.game.meetingNotes', 'Meeting Notes')} overflowCount={archivedEventCount}>
+              {visibleEvents.map((event) => (
+                <button
+                  key={event.seq}
+                  type="button"
+                  className={`meeting-note-slip ${viewState.eventSeq === event.seq ? 'is-active' : ''}`}
+                  onClick={() => onViewStateChange({ eventSeq: event.seq, openTray: 'notes' })}
+                >
+                  <span className="engraved-eyebrow">
+                    {t('ui.game.phaseLabel', '{{phase}} phase', { phase: t(`ui.phases.${event.phase}`, event.phase) })}
+                  </span>
+                  <strong>{event.emoji} {event.message}</strong>
+                  <span>{event.causedBy.slice(-1)[0]}</span>
+                </button>
               ))}
-              <TokenStack
-                label={t('ui.game.compromiseDebt', 'Compromise Debt')}
-                count={state.globalTokens.compromise_debt ?? 0}
-                shape="disc"
-                icon="◉"
-              />
-            </div>
+            </NotesPad>
+          ) : null}
 
-            <div className="player-mat-wells">
-              <PaperSheet tone="plain" className="player-mat-well">
-                <span className="engraved-eyebrow">{t('ui.actionBoard.burnout', 'Burnout {{current}}/{{max}}', { current: focusedPlayer.burnout, max: focusedPlayer.maxBurnout })}</span>
-                <strong>{focusedPlayer.burnoutState}</strong>
+          {viewState.openTray === 'deck' ? (
+            <div className="board-deck-drawer">
+              <PaperSheet tone="docket" className="board-mini-docket">
+                <span className="engraved-eyebrow">{t('ui.game.crisisDeck', 'Crisis Deck')}</span>
+                <strong>{state.decks.crisis.drawPile.length}</strong>
+                <p>{t('ui.game.turnProgress', 'Turn progress')}</p>
               </PaperSheet>
-              <PaperSheet tone="plain" className="player-mat-well">
-                <span className="engraved-eyebrow">{t('ui.actionBoard.slotsLeft', 'Slots left {{count}}', { count: focusedPlayer.actionsRemaining })}</span>
-                <strong>{t('ui.game.plannedMoves', 'Planned Moves')}</strong>
+              <PaperSheet tone="docket" className="board-mini-docket">
+                <span className="engraved-eyebrow">{t('ui.game.activeCrisis', 'Active Crisis')}</span>
+                <strong>{activeCrisis?.name ?? t('ui.game.pendingDraw', 'Awaiting draw')}</strong>
+                <p>{activeCrisis?.text ?? t('ui.game.pendingDrawBody', 'Draw the world cards to place the current capture docket on the board.')}</p>
               </PaperSheet>
             </div>
-
-            <CommitMarker
-              label={focusedPlayer.ready ? t('ui.status.ready', 'Ready') : t('ui.status.planning', 'Planning')}
-              active={focusedPlayer.ready}
-              disabled={state.phase !== 'COALITION' || focusedPlayer.actionsRemaining !== 0}
-              onClick={() => onCommand({ type: 'SetReady', seat: focusedPlayer.seat, ready: !focusedPlayer.ready })}
-            />
-          </PaperSheet>
+          ) : null}
         </aside>
-      </div>
+      </main>
 
-      <div className="mobile-tray-dock">
-        <button type="button" onClick={() => onViewStateChange({ mobileTray: viewState.mobileTray === 'folio' ? 'none' : 'folio' })}>
+      <div className="mobile-tray-dock board-mobile-dock">
+        <button type="button" onClick={() => onViewStateChange({ openTray: viewState.openTray === 'scenario' ? 'none' : 'scenario' })}>
           {t('ui.game.brief', 'Brief')}
         </button>
-        <button type="button" onClick={() => onViewStateChange({ mobileTray: viewState.mobileTray === 'deck' ? 'none' : 'deck' })}>
+        <button type="button" onClick={() => onViewStateChange({ openTray: viewState.openTray === 'deck' ? 'none' : 'deck' })}>
           {t('ui.game.crisisDeck', 'Crisis Deck')}
         </button>
-        <button type="button" onClick={() => onViewStateChange({ mobileTray: viewState.mobileTray === 'moves' ? 'none' : 'moves' })}>
+        <button type="button" onClick={() => onViewStateChange({ openTray: viewState.openTray === 'actions' ? 'none' : 'actions' })}>
           {t('ui.game.plannedMoves', 'Planned Moves')}
         </button>
-        <button type="button" onClick={() => onViewStateChange({ mobileTray: viewState.mobileTray === 'playerMat' ? 'none' : 'playerMat' })}>
+        <button type="button" onClick={() => onViewStateChange({ openTray: viewState.openTray === 'player' ? 'none' : 'player' })}>
           {t('ui.game.playerMat', 'Player Mat')}
         </button>
       </div>

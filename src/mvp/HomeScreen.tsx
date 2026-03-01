@@ -10,9 +10,9 @@ interface HomeScreenProps {
   onLocaleChange: (locale: Locale) => void;
   config: SetupConfig;
   hasAutosave: boolean;
-  roomPlayAvailable: boolean;
-  roomPlayChecking: boolean;
-  roomPlayDisabledByBuild: boolean;
+  roomPlayAvailable?: boolean;
+  roomPlayChecking?: boolean;
+  roomPlayDisabledByBuild?: boolean;
   onConfigChange: (patch: Partial<SetupConfig>) => void;
   onStart: (config: SetupConfig) => void;
   onLoadSave: (serialized: string) => void;
@@ -44,9 +44,9 @@ export function HomeScreen({
   onLocaleChange,
   config,
   hasAutosave,
-  roomPlayAvailable,
-  roomPlayChecking,
-  roomPlayDisabledByBuild,
+  roomPlayAvailable = true,
+  roomPlayChecking = false,
+  roomPlayDisabledByBuild = false,
   onConfigChange,
   onStart,
   onLoadSave,
@@ -74,9 +74,9 @@ export function HomeScreen({
   }
 
   return (
-    <TableSurface className="home-table">
-      <div className="home-paper-layout">
-        <PaperSheet tone="folio" className="home-title-sheet">
+    <TableSurface className="home-table setup-table">
+      <div className="setup-scene">
+        <header className="setup-header">
           <EngravedHeader
             eyebrow={t('ui.home.eyebrow', 'Playable MVP')}
             title={t('ui.home.title', 'Dignity Rising')}
@@ -91,54 +91,123 @@ export function HomeScreen({
               </div>
             }
           />
+        </header>
 
-          <div className="home-title-grid">
-            <PaperSheet tone="plain">
-              <span className="engraved-eyebrow">{t('ui.home.selectedChapter', 'Selected Chapter')}</span>
-              <h2>{selectedScenario.name}</h2>
-              <p>{excerpt(selectedScenario.description, 220)}</p>
-              <div className="ledger-list">
-                <div className="ledger-row"><span>{t('ui.home.playerCount', 'Player Count')}</span><strong>{config.playerCount}</strong></div>
-                <div className="ledger-row"><span>{t('ui.home.mode', 'Mode')}</span><strong>{config.mode}</strong></div>
-                <div className="ledger-row"><span>{t('ui.scenarioBooklet.civicSpace', 'Civic space')}</span><strong>{getCivicSpaceLabel(selectedScenario.setup.civicSpace)}</strong></div>
-                <div className="ledger-row"><span>{t('ui.scenarioBooklet.startingHeat', 'Starting heat')}</span><strong>+{selectedScenario.setup.temperature}°C</strong></div>
+        <main className="setup-board-layout">
+          <PaperSheet tone="board" className="setup-feature-board">
+            <div className="setup-board-rail">
+              <span>{t('ui.home.selectedChapter', 'Selected Chapter')}</span>
+              <div className="header-action-plates">
+                <ThemePlate
+                  label={config.surface === 'local' ? t('ui.home.startLocal', 'Start Local Table') : t('ui.home.createRoom', 'Create Room')}
+                  onClick={() => {
+                    if (hasDuplicateRoles) {
+                      setError(t('ui.home.rolesMustBeUnique', 'Roles must be unique.'));
+                      return;
+                    }
+                    setError(null);
+                    onStart({ ...config, scenarioId: selectedScenario.id, roleIds: selectedRoles });
+                  }}
+                />
+                {hasAutosave ? <ThemePlate label={t('ui.home.loadAutosave', 'Load Autosave')} onClick={onLoadAutosave} /> : null}
+                <ThemePlate
+                  label={mode === 'offline' ? t('ui.home.scenarioGuidelines', 'Scenario Guidelines') : t('ui.home.openGuidelines', 'Open Guidelines')}
+                  onClick={() => onOpenGuidelines(selectedScenario.id)}
+                />
+                <ThemePlate label={t('ui.home.playerGuide', 'Player Guide')} onClick={onOpenPlayerGuide} />
               </div>
-            </PaperSheet>
+            </div>
 
-            <PaperSheet tone="plain">
-              <span className="engraved-eyebrow">{t('ui.home.whatChanges', 'What Changes')}</span>
-              <ul className="guide-list">
-                {selectedScenario.specialRuleChips.slice(0, 4).map((chip) => (
-                  <li key={chip.id}>{chip.label}</li>
-                ))}
-              </ul>
-              <p>{selectedScenario.moralCenter}</p>
-            </PaperSheet>
-          </div>
+            <div className="setup-board-grid">
+              <section className="setup-scenario-cover">
+                <span className="engraved-eyebrow">{selectedScenario.name}</span>
+                <h2>{excerpt(selectedScenario.description, 120)}</h2>
+                <p>{excerpt(selectedScenario.moralCenter, 140)}</p>
+                <div className="setup-stat-ribbon">
+                  <div><span>{t('ui.home.playerCount', 'Player Count')}</span><strong>{config.playerCount}</strong></div>
+                  <div><span>{t('ui.home.mode', 'Mode')}</span><strong>{config.mode}</strong></div>
+                  <div><span>{t('ui.scenarioBooklet.civicSpace', 'Civic space')}</span><strong>{getCivicSpaceLabel(selectedScenario.setup.civicSpace)}</strong></div>
+                  <div><span>{t('ui.scenarioBooklet.startingHeat', 'Starting heat')}</span><strong>+{selectedScenario.setup.temperature}°C</strong></div>
+                </div>
+                <div className="setup-rule-chips">
+                  {selectedScenario.specialRuleChips.slice(0, 3).map((chip) => (
+                    <span key={chip.id} className="rule-slip">{chip.label}</span>
+                  ))}
+                </div>
+              </section>
 
-          <div className="home-launch-row">
-            <ThemePlate
-              label={config.surface === 'local' ? t('ui.home.startLocal', 'Start Local Table') : t('ui.home.createRoom', 'Create Room')}
-              onClick={() => {
-                if (hasDuplicateRoles) {
-                  setError(t('ui.home.rolesMustBeUnique', 'Roles must be unique.'));
-                  return;
-                }
-                setError(null);
-                onStart({ ...config, scenarioId: selectedScenario.id, roleIds: selectedRoles });
-              }}
-            />
-            {hasAutosave ? <ThemePlate label={t('ui.home.loadAutosave', 'Load Autosave')} onClick={onLoadAutosave} /> : null}
-            <ThemePlate label={mode === 'offline' ? t('ui.home.scenarioGuidelines', 'Scenario Guidelines') : t('ui.home.openGuidelines', 'Open Guidelines')} onClick={() => onOpenGuidelines(selectedScenario.id)} />
-            <ThemePlate label={t('ui.home.playerGuide', 'Player Guide')} onClick={onOpenPlayerGuide} />
-          </div>
-        </PaperSheet>
+              <section className="setup-launch-tray">
+                <PaperSheet tone="tray">
+                  <span className="engraved-eyebrow">{t('ui.home.launch', 'Launch')}</span>
+                  <div className="plate-toggle-row">
+                    <ThemePlate label={t('ui.home.localTable', 'Local Table')} active={config.surface === 'local'} onClick={() => onConfigChange({ surface: 'local' })} />
+                    <ThemePlate label={t('ui.home.roomPlay', 'Room Play')} active={config.surface === 'room'} onClick={() => onConfigChange({ surface: 'room' })} />
+                  </div>
+                  <div className="paper-form-grid">
+                    <label>
+                      <span>{t('ui.home.mode', 'Mode')}</span>
+                      <select value={config.mode} onChange={(event) => onConfigChange({ mode: event.target.value as GameMode })}>
+                        <option value="CORE">{t('ui.home.modeCore', 'Core')}</option>
+                        <option value="FULL">{t('ui.home.modeFull', 'Full')}</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>{t('ui.home.playerCount', 'Player Count')}</span>
+                      <select value={config.playerCount} onChange={(event) => onConfigChange({ playerCount: Number(event.target.value) as 2 | 3 | 4 })}>
+                        <option value={2}>2</option>
+                        <option value={3}>3</option>
+                        <option value={4}>4</option>
+                      </select>
+                    </label>
+                  </div>
+                  {config.surface === 'room' ? (
+                    <>
+                      <label>
+                        <span>{t('ui.home.roomUrl', 'Room Service URL')}</span>
+                        <input
+                          type="text"
+                          value={config.roomUrl}
+                          onChange={(event) => onConfigChange({ roomUrl: event.target.value })}
+                          placeholder="http://localhost:3010"
+                        />
+                      </label>
+                      <p className="room-status-note">
+                        {roomPlayDisabledByBuild
+                          ? t('ui.home.offlineOnly', 'This build is configured for offline play only.')
+                          : roomPlayChecking
+                            ? t('ui.home.checkingRoomPlay', 'Checking room service...')
+                            : roomPlayAvailable
+                              ? t('ui.home.roomPlayReady', 'Room service reachable.')
+                              : t('ui.home.roomPlayUnavailable', 'Room service unavailable. Local table still works.')}
+                      </p>
+                    </>
+                  ) : null}
+                </PaperSheet>
 
-        <div className="home-dossier-grid">
-          <PaperSheet tone="folio">
-            <span className="engraved-eyebrow">{t('ui.home.scenarioMenu', 'Scenario Menu')}</span>
-            <h2>{t('ui.home.scenario', 'Scenario')}</h2>
-            <div className="scenario-card-grid">
+                <PaperSheet tone="tray">
+                  <span className="engraved-eyebrow">{t('ui.home.coalitionSeats', 'Coalition Seats')}</span>
+                  <div className="seat-placard-grid">
+                    {Array.from({ length: config.playerCount }).map((_, seat) => (
+                      <label key={seat} className="seat-placard">
+                        <span>{t('ui.home.seatLabel', 'Seat {{seat}}', { seat: seat + 1 })}</span>
+                        <select value={selectedRoles[seat]} onChange={(event) => updateRole(seat, event.target.value as RoleId)}>
+                          {ROLE_OPTIONS.map((role) => (
+                            <option key={role.id} value={role.id}>
+                              {getRoleName(role.id)}
+                            </option>
+                          ))}
+                        </select>
+                        <strong>{getRoleName(selectedRoles[seat])}</strong>
+                      </label>
+                    ))}
+                  </div>
+                  {hasDuplicateRoles ? <p className="inline-error">{t('ui.home.rolesMustBeUnique', 'Roles must be unique.')}</p> : null}
+                  {error ? <p className="inline-error">{error}</p> : null}
+                </PaperSheet>
+              </section>
+            </div>
+
+            <div className="scenario-card-grid setup-scenario-rail">
               {localizedScenarios.map((scenario) => {
                 const active = scenario.id === selectedScenario.id;
                 return (
@@ -150,102 +219,17 @@ export function HomeScreen({
                   >
                     <span className="engraved-eyebrow">{active ? t('ui.home.selected', 'Selected') : t('ui.home.available', 'Available')}</span>
                     <strong>{scenario.name}</strong>
-                    <p>{excerpt(scenario.description, 130)}</p>
-                    <div className="ledger-list">
-                      <div className="ledger-row"><span>{t('ui.scenarioBooklet.civicSpace', 'Civic space')}</span><strong>{getCivicSpaceLabel(scenario.setup.civicSpace)}</strong></div>
-                      <div className="ledger-row"><span>{t('ui.scenarioBooklet.startingHeat', 'Starting heat')}</span><strong>+{scenario.setup.temperature}°C</strong></div>
-                    </div>
+                    <p>{excerpt(scenario.description, 92)}</p>
                   </button>
                 );
               })}
             </div>
           </PaperSheet>
 
-          <div className="home-right-column">
-            <PaperSheet tone="folio">
-              <span className="engraved-eyebrow">{t('ui.home.launch', 'Launch')}</span>
-              <h2>{t('ui.home.tableConfiguration', 'Table Configuration')}</h2>
-              <div className="plate-toggle-row">
-                <ThemePlate label={t('ui.home.localTable', 'Local Table')} active={config.surface === 'local'} onClick={() => onConfigChange({ surface: 'local' })} />
-                <ThemePlate
-                  label={t('ui.home.roomPlay', 'Room Play')}
-                  active={config.surface === 'room'}
-                  disabled={roomPlayDisabledByBuild}
-                  onClick={() => onConfigChange({ surface: 'room' })}
-                />
-              </div>
-              {roomPlayDisabledByBuild ? (
-                <p>{t('ui.home.roomPlayDisabledPages', 'Room play is disabled in the GitHub Pages build. Offline mode is always used there.')}</p>
-              ) : null}
-              <div className="paper-form-grid">
-                <label>
-                  <span>{t('ui.home.mode', 'Mode')}</span>
-                  <select value={config.mode} onChange={(event) => onConfigChange({ mode: event.target.value as GameMode })}>
-                    <option value="CORE">{t('ui.home.modeCore', 'Core')}</option>
-                    <option value="FULL">{t('ui.home.modeFull', 'Full')}</option>
-                  </select>
-                </label>
-                <label>
-                  <span>{t('ui.home.playerCount', 'Player Count')}</span>
-                  <select value={config.playerCount} onChange={(event) => onConfigChange({ playerCount: Number(event.target.value) as 2 | 3 | 4 })}>
-                    <option value={2}>2</option>
-                    <option value={3}>3</option>
-                    <option value={4}>4</option>
-                  </select>
-                </label>
-              </div>
-              {config.surface === 'room' ? (
-                <>
-                  <label>
-                    <span>{t('ui.home.roomUrl', 'Room Service URL')}</span>
-                    <input
-                      type="text"
-                      value={config.roomUrl}
-                      onChange={(event) => onConfigChange({ roomUrl: event.target.value })}
-                      placeholder="http://localhost:3010"
-                    />
-                  </label>
-                  <p>
-                    {roomPlayChecking
-                      ? t('ui.home.roomChecking', 'Checking room service availability...')
-                      : roomPlayAvailable
-                        ? t('ui.home.roomAvailable', 'Room service reachable. Online room play is available.')
-                        : t(
-                          'ui.home.roomUnavailableFallback',
-                          'Room service unavailable. Starting the game will fall back to a local offline table.',
-                        )}
-                  </p>
-                </>
-              ) : null}
-            </PaperSheet>
-
-            <PaperSheet tone="folio">
-              <span className="engraved-eyebrow">{t('ui.home.coalitionSeats', 'Coalition Seats')}</span>
-              <h2>{t('ui.home.seatAssignments', 'Seat Assignments')}</h2>
-              <div className="seat-placard-grid">
-                {Array.from({ length: config.playerCount }).map((_, seat) => (
-                  <PaperSheet key={seat} tone="plain">
-                    <label>
-                      <span>{t('ui.home.seatLabel', 'Seat {{seat}}', { seat: seat + 1 })}</span>
-                      <select value={selectedRoles[seat]} onChange={(event) => updateRole(seat, event.target.value as RoleId)}>
-                        {ROLE_OPTIONS.map((role) => (
-                          <option key={role.id} value={role.id}>
-                            {getRoleName(role.id)}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <p>{getRoleName(selectedRoles[seat])}</p>
-                  </PaperSheet>
-                ))}
-              </div>
-              {hasDuplicateRoles ? <p className="inline-error">{t('ui.home.rolesMustBeUnique', 'Roles must be unique.')}</p> : null}
-              {error ? <p className="inline-error">{error}</p> : null}
-            </PaperSheet>
-
-            <PaperSheet tone="folio">
-              <span className="engraved-eyebrow">{t('ui.home.loadSave', 'Load Save')}</span>
-              <h2>{t('ui.home.utilities', 'Utilities')}</h2>
+          <details className="setup-utility-drawer">
+            <summary>{t('ui.home.loadSave', 'Load Save')}</summary>
+            <PaperSheet tone="tray">
+              <span className="engraved-eyebrow">{t('ui.home.utilities', 'Utilities')}</span>
               <textarea
                 value={saveText}
                 onChange={(event) => setSaveText(event.target.value)}
@@ -262,10 +246,9 @@ export function HomeScreen({
                   onLoadSave(saveText);
                 }}
               />
-              <p>{t('ui.home.routesStayStable', 'Routes stay stable while the selected scenario and active table state change underneath.')}</p>
             </PaperSheet>
-          </div>
-        </div>
+          </details>
+        </main>
       </div>
     </TableSurface>
   );

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { t, type Locale } from '../i18n/index.ts';
 import { LanguageSwitcher } from '../components/LanguageSwitcher.tsx';
-import { TableSurface, TabletopControls } from './tabletop.tsx';
+import { EngravedHeader, TableSurface, TabletopControls, ThemePlate } from './tabletop.tsx';
 
 interface PlayerGuideScreenProps {
     locale: Locale;
@@ -23,17 +23,17 @@ type GuideSection =
     | 'glossary';
 
 const SECTIONS: Array<{ id: GuideSection; label: string; icon: string }> = [
-    { id: 'overview', label: 'Game Overview', icon: '🌍' },
-    { id: 'setup', label: 'Setting Up', icon: '🎲' },
-    { id: 'phases', label: 'Round Structure', icon: '🔄' },
-    { id: 'roles', label: 'Roles & Abilities', icon: '👥' },
-    { id: 'fronts', label: 'The Seven Fronts', icon: '📊' },
-    { id: 'regions', label: 'World Map & Regions', icon: '🗺️' },
-    { id: 'resources', label: 'Resources & Economy', icon: '💎' },
-    { id: 'cards', label: 'Card Decks', icon: '🃏' },
-    { id: 'charter', label: 'The Charter', icon: '⚖️' },
-    { id: 'winning', label: 'Winning & Losing', icon: '🏆' },
-    { id: 'glossary', label: 'Glossary', icon: '📖' },
+    { id: 'overview', label: 'Game Overview', icon: 'I' },
+    { id: 'setup', label: 'Setting Up', icon: 'II' },
+    { id: 'phases', label: 'Round Structure', icon: 'III' },
+    { id: 'roles', label: 'Roles & Abilities', icon: 'IV' },
+    { id: 'fronts', label: 'The Seven Fronts', icon: 'V' },
+    { id: 'regions', label: 'World Map & Regions', icon: 'VI' },
+    { id: 'resources', label: 'Resources & Economy', icon: 'VII' },
+    { id: 'cards', label: 'Card Decks', icon: 'VIII' },
+    { id: 'charter', label: 'The Charter', icon: 'IX' },
+    { id: 'winning', label: 'Winning & Losing', icon: 'X' },
+    { id: 'glossary', label: 'Glossary', icon: 'XI' },
 ];
 
 export function PlayerGuideScreen({
@@ -45,49 +45,53 @@ export function PlayerGuideScreen({
 
     return (
         <TableSurface className="player-guide-table">
-        <div className="player-guide-screen">
-            {/* ── Navigation Sidebar ── */}
-            <nav className="guide-nav shell-panel" aria-label={t('ui.playerGuide.navTitle', 'Rulebook')}>
-                <div className="guide-nav-header">
-                    <LanguageSwitcher locale={locale} onChange={onLocaleChange} />
-                    <TabletopControls />
-                    <span className="eyebrow">📜 {t('ui.playerGuide.navEyebrow', 'Player Guide')}</span>
-                    <h2>{t('ui.playerGuide.navTitle', 'Rulebook')}</h2>
-                </div>
-                <ul className="guide-nav-list">
-                    {SECTIONS.map((section) => (
-                        <li key={section.id}>
-                            <button
-                                type="button"
-                                className={`guide-nav-item ${activeSection === section.id ? 'is-active' : ''}`}
-                                onClick={() => setActiveSection(section.id)}
-                            >
-                                <span className="guide-nav-icon">{section.icon}</span>
-                                <span>{t(`ui.playerGuide.sections.${section.id}`, section.label)}</span>
-                            </button>
-                        </li>
-                    ))}
-                </ul>
-                <button className="secondary-button guide-back-btn" onClick={onBackHome}>
-                    ← {t('ui.playerGuide.backHome', 'Back to Home')}
-                </button>
-            </nav>
+            <div className="player-guide-screen player-guide-booklet">
+                <header className="guide-booklet-header shell-panel">
+                    <EngravedHeader
+                        eyebrow={t('ui.playerGuide.navEyebrow', 'Player Guide')}
+                        title={t('ui.playerGuide.navTitle', 'Rulebook')}
+                        detail={t('ui.playerGuide.overview.subtitle', 'A cooperative board game about solidarity, truth, and resilience in the face of systemic injustice.')}
+                        actions={
+                            <div className="header-control-stack">
+                                <LanguageSwitcher locale={locale} onChange={onLocaleChange} />
+                                <TabletopControls />
+                                <ThemePlate label={t('ui.playerGuide.backHome', 'Back to Home')} onClick={onBackHome} />
+                            </div>
+                        }
+                    />
+                </header>
 
-            {/* ── Content Area ── */}
-            <main className="guide-content">
-                {activeSection === 'overview' && <OverviewSection />}
-                {activeSection === 'setup' && <SetupSection />}
-                {activeSection === 'phases' && <PhasesSection />}
-                {activeSection === 'roles' && <RolesSection />}
-                {activeSection === 'fronts' && <FrontsSection />}
-                {activeSection === 'regions' && <RegionsSection />}
-                {activeSection === 'resources' && <ResourcesSection />}
-                {activeSection === 'cards' && <CardsSection />}
-                {activeSection === 'charter' && <CharterSection />}
-                {activeSection === 'winning' && <WinningSection />}
-                {activeSection === 'glossary' && <GlossarySection />}
-            </main>
-        </div>
+                <nav className="guide-nav shell-panel guide-tab-rail" aria-label={t('ui.playerGuide.navTitle', 'Rulebook')}>
+                    <ul className="guide-nav-list">
+                        {SECTIONS.map((section) => (
+                            <li key={section.id}>
+                                <button
+                                    type="button"
+                                    className={`guide-nav-item ${activeSection === section.id ? 'is-active' : ''}`}
+                                    onClick={() => setActiveSection(section.id)}
+                                >
+                                    <span className="guide-nav-icon">{section.icon}</span>
+                                    <span>{t(`ui.playerGuide.sections.${section.id}`, section.label)}</span>
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                </nav>
+
+                <main className="guide-content guide-booklet-content">
+                    {activeSection === 'overview' && <OverviewSection />}
+                    {activeSection === 'setup' && <SetupSection />}
+                    {activeSection === 'phases' && <PhasesSection />}
+                    {activeSection === 'roles' && <RolesSection />}
+                    {activeSection === 'fronts' && <FrontsSection />}
+                    {activeSection === 'regions' && <RegionsSection />}
+                    {activeSection === 'resources' && <ResourcesSection />}
+                    {activeSection === 'cards' && <CardsSection />}
+                    {activeSection === 'charter' && <CharterSection />}
+                    {activeSection === 'winning' && <WinningSection />}
+                    {activeSection === 'glossary' && <GlossarySection />}
+                </main>
+            </div>
         </TableSurface>
     );
 }

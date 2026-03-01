@@ -11,6 +11,7 @@ import {
   type EngineCommand,
 } from '../engine/index.ts';
 import { GAME_A11Y_LABELS, getPhaseProgressSteps, getToastRole } from '../src/mvp/gameUiHelpers.ts';
+import { DEFAULT_GAME_VIEW_STATE } from '../src/mvp/urlState.ts';
 
 const startCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
   type: 'StartGame',
@@ -30,7 +31,7 @@ test('temperature selector reports the expected crisis banding', () => {
 
 test('disabled reason explains phase gating and target gating', () => {
   const content = compileContent(startCommand.scenarioId);
-  let state = initializeGame(startCommand);
+  const state = initializeGame(startCommand);
 
   const worldReason = getSeatDisabledReason(state, content, 0, 'community_mobilization', { kind: 'NONE' });
   assert.equal(worldReason.disabled, true);
@@ -69,15 +70,33 @@ test('phase progress helper marks the active step and exposes step semantics', (
   assert.equal(steps[2]?.state, 'upcoming');
 });
 
-test('game screen source includes landmark and labelled navigation markup', () => {
+test('game screen source includes landmark and labelled tray markup', () => {
   const source = readFileSync(new URL('../src/mvp/GameScreen.tsx', import.meta.url), 'utf8');
 
   assert.match(source, /<header/);
   assert.match(source, /<main/);
   assert.match(source, /<aside/);
-  assert.match(source, /aria-label=\{t\('ui\.game\.scenarioDeskSections'/);
-  assert.match(source, /aria-label=\{t\('ui\.game\.coalitionDeskSections'/);
+  assert.match(source, /aria-label=\{getOpenTrayTitle\(viewState\)\}/);
+  assert.match(source, /role="tab"/);
   assert.match(source, /aria-describedby=/);
+});
+
+test('default game view state uses the tray-driven model', () => {
+  assert.equal(DEFAULT_GAME_VIEW_STATE.openTray, 'actions');
+  assert.equal(DEFAULT_GAME_VIEW_STATE.scenarioSection, 'fronts');
+  assert.equal('mobileTray' in DEFAULT_GAME_VIEW_STATE, false);
+  assert.equal('folioSection' in DEFAULT_GAME_VIEW_STATE, false);
+  assert.equal('playAreaSection' in DEFAULT_GAME_VIEW_STATE, false);
+});
+
+test('route screens keep the new board-first shells', () => {
+  const home = readFileSync(new URL('../src/mvp/HomeScreen.tsx', import.meta.url), 'utf8');
+  const guidelines = readFileSync(new URL('../src/mvp/GuidelinesScreen.tsx', import.meta.url), 'utf8');
+  const playerGuide = readFileSync(new URL('../src/mvp/PlayerGuideScreen.tsx', import.meta.url), 'utf8');
+
+  assert.match(home, /setup-feature-board/);
+  assert.match(guidelines, /dossier-spread/);
+  assert.match(playerGuide, /guide-tab-rail/);
 });
 
 test('disabled reason explains phase gating and helper text is expected inline', () => {

@@ -38,9 +38,9 @@ export function GuidelinesScreen({
   }
 
   return (
-    <TableSurface className="guidelines-table">
-      <div className="guidelines-paper-layout">
-        <PaperSheet tone="folio">
+    <TableSurface className="guidelines-table dossier-table">
+      <div className="guidelines-paper-layout dossier-layout">
+        <header className="setup-header">
           <EngravedHeader
             eyebrow={t('ui.guidelines.eyebrow', 'Guidelines')}
             title={selectedScenario.name}
@@ -56,60 +56,47 @@ export function GuidelinesScreen({
               </div>
             }
           />
+        </header>
 
-          <div className="guideline-summary-grid">
-            <PaperSheet tone="plain">
-              <span className="engraved-eyebrow">{t('ui.guidelines.scenarioPulse', 'Scenario pulse')}</span>
-              <div className="ledger-list">
-                <div className="ledger-row"><span>{t('ui.scenarioBooklet.civicSpace', 'Civic space')}</span><strong>{getCivicSpaceLabel(selectedScenario.setup.civicSpace)}</strong></div>
-                <div className="ledger-row"><span>{t('ui.scenarioBooklet.startingHeat', 'Starting heat')}</span><strong>+{selectedScenario.setup.temperature}°C</strong></div>
-                <div className="ledger-row"><span>{t('ui.scenarioBooklet.roundWindow', 'Round window')}</span><strong>{t('ui.guidelines.roundWindowValue', '{{core}}-{{full}} rounds', { core: selectedScenario.roundLimit.CORE, full: selectedScenario.roundLimit.FULL })}</strong></div>
-              </div>
-            </PaperSheet>
-            <PaperSheet tone="plain">
-              <span className="engraved-eyebrow">{t('ui.guidelines.howItShouldFeel', 'How This Scenario Should Feel')}</span>
-              <p>{selectedScenario.moralCenter}</p>
-              <p>{selectedScenario.dramatization}</p>
-            </PaperSheet>
-          </div>
-        </PaperSheet>
-
-        <div className="guideline-dossier-grid">
-          <PaperSheet tone="folio">
-            <span className="engraved-eyebrow">{t('ui.guidelines.guidebook', 'Guidebook')}</span>
-            <h2>{t('ui.guidelines.howItShouldFeel', 'How This Scenario Should Feel')}</h2>
-            <div className="guideline-card-grid">
-              <PaperSheet tone="plain">
-                <h3>{t('ui.game.situation', 'Situation')}</h3>
-                <p>{excerpt(selectedScenario.introduction, 240)}</p>
-              </PaperSheet>
-              <PaperSheet tone="plain">
-                <h3>{t('ui.guidelines.playPattern', 'Play Pattern')}</h3>
-                <p>{excerpt(selectedScenario.gameplay, 240)}</p>
-              </PaperSheet>
-              <PaperSheet tone="plain">
-                <h3>{t('ui.guidelines.tableFeel', 'Table Feel')}</h3>
-                <p>{excerpt(selectedScenario.dramatization, 240)}</p>
-              </PaperSheet>
-              <PaperSheet tone="plain">
-                <h3>{t('ui.guidelines.mechanicalPressure', 'Mechanical Pressure')}</h3>
-                <p>{excerpt(selectedScenario.mechanics, 240)}</p>
-              </PaperSheet>
-            </div>
-            <div className="rule-slip-list">
-              {selectedScenario.specialRuleChips.map((rule) => (
-                <article key={rule.id} className="rule-slip">
-                  <strong>{rule.label}</strong>
-                  <p>{rule.description}</p>
-                </article>
-              ))}
+        <main className="dossier-board">
+          <PaperSheet tone="folio" className="dossier-cover">
+            <span className="engraved-eyebrow">{t('ui.guidelines.scenarioPulse', 'Scenario pulse')}</span>
+            <h2>{selectedScenario.name}</h2>
+            <p>{excerpt(selectedScenario.moralCenter, 160)}</p>
+            <div className="setup-stat-ribbon">
+              <div><span>{t('ui.scenarioBooklet.civicSpace', 'Civic space')}</span><strong>{getCivicSpaceLabel(selectedScenario.setup.civicSpace)}</strong></div>
+              <div><span>{t('ui.scenarioBooklet.startingHeat', 'Starting heat')}</span><strong>+{selectedScenario.setup.temperature}°C</strong></div>
+              <div><span>{t('ui.scenarioBooklet.roundWindow', 'Round window')}</span><strong>{t('ui.guidelines.roundWindowValue', '{{core}}-{{full}} rounds', { core: selectedScenario.roundLimit.CORE, full: selectedScenario.roundLimit.FULL })}</strong></div>
             </div>
           </PaperSheet>
 
-          <PaperSheet tone="folio">
+          <PaperSheet tone="booklet" className="dossier-spread">
+            <section className="dossier-page">
+              <span className="engraved-eyebrow">{t('ui.game.situation', 'Situation')}</span>
+              <h3>{t('ui.guidelines.howItShouldFeel', 'How This Scenario Should Feel')}</h3>
+              <p>{excerpt(selectedScenario.introduction, 260)}</p>
+              <p>{excerpt(selectedScenario.dramatization, 260)}</p>
+            </section>
+            <section className="dossier-page">
+              <span className="engraved-eyebrow">{t('ui.guidelines.playPattern', 'Play Pattern')}</span>
+              <h3>{t('ui.guidelines.mechanicalPressure', 'Mechanical Pressure')}</h3>
+              <p>{excerpt(selectedScenario.gameplay, 260)}</p>
+              <p>{excerpt(selectedScenario.mechanics, 260)}</p>
+            </section>
+          </PaperSheet>
+
+          <div className="setup-rule-chips dossier-rule-slips">
+            {selectedScenario.specialRuleChips.map((rule) => (
+              <article key={rule.id} className="rule-slip">
+                <strong>{rule.label}</strong>
+                <p>{rule.description}</p>
+              </article>
+            ))}
+          </div>
+
+          <PaperSheet tone="tray" className="dossier-switch-rail">
             <span className="engraved-eyebrow">{t('ui.guidelines.scenarios', 'Scenarios')}</span>
-            <h2>{t('ui.guidelines.switchGuide', 'Switch Guide')}</h2>
-            <div className="scenario-card-grid">
+            <div className="scenario-card-grid compact-scenario-rail">
               {localizedScenarios.map((scenario) => (
                 <button
                   key={scenario.id}
@@ -121,12 +108,12 @@ export function GuidelinesScreen({
                     {scenario.id === selectedScenario.id ? t('ui.status.open', 'Open') : t('ui.guidelines.view', 'View')}
                   </span>
                   <strong>{scenario.name}</strong>
-                  <p>{excerpt(scenario.description, 140)}</p>
+                  <p>{excerpt(scenario.description, 90)}</p>
                 </button>
               ))}
             </div>
           </PaperSheet>
-        </div>
+        </main>
       </div>
     </TableSurface>
   );
