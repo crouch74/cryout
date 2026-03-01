@@ -30,7 +30,9 @@ import { ActionDock } from './ActionDock.tsx';
 import { ContextPanel } from './ContextPanel.tsx';
 import { DebugOverlay, type AutoPlaySpeedLevel } from './DebugOverlay.tsx';
 import { FrontTrackBar } from './FrontTrackBar.tsx';
+import { Icon } from './icons/Icon.tsx';
 import { PlayerStrip } from './PlayerStrip.tsx';
+import { PhaseProgress } from './PhaseProgress.tsx';
 import { StatusRibbon } from './StatusRibbon.tsx';
 import {
   buildIntentPreview,
@@ -76,6 +78,30 @@ const TERMINAL_PHASES: EngineState['phase'][] = ['WIN', 'LOSS'];
 
 type DraftState = Omit<QueuedIntent, 'slot'>;
 
+interface CampaignRollPresentation {
+  seq: number;
+  regionId: RegionId;
+  total: number;
+  modifier: number;
+  dieOne: number;
+  dieTwo: number;
+  success: boolean;
+}
+
+interface PhaseInsight {
+  id: string;
+  label: string;
+  detail: string;
+}
+
+interface ChangeSnapshot {
+  id: string;
+  emoji: string;
+  title: string;
+  reason: string;
+  changes: string[];
+}
+
 function createDraft(actionId: ActionId): DraftState {
   return {
     actionId,
@@ -99,6 +125,152 @@ function getActionButtonLabel(phase: EngineState['phase']) {
     default:
       return t('ui.game.tableClosed', 'Table Closed');
   }
+}
+
+function getPhaseControlHint(state: EngineState, focusedSeat: number) {
+  if (state.phase === 'SYSTEM') {
+    return t('ui.game.systemPhaseHint', 'Resolve the system strike to open coalition planning.');
+  }
+
+  if (state.phase === 'COALITION') {
+    const player = state.players[focusedSeat];
+    if (!player) {
+      return t('ui.game.coalitionPhaseHint', 'Prepare moves, then mark every seat ready.');
+    }
+    if (player.actionsRemaining > 0) {
+      return t('ui.game.coalitionMovesRemainingHint', 'Prepare both moves for this seat before marking it ready.');
+    }
+    if (!state.players.every((seat) => seat.ready)) {
+      return t('ui.game.coalitionWaitingHint', 'Every seat must be marked ready before the coalition can resolve.');
+    }
+    return t('ui.game.coalitionResolveHint', 'The coalition is ready. Resolve the prepared moves.');
+  }
+
+  if (state.phase === 'RESOLUTION') {
+    return t('ui.game.resolutionPhaseHint', 'Check the aftermath, then begin the next round.');
+  }
+
+  return t('ui.game.tableClosed', 'Table Closed');
+}
+
+function getLatestCampaignRoll(state: EngineState): CampaignRollPresentation | null {
+  for (let index = state.eventLog.length - 1; index >= 0; index -= 1) {
+    const event = state.eventLog[index];
+    if (event?.sourceId !== 'launch_campaign' || !event.context?.targetRegionId) {
+      continue;
+    }
+
+    const rollTrace = event.trace.find((trace) => trace.effectType === 'launch_campaign');
+    if (!rollTrace) {
+      continue;
+    }
+
+    const match = /Campaign rolled (\d+)\+(\d+)\+(-?\d+) = (\d+)\./.exec(rollTrace.message);
+    if (!match) {
+      continue;
+    }
+
+    const dieOne = Number(match[1]);
+    const dieTwo = Number(match[2]);
+    const modifier = Number(match[3]);
+    const total = Number(match[4]);
+
+    return {
+      seq: event.seq,
+      regionId: event.context.targetRegionId,
+      total,
+      modifier,
+      dieOne,
+      dieTwo,
+      success: total >= 8,
+    };
+  }
+
+  return null;
+}
+
+function getPhaseInsights(state: EngineState, focusedSeat: number): PhaseInsight[] {
+  if (state.phase === 'SYSTEM') {
+    return [
+      {
+        id: 'system-pressure',
+        label: t('ui.game.phaseInsightPressure', 'Pressure rises'),
+        detail: t('ui.game.phaseInsightSystemCards', 'System cards and intervention push Extraction Tokens, War Machine pressure, and direct harm onto exposed regions.'),
+      },
+      {
+        id: 'system-refresh',
+        label: t('ui.game.phaseInsightReset', 'Coalition resets'),
+        detail: t('ui.game.phaseInsightSystemRefresh', 'Defense clears, each seat regains two moves, and resolving this strike opens coalition planning.'),
+      },
+    ];
+  }
+
+  if (state.phase === 'COALITION') {
+    const player = state.players[focusedSeat];
+    return [
+      {
+        id: 'coalition-plan',
+        label: t('ui.game.phaseInsightPlan', 'Plan together'),
+        detail: t('ui.game.phaseInsightCoalitionPlan', 'Each seat prepares two moves. Costs and targets are locked now so the coalition can resolve in a shared order.'),
+      },
+      {
+        id: 'coalition-ready',
+        label: t('ui.game.phaseInsightReady', 'Ready the table'),
+        detail: player?.actionsRemaining
+          ? t('ui.game.phaseInsightCoalitionReadyPending', 'This seat still has moves to prepare before it can mark ready.')
+          : t('ui.game.phaseInsightCoalitionReady', 'When every seat is ready, the prepared moves resolve and the board changes.'),
+      },
+    ];
+  }
+
+  return [
+    {
+      id: 'resolution-resolve',
+      label: t('ui.game.phaseInsightResolve', 'Resolve consequences'),
+      detail: t('ui.game.phaseInsightResolutionResolve', 'Prepared moves now change fronts, regions, comrades, witness, and cards in priority order.'),
+    },
+    {
+      id: 'resolution-check',
+      label: t('ui.game.phaseInsightCheck', 'Check why the round ends'),
+      detail: t('ui.game.phaseInsightResolutionCheck', 'After resolution, the game checks victory, defeat, solemn charges, and whether a new round begins.'),
+    },
+  ];
+}
+
+function formatDeltaSummary(delta: EngineState['eventLog'][number]['deltas'][number]) {
+  switch (delta.kind) {
+    case 'track':
+      return `${delta.label === 'globalGaze' ? t('ui.game.globalGaze', 'Global Gaze') : t('ui.game.northernWarMachine', 'Northern War Machine')} ${delta.before} -> ${delta.after}`;
+    case 'domain':
+      return `${delta.label} ${delta.before} -> ${delta.after}`;
+    case 'extraction':
+      return `${delta.label.split('.')[0]} ${t('ui.game.extractionTokens', 'Extraction Tokens')} ${delta.before} -> ${delta.after}`;
+    case 'defense':
+      return `${delta.label.split('.')[0]} ${t('ui.game.defense', 'Defense')} ${delta.before} -> ${delta.after}`;
+    case 'evidence':
+      return `${t('ui.game.evidence', 'Evidence')} ${delta.before} -> ${delta.after}`;
+    case 'bodies':
+      return `${delta.label.split('.')[0]} ${t('ui.game.bodies', 'Comrades')} ${delta.before} -> ${delta.after}`;
+    case 'card':
+      return t('ui.game.cardsChanged', 'Cards changed');
+    case 'player':
+      return `${delta.label} ${delta.before} -> ${delta.after}`;
+  }
+}
+
+function getRecentChangeSnapshots(state: EngineState): ChangeSnapshot[] {
+  return state.eventLog
+    .slice()
+    .reverse()
+    .filter((event) => event.deltas.length > 0 || event.trace.some((trace) => trace.deltas.length > 0))
+    .slice(0, 3)
+    .map((event) => ({
+      id: String(event.seq),
+      emoji: event.emoji,
+      title: event.message,
+      reason: t(`ui.phases.${event.phase}`, event.phase),
+      changes: event.deltas.slice(0, 3).map(formatDeltaSummary),
+    }));
 }
 
 function createAutoPlayIntent(
@@ -243,6 +415,8 @@ export function GameScreen({
   const actionItems = getActionDockItems(state, content, focusedPlayer.seat);
   const phasePresentation = getPhasePresentation(state.phase);
   const preparedMovePreview = buildIntentPreview(draft, draftAction, state, content, focusedPlayer.seat);
+  const latestCampaignRoll = useMemo(() => getLatestCampaignRoll(state), [state]);
+  const phaseControlHint = getPhaseControlHint(state, focusedPlayer.seat);
 
   const ledgerGroups = useMemo(() => {
     const groups: Array<{ key: string; title: string; events: typeof state.eventLog }> = [];
@@ -320,6 +494,22 @@ export function GameScreen({
   const phaseActionDisabled = state.phase === 'COALITION'
     ? !state.players.every((player) => player.ready)
     : state.phase === 'WIN' || state.phase === 'LOSS';
+  const phaseInsights = getPhaseInsights(state, focusedPlayer.seat);
+  const recentChangeSnapshots = useMemo(() => getRecentChangeSnapshots(state), [state]);
+
+  const phaseProgressControls = (
+    <div className="phase-progress-controls">
+      <button
+        type="button"
+        className={`dock-control-button is-primary ${state.phase === 'SYSTEM' ? 'is-play-button' : ''}`.trim()}
+        disabled={phaseActionDisabled}
+        onClick={runPhaseAction}
+      >
+        {state.phase === 'SYSTEM' ? t('ui.game.playSystemPhase', 'Play System') : getActionButtonLabel(state.phase)}
+      </button>
+      <span className="dock-phase-hint">{phaseControlHint}</span>
+    </div>
+  );
 
   const regionContent = null;
 
@@ -610,6 +800,97 @@ export function GameScreen({
             </button>
           </div>
 
+          <PhaseProgress phase={state.phase} activeContent={phaseProgressControls} />
+
+          {state.phase === 'COALITION' ? (
+            <>
+              <section className="board-player-strip">
+                <PlayerStrip
+                  summaries={playerSummaries}
+                  focusedSeat={focusedPlayer.seat}
+                  onSelectSeat={(seat) => onViewStateChange({ focusedSeat: seat })}
+                />
+              </section>
+
+              <ActionDock
+                items={actionItems}
+                onAction={openActionPanel}
+                controls={(
+                  <>
+                    <div className="dock-queue-summary">
+                      <strong>{localizeFactionField(faction.id, 'shortName', faction.shortName)}</strong>
+                      <span>{formatNumber(getPlayerBodyTotal(state, focusedPlayer.seat))} {t('ui.game.bodies', 'Comrades')}</span>
+                      <span>{formatNumber(focusedPlayer.evidence)} {t('ui.game.evidence', 'Evidence')}</span>
+                      <span>{t('ui.game.queuedCount', '{{count}} queued', { count: focusedPlayer.queuedIntents.length })}</span>
+                    </div>
+                <div className="dock-queue-list" aria-label={t('ui.game.preparedMovesLabel', 'Prepared moves')}>
+                  {focusedPlayer.queuedIntents.length === 0 ? (
+                    <span className="dock-empty">{t('ui.game.noPreparedMoves', 'No prepared moves yet.')}</span>
+                  ) : (
+                    focusedPlayer.queuedIntents.map((intent) => (
+                          <button
+                            key={`${intent.actionId}-${intent.slot}`}
+                            type="button"
+                            className="dock-queue-chip"
+                            onClick={() => void onCommand({ type: 'RemoveQueuedIntent', seat: focusedPlayer.seat, slot: intent.slot })}
+                            title={t('ui.game.remove', 'Remove')}
+                          >
+                            <span>{intent.slot + 1}</span>
+                            <strong>{localizeActionField(intent.actionId, 'name', content.actions[intent.actionId].name)}</strong>
+                      </button>
+                    ))
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className={`action-dock-submit ${focusedPlayer.ready ? 'is-active' : ''}`.trim()}
+                  disabled={focusedPlayer.actionsRemaining > 0}
+                  onClick={() => void onCommand({ type: 'SetReady', seat: focusedPlayer.seat, ready: !focusedPlayer.ready })}
+                >
+                  <Icon type="objective" size={18} className="action-dock-submit-icon" />
+                  <span>{focusedPlayer.ready ? t('ui.game.seatReady', 'Seat Ready') : t('ui.game.markSeatReady', 'Mark Seat Ready')}</span>
+                </button>
+              </>
+            )}
+          />
+            </>
+          ) : null}
+
+          <section className="phase-brief-grid" aria-label={t('ui.game.phaseBrief', 'Phase brief')}>
+            <article className="phase-brief-card">
+              <span className="context-eyebrow">{t('ui.game.thisPhaseChanges', 'This phase changes')}</span>
+              <strong>{t(`ui.phases.${state.phase}`, state.phase)}</strong>
+              <div className="phase-brief-list">
+                {phaseInsights.map((item) => (
+                  <div key={item.id} className="phase-brief-item">
+                    <strong>{item.label}</strong>
+                    <span>{item.detail}</span>
+                  </div>
+                ))}
+              </div>
+            </article>
+            <article className="phase-brief-card">
+              <span className="context-eyebrow">{t('ui.game.latestChanges', 'Latest changes')}</span>
+              <strong>{t('ui.game.whyBoardShifted', 'Why the board shifted')}</strong>
+              <div className="phase-brief-list">
+                {recentChangeSnapshots.length === 0 ? (
+                  <div className="phase-brief-item">
+                    <strong>{t('ui.game.noMajorChangeYet', 'No major board change yet')}</strong>
+                    <span>{t('ui.game.noMajorChangeYetBody', 'Resolve the current phase to see the next material shifts on tracks, regions, and coalition resources.')}</span>
+                  </div>
+                ) : (
+                  recentChangeSnapshots.map((item) => (
+                    <div key={item.id} className="phase-brief-item">
+                      <strong>{item.emoji} {item.title}</strong>
+                      <span>{item.reason}</span>
+                      {item.changes.length > 0 ? <span>{item.changes.join(' • ')}</span> : null}
+                    </div>
+                  ))
+                )}
+              </div>
+            </article>
+          </section>
+
           <StatusRibbon items={statusItems} />
 
           <div className="board-map-panel">
@@ -617,6 +898,7 @@ export function GameScreen({
               state={state}
               content={content}
               selectedRegionId={selectedRegionId}
+              campaignRoll={latestCampaignRoll}
               onSelectRegion={(regionId) => {
                 onViewStateChange({ regionId });
               }}
@@ -624,14 +906,6 @@ export function GameScreen({
           </div>
 
           <FrontTrackBar rows={frontRows} />
-        </section>
-
-        <section className="board-player-strip">
-          <PlayerStrip
-            summaries={playerSummaries}
-            focusedSeat={focusedPlayer.seat}
-            onSelectSeat={(seat) => onViewStateChange({ focusedSeat: seat })}
-          />
         </section>
 
         <aside className="board-context-slot" aria-label={t('ui.game.boardContext', 'Board context')}>
@@ -650,56 +924,6 @@ export function GameScreen({
           />
         </aside>
       </main>
-
-      <footer className="game-console">
-        <ActionDock
-          items={actionItems}
-          onAction={openActionPanel}
-          controls={(
-            <>
-              <div className="dock-queue-summary">
-                <strong>{localizeFactionField(faction.id, 'shortName', faction.shortName)}</strong>
-                <span>{formatNumber(getPlayerBodyTotal(state, focusedPlayer.seat))} {t('ui.game.bodies', 'Comrades')}</span>
-                <span>{formatNumber(focusedPlayer.evidence)} {t('ui.game.evidence', 'Evidence')}</span>
-                <span>{t('ui.game.queuedCount', '{{count}} queued', { count: focusedPlayer.queuedIntents.length })}</span>
-              </div>
-              <div className="dock-queue-list" aria-label={t('ui.game.preparedMovesLabel', 'Prepared moves')}>
-                {focusedPlayer.queuedIntents.length === 0 ? (
-                  <span className="dock-empty">{t('ui.game.noPreparedMoves', 'No prepared moves yet.')}</span>
-                ) : (
-                  focusedPlayer.queuedIntents.map((intent) => (
-                    <button
-                      key={`${intent.actionId}-${intent.slot}`}
-                      type="button"
-                      className="dock-queue-chip"
-                      onClick={() => void onCommand({ type: 'RemoveQueuedIntent', seat: focusedPlayer.seat, slot: intent.slot })}
-                      title={t('ui.game.remove', 'Remove')}
-                    >
-                      <span>{intent.slot + 1}</span>
-                      <strong>{localizeActionField(intent.actionId, 'name', content.actions[intent.actionId].name)}</strong>
-                    </button>
-                  ))
-                )}
-              </div>
-              <div className="dock-phase-controls">
-                {state.phase === 'COALITION' ? (
-                  <button
-                    type="button"
-                    className={`dock-control-button ${focusedPlayer.ready ? 'is-active' : ''}`.trim()}
-                    disabled={focusedPlayer.actionsRemaining > 0}
-                    onClick={() => void onCommand({ type: 'SetReady', seat: focusedPlayer.seat, ready: !focusedPlayer.ready })}
-                  >
-                    {focusedPlayer.ready ? t('ui.game.seatReady', 'Seat Ready') : t('ui.game.markSeatReady', 'Mark Seat Ready')}
-                  </button>
-                ) : null}
-                <button type="button" className="dock-control-button is-primary" disabled={phaseActionDisabled} onClick={runPhaseAction}>
-                  {getActionButtonLabel(state.phase)}
-                </button>
-              </div>
-            </>
-          )}
-        />
-      </footer>
 
       {devMode ? (
         <button

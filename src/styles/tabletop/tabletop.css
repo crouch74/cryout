@@ -520,18 +520,79 @@ textarea:focus-visible {
   gap: 10px;
 }
 
+.printed-track .engraved-eyebrow {
+  text-align: start;
+}
+
 .printed-track-list {
   list-style: none;
   padding: 0;
   margin: 0;
   display: grid;
-  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  border-radius: 16px;
+  border: 1px solid rgba(83, 70, 56, 0.18);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.08)),
+    #eadbc2;
+  overflow: hidden;
 }
 
 .printed-track-step {
-  display: flex;
+  position: relative;
+  display: grid;
+  gap: 12px;
+  min-height: 62px;
+  padding: 12px 14px;
+  transition: background 180ms ease, color 180ms ease;
+}
+
+.printed-track-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  inset-block: 12px;
+  inset-inline-end: 0;
+  width: 1px;
+  background: rgba(83, 70, 56, 0.16);
+}
+
+.printed-track-step.is-complete {
+  background:
+    linear-gradient(90deg, rgba(176, 138, 100, 0.18), rgba(176, 138, 100, 0.05)),
+    transparent;
+}
+
+.printed-track-step.is-active {
+  background:
+    linear-gradient(90deg, rgba(123, 75, 73, 0.18), rgba(123, 75, 73, 0.05)),
+    rgba(255, 249, 239, 0.32);
+}
+
+.printed-track-step-main {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 10px;
+}
+
+.printed-track-step-main > span:last-child {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(59, 42, 24, 0.72);
+}
+
+.printed-track-step.is-active .printed-track-step-main > span:last-child {
+  color: var(--theme-ink);
+}
+
+.printed-track-step-detail {
+  display: grid;
+  gap: 8px;
 }
 
 .phase-marker-token {
@@ -549,6 +610,24 @@ textarea:focus-visible {
 
 .phase-marker-token.is-active {
   background: linear-gradient(180deg, #7b4b49, #5c3331);
+}
+
+html[dir='rtl'] .printed-track-step:not(:last-child)::after {
+  inset-inline-end: auto;
+  inset-inline-start: 0;
+}
+
+@media (max-width: 900px) {
+  .printed-track-list {
+    grid-template-columns: 1fr;
+  }
+
+  .printed-track-step:not(:last-child)::after {
+    inset-inline: 14px;
+    inset-block: auto 0;
+    width: auto;
+    height: 1px;
+  }
 }
 
 .crisis-card,

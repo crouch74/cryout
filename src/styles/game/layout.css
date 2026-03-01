@@ -1,8 +1,8 @@
 .game-screen.game-screen-compressed {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  height: 100vh;
-  overflow: hidden;
+  min-height: calc(100vh - 48px);
+  overflow: auto;
   background:
     linear-gradient(rgba(73, 58, 40, var(--board-topography-opacity)) 1px, transparent 1px),
     linear-gradient(90deg, rgba(73, 58, 40, var(--board-topography-opacity)) 1px, transparent 1px),
@@ -168,7 +168,7 @@
   grid-template-rows: minmax(0, 1fr) auto;
   gap: 16px 18px;
   padding: 10px 20px 8px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .game-compression-layout.is-context-open {
@@ -187,7 +187,13 @@
   display: flex;
   justify-content: space-between;
   gap: 16px;
-  align-items: end;
+  align-items: start;
+  flex-wrap: wrap;
+}
+
+.board-core-head > div:first-child {
+  flex: 1 1 420px;
+  min-width: 0;
 }
 
 .board-core-head h1 {
@@ -208,6 +214,14 @@
   opacity: 0.66;
 }
 
+.board-core .phase-progress-nav {
+  margin-top: -4px;
+}
+
+.board-core .action-dock {
+  margin-top: -4px;
+}
+
 .board-core-eyebrow {
   display: block;
   font-size: 11px;
@@ -225,6 +239,55 @@
 
 .board-player-strip {
   grid-column: 1 / 2;
+}
+
+.phase-brief-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.phase-brief-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--panel-rim);
+  background:
+    linear-gradient(180deg, rgba(255, 248, 236, 0.92), rgba(217, 198, 169, 0.82)),
+    var(--theme-parchment);
+  box-shadow: var(--panel-shadow), inset 0 1px 0 rgba(255, 249, 237, 0.74);
+}
+
+.phase-brief-card > strong {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--theme-ink);
+}
+
+.phase-brief-list {
+  display: grid;
+  gap: 8px;
+}
+
+.phase-brief-item {
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(73, 58, 40, 0.06);
+  border: 1px solid rgba(66, 50, 32, 0.1);
+}
+
+.phase-brief-item strong {
+  font-size: 0.84rem;
+  color: var(--theme-ink);
+}
+
+.phase-brief-item span {
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: var(--text-2);
 }
 
 .board-context-slot {
@@ -567,13 +630,6 @@
 
 .context-warning {
   color: var(--accent-danger);
-}
-
-.game-console {
-  display: grid;
-  padding: 8px 20px 12px;
-  border-top: 1px solid var(--panel-rim);
-  background: transparent;
 }
 
 .action-dock {
@@ -1206,6 +1262,46 @@
     rgba(234, 214, 180, 0.96);
 }
 
+.action-dock-submit {
+  position: relative;
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 11px;
+  border: 1px solid color-mix(in srgb, #3f8a57 52%, var(--tile-rim-dark));
+  background:
+    linear-gradient(180deg, rgba(244, 255, 247, 0.98), rgba(191, 226, 201, 0.9)),
+    rgba(218, 240, 223, 0.96);
+  box-shadow: var(--tile-shadow), var(--tile-emboss);
+  color: #214c30;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.action-dock-submit .action-dock-submit-icon,
+.action-dock-submit .ui-icon {
+  color: #2d7a45;
+}
+
+.action-dock-submit.is-active {
+  border-color: color-mix(in srgb, #2d7a45 68%, var(--tile-rim-dark));
+  background:
+    linear-gradient(180deg, rgba(235, 255, 240, 0.98), rgba(156, 210, 171, 0.94)),
+    rgba(197, 233, 207, 0.98);
+}
+
+.action-dock-submit:disabled {
+  cursor: not-allowed;
+  filter: saturate(0.5);
+  opacity: 0.72;
+}
+
 .dock-queue-summary {
   font-family: var(--font-data);
   font-size: 0.78rem;
@@ -1291,7 +1387,40 @@
     rgba(235, 217, 186, 0.96);
 }
 
+.dock-phase-hint {
+  flex: 1 1 220px;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: rgba(59, 42, 24, 0.76);
+}
+
+.phase-progress-controls {
+  display: grid;
+  gap: 10px;
+  align-items: start;
+}
+
+.phase-progress-nav .dock-control-button {
+  min-width: 172px;
+}
+
+.phase-progress-nav .dock-control-button.is-play-button {
+  min-height: 46px;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+}
+
+.phase-progress-nav .dock-phase-hint {
+  font-size: 0.8rem;
+}
+
 .dock-empty {
   font-style: italic;
   color: var(--text-3);
+}
+
+@media (max-width: 900px) {
+  .phase-brief-grid {
+    grid-template-columns: 1fr;
+  }
 }

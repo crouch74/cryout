@@ -43,7 +43,6 @@
     "content/base_design/**/*.ts"
   ],
   "exclude": [
-    "src/old_legacy/**/*",
     "src/components/**/*",
     "src/engine/**/*",
     "backend/**/*"

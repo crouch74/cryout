@@ -280,6 +280,11 @@ export interface DomainEvent {
   causedBy: string[];
   deltas: StateDelta[];
   trace: EffectTrace[];
+  context?: {
+    actingSeat?: number;
+    targetRegionId?: RegionId;
+    targetDomainId?: DomainId;
+  };
 }
 
 export interface RngState {

@@ -122,11 +122,21 @@ test('game screen source keeps the compressed board layout contract', () => {
   assert.match(source, /<main/);
   assert.match(source, /<aside/);
   assert.match(source, /StatusRibbon/);
+  assert.match(source, /PhaseProgress/);
   assert.match(source, /ActionDock/);
   assert.match(source, /ContextPanel/);
   assert.match(source, /FrontTrackBar/);
   assert.match(source, /Commit Prepared Moves/);
   assert.match(source, /QueueIntent/);
+  assert.doesNotMatch(source, /<footer/);
+});
+
+test('world map source renders the launch campaign dice overlay on the active board', () => {
+  const source = readFileSync(new URL('../src/mvp/WorldMapBoard.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /campaign-roll-overlay/);
+  assert.match(source, /Launch Campaign/);
+  assert.match(source, /campaignRoll/);
 });
 
 test('default game view state is simplified for the cutover shell', () => {

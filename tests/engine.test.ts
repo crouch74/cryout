@@ -124,8 +124,11 @@ test('launch campaign consumes 2d6 of rng and can remove extraction on success',
   const rngCallsBefore = state.rng.calls;
 
   const next = dispatchCommand(state, { type: 'CommitCoalitionIntent' }, content);
+  const campaignEvent = next.eventLog.findLast((event) => event.sourceId === 'launch_campaign');
 
   assert.equal(next.rng.calls, rngCallsBefore + 2);
   assert.equal(next.phase, 'RESOLUTION');
   assert.equal(next.regions.Congo.extractionTokens <= state.regions.Congo.extractionTokens, true);
+  assert.equal(campaignEvent?.context?.targetRegionId, 'Congo');
+  assert.equal(campaignEvent?.context?.targetDomainId, 'DyingPlanet');
 });

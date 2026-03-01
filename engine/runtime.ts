@@ -87,6 +87,7 @@ function addEvent(
   message: string,
   causedBy: string[],
   trace: EffectTrace[] = [],
+  context?: DomainEvent['context'],
 ): void {
   state.eventLog.push({
     seq: nextEventSeq(state),
@@ -99,6 +100,7 @@ function addEvent(
     causedBy,
     deltas: trace.flatMap((entry) => entry.deltas),
     trace,
+    ...(context ? { context } : {}),
   });
 }
 
@@ -1123,6 +1125,11 @@ function resolveQueuedAction(state: EngineState, content: CompiledContent, seat:
     `Seat ${seat + 1} resolved ${action.name}.`,
     [action.id],
     traces,
+    {
+      actingSeat: seat,
+      targetRegionId: intent.regionId,
+      targetDomainId: intent.domainId,
+    },
   );
 }
 

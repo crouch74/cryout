@@ -21,6 +21,15 @@ interface WorldMapBoardProps {
   state: EngineState;
   content: CompiledContent;
   selectedRegionId: RegionId | null;
+  campaignRoll?: {
+    seq: number;
+    regionId: RegionId;
+    total: number;
+    modifier: number;
+    dieOne: number;
+    dieTwo: number;
+    success: boolean;
+  } | null;
   onSelectRegion: (regionId: RegionId) => void;
 }
 
@@ -49,6 +58,17 @@ interface MapViewportStyle {
   height: string;
   left: string;
   top: string;
+}
+
+interface CampaignRollOverlayState {
+  seq: number;
+  regionId: RegionId;
+  total: number;
+  modifier: number;
+  dieOne: number;
+  dieTwo: number;
+  success: boolean;
+  settled: boolean;
 }
 
 const DOMAIN_ICON_BY_ID: Record<DomainId, IconType> = {
@@ -334,6 +354,7 @@ export function WorldMapBoard({
   state,
   content,
   selectedRegionId,
+  campaignRoll,
   onSelectRegion,
 }: WorldMapBoardProps) {
   const [hoveredRegionId, setHoveredRegionId] = useState<RegionId | null>(null);
@@ -346,6 +367,8 @@ export function WorldMapBoard({
     top: WORLD_MAP_SVG_METADATA.viewport.canvasTop,
   });
   const svgHostRef = useRef<HTMLDivElement | null>(null);
+  const diceTimerRef = useRef<number | null>(null);
+  const diceDismissTimerRef = useRef<number | null>(null);
   const regionIds = getAvailableRegions();
   const boardState = useMemo(() => ({
     warCritical: state.northernWarMachine >= 9,
@@ -353,6 +376,8 @@ export function WorldMapBoard({
     regionCritical: regionIds.some((regionId) => state.regions[regionId].extractionTokens >= 5),
   }), [regionIds, state.globalGaze, state.northernWarMachine, state.regions]);
   const cardRegionId = hoveredRegionId ?? selectedRegionId ?? null;
+
+  const [campaignOverlay, setCampaignOverlay] = useState<CampaignRollOverlayState | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -479,6 +504,55 @@ export function WorldMapBoard({
     }
   }, [hoveredRegionId, regionIds, svgMarkup]);
 
+  useEffect(() => () => {
+    if (diceTimerRef.current !== null) {
+      window.clearTimeout(diceTimerRef.current);
+    }
+    if (diceDismissTimerRef.current !== null) {
+      window.clearTimeout(diceDismissTimerRef.current);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!campaignRoll) {
+      return;
+    }
+
+    setCampaignOverlay((current) => {
+      if (current?.seq === campaignRoll.seq) {
+        return current;
+      }
+      return { ...campaignRoll, settled: false };
+    });
+
+    if (diceTimerRef.current !== null) {
+      window.clearTimeout(diceTimerRef.current);
+    }
+    if (diceDismissTimerRef.current !== null) {
+      window.clearTimeout(diceDismissTimerRef.current);
+    }
+
+    diceTimerRef.current = window.setTimeout(() => {
+      setCampaignOverlay((current) => (current?.seq === campaignRoll.seq ? { ...current, settled: true } : current));
+    }, 1350);
+    diceDismissTimerRef.current = window.setTimeout(() => {
+      setCampaignOverlay((current) => (current?.seq === campaignRoll.seq ? null : current));
+    }, 4300);
+
+    console.log(`🎲 [WorldMapBoard] Showing Launch Campaign roll in ${campaignRoll.regionId}: ${campaignRoll.dieOne}+${campaignRoll.dieTwo}+${campaignRoll.modifier} = ${campaignRoll.total}.`);
+
+    return () => {
+      if (diceTimerRef.current !== null) {
+        window.clearTimeout(diceTimerRef.current);
+        diceTimerRef.current = null;
+      }
+      if (diceDismissTimerRef.current !== null) {
+        window.clearTimeout(diceDismissTimerRef.current);
+        diceDismissTimerRef.current = null;
+      }
+    };
+  }, [campaignRoll]);
+
   return (
     <section
       className="board-map-shell"
@@ -560,6 +634,37 @@ export function WorldMapBoard({
             </button>
           ));
         })}
+
+        {campaignOverlay ? (
+          <div
+            className={`campaign-roll-overlay ${campaignOverlay.settled ? 'is-settled' : 'is-rolling'} ${campaignOverlay.success ? 'is-success' : 'is-failure'}`.trim()}
+            style={{
+              ['--map-point-x' as string]: BOARD_REGION_MAP_MANIFEST[campaignOverlay.regionId].marker.x,
+              ['--map-point-y' as string]: BOARD_REGION_MAP_MANIFEST[campaignOverlay.regionId].marker.y,
+            }}
+            aria-live="polite"
+          >
+            <div className="campaign-roll-banner">
+              <span className="campaign-roll-eyebrow">{t('ui.game.launchCampaignRoll', 'Launch Campaign')}</span>
+              <strong>{localizeRegionField(campaignOverlay.regionId, 'name', content.regions[campaignOverlay.regionId].name)}</strong>
+            </div>
+            <div className="campaign-roll-dice" aria-hidden="true">
+              <span className="campaign-roll-die" data-value={campaignOverlay.dieOne}>{campaignOverlay.dieOne}</span>
+              <span className="campaign-roll-plus">+</span>
+              <span className="campaign-roll-die" data-value={campaignOverlay.dieTwo}>{campaignOverlay.dieTwo}</span>
+              <span className="campaign-roll-plus">+</span>
+              <span className="campaign-roll-modifier">{campaignOverlay.modifier >= 0 ? `+${campaignOverlay.modifier}` : campaignOverlay.modifier}</span>
+            </div>
+            <div className="campaign-roll-result">
+              <strong>{campaignOverlay.total}</strong>
+              <span>
+                {campaignOverlay.success
+                  ? t('ui.game.launchCampaignSuccess', 'Campaign advances the movement.')
+                  : t('ui.game.launchCampaignFailure', 'Campaign meets fierce backlash.')}
+              </span>
+            </div>
+          </div>
+        ) : null}
       </div>
     </section>
   );

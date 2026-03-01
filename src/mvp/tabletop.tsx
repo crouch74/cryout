@@ -350,10 +350,12 @@ export function PrintedTrack({
   title,
   steps,
   activeIndex,
+  activeContent,
 }: {
   title: string;
   steps: string[];
   activeIndex: number;
+  activeContent?: ReactNode;
 }) {
   return (
     <div className="printed-track" aria-label={title}>
@@ -361,8 +363,11 @@ export function PrintedTrack({
       <ol className="printed-track-list">
         {steps.map((step, index) => (
           <li key={step} className={`printed-track-step ${index === activeIndex ? 'is-active' : index < activeIndex ? 'is-complete' : ''}`}>
-            <PhaseMarker active={index === activeIndex} label={formatNumber(index + 1)} />
-            <span>{step}</span>
+            <div className="printed-track-step-main">
+              <PhaseMarker active={index === activeIndex} label={formatNumber(index + 1)} />
+              <span>{step}</span>
+            </div>
+            {index === activeIndex && activeContent ? <div className="printed-track-step-detail">{activeContent}</div> : null}
           </li>
         ))}
       </ol>

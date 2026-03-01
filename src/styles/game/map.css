@@ -552,3 +552,167 @@ html[data-motion='reduced'] .game-screen-compressed .region-token-marker[data-re
 .game-screen-compressed .region-token-marker[data-region-pulsing='true'] .region-token-face {
   animation: map-critical-pulse 2s ease-in-out infinite;
 }
+
+.game-screen-compressed .campaign-roll-overlay {
+  position: absolute;
+  left: var(--map-point-x);
+  top: var(--map-point-y);
+  z-index: 7;
+  display: grid;
+  gap: 8px;
+  min-width: 188px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(73, 58, 40, 0.18);
+  background:
+    linear-gradient(180deg, rgba(255, 249, 238, 0.97), rgba(225, 209, 182, 0.94)),
+    var(--theme-parchment);
+  box-shadow:
+    0 18px 30px rgba(52, 37, 24, 0.22),
+    inset 0 1px 0 rgba(255, 247, 232, 0.74);
+  transform: translate(-50%, -115%) scale(0.94) rotate(-4deg);
+  transform-origin: bottom center;
+  pointer-events: none;
+  backdrop-filter: blur(3px);
+}
+
+.game-screen-compressed .campaign-roll-overlay.is-success {
+  box-shadow:
+    0 18px 30px rgba(52, 37, 24, 0.22),
+    0 0 0 1px rgba(78, 123, 64, 0.18),
+    inset 0 1px 0 rgba(255, 247, 232, 0.74);
+}
+
+.game-screen-compressed .campaign-roll-overlay.is-failure {
+  box-shadow:
+    0 18px 30px rgba(52, 37, 24, 0.22),
+    0 0 0 1px rgba(140, 47, 43, 0.18),
+    inset 0 1px 0 rgba(255, 247, 232, 0.74);
+}
+
+.game-screen-compressed .campaign-roll-overlay.is-rolling {
+  animation: campaign-roll-arrive 260ms ease-out, campaign-roll-float 1050ms ease-in-out 260ms infinite alternate;
+}
+
+.game-screen-compressed .campaign-roll-overlay.is-settled {
+  transform: translate(-50%, -110%) scale(1) rotate(-1deg);
+  transition: transform 220ms ease, opacity 220ms ease;
+}
+
+.game-screen-compressed .campaign-roll-banner {
+  display: grid;
+  gap: 2px;
+}
+
+.game-screen-compressed .campaign-roll-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(59, 42, 24, 0.66);
+}
+
+.game-screen-compressed .campaign-roll-banner strong,
+.game-screen-compressed .campaign-roll-result strong {
+  font-family: var(--font-display);
+  color: var(--theme-ink);
+}
+
+.game-screen-compressed .campaign-roll-dice {
+  display: grid;
+  grid-template-columns: auto auto auto auto auto;
+  align-items: center;
+  justify-content: start;
+  gap: 8px;
+}
+
+.game-screen-compressed .campaign-roll-die,
+.game-screen-compressed .campaign-roll-modifier {
+  display: grid;
+  place-items: center;
+  min-width: 34px;
+  min-height: 34px;
+  padding: 6px;
+  border-radius: 10px;
+  border: 1px solid rgba(73, 58, 40, 0.18);
+  background: rgba(255, 252, 246, 0.92);
+  font-family: var(--font-data);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--theme-ink);
+  box-shadow: inset 0 -2px 0 rgba(73, 58, 40, 0.08);
+}
+
+.game-screen-compressed .campaign-roll-overlay.is-rolling .campaign-roll-die {
+  animation: campaign-roll-die-tumble 520ms cubic-bezier(0.2, 0.8, 0.2, 1) 2;
+}
+
+.game-screen-compressed .campaign-roll-plus {
+  font-family: var(--font-data);
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: rgba(59, 42, 24, 0.7);
+}
+
+.game-screen-compressed .campaign-roll-result {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.game-screen-compressed .campaign-roll-result strong {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.game-screen-compressed .campaign-roll-result span {
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: rgba(59, 42, 24, 0.74);
+}
+
+@keyframes campaign-roll-arrive {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -98%) scale(0.8) rotate(-8deg);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, -115%) scale(0.94) rotate(-4deg);
+  }
+}
+
+@keyframes campaign-roll-float {
+  from {
+    transform: translate(-50%, -112%) scale(0.94) rotate(-4deg);
+  }
+
+  to {
+    transform: translate(-50%, -118%) scale(0.98) rotate(-2deg);
+  }
+}
+
+@keyframes campaign-roll-die-tumble {
+  0% {
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+
+  40% {
+    transform: translateY(-10px) rotate(-11deg) scale(1.08);
+  }
+
+  70% {
+    transform: translateY(3px) rotate(8deg) scale(0.98);
+  }
+
+  100% {
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+}
+
+html[data-motion='reduced'] .game-screen-compressed .region-token-marker[data-region-pulsing='true'] .region-token-face,
+html[data-motion='reduced'] .game-screen-compressed .campaign-roll-overlay.is-rolling,
+html[data-motion='reduced'] .game-screen-compressed .campaign-roll-overlay.is-rolling .campaign-roll-die {
+  animation: none;
+}
