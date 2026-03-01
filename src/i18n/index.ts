@@ -1,4 +1,5 @@
 import type {
+  ActionDefinition,
   CivicSpace,
   CompiledContent,
   FrontDefinition,
@@ -27,8 +28,17 @@ const catalogs: Record<Locale, Catalog> = {
 
 let activeLocale: Locale = 'en';
 
+const numberFormatters: Record<Locale, Intl.NumberFormat> = {
+  en: new Intl.NumberFormat('en'),
+  'ar-EG': new Intl.NumberFormat('ar-EG-u-nu-arab'),
+};
+
 function getCatalog() {
   return catalogs[activeLocale];
+}
+
+function getNumberFormatter(locale: Locale = activeLocale) {
+  return numberFormatters[locale];
 }
 
 export function isLocale(value: string): value is Locale {
@@ -62,7 +72,14 @@ function interpolate(template: string, values?: Record<string, InterpolationValu
     return template;
   }
 
-  return template.replace(/\{\{(\w+)\}\}/g, (_, key: string) => String(values[key] ?? ''));
+  return template.replace(/\{\{(\w+)\}\}/g, (_, key: string) => {
+    const value = values[key];
+    if (typeof value === 'number') {
+      return formatNumber(value);
+    }
+
+    return String(value ?? '');
+  });
 }
 
 function translateObject(path: string): Record<string, string> | undefined {
@@ -104,6 +121,100 @@ export function t(path: string, fallback: string, values?: Record<string, Interp
   }
 
   return interpolate(fallback, values);
+}
+
+export function formatNumber(value: number, locale: Locale = activeLocale): string {
+  return getNumberFormatter(locale).format(value);
+}
+
+export function formatTemperature(value: number, locale: Locale = activeLocale): string {
+  return `${value >= 0 ? '+' : ''}${formatNumber(value, locale)}°C`;
+}
+
+export function formatEffectPreview(action: ActionDefinition, content: CompiledContent): string {
+  return action.effects
+    .slice(0, 3)
+    .map((effect) => {
+      switch (effect.type) {
+        case 'modify_front_stat':
+          return t('ui.effectPreview.modifyFrontStat', '{{front}} {{stat}} {{delta}}', {
+            front:
+              effect.front === 'target_front'
+                ? t('ui.effectPreview.targetFront', 'target front')
+                : content.fronts[effect.front].name,
+            stat: t(`ui.game.${effect.stat}`, effect.stat),
+            delta: effect.delta,
+          });
+        case 'modify_track':
+          if (effect.target.type === 'temperature') {
+            return t('ui.effectPreview.temperature', 'Temperature {{delta}}', { delta: effect.delta });
+          }
+          if (effect.target.type === 'player_burnout') {
+            return t('ui.effectPreview.burnout', 'Burnout {{delta}}', { delta: effect.delta });
+          }
+          return t('ui.effectPreview.trackChange', 'Track change');
+        case 'add_token':
+          return t('ui.effectPreview.addToken', '+{{count}} {{token}}', {
+            count: effect.count,
+            token: t(`ui.effectTokens.${effect.token}`, effect.token),
+          });
+        case 'remove_token':
+          return t('ui.effectPreview.removeToken', '-{{count}} {{token}}', {
+            count: effect.count,
+            token: t(`ui.effectTokens.${effect.token}`, effect.token),
+          });
+        case 'add_lock':
+          return t('ui.effectPreview.addLock', 'Add {{lock}}', {
+            lock: t(`ui.effectLocks.${effect.lock}`, effect.lock),
+          });
+        case 'remove_lock':
+          return t('ui.effectPreview.removeLock', 'Remove {{lock}}', {
+            lock: t(`ui.effectLocks.${effect.lock}`, effect.lock),
+          });
+        case 'gain_resource':
+          return t('ui.effectPreview.gainResource', '+{{count}} {{resource}}', {
+            count: effect.amount,
+            resource: t(`ui.game.${effect.resource}`, effect.resource),
+          });
+        case 'spend_resource':
+          return t('ui.effectPreview.spendResource', '-{{count}} {{resource}}', {
+            count: effect.amount,
+            resource: t(`ui.game.${effect.resource}`, effect.resource),
+          });
+        case 'draw_from_deck':
+          return t('ui.effectPreview.drawFromDeck', 'Draw {{count}} {{deck}}', {
+            count: effect.count,
+            deck: t(`ui.decks.${effect.deck}`, effect.deck),
+          });
+        case 'ensure_institution':
+          return t('ui.effectPreview.buildInstitution', 'Build {{institution}}', {
+            institution: content.institutions[effect.institution].name,
+          });
+        case 'add_charter_progress':
+          return t('ui.effectPreview.charterProgress', '+{{count}} charter progress', { count: effect.amount });
+        case 'ratify_first_available_charter':
+          return t('ui.effectPreview.ratifyClause', 'Ratify a clause');
+        case 'choice':
+          return t('ui.effectPreview.offerCompromise', 'Offer compromise');
+        case 'delayed_effect':
+          return t('ui.effectPreview.delayedEffect', 'Delayed {{rounds}}r', { rounds: effect.afterRounds });
+        case 'set_flag':
+          return effect.key.startsWith('truth_window')
+            ? t('ui.effectPreview.openTruthWindow', 'Open truth window')
+            : t('ui.effectPreview.setFlag', 'Set flag');
+        case 'conditional':
+          return t('ui.effectPreview.conditionalEffect', 'Conditional effect');
+        case 'log':
+          return effect.message;
+        case 'repair_institution':
+          return t('ui.effectPreview.repairInstitution', 'Repair {{institution}}', {
+            institution: content.institutions[effect.institution].name,
+          });
+        case 'damage_institution':
+          return t('ui.effectPreview.damageInstitution', 'Damage institution');
+      }
+    })
+    .join(' • ');
 }
 
 export function localizeContent(content: CompiledContent): CompiledContent {

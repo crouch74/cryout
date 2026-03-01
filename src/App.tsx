@@ -408,10 +408,14 @@ export default function App() {
     }
 
     if (session.surface === 'local') {
-      setSession({
-        ...session,
-        state: dispatchCommand(session.state, command, session.content),
-      });
+      setSession((current) =>
+        current && current.surface === 'local'
+          ? {
+            ...current,
+            state: dispatchCommand(current.state, command, current.content),
+          }
+          : current,
+      );
       return;
     }
 
@@ -537,6 +541,7 @@ export default function App() {
         <GameScreen
           locale={locale}
           onLocaleChange={setSelectedLocale}
+          devMode={RUNTIME.devMode}
           surface={session.surface}
           roomId={session.roomId}
           state={session.state}

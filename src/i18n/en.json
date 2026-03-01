@@ -250,6 +250,58 @@
       "restoringTitle": "Rebuilding the table state",
       "restoringBody": "The permalink is being resolved into a live session."
     },
+    "language": {
+      "label": "Language"
+    },
+    "accessibility": {
+      "controls": "Tabletop accessibility controls",
+      "standardContrast": "Standard Contrast",
+      "highContrast": "High Contrast",
+      "fullMotion": "Full Motion",
+      "reducedMotion": "Reduced Motion",
+      "rotateLandscape": "Rotate to landscape for the full table layout."
+    },
+    "notes": {
+      "archived": "{{count}} archived"
+    },
+    "decks": {
+      "crisis": "crisis cards",
+      "capture": "capture cards",
+      "culture": "culture cards",
+      "cardsRemain": "{{count}} cards remain",
+      "staged": "{{count}} staged"
+    },
+    "effectTokens": {
+      "displacement": "displacement",
+      "disinfo": "disinfo"
+    },
+    "effectLocks": {
+      "AidAccess": "aid access"
+    },
+    "effectPreview": {
+      "modifyFrontStat": "{{front}} {{stat}} {{delta}}",
+      "targetFront": "target front",
+      "temperature": "Temperature {{delta}}",
+      "burnout": "Burnout {{delta}}",
+      "trackChange": "Track change",
+      "addToken": "+{{count}} {{token}}",
+      "removeToken": "-{{count}} {{token}}",
+      "addLock": "Add {{lock}}",
+      "removeLock": "Remove {{lock}}",
+      "gainResource": "+{{count}} {{resource}}",
+      "spendResource": "-{{count}} {{resource}}",
+      "drawFromDeck": "Draw {{count}} {{deck}}",
+      "buildInstitution": "Build {{institution}}",
+      "charterProgress": "+{{count}} charter progress",
+      "ratifyClause": "Ratify a clause",
+      "offerCompromise": "Offer compromise",
+      "delayedEffect": "Delayed {{rounds}}r",
+      "openTruthWindow": "Open truth window",
+      "setFlag": "Set flag",
+      "conditionalEffect": "Conditional effect",
+      "repairInstitution": "Repair {{institution}}",
+      "damageInstitution": "Damage institution"
+    },
     "status": {
       "ready": "Ready",
       "planning": "Planning",
@@ -694,6 +746,7 @@
       "exportSave": "Export Save",
       "hideDebug": "Hide Debug",
       "showDebug": "Show Debug",
+      "developerTools": "Developer Tools",
       "back": "Back",
       "solidarity": "Solidarity",
       "evidence": "Evidence",
@@ -773,10 +826,14 @@
       "plannedMovesTitle": "Arrange the action cards",
       "libraryTitle": "Action cards in hand",
       "priority": "Priority {{priority}}",
+      "priorityCode": "P{{priority}}",
       "pullTab": "Pull Tab",
       "moveLeft": "Move Left",
       "moveRight": "Move Right",
       "tableWide": "Table-wide"
+    },
+    "now": {
+      "step": "Step {{count}}"
     },
     "regionDrawer": {
       "focusedSeat": "Focused seat: {{seat}}",
@@ -795,6 +852,33 @@
     },
     "debug": {
       "title": "Debug",
+      "devPanel": "Development panel",
+      "showPanel": "Dev Panel",
+      "hidePanel": "Hide Dev Panel",
+      "closePanel": "Close Panel",
+      "snapshot": "Snapshot",
+      "snapshotTitle": "Engine debug snapshot",
+      "autoplayEyebrow": "Autoplay",
+      "autoplayTitle": "Run rounds automatically",
+      "autoplayRounds": "Rounds to play",
+      "autoplaySpeed": "Execution speed",
+      "autoplaySpeed1": "1 - Slow study",
+      "autoplaySpeed2": "2 - Measured",
+      "autoplaySpeed3": "3 - Standard",
+      "autoplaySpeed4": "4 - Quick",
+      "autoplaySpeed5": "5 - Fast-forward",
+      "startAutoplay": "Start Autoplay",
+      "stopAutoplay": "Stop",
+      "autoplayIdle": "Ready to run scripted rounds through the normal game flow.",
+      "autoplayQueued": "Queued {{count}} round{{plural}} at speed {{speed}}.",
+      "autoplayProgress": "Executing {{phase}}. {{count}} round{{plural}} left in the queue.",
+      "autoplayComplete": "Finished the requested rounds.",
+      "autoplayStopped": "Autoplay stopped.",
+      "autoplayStalled": "Autoplay stopped because no legal next command was available.",
+      "autoplayFailed": "Autoplay stopped because the next command failed.",
+      "autoplayWon": "Autoplay stopped because the coalition reached a win state.",
+      "autoplayLost": "Autoplay stopped because the coalition collapsed.",
+      "running": "Running",
       "seed": "Seed",
       "rngCalls": "RNG Calls",
       "band": "Band",

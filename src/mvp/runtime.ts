@@ -4,16 +4,20 @@ export interface RuntimeOptions {
   defaultPage: 'home' | 'offline';
   forceOfflineOnly: boolean;
   useHashRouting: boolean;
+  devMode: boolean;
 }
 
 export function getRuntimeOptions(): RuntimeOptions {
-  const env = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
+  const env = (import.meta as ImportMeta & { env?: Record<string, string | boolean | undefined> }).env;
   const offlinePagesBuild = env?.MODE === 'pages' || env?.VITE_PAGES_OFFLINE === 'true';
+  const releaseBuild = env?.VITE_RELEASE === 'true' || offlinePagesBuild;
+  const devMode = !releaseBuild;
 
   return {
     defaultPage: offlinePagesBuild ? 'offline' : 'home',
     forceOfflineOnly: offlinePagesBuild,
     useHashRouting: offlinePagesBuild,
+    devMode,
   };
 }
 

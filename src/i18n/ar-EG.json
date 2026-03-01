@@ -253,6 +253,55 @@
     "language": {
       "label": "اللغة"
     },
+    "accessibility": {
+      "controls": "عناصر وصول الطاولة",
+      "standardContrast": "تباين عادي",
+      "highContrast": "تباين عالي",
+      "fullMotion": "حركة كاملة",
+      "reducedMotion": "حركة أقل",
+      "rotateLandscape": "لف الشاشة أفقي علشان تشوف تخطيط الطاولة كامل."
+    },
+    "notes": {
+      "archived": "{{count}} مؤرشف"
+    },
+    "decks": {
+      "crisis": "بطاقات أزمة",
+      "capture": "بطاقات احتواء",
+      "culture": "بطاقات ثقافية",
+      "cardsRemain": "فاضل {{count}} كارت",
+      "staged": "{{count}} متجهّز"
+    },
+    "effectTokens": {
+      "displacement": "نزوح",
+      "disinfo": "تضليل"
+    },
+    "effectLocks": {
+      "AidAccess": "وصول الإغاثة"
+    },
+    "effectPreview": {
+      "modifyFrontStat": "{{front}} {{stat}} {{delta}}",
+      "targetFront": "الجبهة المستهدفة",
+      "temperature": "الحرارة {{delta}}",
+      "burnout": "الإجهاد {{delta}}",
+      "trackChange": "تغيير مسار",
+      "addToken": "+{{count}} {{token}}",
+      "removeToken": "-{{count}} {{token}}",
+      "addLock": "ضيف {{lock}}",
+      "removeLock": "شيل {{lock}}",
+      "gainResource": "+{{count}} {{resource}}",
+      "spendResource": "-{{count}} {{resource}}",
+      "drawFromDeck": "اسحب {{count}} {{deck}}",
+      "buildInstitution": "ابنِ {{institution}}",
+      "charterProgress": "+{{count}} تقدّم ميثاق",
+      "ratifyClause": "ثبّت بند",
+      "offerCompromise": "اعرض تسوية",
+      "delayedEffect": "مؤجل {{rounds}} ج",
+      "openTruthWindow": "افتح شباك الحقيقة",
+      "setFlag": "حط علامة",
+      "conditionalEffect": "أثر مشروط",
+      "repairInstitution": "صلّح {{institution}}",
+      "damageInstitution": "ضرر لمؤسسة"
+    },
     "toast": {
       "roomRestoredTitle": "الغرفة رجعت",
       "roomRestoredMessage": "الرابط الدائم رجّع جلسة غرفة شغالة.",
@@ -865,10 +914,14 @@
       "plannedMovesTitle": "رتّب بطاقات الأفعال",
       "libraryTitle": "بطاقات الأفعال في اليد",
       "priority": "أولوية {{priority}}",
+      "priorityCode": "P{{priority}}",
       "pullTab": "اسحب اللسان",
       "moveLeft": "حرّك شمال",
       "moveRight": "حرّك يمين",
       "tableWide": "على مستوى الطاولة"
+    },
+    "now": {
+      "step": "الخطوة {{count}}"
     },
     "regionDrawer": {
       "focusedSeat": "المقعد اللي عليه التركيز: {{seat}}",
@@ -888,6 +941,33 @@
     },
     "debug": {
       "title": "تصحيح",
+      "devPanel": "لوحة المطور",
+      "showPanel": "لوحة المطور",
+      "hidePanel": "اخفِ لوحة المطور",
+      "closePanel": "اقفل اللوحة",
+      "snapshot": "لقطة الحالة",
+      "snapshotTitle": "لقطة تصحيح المحرك",
+      "autoplayEyebrow": "تشغيل تلقائي",
+      "autoplayTitle": "شغّل الجولات تلقائي",
+      "autoplayRounds": "عدد الجولات",
+      "autoplaySpeed": "سرعة التنفيذ",
+      "autoplaySpeed1": "1 - ببطء",
+      "autoplaySpeed2": "2 - بهدوء",
+      "autoplaySpeed3": "3 - عادي",
+      "autoplaySpeed4": "4 - سريع",
+      "autoplaySpeed5": "5 - سريع جدًا",
+      "startAutoplay": "ابدأ التشغيل",
+      "stopAutoplay": "وقف",
+      "autoplayIdle": "جاهز يشغّل الجولات من خلال نفس مسار اللعب العادي.",
+      "autoplayQueued": "اتضاف {{count}} جولة{{plural}} بسرعة {{speed}}.",
+      "autoplayProgress": "بينفّذ {{phase}}. باقي {{count}} جولة{{plural}} في الدور.",
+      "autoplayComplete": "خلّص الجولات المطلوبة.",
+      "autoplayStopped": "التشغيل التلقائي وقف.",
+      "autoplayStalled": "التشغيل التلقائي وقف لأن مفيش أمر قانوني بعد كده.",
+      "autoplayFailed": "التشغيل التلقائي وقف لأن الأمر اللي بعده فشل.",
+      "autoplayWon": "التشغيل التلقائي وقف لأن التحالف وصل لحالة نصر.",
+      "autoplayLost": "التشغيل التلقائي وقف لأن التحالف انهار.",
+      "running": "شغّال",
       "seed": "البذرة",
       "rngCalls": "مرات RNG",
       "band": "المستوى",

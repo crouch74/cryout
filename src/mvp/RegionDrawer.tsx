@@ -1,5 +1,4 @@
 import {
-  buildEffectPreview,
   getSeatActions,
   getSeatDisabledReason,
   type CompiledContent,
@@ -9,7 +8,7 @@ import {
   type ResourceType,
 } from '../../engine/index.ts';
 import type { ToastMessage } from './ToastStack.tsx';
-import { t } from '../i18n/index.ts';
+import { formatEffectPreview, t } from '../i18n/index.ts';
 import { ActionCard, PaperSheet, TokenStack, WaxSealLock } from './tabletop.tsx';
 
 interface RegionDrawerProps {
@@ -116,9 +115,9 @@ export function RegionDrawer({ regionId, focusedSeat, state, content, onClose, o
                     )
                   }
                 >
-                  <span className="engraved-eyebrow">P{action.resolvePriority}</span>
+                  <span className="engraved-eyebrow">{t('ui.actionBoard.priorityCode', 'P{{priority}}', { priority: action.resolvePriority })}</span>
                   <strong>{action.name}</strong>
-                  <span>{buildEffectPreview(action)}</span>
+                  <span>{formatEffectPreview(action, content)}</span>
                   {disabled.disabled ? <WaxSealLock label={disabled.reason ?? t('ui.game.sealed', 'Sealed')} /> : null}
                 </ActionCard>
               );

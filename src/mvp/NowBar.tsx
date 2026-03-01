@@ -34,7 +34,9 @@ function getPhaseDetails(state: EngineState) {
       };
     }
     case 'COALITION': {
-      const unreadySeats = state.players.filter((player) => !player.ready).map((player) => `Seat ${player.seat + 1}`);
+      const unreadySeats = state.players
+        .filter((player) => !player.ready)
+        .map((player) => t('ui.game.seat', 'Seat {{seat}}', { seat: player.seat + 1 }));
       return {
         title: t('ui.game.chairsDocket', "Chair's Docket"),
         lead: t('ui.now.coalitionAction', 'Lay out planned moves on the player mats, then place every commit marker.'),
@@ -99,7 +101,7 @@ export function NowBar({ state, onCommand, worldPhaseSelected, setWorldPhaseSele
               }}
               disabled={worldCardsDrawn}
             >
-              <span className="engraved-eyebrow">Step 1</span>
+              <span className="engraved-eyebrow">{t('ui.now.step', 'Step {{count}}', { count: 1 })}</span>
               <strong>{t('ui.game.drawWorldCards', 'Draw World Cards')}</strong>
               <span>{t('ui.game.crisisDeck', 'Reveal capture and crisis cards')}</span>
             </ActionCard>
@@ -107,7 +109,7 @@ export function NowBar({ state, onCommand, worldPhaseSelected, setWorldPhaseSele
               onClick={() => onCommand({ type: 'AdoptResolution' })}
               disabled={!worldCardsDrawn}
             >
-              <span className="engraved-eyebrow">Step 2</span>
+              <span className="engraved-eyebrow">{t('ui.now.step', 'Step {{count}}', { count: 2 })}</span>
               <strong>{t('ui.game.adoptResolution', 'Adopt Resolution')}</strong>
               {!worldCardsDrawn || !worldPhaseSelected ? <WaxSealLock label={t('ui.game.sealed', 'Sealed')} /> : null}
             </ActionCard>

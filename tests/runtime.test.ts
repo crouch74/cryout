@@ -6,12 +6,14 @@ const standardRuntime: RuntimeOptions = {
   defaultPage: 'home',
   forceOfflineOnly: false,
   useHashRouting: false,
+  devMode: false,
 };
 
 const pagesRuntime: RuntimeOptions = {
   defaultPage: 'offline',
   forceOfflineOnly: true,
   useHashRouting: true,
+  devMode: false,
 };
 
 test('pages runtime defaults the root entry to offline mode', () => {

@@ -1,6 +1,6 @@
 import { listScenarios } from '../../engine/index.ts';
 import { LanguageSwitcher } from '../components/LanguageSwitcher.tsx';
-import { getCivicSpaceLabel, localizeScenarioDefinition, t, type Locale } from '../i18n/index.ts';
+import { formatTemperature, getCivicSpaceLabel, localizeScenarioDefinition, t, type Locale } from '../i18n/index.ts';
 import { EngravedHeader, PaperSheet, TableSurface, TabletopControls, ThemePlate } from './tabletop.tsx';
 
 interface GuidelinesScreenProps {
@@ -65,7 +65,7 @@ export function GuidelinesScreen({
             <p>{excerpt(selectedScenario.moralCenter, 160)}</p>
             <div className="setup-stat-ribbon">
               <div><span>{t('ui.scenarioBooklet.civicSpace', 'Civic space')}</span><strong>{getCivicSpaceLabel(selectedScenario.setup.civicSpace)}</strong></div>
-              <div><span>{t('ui.scenarioBooklet.startingHeat', 'Starting heat')}</span><strong>+{selectedScenario.setup.temperature}°C</strong></div>
+              <div><span>{t('ui.scenarioBooklet.startingHeat', 'Starting heat')}</span><strong>{formatTemperature(selectedScenario.setup.temperature)}</strong></div>
               <div><span>{t('ui.scenarioBooklet.roundWindow', 'Round window')}</span><strong>{t('ui.guidelines.roundWindowValue', '{{core}}-{{full}} rounds', { core: selectedScenario.roundLimit.CORE, full: selectedScenario.roundLimit.FULL })}</strong></div>
             </div>
           </PaperSheet>

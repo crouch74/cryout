@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { listScenarios, type GameMode, type RoleId } from '../../engine/index.ts';
 import { LanguageSwitcher } from '../components/LanguageSwitcher.tsx';
-import { getCivicSpaceLabel, getRoleName, localizeScenarioDefinition, t, type Locale } from '../i18n/index.ts';
+import { formatNumber, formatTemperature, getCivicSpaceLabel, getRoleName, localizeScenarioDefinition, t, type Locale } from '../i18n/index.ts';
 import type { SetupConfig } from './urlState.ts';
 import { EngravedHeader, PaperSheet, TableSurface, TabletopControls, ThemePlate } from './tabletop.tsx';
 
@@ -124,10 +124,10 @@ export function HomeScreen({
                 <h2>{excerpt(selectedScenario.description, 120)}</h2>
                 <p>{excerpt(selectedScenario.moralCenter, 140)}</p>
                 <div className="setup-stat-ribbon">
-                  <div><span>{t('ui.home.playerCount', 'Player Count')}</span><strong>{config.playerCount}</strong></div>
+                  <div><span>{t('ui.home.playerCount', 'Player Count')}</span><strong>{formatNumber(config.playerCount)}</strong></div>
                   <div><span>{t('ui.home.mode', 'Mode')}</span><strong>{config.mode}</strong></div>
                   <div><span>{t('ui.scenarioBooklet.civicSpace', 'Civic space')}</span><strong>{getCivicSpaceLabel(selectedScenario.setup.civicSpace)}</strong></div>
-                  <div><span>{t('ui.scenarioBooklet.startingHeat', 'Starting heat')}</span><strong>+{selectedScenario.setup.temperature}°C</strong></div>
+                  <div><span>{t('ui.scenarioBooklet.startingHeat', 'Starting heat')}</span><strong>{formatTemperature(selectedScenario.setup.temperature)}</strong></div>
                 </div>
                 <div className="setup-rule-chips">
                   {selectedScenario.specialRuleChips.slice(0, 3).map((chip) => (

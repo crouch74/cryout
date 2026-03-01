@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  buildEffectPreview,
   getAvailableFronts,
   getAvailableRegions,
   getSeatActions,
@@ -16,7 +15,7 @@ import {
   type ResourceType,
 } from '../../engine/index.ts';
 import type { ToastMessage } from './ToastStack.tsx';
-import { t } from '../i18n/index.ts';
+import { formatEffectPreview, t } from '../i18n/index.ts';
 import { ActionCard, PaperSheet, WaxSealLock } from './tabletop.tsx';
 
 interface ActionBoardProps {
@@ -199,11 +198,11 @@ export function ActionBoard({
             return (
               <ActionCard key={action.id} onClick={() => setReadingActionId(action.id)}>
                 <span className="engraved-eyebrow">
-                  P{action.resolvePriority}
+                  {t('ui.actionBoard.priorityCode', 'P{{priority}}', { priority: action.resolvePriority })}
                   {isBreakthrough ? ` · ${t('ui.actionBoard.breakthrough', 'Breakthrough')}` : ''}
                 </span>
                 <strong>{action.name}</strong>
-                <span>{buildEffectPreview(action)}</span>
+                <span>{formatEffectPreview(action, content)}</span>
               </ActionCard>
             );
           })}
@@ -244,7 +243,7 @@ export function ActionBoard({
 
           <div className="projected-effect-sheet">
             <span className="engraved-eyebrow">{t('ui.actionBoard.projectedEffect', 'Projected effect')}</span>
-            <p>{buildEffectPreview(readingAction)}</p>
+            <p>{formatEffectPreview(readingAction, content)}</p>
           </div>
 
           <div className="action-reading-footer">

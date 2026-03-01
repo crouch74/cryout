@@ -1,20 +1,27 @@
 import { type CSSProperties, useEffect, useRef, useState } from 'react';
 import {
+  getAvailableFronts,
+  getAvailableRegions,
   getEndingTierSummary,
   getScenarioRuleStatus,
+  getSeatActions,
+  getSeatDisabledReason,
   getTemperatureBand,
   serializeGame,
+  type ActionTarget,
   type CompiledContent,
   type EngineCommand,
   type EngineState,
+  type Phase,
+  type PlayerState,
   type ResourceType,
 } from '../../engine/index.ts';
 import { LanguageSwitcher } from '../components/LanguageSwitcher.tsx';
 import type { Locale } from '../i18n/index.ts';
-import { getCivicSpaceLabel, getEndingTierLabel, getRoleName, t } from '../i18n/index.ts';
+import { formatNumber, formatTemperature, getCivicSpaceLabel, getEndingTierLabel, getRoleName, t } from '../i18n/index.ts';
 import { ActionBoard } from './ActionBoard.tsx';
 import { BOARD_FRONT_RAIL, BOARD_PHASE_RAIL, BOARD_REGION_BLUEPRINT } from './boardBlueprint.ts';
-import { DebugOverlay } from './DebugOverlay.tsx';
+import { DebugOverlay, type AutoPlaySpeedLevel } from './DebugOverlay.tsx';
 import { DealModal } from './DealModal.tsx';
 import { RegionDrawer } from './RegionDrawer.tsx';
 import { TraceDrawer } from './TraceDrawer.tsx';
@@ -40,13 +47,14 @@ import type { GameViewState } from './urlState.ts';
 interface GameScreenProps {
   locale: Locale;
   onLocaleChange: (locale: Locale) => void;
+  devMode: boolean;
   surface: 'local' | 'room';
   roomId?: string | null;
   state: EngineState;
   content: CompiledContent;
   viewState: GameViewState;
   onViewStateChange: (patch: Partial<GameViewState>) => void;
-  onCommand: (command: EngineCommand) => void;
+  onCommand: (command: EngineCommand) => Promise<void> | void;
   onToast: (toast: Omit<ToastMessage, 'id'>) => void;
   onBack: () => void;
   onExportSave: (serialized: string) => void;
@@ -59,6 +67,14 @@ const RESOURCE_META: Record<ResourceType, { icon: string; shape: 'disc' | 'cube'
   capacity: { icon: '▭', shape: 'bar' },
   relief: { icon: '◆', shape: 'marker' },
 };
+const AUTOPLAY_SPEED_DELAYS: Record<AutoPlaySpeedLevel, number> = {
+  1: 1800,
+  2: 1300,
+  3: 900,
+  4: 600,
+  5: 320,
+};
+const TERMINAL_PHASES: Phase[] = ['WIN', 'LOSS'];
 
 function seatTone(seat: number) {
   return `seat-${seat + 1}`;
@@ -136,9 +152,74 @@ function getOpenTrayTitle(viewState: GameViewState) {
   }
 }
 
+function buildAutoPlayTargets(targetKind: 'NONE' | 'REGION' | 'FRONT'): ActionTarget[] {
+  if (targetKind === 'REGION') {
+    return getAvailableRegions().map((regionId) => ({ kind: 'REGION', regionId }));
+  }
+
+  if (targetKind === 'FRONT') {
+    return getAvailableFronts().map((frontId) => ({ kind: 'FRONT', frontId }));
+  }
+
+  return [{ kind: 'NONE' }];
+}
+
+function findAutoPlayQueueCommand(
+  state: EngineState,
+  content: CompiledContent,
+  player: PlayerState,
+): EngineCommand | null {
+  const actions = getSeatActions(state, content, player.seat);
+
+  for (const action of [...actions.standard, ...actions.breakthroughs]) {
+    for (const target of buildAutoPlayTargets(action.targetKind)) {
+      const disabled = getSeatDisabledReason(state, content, player.seat, action.id, target);
+      if (!disabled.disabled) {
+        return { type: 'QueueIntent', seat: player.seat, actionId: action.id, target };
+      }
+    }
+  }
+
+  return null;
+}
+
+function getNextAutoPlayCommand(state: EngineState, content: CompiledContent): EngineCommand | null {
+  if (state.phase === 'WORLD') {
+    return state.stagedWorldPhase.status === 'drawn'
+      ? { type: 'AdoptResolution' }
+      : { type: 'DrawWorldCards' };
+  }
+
+  if (state.phase === 'COALITION') {
+    for (const player of state.players) {
+      if (player.actionsRemaining > 0) {
+        return findAutoPlayQueueCommand(state, content, player);
+      }
+
+      if (!player.ready) {
+        return { type: 'SetReady', seat: player.seat, ready: true };
+      }
+    }
+
+    return state.players.every((player) => player.ready) ? { type: 'CommitCoalitionIntent' } : null;
+  }
+
+  if (state.phase === 'COMPROMISE' && state.activeCompromise) {
+    const undecidedSeat = state.players.find((player) => state.activeCompromise?.votes[player.seat] === undefined)?.seat;
+    return undecidedSeat === undefined ? null : { type: 'VoteCompromise', seat: undecidedSeat, accept: true };
+  }
+
+  if (state.phase === 'END') {
+    return { type: 'ResolveEndPhase' };
+  }
+
+  return null;
+}
+
 export function GameScreen({
   locale,
   onLocaleChange,
+  devMode,
   surface,
   state,
   content,
@@ -157,7 +238,14 @@ export function GameScreen({
   const visibleEvents = state.eventLog.slice().reverse().slice(0, 6);
   const archivedEventCount = Math.max(0, state.eventLog.length - visibleEvents.length);
   const previousStateRef = useRef<EngineState | null>(null);
+  const autoPlayTimerRef = useRef<number | null>(null);
   const [pulsedResources, setPulsedResources] = useState<ResourceType[]>([]);
+  const [showDebugSnapshot, setShowDebugSnapshot] = useState(false);
+  const [autoPlayRounds, setAutoPlayRounds] = useState('1');
+  const [autoPlaySpeed, setAutoPlaySpeed] = useState<AutoPlaySpeedLevel>(3);
+  const [autoPlayTargetRound, setAutoPlayTargetRound] = useState<number | null>(null);
+  const [autoPlayRunning, setAutoPlayRunning] = useState(false);
+  const [autoPlayStatus, setAutoPlayStatus] = useState<string | null>(null);
   const pulseTimerRef = useRef<number | null>(null);
   const activeSeatTone = seatTone(focusedPlayer.seat);
   const activeCrisis = state.stagedWorldPhase.activeCrisisId ? content.cards[state.stagedWorldPhase.activeCrisisId] : null;
@@ -221,13 +309,101 @@ export function GameScreen({
     }
   }, []);
 
+  useEffect(() => () => {
+    if (autoPlayTimerRef.current !== null) {
+      window.clearTimeout(autoPlayTimerRef.current);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!autoPlayRunning) {
+      if (autoPlayTimerRef.current !== null) {
+        window.clearTimeout(autoPlayTimerRef.current);
+        autoPlayTimerRef.current = null;
+      }
+      return;
+    }
+
+    const queueAutoPlayStop = (message: string) => {
+      autoPlayTimerRef.current = window.setTimeout(() => {
+        setAutoPlayRunning(false);
+        setAutoPlayTargetRound(null);
+        setAutoPlayStatus(message);
+      }, 0);
+    };
+
+    if (TERMINAL_PHASES.includes(state.phase)) {
+      queueAutoPlayStop(
+        state.phase === 'WIN'
+          ? t('ui.debug.autoplayWon', 'Autoplay stopped because the coalition reached a win state.')
+          : t('ui.debug.autoplayLost', 'Autoplay stopped because the coalition collapsed.'),
+      );
+      return;
+    }
+
+    if (autoPlayTargetRound !== null && state.round >= autoPlayTargetRound && state.phase === 'WORLD') {
+      queueAutoPlayStop(t('ui.debug.autoplayComplete', 'Finished the requested rounds.'));
+      return;
+    }
+
+    const command = getNextAutoPlayCommand(state, content);
+    if (!command) {
+      queueAutoPlayStop(t('ui.debug.autoplayStalled', 'Autoplay stopped because no legal next command was available.'));
+      return;
+    }
+
+    autoPlayTimerRef.current = window.setTimeout(() => {
+      void Promise.resolve(onCommand(command)).catch((error) => {
+        console.error(error);
+        setAutoPlayRunning(false);
+        setAutoPlayTargetRound(null);
+        setAutoPlayStatus(t('ui.debug.autoplayFailed', 'Autoplay stopped because the next command failed.'));
+      });
+    }, AUTOPLAY_SPEED_DELAYS[autoPlaySpeed]);
+
+    return () => {
+      if (autoPlayTimerRef.current !== null) {
+        window.clearTimeout(autoPlayTimerRef.current);
+        autoPlayTimerRef.current = null;
+      }
+    };
+  }, [autoPlayRunning, autoPlaySpeed, autoPlayTargetRound, content, onCommand, state]);
+
   const queueAction = (command: EngineCommand, resources: ResourceType[], toast: Omit<ToastMessage, 'id'>) => {
     pulseResources(resources);
     onToast(toast);
     onCommand(command);
   };
 
+  const startAutoPlay = () => {
+    const parsedRounds = Number.parseInt(autoPlayRounds, 10);
+    const roundsToPlay = Number.isFinite(parsedRounds) && parsedRounds > 0 ? parsedRounds : 1;
+    setAutoPlayRounds(String(roundsToPlay));
+    setAutoPlayTargetRound(state.round + roundsToPlay);
+    setAutoPlayRunning(true);
+    setAutoPlayStatus(
+      t('ui.debug.autoplayQueued', 'Queued {{count}} round{{plural}} at speed {{speed}}.', {
+        count: roundsToPlay,
+        plural: roundsToPlay === 1 ? '' : 's',
+        speed: autoPlaySpeed,
+      }),
+    );
+  };
+
+  const stopAutoPlay = () => {
+    setAutoPlayRunning(false);
+    setAutoPlayTargetRound(null);
+    setAutoPlayStatus(t('ui.debug.autoplayStopped', 'Autoplay stopped.'));
+  };
+
   const boardActionDisabled = getBoardActionDisabled(state);
+  const autoPlayStatusText = autoPlayRunning
+    ? t('ui.debug.autoplayProgress', 'Executing {{phase}}. {{count}} round{{plural}} left in the queue.', {
+      phase: t(`ui.phases.${state.phase}`, state.phase),
+      count: autoPlayTargetRound === null ? 0 : Math.max(autoPlayTargetRound - state.round, 0),
+      plural: autoPlayTargetRound !== null && Math.max(autoPlayTargetRound - state.round, 0) === 1 ? '' : 's',
+    })
+    : autoPlayStatus;
 
   return (
     <TableSurface className="tabletop-game board-first-table" data-seat={activeSeatTone} data-open-tray={viewState.openTray}>
@@ -241,11 +417,6 @@ export function GameScreen({
               <LanguageSwitcher locale={locale} onChange={onLocaleChange} />
               <TabletopControls />
               <div className="header-action-plates">
-                <ThemePlate
-                  label={viewState.showDebug ? t('ui.game.hideDebug', 'Hide Debug') : t('ui.game.showDebug', 'Show Debug')}
-                  active={viewState.showDebug}
-                  onClick={() => onViewStateChange({ showDebug: !viewState.showDebug })}
-                />
                 <ThemePlate label={t('ui.game.exportSave', 'Export Save')} onClick={() => onExportSave(serializeGame(state))} />
                 <ThemePlate label={t('ui.game.back', 'Back')} onClick={onBack} />
               </div>
@@ -302,7 +473,7 @@ export function GameScreen({
                 onClick={() => onViewStateChange({ openTray: 'scenario', scenarioSection: 'fronts' })}
               >
                 <span>{shortLabel}</span>
-                <strong>{front.pressure}/{front.protection}/{front.impact}</strong>
+                <strong>{[front.pressure, front.protection, front.impact].map((value) => formatNumber(value)).join('/')}</strong>
                 <small>{name}</small>
               </button>
             ))}
@@ -329,7 +500,7 @@ export function GameScreen({
             <div className="board-metric-cluster">
               <article className="printed-meter">
                 <span className="engraved-eyebrow">{t('ui.game.temperature', 'Temperature')}</span>
-                <strong>+{state.temperature}°C</strong>
+                <strong>{formatTemperature(state.temperature)}</strong>
                 <small>
                   {t('ui.game.temperatureDetail', 'Band {{band}}. {{count}} crisis card{{plural}} on the next world resolution.', {
                     band: band.band,
@@ -341,7 +512,7 @@ export function GameScreen({
               <article className="printed-meter">
                 <span className="engraved-eyebrow">{t('ui.game.civicSpace', 'Civic Space')}</span>
                 <strong>{getCivicSpaceLabel(state.civicSpace)}</strong>
-                <small>{t('ui.game.charter', 'Charter')}: {ending.ratifiedClauses}</small>
+                <small>{t('ui.game.charter', 'Charter')}: {formatNumber(ending.ratifiedClauses)}</small>
               </article>
             </div>
 
@@ -371,10 +542,10 @@ export function GameScreen({
                       <span className="printed-territory-caption">{blueprint.shortLabel}</span>
                       <strong>{content.regions[region.id].name}</strong>
                       <div className="territory-token-cluster" aria-hidden="true">
-                        <span className="token-glyph token-glyph-disc">{region.tokens.displacement}</span>
-                        <span className="token-glyph token-glyph-cube">{region.tokens.disinfo}</span>
-                        <span className="token-glyph token-glyph-bar">{region.locks.length}</span>
-                        <span className="token-glyph token-glyph-mat">{region.institutions.length}</span>
+                        <span className="token-glyph token-glyph-disc">{formatNumber(region.tokens.displacement)}</span>
+                        <span className="token-glyph token-glyph-cube">{formatNumber(region.tokens.disinfo)}</span>
+                        <span className="token-glyph token-glyph-bar">{formatNumber(region.locks.length)}</span>
+                        <span className="token-glyph token-glyph-mat">{formatNumber(region.institutions.length)}</span>
                       </div>
                     </button>
                   </article>
@@ -392,7 +563,7 @@ export function GameScreen({
                 >
                   <span className="engraved-eyebrow">{t('ui.home.seatLabel', 'Seat {{seat}}', { seat: player.seat + 1 })}</span>
                   <strong>{getRoleName(player.roleId)}</strong>
-                  <small>{player.queuedIntents.length} {t('ui.game.plannedMoves', 'Planned Moves')}</small>
+                  <small>{t('ui.actionBoard.queued', 'Planned {{count}}', { count: player.queuedIntents.length })}</small>
                 </button>
               ))}
             </div>
@@ -417,7 +588,7 @@ export function GameScreen({
 
             <PaperSheet tone="docket" className="board-mini-docket">
               <span className="engraved-eyebrow">{t('ui.game.charter', 'Charter')}</span>
-              <strong>{ending.ratifiedClauses} {t('ui.game.ratified', 'ratified')}</strong>
+              <strong>{t('ui.game.ratifiedCount', '{{count}} ratified', { count: ending.ratifiedClauses })}</strong>
               <p>{t('ui.game.charterDetail', 'Outcome track: {{tier}}.', { tier: getEndingTierLabel(ending.tier) })}</p>
             </PaperSheet>
 
@@ -531,9 +702,9 @@ export function GameScreen({
                         <span>{front.collapsed ? t('ui.game.collapse', 'Collapse') : t('ui.game.coalitionHolds', 'Coalition Holds')}</span>
                       </div>
                       <div className="front-ledger-stats">
-                        <div><span>{t('ui.game.pressure', 'Pressure')}</span><strong>{front.pressure}</strong></div>
-                        <div><span>{t('ui.game.protection', 'Protection')}</span><strong>{front.protection}</strong></div>
-                        <div><span>{t('ui.game.impact', 'Impact')}</span><strong>{front.impact}</strong></div>
+                        <div><span>{t('ui.game.pressure', 'Pressure')}</span><strong>{formatNumber(front.pressure)}</strong></div>
+                        <div><span>{t('ui.game.protection', 'Protection')}</span><strong>{formatNumber(front.protection)}</strong></div>
+                        <div><span>{t('ui.game.impact', 'Impact')}</span><strong>{formatNumber(front.impact)}</strong></div>
                       </div>
                     </PaperSheet>
                   ))}
@@ -580,7 +751,7 @@ export function GameScreen({
                       className={`seat-selector ${player.seat === focusedPlayer.seat ? 'is-active' : ''} ${player.ready ? 'is-ready' : ''}`}
                       onClick={() => onViewStateChange({ focusedSeat: player.seat, openTray: 'player' })}
                     >
-                      {player.seat + 1}
+                      {formatNumber(player.seat + 1)}
                     </button>
                   ))}
                 </div>
@@ -650,7 +821,7 @@ export function GameScreen({
             <div className="board-deck-drawer">
               <PaperSheet tone="docket" className="board-mini-docket">
                 <span className="engraved-eyebrow">{t('ui.game.crisisDeck', 'Crisis Deck')}</span>
-                <strong>{state.decks.crisis.drawPile.length}</strong>
+                <strong>{formatNumber(state.decks.crisis.drawPile.length)}</strong>
                 <p>{t('ui.game.turnProgress', 'Turn progress')}</p>
               </PaperSheet>
               <PaperSheet tone="docket" className="board-mini-docket">
@@ -691,7 +862,34 @@ export function GameScreen({
 
       <TraceDrawer event={selectedEvent} onClose={() => onViewStateChange({ eventSeq: null })} />
       <DealModal state={state} content={content} onCommand={onCommand} />
-      {viewState.showDebug ? <DebugOverlay state={state} roomId={roomId} /> : null}
+      {devMode ? (
+        <button
+          type="button"
+          className={`dev-panel-toggle ${viewState.showDebug ? 'is-active' : ''}`}
+          onClick={() => onViewStateChange({ showDebug: !viewState.showDebug })}
+          aria-expanded={viewState.showDebug}
+          aria-controls="debug-panel-title"
+        >
+          {viewState.showDebug ? t('ui.debug.hidePanel', 'Hide Dev Panel') : t('ui.debug.showPanel', 'Dev Panel')}
+        </button>
+      ) : null}
+      {devMode && viewState.showDebug ? (
+        <DebugOverlay
+          state={state}
+          roomId={roomId}
+          showDebugSnapshot={showDebugSnapshot}
+          autoPlayRounds={autoPlayRounds}
+          autoPlaySpeed={autoPlaySpeed}
+          autoPlayRunning={autoPlayRunning}
+          autoPlayStatus={autoPlayStatusText}
+          onToggleDebugSnapshot={() => setShowDebugSnapshot((current) => !current)}
+          onAutoPlayRoundsChange={setAutoPlayRounds}
+          onAutoPlaySpeedChange={setAutoPlaySpeed}
+          onAutoPlayStart={startAutoPlay}
+          onAutoPlayStop={stopAutoPlay}
+          onClose={() => onViewStateChange({ showDebug: false })}
+        />
+      ) : null}
     </TableSurface>
   );
 }

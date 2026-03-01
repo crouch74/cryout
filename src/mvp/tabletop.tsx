@@ -8,6 +8,7 @@ import {
   type HTMLAttributes,
   type ReactNode,
 } from 'react';
+import { formatNumber, t } from '../i18n/index.ts';
 
 type ContrastMode = 'default' | 'high';
 type MotionMode = 'full' | 'reduced';
@@ -152,14 +153,14 @@ export function TabletopControls() {
   const { contrastMode, motionMode, setContrastMode, setMotionMode } = useTabletopTheme();
 
   return (
-    <div className="tabletop-controls" aria-label="Tabletop accessibility controls">
+    <div className="tabletop-controls" aria-label={t('ui.accessibility.controls', 'Tabletop accessibility controls')}>
       <ThemePlate
-        label={contrastMode === 'high' ? 'Standard Contrast' : 'High Contrast'}
+        label={contrastMode === 'high' ? t('ui.accessibility.standardContrast', 'Standard Contrast') : t('ui.accessibility.highContrast', 'High Contrast')}
         active={contrastMode === 'high'}
         onClick={() => setContrastMode(contrastMode === 'high' ? 'default' : 'high')}
       />
       <ThemePlate
-        label={motionMode === 'reduced' ? 'Full Motion' : 'Reduced Motion'}
+        label={motionMode === 'reduced' ? t('ui.accessibility.fullMotion', 'Full Motion') : t('ui.accessibility.reducedMotion', 'Reduced Motion')}
         active={motionMode === 'reduced'}
         onClick={() => setMotionMode(motionMode === 'reduced' ? 'full' : 'reduced')}
       />
@@ -241,10 +242,10 @@ export function DeckStack({
       </div>
       <div className="deck-stack-copy">
         <strong>{deckName}</strong>
-        <span>{drawCount} cards remain</span>
-        {activeCount !== undefined ? <span>{activeCount} staged</span> : null}
+        <span>{t('ui.decks.cardsRemain', '{{count}} cards remain', { count: drawCount })}</span>
+        {activeCount !== undefined ? <span>{t('ui.decks.staged', '{{count}} staged', { count: activeCount })}</span> : null}
       </div>
-      {locked ? <WaxSealLock label="Sealed" /> : null}
+      {locked ? <WaxSealLock label={t('ui.game.sealed', 'Sealed')} /> : null}
     </button>
   );
 }
@@ -286,12 +287,12 @@ export function WoodenToken({
   icon: string;
 }) {
   return (
-    <div className={`wooden-token wooden-token-${shape}`} aria-label={count === undefined ? label : `${label}: ${count}`}>
+    <div className={`wooden-token wooden-token-${shape}`} aria-label={count === undefined ? label : `${label}: ${formatNumber(count)}`}>
       <span className="wooden-token-icon" aria-hidden="true">
         {icon}
       </span>
       <span className="wooden-token-label">{label}</span>
-      {count !== undefined ? <strong>{count}</strong> : null}
+      {count !== undefined ? <strong>{formatNumber(count)}</strong> : null}
     </div>
   );
 }
@@ -335,7 +336,7 @@ export function PrintedTrack({
       <ol className="printed-track-list">
         {steps.map((step, index) => (
           <li key={step} className={`printed-track-step ${index === activeIndex ? 'is-active' : index < activeIndex ? 'is-complete' : ''}`}>
-            <PhaseMarker active={index === activeIndex} label={String(index + 1)} />
+            <PhaseMarker active={index === activeIndex} label={formatNumber(index + 1)} />
             <span>{step}</span>
           </li>
         ))}
@@ -386,7 +387,7 @@ export function NotesPad({
     <PaperSheet tone="note" className="notes-pad">
       <div className="notes-pad-header">
         <h3>{title}</h3>
-        {overflowCount > 0 ? <span className="stacked-sheets">{overflowCount} archived</span> : null}
+        {overflowCount > 0 ? <span className="stacked-sheets">{t('ui.notes.archived', '{{count}} archived', { count: overflowCount })}</span> : null}
       </div>
       <div className="notes-pad-body">{children}</div>
     </PaperSheet>
@@ -404,7 +405,7 @@ export function WaxSealLock({ label }: { label: string }) {
 export function RotateHint() {
   return (
     <div className="rotate-hint" aria-hidden="true">
-      <span>Rotate to landscape for the full table layout.</span>
+      <span>{t('ui.accessibility.rotateLandscape', 'Rotate to landscape for the full table layout.')}</span>
     </div>
   );
 }

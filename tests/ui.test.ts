@@ -79,6 +79,8 @@ test('game screen source includes landmark and labelled tray markup', () => {
   assert.match(source, /aria-label=\{getOpenTrayTitle\(viewState\)\}/);
   assert.match(source, /role="tab"/);
   assert.match(source, /aria-describedby=/);
+  assert.match(source, /dev-panel-toggle/);
+  assert.match(source, /devMode && viewState\.showDebug/);
 });
 
 test('default game view state uses the tray-driven model', () => {
