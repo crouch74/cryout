@@ -10,6 +10,7 @@
 
     /* Bundler mode */
     "moduleResolution": "bundler",
+    "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
@@ -27,6 +28,7 @@
   "include": [
     "src/main.tsx",
     "src/App.tsx",
+    "src/i18n/**/*.ts",
     "src/mvp/**/*.ts",
     "src/mvp/**/*.tsx",
     "engine/**/*.ts",

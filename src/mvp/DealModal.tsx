@@ -1,4 +1,5 @@
 import type { CompiledContent, EngineCommand, EngineState } from '../../engine/index.ts';
+import { t } from '../i18n/index.ts';
 
 interface DealModalProps {
   state: EngineState;
@@ -14,7 +15,7 @@ export function DealModal({ state, content, onCommand }: DealModalProps) {
   return (
     <div className="modal-shell">
       <div className="modal-card">
-        <h2>Compromise Offer</h2>
+        <h2>{t('ui.dealModal.title', 'Compromise Offer')}</h2>
         <p>{state.activeCompromise.prompt}</p>
 
         <div className="compromise-options">
@@ -37,11 +38,15 @@ export function DealModal({ state, content, onCommand }: DealModalProps) {
                 </span>
                 {vote === undefined ? (
                   <div className="vote-actions">
-                    <button onClick={() => onCommand({ type: 'VoteCompromise', seat: player.seat, accept: true })}>YES</button>
-                    <button onClick={() => onCommand({ type: 'VoteCompromise', seat: player.seat, accept: false })}>NO</button>
+                    <button onClick={() => onCommand({ type: 'VoteCompromise', seat: player.seat, accept: true })}>
+                      {t('ui.dealModal.yes', 'YES')}
+                    </button>
+                    <button onClick={() => onCommand({ type: 'VoteCompromise', seat: player.seat, accept: false })}>
+                      {t('ui.dealModal.no', 'NO')}
+                    </button>
                   </div>
                 ) : (
-                  <span>{vote ? 'YES' : 'NO'}</span>
+                  <span>{vote ? t('ui.dealModal.yes', 'YES') : t('ui.dealModal.no', 'NO')}</span>
                 )}
               </div>
             );

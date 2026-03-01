@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import type { CSSProperties } from 'react';
 import {
   getEndingTierSummary,
   getScenarioRuleStatus,
@@ -7,164 +7,311 @@ import {
   type CompiledContent,
   type EngineCommand,
   type EngineState,
-  type RegionId,
 } from '../../engine/index.ts';
 import { ActionBoard } from './ActionBoard.tsx';
 import { DebugOverlay } from './DebugOverlay.tsx';
 import { DealModal } from './DealModal.tsx';
 import { RegionDrawer } from './RegionDrawer.tsx';
 import { TraceDrawer } from './TraceDrawer.tsx';
+import { getCivicSpaceLabel, getEndingTierLabel, getRegionStrapline, getRoleName, t } from '../i18n/index.ts';
+import { FRONT_ACCENTS, REGION_LAYOUT } from './worldMap.ts';
+import type { GameViewState } from './urlState.ts';
 
 interface GameScreenProps {
   surface: 'local' | 'room';
   roomId?: string | null;
   state: EngineState;
   content: CompiledContent;
+  viewState: GameViewState;
+  onViewStateChange: (patch: Partial<GameViewState>) => void;
   onCommand: (command: EngineCommand) => void;
   onBack: () => void;
   onExportSave: (serialized: string) => void;
 }
 
-export function GameScreen({ surface, roomId, state, content, onCommand, onBack, onExportSave }: GameScreenProps) {
-  const [regionId, setRegionId] = useState<RegionId | null>(null);
-  const [eventSeq, setEventSeq] = useState<number | null>(null);
-  const [focusedSeat, setFocusedSeat] = useState(0);
-  const [showDebug, setShowDebug] = useState(false);
-  const [leftTab, setLeftTab] = useState<'scenario' | 'fronts' | 'charter'>('fronts');
-  const [rightTab, setRightTab] = useState<'actions' | 'log'>('actions');
+const PHASE_LABELS: Array<EngineState['phase']> = ['WORLD', 'COALITION', 'COMPROMISE', 'END'];
 
+function spotlightIs(viewState: GameViewState, prefix: string, id: string) {
+  return viewState.spotlight === `${prefix}:${id}`;
+}
+
+export function GameScreen({
+  surface,
+  roomId,
+  state,
+  content,
+  viewState,
+  onViewStateChange,
+  onCommand,
+  onBack,
+  onExportSave,
+}: GameScreenProps) {
   const band = getTemperatureBand(state.temperature);
-  const selectedEvent = state.eventLog.find((event) => event.seq === eventSeq) ?? null;
   const everyoneReady = state.players.every((player) => player.ready);
   const ending = getEndingTierSummary(state);
-  const focusedPlayer = state.players.find((player) => player.seat === focusedSeat) ?? state.players[0];
+  const focusedPlayer = state.players[viewState.focusedSeat] ?? state.players[0];
+  const selectedEvent = state.eventLog.find((event) => event.seq === viewState.eventSeq) ?? null;
+  const focusedRegion = viewState.regionId ? state.regions[viewState.regionId] : null;
+  const focusLabel = (() => {
+    if (viewState.spotlight?.startsWith('front:')) {
+      const frontId = viewState.spotlight.split(':', 2)[1] as keyof typeof content.fronts;
+      return `Front focus: ${content.fronts[frontId]?.name ?? frontId}`;
+    }
+
+    if (viewState.spotlight?.startsWith('charter:')) {
+      const clauseId = viewState.spotlight.split(':', 2)[1] as keyof typeof content.charter;
+      return `Charter focus: ${content.charter[clauseId]?.title ?? clauseId}`;
+    }
+
+    if (viewState.spotlight?.startsWith('rule:')) {
+      const ruleId = viewState.spotlight.split(':', 2)[1];
+      const rule = content.scenario.specialRuleChips.find((chip) => chip.id === ruleId);
+      return `Rule focus: ${rule?.label ?? ruleId}`;
+    }
+
+    if (viewState.spotlight?.startsWith('phase:')) {
+      return `Phase focus: ${viewState.spotlight.split(':', 2)[1]}`;
+    }
+
+    if (focusedRegion) {
+      return `Region focus: ${content.regions[focusedRegion.id].name}`;
+    }
+
+    if (selectedEvent) {
+      return `Event focus: #${selectedEvent.seq}`;
+    }
+
+    return 'Table overview';
+  })();
 
   return (
-    <div className="game-shell">
-      <header className="game-header">
-        <div>
-          <span className="eyebrow">Dignity Rising</span>
-          <h1>Witness &amp; Dignity</h1>
+    <div className="game-shell premium-game-shell">
+      <header className="game-header premium-game-header">
+        <div className="title-stack">
+          <span className="eyebrow">{t('ui.game.commandTable', 'Global Command Table')}</span>
+          <h1>{content.scenario.name}</h1>
           <p>
-            Round {state.round} / {state.roundLimit} • {surface === 'local' ? 'Local Table' : `Room Play ${roomId ?? ''}`}
+            {t('ui.game.roundSummary', 'Round {{round}} of {{roundLimit}} | {{surface}} | {{description}}', {
+              round: state.round,
+              roundLimit: state.roundLimit,
+              surface:
+                surface === 'local'
+                  ? t('ui.game.localSurface', 'Local Table')
+                  : t('ui.game.roomSurface', 'Room {{roomId}}', { roomId: roomId ?? '' }),
+              description: content.scenario.description,
+            })}
           </p>
         </div>
 
-        <div className="phase-rail">
-          {['WORLD', 'COALITION', 'COMPROMISE', 'END'].map((phase) => (
-            <span key={phase} className={`phase-pill ${state.phase === phase ? 'active' : ''}`}>
-              {phase}
-            </span>
+        <div className="phase-rail premium-phase-rail">
+          {PHASE_LABELS.map((phase) => (
+            <div key={phase} className={`phase-pill ${state.phase === phase ? 'active' : ''}`}>
+              {t(`ui.phases.${phase}`, phase)}
+            </div>
           ))}
         </div>
 
-        <div className="header-stats">
-          <span>🌡️ +{state.temperature}°C / band {band.band}</span>
-          <span>⚖️ {state.civicSpace}</span>
-          <span>🤝 {state.resources.solidarity}</span>
-          <span>🛰️ {state.resources.evidence}</span>
-          <span>🧱 {state.resources.capacity}</span>
-          <span>🩹 {state.resources.relief}</span>
-          <span>🧾 Debt {state.globalTokens.compromise_debt ?? 0}</span>
+        <div className="header-kpi-grid">
+          <div className="header-kpi">
+            <span>{t('ui.game.temperature', 'Temperature')}</span>
+            <strong>+{state.temperature}°C</strong>
+            <small>
+              {t('ui.game.temperatureBand', 'Band {{band}} | {{crisisCount}} crisis cards', {
+                band: band.band,
+                crisisCount: band.crisisCount,
+              })}
+            </small>
+          </div>
+          <div className="header-kpi">
+            <span>{t('ui.game.civicSpace', 'Civic Space')}</span>
+            <strong>{getCivicSpaceLabel(state.civicSpace)}</strong>
+            <small>{t('ui.game.civicSpaceHelp', 'Pressure on public organizing capacity')}</small>
+          </div>
+          <div className="header-kpi">
+            <span>{t('ui.game.charter', 'Charter')}</span>
+            <strong>{ending.ratifiedClauses} ratified</strong>
+            <small>{getEndingTierLabel(ending.tier)}</small>
+          </div>
         </div>
 
         <div className="header-actions">
           <button className="secondary-button" onClick={() => onExportSave(serializeGame(state))}>
-            Export Save
+            {t('ui.game.exportSave', 'Export Save')}
           </button>
-          <button className="secondary-button" onClick={() => setShowDebug((value) => !value)}>
-            {showDebug ? 'Hide Debug' : 'Show Debug'}
+          <button
+            className="secondary-button"
+            onClick={() => onViewStateChange({ showDebug: !viewState.showDebug })}
+          >
+            {viewState.showDebug ? t('ui.game.hideDebug', 'Hide Debug') : t('ui.game.showDebug', 'Show Debug')}
           </button>
           <button className="secondary-button" onClick={onBack}>
-            Back
+            {t('ui.game.back', 'Back')}
           </button>
         </div>
       </header>
 
-      <div className="board-grid">
-        <aside className="panel left-panel">
+      <div className="resource-ribbon">
+        <div className="resource-stat">
+          <span>{t('ui.game.solidarity', 'Solidarity')}</span>
+          <strong>{state.resources.solidarity}</strong>
+        </div>
+        <div className="resource-stat">
+          <span>{t('ui.game.evidence', 'Evidence')}</span>
+          <strong>{state.resources.evidence}</strong>
+        </div>
+        <div className="resource-stat">
+          <span>{t('ui.game.capacity', 'Capacity')}</span>
+          <strong>{state.resources.capacity}</strong>
+        </div>
+        <div className="resource-stat">
+          <span>{t('ui.game.relief', 'Relief')}</span>
+          <strong>{state.resources.relief}</strong>
+        </div>
+        <div className="resource-stat">
+          <span>{t('ui.game.compromiseDebt', 'Compromise Debt')}</span>
+          <strong>{state.globalTokens.compromise_debt ?? 0}</strong>
+        </div>
+      </div>
+
+      <section className="focus-ribbon">
+        <article className="focus-card">
+          <span>Current focus</span>
+          <strong>{focusLabel}</strong>
+          <small>{selectedEvent ? selectedEvent.message : focusedRegion ? getRegionStrapline(focusedRegion.id, '') : 'The URL tracks the current room, scenario, and table state.'}</small>
+        </article>
+        <article className="focus-card">
+          <span>Active seat</span>
+          <strong>{getRoleName(focusedPlayer.roleId)}</strong>
+          <small>{everyoneReady ? t('ui.status.ready', 'Ready') : t('ui.status.planning', 'Planning')}</small>
+        </article>
+        <article className="focus-card">
+          <span>Outcome track</span>
+          <strong>{getEndingTierLabel(ending.tier)}</strong>
+          <small>{ending.ratifiedClauses} charter clauses ratified</small>
+        </article>
+      </section>
+
+      <div className="board-grid premium-board-grid">
+        <aside className="panel left-panel premium-panel">
           <div className="panel-toolbar">
             <div>
-              <span className="eyebrow">Scenario Desk</span>
+              <span className="eyebrow">{t('ui.game.scenarioDesk', 'Scenario Desk')}</span>
               <h2>{content.scenario.name}</h2>
             </div>
             <div className="segmented compact">
-              <button className={leftTab === 'scenario' ? 'active' : ''} onClick={() => setLeftTab('scenario')}>
-                Brief
+              <button className={viewState.leftTab === 'scenario' ? 'active' : ''} onClick={() => onViewStateChange({ leftTab: 'scenario' })}>
+                {t('ui.game.brief', 'Brief')}
               </button>
-              <button className={leftTab === 'fronts' ? 'active' : ''} onClick={() => setLeftTab('fronts')}>
-                Fronts
+              <button className={viewState.leftTab === 'fronts' ? 'active' : ''} onClick={() => onViewStateChange({ leftTab: 'fronts', spotlight: null })}>
+                {t('ui.game.fronts', 'Fronts')}
               </button>
-              <button className={leftTab === 'charter' ? 'active' : ''} onClick={() => setLeftTab('charter')}>
-                Charter
+              <button className={viewState.leftTab === 'charter' ? 'active' : ''} onClick={() => onViewStateChange({ leftTab: 'charter', spotlight: null })}>
+                {t('ui.game.charterPanel', 'Charter')}
               </button>
             </div>
           </div>
 
           <div className="panel-body">
-            {leftTab === 'scenario' && (
-              <section className="scenario-panel">
-                <p>{content.scenario.description}</p>
-                <div className="chip-row">
-                  {content.scenario.specialRuleChips.map((chip) => {
-                    const status = getScenarioRuleStatus(state, chip.id);
-                    return (
-                      <div key={chip.id} className={`rule-chip ${status.active ? 'active' : ''}`}>
-                        <strong>{chip.label}</strong>
-                        <span>{status.value}</span>
-                      </div>
-                    );
-                  })}
+            {viewState.leftTab === 'scenario' && (
+              <section className="scenario-panel premium-stack">
+                <div className="story-block">
+                  <h3>{t('ui.game.situation', 'Situation')}</h3>
+                  <p>{content.scenario.introduction}</p>
+                </div>
+                <div className="story-block">
+                  <h3>{t('ui.game.moralCenter', 'Moral Center')}</h3>
+                  <p>{content.scenario.moralCenter}</p>
+                </div>
+                <div className="story-block">
+                  <h3>{t('ui.game.specialRules', 'Special Rules')}</h3>
+                  <div className="scenario-rule-list">
+                    {content.scenario.specialRuleChips.map((chip) => {
+                      const status = getScenarioRuleStatus(state, chip.id);
+                      return (
+                        <article
+                          key={chip.id}
+                          className={`rule-feature ${status.active ? 'active' : ''} ${spotlightIs(viewState, 'rule', chip.id) ? 'spotlighted' : ''}`}
+                        >
+                          <div className="row-split">
+                            <div>
+                              <strong>{chip.label}</strong>
+                              <p>{chip.description}</p>
+                            </div>
+                          </div>
+                          <span className="rule-status">{status.value}</span>
+                        </article>
+                      );
+                    })}
+                  </div>
                 </div>
               </section>
             )}
 
-            {leftTab === 'fronts' && (
-              <section>
+            {viewState.leftTab === 'fronts' && (
+              <section className="premium-stack">
                 <div className="section-heading">
-                  <h3>Fronts</h3>
-                  <span className="muted">Pressure / Protection / Impact</span>
+                  <h3>{t('ui.game.systemicFronts', 'Systemic Fronts')}</h3>
+                  <span className="muted">{t('ui.game.frontsSubtitle', 'Pressure, protection, and impact')}</span>
                 </div>
                 <div className="front-list">
                   {Object.values(state.fronts).map((front) => (
-                    <div key={front.id} className={`front-card ${front.collapsed ? 'collapsed' : ''}`}>
+                    <article
+                      key={front.id}
+                      className={`front-card premium-front-card ${front.collapsed ? 'collapsed' : ''} ${spotlightIs(viewState, 'front', front.id) ? 'spotlighted' : ''}`}
+                      style={{ '--front-accent': FRONT_ACCENTS[front.id] } as CSSProperties}
+                    >
                       <div className="row-split">
-                        <strong>{content.fronts[front.id].name}</strong>
-                        <span>{front.collapsed ? 'Collapsed' : 'Standing'}</span>
+                        <div>
+                          <strong>{content.fronts[front.id].name}</strong>
+                          <p>
+                            {front.collapsed
+                              ? t('ui.status.collapsedFront', 'Collapsed front')
+                              : t('ui.status.contestableFront', 'Still contestable')}
+                          </p>
+                        </div>
                       </div>
-                      <div className="meter-row">
-                        <span>Pressure</span>
-                        <strong>{front.pressure}</strong>
+                      <div className="front-meter-grid">
+                        <div>
+                          <span>{t('ui.game.pressure', 'Pressure')}</span>
+                          <strong>{front.pressure}</strong>
+                        </div>
+                        <div>
+                          <span>{t('ui.game.protection', 'Protection')}</span>
+                          <strong>{front.protection}</strong>
+                        </div>
+                        <div>
+                          <span>{t('ui.game.impact', 'Impact')}</span>
+                          <strong>{front.impact}</strong>
+                        </div>
                       </div>
-                      <div className="meter-row">
-                        <span>Protection</span>
-                        <strong>{front.protection}</strong>
-                      </div>
-                      <div className="meter-row">
-                        <span>Impact</span>
-                        <strong>{front.impact}</strong>
-                      </div>
-                    </div>
+                    </article>
                   ))}
                 </div>
               </section>
             )}
 
-            {leftTab === 'charter' && (
-              <section>
+            {viewState.leftTab === 'charter' && (
+              <section className="premium-stack">
                 <div className="section-heading">
-                  <h3>People&apos;s Charter</h3>
-                  <span className="muted">{ending.ratifiedClauses} ratified</span>
+                  <h3>{t('ui.game.peoplesCharter', "People's Charter")}</h3>
+                  <span className="muted">
+                    {t('ui.game.clausesRatified', '{{count}} clauses ratified', { count: ending.ratifiedClauses })}
+                  </span>
                 </div>
                 <div className="charter-list">
                   {Object.values(state.charter).map((clause) => (
-                    <div key={clause.id} className={`charter-card ${clause.status}`}>
+                    <article
+                      key={clause.id}
+                      className={`charter-card premium-charter-card ${clause.status} ${spotlightIs(viewState, 'charter', clause.id) ? 'spotlighted' : ''}`}
+                    >
                       <div className="row-split">
-                        <strong>{content.charter[clause.id].title}</strong>
-                        <span>{clause.status}</span>
+                        <div>
+                          <strong>{content.charter[clause.id].title}</strong>
+                          <p>{content.charter[clause.id].description}</p>
+                        </div>
                       </div>
-                      <p>{content.charter[clause.id].description}</p>
-                    </div>
+                      <span className={`status-pill ${clause.status}`}>{clause.status}</span>
+                    </article>
                   ))}
                 </div>
               </section>
@@ -172,94 +319,139 @@ export function GameScreen({ surface, roomId, state, content, onCommand, onBack,
           </div>
         </aside>
 
-        <main className="panel center-panel">
+        <main className="panel center-panel premium-panel map-panel">
           <div className="map-header">
             <div>
-              <span className="eyebrow">Global Map</span>
-              <h2>Regional pressure board</h2>
+              <span className="eyebrow">{t('ui.game.worldTheatre', 'World Theatre')}</span>
+              <h2>{t('ui.game.regionalPressureBoard', 'Regional pressure board')}</h2>
             </div>
             <div className="map-legend">
-              <span>🧍 Displacement</span>
-              <span>🛰️ Disinfo</span>
-              <span>🔒 Locks</span>
-              <span>🏛 Institutions</span>
+              <span>{t('ui.game.displacement', 'Displacement')}</span>
+              <span>{t('ui.game.disinfo', 'Disinfo')}</span>
+              <span>{t('ui.game.locks', 'Locks')}</span>
+              <span>{t('ui.game.institutions', 'Institutions')}</span>
             </div>
           </div>
 
-          <div className="region-grid">
-            {Object.values(state.regions).map((region) => (
-              <button key={region.id} className="region-card" onClick={() => setRegionId(region.id)}>
-                <div className="row-split">
-                  <strong>{region.id}</strong>
-                  <span>{region.institutions.length} 🏛</span>
-                </div>
-                <div className="chip-row compact">
-                  <span>🧍 {region.tokens.displacement}</span>
-                  <span>🛰️ {region.tokens.disinfo}</span>
-                  <span>🔒 {region.locks.length}</span>
-                </div>
-              </button>
-            ))}
-          </div>
+          <div className="world-map-stage">
+            <div className="map-atmosphere" />
+            <div className="world-map-grid">
+              {Object.values(state.regions).map((region) => {
+                const layout = REGION_LAYOUT[region.id];
+                const totalPressure = region.tokens.displacement + region.tokens.disinfo + region.locks.length;
+                const name = content.regions[region.id].name;
 
-          <div className="phase-panel">
-            {state.phase === 'WORLD' && (
-              <button className="primary-button" onClick={() => onCommand({ type: 'ResolveWorldPhase' })}>
-                🌍 Resolve World Phase
-              </button>
-            )}
-            {state.phase === 'COALITION' && (
-              <button
-                className="primary-button"
-                disabled={!everyoneReady}
-                onClick={() => onCommand({ type: 'CommitCoalitionIntent' })}
-              >
-                🤝 Commit Coalition Intent
-              </button>
-            )}
-            {state.phase === 'END' && (
-              <button className="primary-button" onClick={() => onCommand({ type: 'ResolveEndPhase' })}>
-                🧩 Resolve End Phase
-              </button>
-            )}
-            {(state.phase === 'WIN' || state.phase === 'LOSS') && (
-              <div className="ending-card">
-                <h2>{state.phase === 'WIN' ? 'Coalition Holds' : 'Collapse'}</h2>
-                <p>{state.phase === 'WIN' ? `Ending tier: ${ending.tier}` : state.lossReason}</p>
+                return (
+                  <button
+                    key={region.id}
+                    type="button"
+                    className={`region-node ${viewState.regionId === region.id ? 'active' : ''}`}
+                    style={{ gridArea: layout.area, '--region-accent': layout.accent } as CSSProperties}
+                    onClick={() => onViewStateChange({ regionId: region.id, spotlight: null })}
+                  >
+                    <div className="region-node-header">
+                      <div>
+                        <span className="region-overline">
+                          {t('ui.game.risk', 'Risk {{count}}', { count: totalPressure })}
+                        </span>
+                        <strong>{name}</strong>
+                      </div>
+                    </div>
+                    <p>{getRegionStrapline(region.id, layout.strapline)}</p>
+                    <div className="region-metrics">
+                      <span>{t('ui.game.displacement', 'Displacement')} {region.tokens.displacement}</span>
+                      <span>{t('ui.game.disinfo', 'Disinfo')} {region.tokens.disinfo}</span>
+                      <span>{t('ui.game.locks', 'Locks')} {region.locks.length}</span>
+                      <span>{t('ui.game.institutions', 'Institutions')} {region.institutions.length}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="map-footer-card">
+              <div>
+                <span className="eyebrow">{t('ui.game.roundControl', 'Round Control')}</span>
+                <h3>{t('ui.game.phaseLabel', '{{phase}} phase', { phase: t(`ui.phases.${state.phase}`, state.phase) })}</h3>
+                <p>{t('ui.game.roundControlBody', 'Advance only when the table is ready. The URL updates with the current session state.')}</p>
               </div>
-            )}
+              <div className="phase-panel">
+                {state.phase === 'WORLD' && (
+                  <button className="primary-button" onClick={() => onCommand({ type: 'ResolveWorldPhase' })}>
+                    {t('ui.game.resolveWorldPhase', 'Resolve World Phase')}
+                  </button>
+                )}
+                {state.phase === 'COALITION' && (
+                  <button
+                    className="primary-button"
+                    disabled={!everyoneReady}
+                    onClick={() => onCommand({ type: 'CommitCoalitionIntent' })}
+                  >
+                    {everyoneReady
+                      ? t('ui.game.commitCoalitionIntent', 'Commit Coalition Intent')
+                      : t('ui.status.waitingForAllSeats', 'Waiting for All Seats')}
+                  </button>
+                )}
+                {state.phase === 'COMPROMISE' && (
+                  <div className="phase-note">
+                    {t('ui.status.compromiseVoteLive', 'Compromise vote is live. Resolve the modal to continue.')}
+                  </div>
+                )}
+                {state.phase === 'END' && (
+                  <button className="primary-button" onClick={() => onCommand({ type: 'ResolveEndPhase' })}>
+                    {t('ui.game.resolveEndPhase', 'Resolve End Phase')}
+                  </button>
+                )}
+                {(state.phase === 'WIN' || state.phase === 'LOSS') && (
+                  <div className="ending-card">
+                    <h2>{state.phase === 'WIN' ? t('ui.game.coalitionHolds', 'Coalition Holds') : t('ui.game.collapse', 'Collapse')}</h2>
+                    <p>
+                      {state.phase === 'WIN'
+                        ? t('ui.game.endingTier', 'Ending tier: {{tier}}', { tier: getEndingTierLabel(ending.tier) })
+                        : state.lossReason}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </main>
 
-        <aside className="panel right-panel">
+        <aside className="panel right-panel premium-panel">
           <div className="panel-toolbar">
             <div>
-              <span className="eyebrow">Coalition Desk</span>
-              <h2>{rightTab === 'actions' ? 'Intent workspace' : 'Effect trace log'}</h2>
+              <span className="eyebrow">{t('ui.game.coalitionDesk', 'Coalition Desk')}</span>
+              <h2>
+                {viewState.rightTab === 'actions'
+                  ? t('ui.game.intentWorkspace', 'Intent workspace')
+                  : t('ui.game.effectTraceLog', 'Effect trace log')}
+              </h2>
             </div>
             <div className="segmented compact">
-              <button className={rightTab === 'actions' ? 'active' : ''} onClick={() => setRightTab('actions')}>
-                Actions
+              <button className={viewState.rightTab === 'actions' ? 'active' : ''} onClick={() => onViewStateChange({ rightTab: 'actions' })}>
+                {t('ui.game.actions', 'Actions')}
               </button>
-              <button className={rightTab === 'log' ? 'active' : ''} onClick={() => setRightTab('log')}>
-                Log
+              <button className={viewState.rightTab === 'log' ? 'active' : ''} onClick={() => onViewStateChange({ rightTab: 'log' })}>
+                {t('ui.game.log', 'Log')}
               </button>
             </div>
           </div>
 
           <div className="panel-body">
-            {rightTab === 'actions' && focusedPlayer && (
+            {viewState.rightTab === 'actions' && focusedPlayer && (
               <section className="intent-workspace">
                 <div className="seat-tabs">
                   {state.players.map((player) => (
-                    <button
-                      key={player.seat}
-                      className={`seat-tab ${focusedPlayer.seat === player.seat ? 'active' : ''}`}
-                      onClick={() => setFocusedSeat(player.seat)}
-                    >
-                      <strong>Seat {player.seat + 1}</strong>
-                      <span>{content.roles[player.roleId].name}</span>
-                    </button>
+                    <div key={player.seat} className={`seat-tab ${focusedPlayer.seat === player.seat ? 'active' : ''}`}>
+                      <button
+                        type="button"
+                        className="seat-tab-main"
+                        onClick={() => onViewStateChange({ focusedSeat: player.seat, rightTab: 'actions' })}
+                      >
+                        <strong>{t('ui.game.seat', 'Seat {{seat}}', { seat: player.seat + 1 })}</strong>
+                        <span>{content.roles[player.roleId].name}</span>
+                      </button>
+                    </div>
                   ))}
                 </div>
 
@@ -269,30 +461,32 @@ export function GameScreen({ surface, roomId, state, content, onCommand, onBack,
                   content={content}
                   player={focusedPlayer}
                   focused
-                  onFocus={() => setFocusedSeat(focusedPlayer.seat)}
+                  onFocus={() => onViewStateChange({ focusedSeat: focusedPlayer.seat })}
                   onCommand={onCommand}
                 />
               </section>
             )}
 
-            {rightTab === 'log' && (
+            {viewState.rightTab === 'log' && (
               <section className="log-section">
                 <div className="section-heading">
-                  <h3>Effect Trace Log</h3>
-                  <span className="muted">{state.eventLog.length} events</span>
+                  <h3>{t('ui.game.effectTraceLog', 'Effect trace log')}</h3>
+                  <span className="muted">{t('ui.game.eventsCount', '{{count}} events', { count: state.eventLog.length })}</span>
                 </div>
                 <div className="event-log">
                   {state.eventLog
                     .slice()
                     .reverse()
                     .map((event) => (
-                      <button key={event.seq} className="log-entry" onClick={() => setEventSeq(event.seq)}>
-                        <span>{event.emoji}</span>
-                        <div>
-                          <strong>{event.message}</strong>
-                          <p>{event.causedBy.join(' → ')}</p>
-                        </div>
-                      </button>
+                      <article key={event.seq} className={`log-entry premium-log-entry ${viewState.eventSeq === event.seq ? 'active' : ''}`}>
+                        <button type="button" className="log-entry-main" onClick={() => onViewStateChange({ eventSeq: event.seq, rightTab: 'log' })}>
+                          <span className="log-entry-icon">{event.emoji}</span>
+                          <div>
+                            <strong>{event.message}</strong>
+                            <p>{event.causedBy.join(' -> ')}</p>
+                          </div>
+                        </button>
+                      </article>
                     ))}
                 </div>
               </section>
@@ -302,17 +496,25 @@ export function GameScreen({ surface, roomId, state, content, onCommand, onBack,
       </div>
 
       <RegionDrawer
-        regionId={regionId}
-        focusedSeat={focusedSeat}
+        regionId={viewState.regionId}
+        focusedSeat={viewState.focusedSeat}
         state={state}
         content={content}
-        onClose={() => setRegionId(null)}
+        onClose={() => onViewStateChange({ regionId: null })}
         onCommand={onCommand}
       />
 
-      <TraceDrawer event={selectedEvent} onClose={() => setEventSeq(null)} />
-      <DealModal state={state} content={content} onCommand={onCommand} />
-      {showDebug && <DebugOverlay state={state} roomId={roomId} />}
+      <TraceDrawer
+        event={selectedEvent}
+        onClose={() => onViewStateChange({ eventSeq: null })}
+      />
+
+      <DealModal
+        state={state}
+        content={content}
+        onCommand={onCommand}
+      />
+      {viewState.showDebug && <DebugOverlay state={state} roomId={roomId} />}
     </div>
   );
 }

@@ -14,6 +14,7 @@ import {
   type PlayerState,
   type RegionId,
 } from '../../engine/index.ts';
+import { t } from '../i18n/index.ts';
 
 interface ActionBoardProps {
   seat: number;
@@ -99,14 +100,14 @@ export function ActionBoard({ seat, state, content, player, focused, onFocus, on
 
         {action.targetKind !== 'NONE' && (
           <label className="action-target">
-            <span>{action.targetLabel ?? 'Target'}</span>
+            <span>{action.targetLabel ?? t('ui.actionBoard.target', 'Target')}</span>
             <select
               value={targetValue(target)}
               onChange={(event) => setTargets({ ...targets, [action.id]: event.target.value })}
             >
               {(action.targetKind === 'REGION' ? getAvailableRegions() : getAvailableFronts()).map((option) => (
                 <option key={option} value={option}>
-                  {option}
+                  {action.targetKind === 'REGION' ? content.regions[option as RegionId].name : content.fronts[option as FrontId].name}
                 </option>
               ))}
             </select>
@@ -121,7 +122,7 @@ export function ActionBoard({ seat, state, content, player, focused, onFocus, on
           title={disabled.reason}
           onClick={() => onCommand({ type: 'QueueIntent', seat, actionId: action.id, target })}
         >
-          Queue Action
+          {t('ui.actionBoard.queueAction', 'Queue Action')}
         </button>
       </div>
     );
@@ -139,19 +140,27 @@ export function ActionBoard({ seat, state, content, player, focused, onFocus, on
           <p>{getPlayerStatusSummary(player)}</p>
         </div>
         <div className="burnout-meter">
-          <span>Burnout {player.burnout}/{player.maxBurnout}</span>
-          <span>{player.ready ? 'Ready' : 'Planning'}</span>
+          <span>{t('ui.actionBoard.burnout', 'Burnout {{current}}/{{max}}', { current: player.burnout, max: player.maxBurnout })}</span>
+          <span>{player.ready ? t('ui.status.ready', 'Ready') : t('ui.status.planning', 'Planning')}</span>
         </div>
       </div>
 
       <div className="action-board-stats">
-        <span className="resource-chip">Queued {player.queuedIntents.length}</span>
-        <span className="resource-chip">Slots left {player.actionsRemaining}</span>
-        <span className="resource-chip">Status {player.ready ? 'Ready' : 'Planning'}</span>
+        <span className="resource-chip">
+          {t('ui.actionBoard.queued', 'Queued {{count}}', { count: player.queuedIntents.length })}
+        </span>
+        <span className="resource-chip">
+          {t('ui.actionBoard.slotsLeft', 'Slots left {{count}}', { count: player.actionsRemaining })}
+        </span>
+        <span className="resource-chip">
+          {t('ui.actionBoard.status', 'Status {{status}}', {
+            status: player.ready ? t('ui.status.ready', 'Ready') : t('ui.status.planning', 'Planning'),
+          })}
+        </span>
       </div>
 
       <div className="queued-list compact">
-        {player.queuedIntents.length === 0 && <span className="muted">No actions queued yet.</span>}
+        {player.queuedIntents.length === 0 && <span className="muted">{t('ui.status.noActionsQueued', 'No actions queued yet.')}</span>}
         {player.queuedIntents.map((intent) => {
           const action = content.actions[intent.actionId];
           return (
@@ -167,7 +176,7 @@ export function ActionBoard({ seat, state, content, player, focused, onFocus, on
 
       <div className="action-selector">
         <div className="action-selector-group">
-          <span className="selector-label">Toolkit</span>
+          <span className="selector-label">{t('ui.actionBoard.toolkit', 'Toolkit')}</span>
           <div className="action-toggle-row">
             {actions.standard.map((action) => (
               <button
@@ -182,7 +191,7 @@ export function ActionBoard({ seat, state, content, player, focused, onFocus, on
         </div>
 
         <div className="action-selector-group">
-          <span className="selector-label">Breakthrough</span>
+          <span className="selector-label">{t('ui.actionBoard.breakthrough', 'Breakthrough')}</span>
           <div className="action-toggle-row">
             {actions.breakthroughs.map((action) => (
               <button
@@ -206,7 +215,7 @@ export function ActionBoard({ seat, state, content, player, focused, onFocus, on
         disabled={state.phase !== 'COALITION' || player.actionsRemaining !== 0}
         onClick={() => onCommand({ type: 'SetReady', seat, ready: !player.ready })}
       >
-        {player.ready ? 'Unset Ready' : 'Set Ready'}
+        {player.ready ? t('ui.actionBoard.unsetReady', 'Unset Ready') : t('ui.actionBoard.setReady', 'Set Ready')}
       </button>
     </div>
   );

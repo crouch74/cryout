@@ -47,3 +47,10 @@ test('room service stays in sync with the local table reducer', async () => {
   assert.deepEqual(payload.state.fronts, local.state.fronts);
   assert.deepEqual(payload.state.regions, local.state.regions);
 });
+
+test('room service issues friendly 9-letter room keys', () => {
+  const controller = createRoomController();
+  const created = controller.createRoom(startCommand) as { roomId: string; state: EngineState };
+
+  assert.match(created.roomId, /^[a-z]{3}-[a-z]{3}-[a-z]{3}$/);
+});

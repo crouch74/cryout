@@ -1,0 +1,420 @@
+{
+  "content": {
+    "fronts": {
+      "WAR": { "name": "War" },
+      "CLIMATE": { "name": "Climate" },
+      "RIGHTS": { "name": "Human Rights" },
+      "SPEECH_INFO": { "name": "Speech & Information" },
+      "POVERTY": { "name": "Poverty" },
+      "ENERGY": { "name": "Energy" },
+      "CULTURE": { "name": "Art & Culture" }
+    },
+    "regions": {
+      "MENA": { "name": "West Asia & North Africa" },
+      "SubSaharanAfrica": { "name": "Africa South of the Sahara" },
+      "SouthAsia": { "name": "South Asia" },
+      "SoutheastAsia": { "name": "Southeast Asia" },
+      "LatinAmerica": { "name": "Abya Yala / Latin America" },
+      "Europe": { "name": "Europe" },
+      "NorthAmerica": { "name": "Turtle Island / North America" },
+      "PacificIslands": { "name": "Moana / Pacific Islands" }
+    },
+    "roles": {
+      "organizer": {
+        "name": "Community Organizer",
+        "shortName": "Organizer",
+        "passive": "Builds solidarity and keeps people moving when corridors close."
+      },
+      "investigative_journalist": {
+        "name": "Investigative Journalist",
+        "shortName": "Journalist",
+        "passive": "Turns testimony into evidence and cracks open truth windows."
+      },
+      "human_rights_lawyer": {
+        "name": "Human Rights Lawyer",
+        "shortName": "Lawyer",
+        "passive": "Clears locks, raises remedy pressure, and protects civic remedies."
+      },
+      "climate_energy_planner": {
+        "name": "Climate & Energy Planner",
+        "shortName": "Planner",
+        "passive": "Builds resilient infrastructure that slows climate spillover."
+      }
+    },
+    "institutions": {
+      "MutualAidHub": {
+        "name": "Mutual Aid Hub",
+        "description": "Generates solidarity when displacement is present."
+      },
+      "IndependentMediaNetwork": {
+        "name": "Independent Media Network",
+        "description": "Converts pressure into truth windows and removes disinfo."
+      },
+      "LegalClinic": {
+        "name": "Legal Clinic",
+        "description": "Blocks the first control lock applied each round."
+      },
+      "CommunityMicrogrid": {
+        "name": "Community Microgrid",
+        "description": "Absorbs one climate or energy deterioration hit each round."
+      }
+    },
+    "actions": {
+      "rest_and_care": {
+        "name": "Rest & Care",
+        "description": "Recover burnout and steady the coalition."
+      },
+      "cultural_resonance": {
+        "name": "Cultural Resonance",
+        "description": "Draw and resolve a culture card in a chosen region."
+      },
+      "mutual_aid_network": {
+        "name": "Mutual Aid Network",
+        "description": "Build solidarity infrastructure and ease displacement."
+      },
+      "community_mobilization": {
+        "name": "Community Mobilization",
+        "description": "Turn visibility into solidarity."
+      },
+      "safe_passage": {
+        "name": "Safe Passage",
+        "description": "Open civilian corridors or relocate people out of immediate harm."
+      },
+      "mass_mobilization": {
+        "name": "Mass Mobilization",
+        "description": "Transform coalition momentum into broad public action."
+      },
+      "field_investigation": {
+        "name": "Field Investigation",
+        "description": "Gather evidence and open a truth window in the target region."
+      },
+      "counter_disinfo": {
+        "name": "Counter Disinfo",
+        "description": "Disrupt false narratives and clear disinfo pressure."
+      },
+      "truth_window": {
+        "name": "Truth Window",
+        "description": "Create a bypass for culture and journalism in a censored region."
+      },
+      "global_expose": {
+        "name": "Global Expose",
+        "description": "Turn evidence into a transregional truth surge."
+      },
+      "emergency_injunction": {
+        "name": "Emergency Injunction",
+        "description": "Remove access and surveillance locks from a region."
+      },
+      "clear_aid_corridor": {
+        "name": "Clear Aid Corridor",
+        "description": "Reopen humanitarian access and reduce immediate harm."
+      },
+      "remedy_dossier": {
+        "name": "Remedy Dossier",
+        "description": "Build the legal case for enforceable remedy."
+      },
+      "international_tribunal": {
+        "name": "International Tribunal",
+        "description": "Convert legal pressure into a major rights breakthrough."
+      },
+      "build_microgrid": {
+        "name": "Build Microgrid",
+        "description": "Build local energy resilience in a vulnerable region."
+      },
+      "disaster_preparedness": {
+        "name": "Disaster Preparedness",
+        "description": "Prepare communities before climate shocks land."
+      },
+      "resilience_retrofit": {
+        "name": "Resilience Retrofit",
+        "description": "Strengthen local systems against compounding breakdowns."
+      },
+      "rapid_decarbonization": {
+        "name": "Rapid Decarbonization",
+        "description": "Force a major shift toward climate protection."
+      }
+    },
+    "charter": {
+      "protected_humanitarian_corridors": {
+        "title": "Protected Humanitarian Corridors",
+        "description": "Civilian access routes stay open despite escalation."
+      },
+      "right_to_information": {
+        "title": "Right To Information",
+        "description": "Independent reporting and public truth claims are protected."
+      },
+      "right_to_remedy": {
+        "title": "Right To Remedy",
+        "description": "Access to remedy becomes enforceable across targeted regions."
+      },
+      "climate_reparations_compact": {
+        "title": "Climate Reparations Compact",
+        "description": "Resources move toward those living inside the crisis first."
+      },
+      "energy_commons": {
+        "title": "Energy Commons",
+        "description": "Local resilience infrastructure is treated as shared rights work."
+      },
+      "cultural_survival_covenant": {
+        "title": "Cultural Survival Covenant",
+        "description": "Culture is defended as a material right, not a luxury."
+      }
+    },
+    "scenarios": {
+      "witness_dignity": {
+        "name": "Witness & Dignity",
+        "description": "West Asia & North Africa is under stacked war and rights pressure while climate accelerates the broader crisis.",
+        "introduction": "A coalition of organizers, journalists, lawyers, and planners works across a narrowing civic landscape to protect civilians, keep truth moving, and build institutions that can outlast the Capture Engine.",
+        "story": "Witness & Dignity keeps Palestine as the moral center of the scenario framing without reducing the region to spectacle. The coalition acts under severe pressure, trying to hold open corridors of care, remedy, and testimony while climate stress compounds every front.",
+        "dramatization": "The table should feel like an emergency newsroom, a legal triage room, and a mutual-aid corridor all at once. Every gain is fragile. Every delay has a civilian cost. The scenario is written to keep witness, care, and political clarity in the foreground rather than spectacle.",
+        "gameplay": "Witness & Dignity opens under immediate pressure. War, rights, and poverty all threaten to outrun the coalition before long-term institutions can stabilize the map. The strongest line of play is coordinated pacing: protect West Asia & North Africa from spiraling displacement while building enough evidence and solidarity to unlock charter progress.",
+        "mechanics": "The scenario rewards public testimony and careful timing. Witness Window cancels the first disinformation placement in a round when the coalition keeps evidence high, while Aid Corridor punishes unchecked war pressure by locking access in West Asia & North Africa. Expect a tighter, more tactical game with fewer safe turns and heavier emphasis on media, legal, and relief sequencing.",
+        "moralCenter": "Palestine is framed as the moral center: rights-focused, unsensational, and grounded in civilian protection.",
+        "specialRuleChips": {
+          "witness_window": {
+            "label": "Witness Window",
+            "description": "If evidence is at least 3, the first disinfo placement each round is cancelled."
+          },
+          "aid_corridor": {
+            "label": "Aid Corridor",
+            "description": "When WAR pressure reaches 8, West Asia & North Africa gains an AidAccess lock until Organizer or Lawyer clears it."
+          }
+        }
+      },
+      "green_resistance": {
+        "name": "Green Resistance",
+        "description": "Forest communities face a coordinated extraction surge where climate, energy, and rights pressure reinforce each other.",
+        "introduction": "The coalition shifts toward land defenders, river communities, and movement journalists trying to hold the line across Abya Yala / Latin America, Africa South of the Sahara, and the wider climate frontier.",
+        "story": "Green Resistance frames frontline environmental defense as a struggle over memory, sovereignty, and survival. Concessions, private security, and disinformation campaigns clear the way for extraction while local communities fight to keep forests, rivers, and energy futures from becoming sacrifice zones.",
+        "dramatization": "This scenario should feel slower, wetter, and more territorial than Witness & Dignity. One turn is a blockade on a logging road, the next a testimony circuit, the next a jury-rigged microgrid keeping a village clinic alive while the smoke closes in.",
+        "gameplay": "Green Resistance begins with more grassroots capacity than Witness & Dignity, but the coalition is spread across more regions and starts with tighter civic space. The challenge is preventing climate and energy escalation from creating a rolling displacement crisis while still investing in culture, legal protection, and long-term infrastructure.",
+        "mechanics": "Root Solidarity turns cultural protection into momentum by generating solidarity at the start of a round once Art & Culture is stabilized. Extraction Spiral punishes ignored climate pressure by pushing fresh displacement into Abya Yala / Latin America and Africa South of the Sahara before the world phase resolves. The scenario rewards distributed institution-building and punishes leaving ecological fronts to drift.",
+        "moralCenter": "Indigenous land defenders and forest communities are treated as protagonists with agency, not background scenery for a climate disaster story.",
+        "specialRuleChips": {
+          "root_solidarity": {
+            "label": "Root Solidarity",
+            "description": "At the start of a round, if Art & Culture protection is 5+, gain 1 solidarity."
+          },
+          "extraction_spiral": {
+            "label": "Extraction Spiral",
+            "description": "When Climate pressure reaches 7 or more, Abya Yala / Latin America and Africa South of the Sahara each gain 1 displacement during the world phase."
+          }
+        }
+      }
+    }
+  },
+  "worldMap": {
+    "straplines": {
+      "NorthAmerica": "Media power, rights drift, imperial upstream pressure.",
+      "LatinAmerica": "Land defense, memory, and solidarity networks.",
+      "Europe": "Diplomatic leverage, border regime, legal spillover.",
+      "MENA": "War pressure, aid corridors, testimony under siege.",
+      "SubSaharanAfrica": "Climate, extraction, and infrastructure fragility.",
+      "SouthAsia": "Heat stress, energy transitions, mass exposure.",
+      "SoutheastAsia": "Disinfo corridors across dense coastal systems.",
+      "PacificIslands": "Oceanic front line and climate alarms."
+    }
+  },
+  "ui": {
+    "app": {
+      "restoringEyebrow": "Restoring Session",
+      "restoringTitle": "Rebuilding the table state",
+      "restoringBody": "The permalink is being resolved into a live session."
+    },
+    "status": {
+      "ready": "Ready",
+      "planning": "Planning",
+      "open": "Open",
+      "unknown": "Unknown",
+      "lockedInRegion": "Locked in {{region}}",
+      "spentInactive": "Spent / inactive",
+      "collapsedFront": "Collapsed front",
+      "contestableFront": "Still contestable",
+      "waitingForAllSeats": "Waiting for All Seats",
+      "compromiseVoteLive": "Compromise vote is live. Resolve the modal to continue.",
+      "noTraceRecorded": "No trace recorded for this entry.",
+      "noStateDeltas": "No state deltas",
+      "noActionsQueued": "No actions queued yet.",
+      "noActiveLocks": "No active locks.",
+      "noInstitutionsYet": "No institutions yet."
+    },
+    "home": {
+      "noScenariosTitle": "No scenarios found",
+      "noScenariosBody": "The content registry did not return any playable scenarios.",
+      "eyebrow": "Playable MVP",
+      "title": "Dignity Rising",
+      "subtitle": "A cooperative strategy game about protecting civilians, defending truth, and building institutions under the pressure of a systemic antagonist.",
+      "tagHope": "Hopeful long-term building",
+      "tagResilience": "Tragic resilience",
+      "tagSatire": "Bitter satire aimed upward",
+      "openBooklet": "Open Scenario Booklet",
+      "jumpSetup": "Jump To Table Setup",
+      "copySetup": "Copy Setup Permalink",
+      "selectedChapter": "Selected Chapter",
+      "launch": "Launch",
+      "localTable": "Local Table",
+      "roomPlay": "Room Play",
+      "scenario": "Scenario",
+      "mode": "Mode",
+      "modeCore": "Core",
+      "modeFull": "Full",
+      "playerCount": "Player Count",
+      "seed": "Seed",
+      "roomUrl": "Room Service URL",
+      "startLocal": "Start Local Table",
+      "createRoom": "Create Room",
+      "loadAutosave": "Load Autosave",
+      "coalitionSeats": "Coalition Seats",
+      "seatLabel": "Seat {{seat}}",
+      "loadSave": "Load Save",
+      "savePlaceholder": "Paste a serialized save payload here.",
+      "loadSaveButton": "Load Save Into Local Table",
+      "rolesMustBeUnique": "Roles must be unique.",
+      "pasteSaveFirst": "Paste a save payload first.",
+      "civicSpaceHeat": "{{civicSpace}} civic space with +{{temperature}}C starting heat",
+      "roundWindow": "{{core}} core rounds / {{full}} full rounds"
+    },
+    "scenarioBooklet": {
+      "eyebrow": "Scenario Booklet",
+      "title": "Stories, rules, and table texture",
+      "subtitle": "Read each dossier like a spread from the campaign guide, then carry the selected chapter straight into setup.",
+      "copyChapter": "Copy Chapter Link",
+      "previous": "Previous Chapter",
+      "next": "Next Chapter",
+      "chapter": "Chapter {{chapter}}",
+      "rulesFolio": "Rules Folio",
+      "story": "Story",
+      "dramatization": "Dramatization",
+      "moralCenter": "Moral center",
+      "civicSpace": "Civic space",
+      "startingHeat": "Starting heat",
+      "roundWindow": "Round window",
+      "gameplay": "Gameplay",
+      "mechanics": "Mechanics",
+      "pressureProfile": "Pressure Profile",
+      "featuredRegions": "Featured Regions",
+      "roundWindowValue": "{{core}} core / {{full}} full"
+    },
+    "game": {
+      "commandTable": "Global Command Table",
+      "roundSummary": "Round {{round}} of {{roundLimit}} | {{surface}} | {{description}}",
+      "localSurface": "Local Table",
+      "roomSurface": "Room {{roomId}}",
+      "temperature": "Temperature",
+      "temperatureBand": "Band {{band}} | {{crisisCount}} crisis cards",
+      "civicSpace": "Civic Space",
+      "civicSpaceHelp": "Pressure on public organizing capacity",
+      "charter": "Charter",
+      "ratifiedCount": "{{count}} ratified",
+      "copyView": "Copy View Link",
+      "exportSave": "Export Save",
+      "hideDebug": "Hide Debug",
+      "showDebug": "Show Debug",
+      "back": "Back",
+      "solidarity": "Solidarity",
+      "evidence": "Evidence",
+      "capacity": "Capacity",
+      "relief": "Relief",
+      "compromiseDebt": "Compromise Debt",
+      "scenarioDesk": "Scenario Desk",
+      "brief": "Brief",
+      "fronts": "Fronts",
+      "charterPanel": "Charter",
+      "situation": "Situation",
+      "moralCenter": "Moral Center",
+      "specialRules": "Special Rules",
+      "systemicFronts": "Systemic Fronts",
+      "frontsSubtitle": "Pressure, protection, and impact",
+      "pressure": "Pressure",
+      "protection": "Protection",
+      "impact": "Impact",
+      "peoplesCharter": "People's Charter",
+      "clausesRatified": "{{count}} clauses ratified",
+      "worldTheatre": "World Theatre",
+      "regionalPressureBoard": "Regional pressure board",
+      "displacement": "Displacement",
+      "disinfo": "Disinfo",
+      "locks": "Locks",
+      "institutions": "Institutions",
+      "risk": "Risk {{count}}",
+      "roundControl": "Round Control",
+      "phaseLabel": "{{phase}} phase",
+      "roundControlBody": "Advance only when the table is ready. The current session is always linkable in-place.",
+      "resolveWorldPhase": "Resolve World Phase",
+      "resolveEndPhase": "Resolve End Phase",
+      "commitCoalitionIntent": "Commit Coalition Intent",
+      "coalitionHolds": "Coalition Holds",
+      "collapse": "Collapse",
+      "endingTier": "Ending tier: {{tier}}",
+      "coalitionDesk": "Coalition Desk",
+      "intentWorkspace": "Intent workspace",
+      "effectTraceLog": "Effect trace log",
+      "actions": "Actions",
+      "log": "Log",
+      "seat": "Seat {{seat}}",
+      "eventsCount": "{{count}} events"
+    },
+    "actionBoard": {
+      "burnout": "Burnout {{current}}/{{max}}",
+      "queued": "Queued {{count}}",
+      "slotsLeft": "Slots left {{count}}",
+      "status": "Status {{status}}",
+      "toolkit": "Toolkit",
+      "breakthrough": "Breakthrough",
+      "target": "Target",
+      "queueAction": "Queue Action",
+      "setReady": "Set Ready",
+      "unsetReady": "Unset Ready"
+    },
+    "regionDrawer": {
+      "focusedSeat": "Focused seat: {{seat}}",
+      "close": "Close",
+      "tokensLocks": "Tokens & Locks",
+      "vulnerabilities": "Vulnerabilities",
+      "actionsTargeting": "Actions Targeting {{region}}"
+    },
+    "dealModal": {
+      "title": "Compromise Offer",
+      "yes": "YES",
+      "no": "NO"
+    },
+    "traceDrawer": {
+      "close": "Close"
+    },
+    "debug": {
+      "title": "Debug",
+      "seed": "Seed",
+      "rngCalls": "RNG Calls",
+      "band": "Band",
+      "bandValue": "{{band}} / crises {{count}}",
+      "climateRoll": "Climate Roll",
+      "na": "n/a",
+      "firedRules": "Fired Rules",
+      "none": "none",
+      "delayedEffects": "Delayed Effects",
+      "compromiseDebt": "Compromise Debt",
+      "flags": "Flags",
+      "room": "Room"
+    },
+    "phases": {
+      "WORLD": "WORLD",
+      "COALITION": "COALITION",
+      "COMPROMISE": "COMPROMISE",
+      "END": "END",
+      "WIN": "WIN",
+      "LOSS": "LOSS"
+    },
+    "civicSpace": {
+      "OPEN": "Open",
+      "NARROWED": "Narrowed",
+      "OBSTRUCTED": "Obstructed",
+      "REPRESSED": "Repressed",
+      "CLOSED": "Closed"
+    },
+    "endingTier": {
+      "Rising": "Rising",
+      "Dignified Resistance": "Dignified Resistance",
+      "Endurance": "Endurance",
+      "Survival": "Survival"
+    }
+  }
+}

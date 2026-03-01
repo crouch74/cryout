@@ -48,6 +48,10 @@ test('scenario chip selectors and effect previews expose useful UI text', () => 
   const witnessStatus = getScenarioRuleStatus(state, 'witness_window');
   assert.equal(witnessStatus.value, 'Spent / inactive');
 
+  state.regions.MENA.locks.push('AidAccess');
+  const aidCorridorStatus = getScenarioRuleStatus(state, 'aid_corridor');
+  assert.equal(aidCorridorStatus.value, 'Locked in West Asia & North Africa');
+
   const preview = buildEffectPreview(content.actions.community_mobilization);
   assert.match(preview, /solidarity/i);
 });

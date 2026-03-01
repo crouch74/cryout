@@ -13,6 +13,12 @@ const pack: PackDefinition = {
       'A coalition of organizers, journalists, lawyers, and planners works across a narrowing civic landscape to protect civilians, keep truth moving, and build institutions that can outlast the Capture Engine.',
     story:
       'Witness & Dignity keeps Palestine as the moral center of the scenario framing without reducing the region to spectacle. The coalition acts under severe pressure, trying to hold open corridors of care, remedy, and testimony while climate stress compounds every front.',
+    dramatization:
+      'The table should feel like an emergency newsroom, a legal triage room, and a mutual-aid corridor all at once. Every gain is fragile. Every delay has a civilian cost. The scenario is written to keep witness, care, and political clarity in the foreground rather than spectacle.',
+    gameplay:
+      'Witness & Dignity opens under immediate pressure. War, rights, and poverty all threaten to outrun the coalition before long-term institutions can stabilize the map. The strongest line of play is coordinated pacing: protect MENA from spiraling displacement while building enough evidence and solidarity to unlock charter progress.',
+    mechanics:
+      'The scenario rewards public testimony and careful timing. Witness Window cancels the first disinformation placement in a round when the coalition keeps evidence high, while Aid Corridor punishes unchecked war pressure by locking access in MENA. Expect a tighter, more tactical game with fewer safe turns and heavier emphasis on media, legal, and relief sequencing.',
     moralCenter: 'Palestine is framed as the moral center: rights-focused, unsensational, and grounded in civilian protection.',
     setup: {
       civicSpace: 'NARROWED',

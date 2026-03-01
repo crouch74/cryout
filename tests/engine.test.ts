@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { compileContent, dispatchCommand, initializeGame, type EngineCommand } from '../engine/index.ts';
+import { compileContent, dispatchCommand, initializeGame, listScenarios, type EngineCommand } from '../engine/index.ts';
 
 const startCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
   type: 'StartGame',
@@ -59,4 +59,14 @@ test('aid corridor appears when war pressure crosses the trigger', () => {
   const next = dispatchCommand(state, { type: 'ResolveWorldPhase' }, content);
 
   assert.equal(next.regions.MENA.locks.includes('AidAccess'), true);
+});
+
+test('scenario registry exposes the booklet metadata and alternate scenario pack', () => {
+  const scenarios = listScenarios();
+  const greenResistance = compileContent('green_resistance').scenario;
+
+  assert.equal(scenarios.length >= 2, true);
+  assert.equal(greenResistance.name, 'Green Resistance');
+  assert.match(greenResistance.gameplay, /climate/i);
+  assert.match(greenResistance.mechanics, /Root Solidarity/i);
 });

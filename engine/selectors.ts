@@ -11,6 +11,17 @@ import type {
 } from './types.ts';
 import { getDisabledActionReason, getTemperatureBand } from './runtime.ts';
 
+const DEFAULT_REGION_STATUS_LABELS: Record<RegionId, string> = {
+  MENA: 'West Asia & North Africa',
+  SubSaharanAfrica: 'Africa South of the Sahara',
+  SouthAsia: 'South Asia',
+  SoutheastAsia: 'Southeast Asia',
+  LatinAmerica: 'Abya Yala / Latin America',
+  Europe: 'Europe',
+  NorthAmerica: 'Turtle Island / North America',
+  PacificIslands: 'Moana / Pacific Islands',
+};
+
 export function getRole(state: EngineState, content: CompiledContent, seat: number): RoleDefinition {
   return content.roles[state.players[seat].roleId];
 }
@@ -75,7 +86,11 @@ export function buildEffectPreview(action: ActionDefinition): string {
     .join(' • ');
 }
 
-export function getScenarioRuleStatus(state: EngineState, ruleId: string): { active: boolean; value: string } {
+export function getScenarioRuleStatus(
+  state: EngineState,
+  ruleId: string,
+  regionStatusLabels: Partial<Record<RegionId, string>> = DEFAULT_REGION_STATUS_LABELS,
+): { active: boolean; value: string } {
   if (ruleId === 'witness_window') {
     return {
       active: Boolean(state.roundFlags.witness_window_available),
@@ -87,7 +102,7 @@ export function getScenarioRuleStatus(state: EngineState, ruleId: string): { act
     const active = state.regions.MENA.locks.includes('AidAccess');
     return {
       active,
-      value: active ? 'Locked in MENA' : 'Open',
+      value: active ? `Locked in ${regionStatusLabels.MENA ?? DEFAULT_REGION_STATUS_LABELS.MENA}` : 'Open',
     };
   }
 

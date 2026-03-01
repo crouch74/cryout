@@ -1,5 +1,6 @@
 import type { EngineState } from '../../engine/index.ts';
 import { getTemperatureBand } from '../../engine/index.ts';
+import { t } from '../i18n/index.ts';
 
 interface DebugOverlayProps {
   state: EngineState;
@@ -11,29 +12,29 @@ export function DebugOverlay({ state, roomId }: DebugOverlayProps) {
 
   return (
     <div className="debug-overlay">
-      <h4>Debug</h4>
+      <h4>{t('ui.debug.title', 'Debug')}</h4>
       <div className="debug-grid">
-        <span>Seed</span>
+        <span>{t('ui.debug.seed', 'Seed')}</span>
         <span>{state.seed}</span>
-        <span>RNG Calls</span>
+        <span>{t('ui.debug.rngCalls', 'RNG Calls')}</span>
         <span>{state.rng.calls}</span>
-        <span>Band</span>
+        <span>{t('ui.debug.band', 'Band')}</span>
         <span>
-          {band.band} / crises {band.crisisCount}
+          {t('ui.debug.bandValue', '{{band}} / crises {{count}}', { band: band.band, count: band.crisisCount })}
         </span>
-        <span>Climate Roll</span>
-        <span>{state.debug.climateRoll ?? 'n/a'}</span>
-        <span>Fired Rules</span>
-        <span>{state.debug.firedRuleIds.join(', ') || 'none'}</span>
-        <span>Delayed Effects</span>
+        <span>{t('ui.debug.climateRoll', 'Climate Roll')}</span>
+        <span>{state.debug.climateRoll ?? t('ui.debug.na', 'n/a')}</span>
+        <span>{t('ui.debug.firedRules', 'Fired Rules')}</span>
+        <span>{state.debug.firedRuleIds.join(', ') || t('ui.debug.none', 'none')}</span>
+        <span>{t('ui.debug.delayedEffects', 'Delayed Effects')}</span>
         <span>{state.delayedEffects.length}</span>
-        <span>Compromise Debt</span>
+        <span>{t('ui.debug.compromiseDebt', 'Compromise Debt')}</span>
         <span>{state.globalTokens.compromise_debt ?? 0}</span>
-        <span>Flags</span>
-        <span>{Object.keys(state.roundFlags).join(', ') || 'none'}</span>
+        <span>{t('ui.debug.flags', 'Flags')}</span>
+        <span>{Object.keys(state.roundFlags).join(', ') || t('ui.debug.none', 'none')}</span>
         {roomId && (
           <>
-            <span>Room</span>
+            <span>{t('ui.debug.room', 'Room')}</span>
             <span>{roomId}</span>
           </>
         )}

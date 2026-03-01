@@ -1,4 +1,4 @@
-export { compileContent } from './content.ts';
+export { compileContent, getScenarioDefinition, listScenarios } from './content.ts';
 export { createRng, nextInt, nextRandom, shuffle } from './rng.ts';
 export {
   dispatchCommand,

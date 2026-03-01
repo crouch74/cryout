@@ -221,6 +221,9 @@ export interface ScenarioDefinition {
   description: string;
   introduction: string;
   story: string;
+  dramatization: string;
+  gameplay: string;
+  mechanics: string;
   moralCenter: string;
   setup: {
     civicSpace: CivicSpace;

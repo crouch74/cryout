@@ -52,6 +52,16 @@ function collectHooks(baseHooks: RuleDefinition[], scenarioHooks: RuleDefinition
   return hookMap;
 }
 
+export function listScenarios(): ScenarioDefinition[] {
+  return CONTENT_PACKS
+    .filter((pack): pack is PackDefinition & { scenario: ScenarioDefinition } => pack.type === 'scenario' && Boolean(pack.scenario))
+    .map((pack) => pack.scenario);
+}
+
+export function getScenarioDefinition(scenarioId: string): ScenarioDefinition | undefined {
+  return listScenarios().find((scenario) => scenario.id === scenarioId);
+}
+
 export function compileContent(scenarioId: string, expansionIds: string[] = []): CompiledContent {
   const basePack = CONTENT_PACKS.find((pack) => pack.type === 'base');
   const scenarioPack = CONTENT_PACKS.find((pack) => pack.type === 'scenario' && pack.scenario?.id === scenarioId);

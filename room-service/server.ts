@@ -14,6 +14,8 @@ interface RoomRecord {
   state: EngineState;
 }
 
+const ROOM_KEY_ALPHABET = 'abcdefghijklmnopqrstuvwxyz';
+
 function sendJson(response: ServerResponse, status: number, payload: unknown) {
   response.writeHead(status, {
     'Access-Control-Allow-Origin': '*',
@@ -34,8 +36,14 @@ async function readJson<T>(request: IncomingMessage): Promise<T> {
   return body ? (JSON.parse(body) as T) : ({} as T);
 }
 
-function getRoomId() {
-  return `room-${crypto.randomUUID()}`;
+function createRoomKeySegment() {
+  const letters = new Uint8Array(3);
+  crypto.getRandomValues(letters);
+  return Array.from(letters, (value) => ROOM_KEY_ALPHABET[value % ROOM_KEY_ALPHABET.length]).join('');
+}
+
+function createRoomKey() {
+  return `${createRoomKeySegment()}-${createRoomKeySegment()}-${createRoomKeySegment()}`;
 }
 
 function getPathSegments(request: IncomingMessage) {
@@ -58,7 +66,10 @@ export function createRoomController() {
     createRoom(startCommand: Extract<EngineCommand, { type: 'StartGame' }>) {
       const content = compileContent(startCommand.scenarioId, startCommand.expansionIds ?? []);
       const state = initializeGame(startCommand);
-      const roomId = getRoomId();
+      let roomId = createRoomKey();
+      while (rooms.has(roomId)) {
+        roomId = createRoomKey();
+      }
       const room = { content, state };
       rooms.set(roomId, room);
       return buildRoomSnapshot(roomId, room);
