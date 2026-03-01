@@ -144,6 +144,17 @@ export const MAP_THEATRE_SVG_GROUPS = {
   redSea: refs('eg', 'sd', 'er', 'dj', 'ye', 'sa'),
 } as const;
 
+export const BOARD_REGION_MAP_POINTS: Record<RegionId, { x: string; y: string }> = {
+  Palestine: { x: '58.6%', y: '45.5%' },
+  Lebanon: { x: '58.3%', y: '43.8%' },
+  Egypt: { x: '57.1%', y: '48%' },
+  Sudan: { x: '57.3%', y: '54.2%' },
+  Congo: { x: '54.8%', y: '65.6%' },
+  Yemen: { x: '62.9%', y: '54.4%' },
+  Sahel: { x: '48.9%', y: '53.6%' },
+  GulfStates: { x: '62.2%', y: '49.4%' },
+};
+
 export function getBoardRegionSvgPathIds(regionId: RegionId) {
   const entry = BOARD_REGION_SVG_MANIFEST[regionId];
   return [...entry.primary, ...entry.nearby]

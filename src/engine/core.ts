@@ -2,7 +2,7 @@ import { CivicSpace } from './types';
 import type { GameState } from './types';
 import { evaluateEffects } from './dsl';
 
-export function initializeGameState(scenarioId: string = 'mvp_witness_dignity'): GameState {
+export function initializeGameState(scenarioId: string = 'witness_dignity'): GameState {
     const baseState: GameState = {
         temperature: 2,
         civic_space: CivicSpace.NARROWED,

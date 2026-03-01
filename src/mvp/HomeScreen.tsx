@@ -78,7 +78,7 @@ export function HomeScreen({
       <div className="setup-scene">
         <header className="setup-header">
           <EngravedHeader
-            eyebrow={t('ui.home.eyebrow', 'Playable MVP')}
+            eyebrow={t('ui.home.eyebrow', 'Scenario Table')}
             title={t('ui.home.title', 'Dignity Rising')}
             detail={t(
               'ui.home.subtitle',
