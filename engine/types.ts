@@ -1,348 +1,246 @@
-export type GameMode = 'CORE' | 'FULL';
-export type Phase = 'WORLD' | 'COALITION' | 'COMPROMISE' | 'END' | 'WIN' | 'LOSS';
-export type CivicSpace = 'OPEN' | 'NARROWED' | 'OBSTRUCTED' | 'REPRESSED' | 'CLOSED';
-export type BurnoutState = 'steady' | 'strained' | 'burnt';
+export type VictoryMode = 'LIBERATION' | 'SYMBOLIC';
+export type Phase = 'SYSTEM' | 'COALITION' | 'RESOLUTION' | 'WIN' | 'LOSS';
 
-export type FrontId =
-  | 'WAR'
-  | 'CLIMATE'
-  | 'RIGHTS'
-  | 'SPEECH_INFO'
-  | 'POVERTY'
-  | 'ENERGY'
-  | 'CULTURE';
+export type DomainId =
+  | 'WarMachine'
+  | 'DyingPlanet'
+  | 'GildedCage'
+  | 'SilencedTruth'
+  | 'EmptyStomach'
+  | 'FossilGrip'
+  | 'StolenVoice';
 
 export type RegionId =
-  | 'Palestine'
-  | 'Lebanon'
-  | 'Egypt'
-  | 'Sudan'
   | 'Congo'
-  | 'Yemen'
+  | 'Levant'
+  | 'Amazon'
   | 'Sahel'
-  | 'GulfStates';
+  | 'Mekong'
+  | 'Andes';
 
-export type RoleId =
-  | 'organizer'
-  | 'investigative_journalist'
-  | 'human_rights_lawyer'
-  | 'climate_energy_planner';
+export type FactionId =
+  | 'congo_basin_collective'
+  | 'levant_sumud'
+  | 'mekong_echo_network'
+  | 'amazon_guardians';
 
-export type ResourceType = 'solidarity' | 'evidence' | 'capacity' | 'relief';
-export type TokenType = 'displacement' | 'disinfo' | 'compromise_debt';
-export type LockType = 'AidAccess' | 'Censorship' | 'Surveillance';
-export type InstitutionType =
-  | 'MutualAidHub'
-  | 'IndependentMediaNetwork'
-  | 'LegalClinic'
-  | 'CommunityMicrogrid';
-export type InstitutionStatus = 'active' | 'damaged' | 'destroyed';
-export type DeckId = 'capture' | 'crisis' | 'culture';
-export type CardMode = 'BOTH' | 'CORE' | 'FULL';
-export type HookName =
-  | 'on_round_start'
-  | 'on_world_phase_pre'
-  | 'on_capture_card_resolve'
-  | 'on_crisis_resolve'
-  | 'on_player_action'
-  | 'on_compromise_offer'
-  | 'on_end_phase'
-  | 'on_check_win_loss';
-export type TargetKind = 'NONE' | 'REGION' | 'FRONT';
-export type FrontStat = 'pressure' | 'protection' | 'impact';
-
-export const CIVIC_SPACE_ORDER: CivicSpace[] = [
-  'OPEN',
-  'NARROWED',
-  'OBSTRUCTED',
-  'REPRESSED',
-  'CLOSED',
-];
+export type DeckId = 'system' | 'resistance' | 'beacon';
+export type ResistanceCardType = 'action' | 'support';
+export type ActionId =
+  | 'organize'
+  | 'investigate'
+  | 'launch_campaign'
+  | 'build_solidarity'
+  | 'smuggle_evidence'
+  | 'international_outreach'
+  | 'defend'
+  | 'play_card';
 
 export interface Clamp {
   min?: number;
   max?: number;
 }
 
-export type PlayerSelector = 'acting_player' | 'target_player' | number;
-export type RegionSelector = RegionId | 'target_region' | 'ANY';
-export type FrontSelector = FrontId | 'target_front';
-export type FlagScope = 'scenario' | 'round';
-export type FlagValue = boolean | number | string;
-
-export type ValueRef =
-  | { type: 'temperature' }
-  | { type: 'civic_space_index' }
-  | { type: 'resource'; resource: ResourceType }
-  | { type: 'front_stat'; front: FrontId; stat: FrontStat }
-  | { type: 'player_burnout'; player: PlayerSelector }
-  | { type: 'player_actions_remaining'; player: PlayerSelector }
-  | { type: 'flag'; scope: FlagScope; key: string };
-
-export type Condition =
-  | {
-      kind: 'compare';
-      left: ValueRef;
-      op: '>' | '>=' | '<' | '<=' | '==' | '!=';
-      right: number | string | boolean | ValueRef;
-    }
-  | { kind: 'all'; conditions: Condition[] }
-  | { kind: 'any'; conditions: Condition[] }
-  | { kind: 'not'; condition: Condition }
-  | {
-      kind: 'tokenCount';
-      region: RegionSelector;
-      token: TokenType;
-      op: '>' | '>=' | '<' | '<=' | '==' | '!=';
-      count: number;
-    }
-  | { kind: 'hasLock'; region: RegionSelector; lock: LockType }
-  | { kind: 'phaseIs'; phase: Phase }
-  | { kind: 'modeIs'; mode: GameMode }
-  | { kind: 'flagIs'; scope: FlagScope; key: string; value: FlagValue }
-  | { kind: 'frontCollapsed'; front: FrontId };
-
-export type Effect =
-  | { type: 'modify_track'; target: ValueRef; delta: number; clamp?: Clamp }
-  | { type: 'modify_front_stat'; front: FrontSelector; stat: FrontStat; delta: number; clamp?: Clamp }
-  | { type: 'add_token'; region: RegionSelector; token: TokenType; count: number }
-  | { type: 'remove_token'; region: RegionSelector; token: TokenType; count: number }
-  | { type: 'add_lock'; region: RegionSelector; lock: LockType }
-  | { type: 'remove_lock'; region: RegionSelector; lock: LockType }
-  | { type: 'spend_resource'; resource: ResourceType; amount: number }
-  | { type: 'gain_resource'; resource: ResourceType; amount: number }
-  | { type: 'conditional'; if: Condition; then: Effect[]; else?: Effect[] }
-  | { type: 'choice'; prompt: string; choiceType?: 'compromise'; options: ChoiceOptionDefinition[] }
-  | { type: 'delayed_effect'; afterRounds: number; effects: Effect[]; description: string }
-  | { type: 'log'; emoji: string; message: string }
-  | { type: 'set_flag'; scope: FlagScope; key: string; value: FlagValue }
-  | { type: 'draw_from_deck'; deck: DeckId; count: number }
-  | { type: 'ensure_institution'; region: RegionSelector; institution: InstitutionType; status?: InstitutionStatus }
-  | { type: 'damage_institution'; region: RegionSelector; institution?: InstitutionType }
-  | { type: 'repair_institution'; region: RegionSelector; institution: InstitutionType }
-  | { type: 'add_charter_progress'; amount: number }
-  | { type: 'ratify_first_available_charter'; fallbackProgress: number };
-
-export interface ChoiceOptionDefinition {
-  id: string;
-  label: string;
-  description: string;
-  effects: Effect[];
-}
-
-export interface ActionDefinition {
-  id: string;
-  roleId: RoleId | 'shared';
+export interface DomainDefinition {
+  id: DomainId;
   name: string;
   description: string;
-  targetKind: TargetKind;
-  targetLabel?: string;
-  resolvePriority: number;
-  publicAction?: boolean;
-  cultureAction?: boolean;
-  journalismAction?: boolean;
-  antiDisinfoAction?: boolean;
-  bypassesCensorship?: boolean;
-  mode?: CardMode;
-  burnoutCost?: number;
-  resourceCosts?: Partial<Record<ResourceType, number>>;
-  disabledWhen?: Condition[];
-  effects: Effect[];
-}
-
-export interface RoleDefinition {
-  id: RoleId;
-  name: string;
-  shortName: string;
-  passive: string;
-  burnoutMax: number;
-  actionsPerTurn: Record<GameMode, number>;
-  actionIds: string[];
-  breakthroughActionIds: string[];
-}
-
-export interface FrontDefinition {
-  id: FrontId;
-  name: string;
-  initial: {
-    pressure: number;
-    protection: number;
-    impact: number;
-  };
-  collapseConditions: Condition[];
-  couplingRuleIds: string[];
+  initialProgress: number;
 }
 
 export interface RegionDefinition {
   id: RegionId;
   name: string;
-  cities: string[];
-  resources: string[];
-  exploitedZones: string[];
-  globalPowers: string[];
-  regionalPlayers: string[];
-  vulnerability: Partial<Record<FrontId, number>>;
-}
-
-export interface InstitutionDefinition {
-  id: InstitutionType;
-  name: string;
   description: string;
-  roleId: RoleId;
+  strapline: string;
+  vulnerability: Partial<Record<DomainId, number>>;
 }
 
-export interface CharterClauseDefinition {
+export interface ConditionCompareLeft {
+  type:
+    | 'global_gaze'
+    | 'northern_war_machine'
+    | 'round'
+    | 'domain_progress'
+    | 'region_extraction'
+    | 'player_evidence'
+    | 'player_total_bodies';
+  domain?: DomainId;
+  region?: RegionId;
+  player?: 'seat_owner' | number;
+}
+
+export type Condition =
+  | {
+      kind: 'compare';
+      left: ConditionCompareLeft;
+      op: '>' | '>=' | '<' | '<=' | '==' | '!=';
+      right: number;
+    }
+  | {
+      kind: 'all';
+      conditions: Condition[];
+    }
+  | {
+      kind: 'any';
+      conditions: Condition[];
+    }
+  | {
+      kind: 'not';
+      condition: Condition;
+    }
+  | {
+      kind: 'every_region_extraction_at_most';
+      count: number;
+    }
+  | {
+      kind: 'all_active_beacons_complete';
+    };
+
+export interface MandateDefinition {
   id: string;
   title: string;
   description: string;
-  prerequisites: Condition[];
-  ratifyEffects: Effect[];
+  condition: Condition;
 }
 
-export interface CardDefinition {
+export interface FactionDefinition {
+  id: FactionId;
+  name: string;
+  shortName: string;
+  homeRegion: RegionId;
+  passive: string;
+  weakness: string;
+  organizeBonus: number;
+  investigateBonus: number;
+  defenseBonus: number;
+  campaignDomainBonus?: DomainId;
+  campaignBonus: number;
+  outreachPenalty: number;
+  mandate: MandateDefinition;
+}
+
+export interface BeaconDefinition {
   id: string;
-  deck: DeckId;
+  title: string;
+  description: string;
+  condition: Condition;
+}
+
+export type SeatSelector = 'acting_player' | number;
+export type RegionSelector = RegionId | { byVulnerability: DomainId } | 'target_region';
+export type DomainSelector = DomainId | 'target_domain';
+
+export type Effect =
+  | { type: 'modify_gaze'; delta: number; clamp?: Clamp }
+  | { type: 'modify_war_machine'; delta: number; clamp?: Clamp }
+  | { type: 'modify_domain'; domain: DomainSelector; delta: number; clamp?: Clamp }
+  | { type: 'add_extraction'; region: RegionSelector; amount: number }
+  | { type: 'remove_extraction'; region: RegionSelector; amount: number }
+  | { type: 'add_bodies'; region: RegionSelector; seat: SeatSelector; amount: number }
+  | { type: 'remove_bodies'; region: RegionSelector; seat: SeatSelector; amount: number }
+  | { type: 'gain_evidence'; seat: SeatSelector; amount: number }
+  | { type: 'lose_evidence'; seat: SeatSelector; amount: number }
+  | { type: 'set_defense'; region: RegionSelector; amount: number }
+  | { type: 'draw_resistance'; seat: SeatSelector; count: number }
+  | { type: 'log'; message: string };
+
+export interface ResistanceCardDefinition {
+  id: string;
+  deck: 'resistance';
+  type: ResistanceCardType;
   name: string;
   text: string;
-  mode: CardMode;
-  tags: string[];
-  emoji: string;
-  pillar?: 'EXTRACTION' | 'MILITARIZATION' | 'CONTROL' | 'MANUFACTURED_CONSENT';
-  effects: Effect[];
+  campaignBonus?: number;
+  domainBonus?: DomainId;
+  regionBonus?: RegionId | 'ANY';
+  effects?: Effect[];
 }
 
-export interface RuleDefinition {
+export interface SystemCardDefinition {
   id: string;
-  hook: HookName;
-  when?: Condition;
-  emoji: string;
-  message: string;
+  deck: 'system';
+  name: string;
+  text: string;
   effects: Effect[];
 }
 
-export interface ScenarioDefinition {
+export interface ActionDefinition {
+  id: ActionId;
+  name: string;
+  description: string;
+  resolvePriority: number;
+  needsRegion?: boolean;
+  needsDomain?: boolean;
+  needsTargetSeat?: boolean;
+  needsBodies?: boolean;
+  needsEvidence?: boolean;
+  needsCard?: boolean;
+  cardType?: ResistanceCardType;
+}
+
+export interface RulesetDefinition {
   id: string;
   name: string;
   description: string;
   introduction: string;
-  story: string;
-  dramatization: string;
-  gameplay: string;
-  mechanics: string;
-  moralCenter: string;
-  setup: {
-    civicSpace: CivicSpace;
-    temperature: number;
-    resources: Record<ResourceType, number>;
-    frontOverrides: Partial<Record<FrontId, Partial<Record<FrontStat, number>>>>;
-    regionOverrides: Partial<
-      Record<
-        RegionId,
-        {
-          tokens?: Partial<Record<TokenType, number>>;
-          locks?: LockType[];
-          institutions?: Array<{ institution: InstitutionType; status?: InstitutionStatus }>;
-          vulnerability?: Partial<Record<FrontId, number>>;
-        }
-      >
-    >;
-  };
-  specialRuleChips: Array<{
-    id: string;
-    label: string;
-    description: string;
-    flagKey?: string;
-  }>;
-  roundLimit: Record<GameMode, number>;
-  hooks: RuleDefinition[];
-}
-
-export interface ExpansionDefinition {
-  id: string;
-  name: string;
-  enabledByDefault: boolean;
-  actions?: ActionDefinition[];
-  cards?: CardDefinition[];
-  hooks?: RuleDefinition[];
-}
-
-export interface PackDefinition {
-  id: string;
-  type: 'base' | 'scenario' | 'expansion';
-  version: string;
-  dependsOn?: string[];
-  fronts?: FrontDefinition[];
-  regions?: RegionDefinition[];
-  institutions?: InstitutionDefinition[];
-  charter?: CharterClauseDefinition[];
-  roles?: RoleDefinition[];
-  actions?: ActionDefinition[];
-  cards?: CardDefinition[];
-  hooks?: RuleDefinition[];
-  scenario?: ScenarioDefinition;
-  expansion?: ExpansionDefinition;
+  regions: RegionDefinition[];
+  domains: DomainDefinition[];
+  factions: FactionDefinition[];
+  beacons: BeaconDefinition[];
+  actions: ActionDefinition[];
+  resistanceCards: ResistanceCardDefinition[];
+  systemCards: SystemCardDefinition[];
+  liberationThreshold: number;
+  suddenDeathRound: number;
 }
 
 export interface CompiledContent {
   version: string;
-  fronts: Record<FrontId, FrontDefinition>;
+  ruleset: RulesetDefinition;
+  actions: Record<ActionId, ActionDefinition>;
+  domains: Record<DomainId, DomainDefinition>;
   regions: Record<RegionId, RegionDefinition>;
-  institutions: Record<InstitutionType, InstitutionDefinition>;
-  charter: Record<string, CharterClauseDefinition>;
-  roles: Record<RoleId, RoleDefinition>;
-  actions: Record<string, ActionDefinition>;
-  cards: Record<string, CardDefinition>;
+  factions: Record<FactionId, FactionDefinition>;
+  beacons: Record<string, BeaconDefinition>;
+  cards: Record<string, ResistanceCardDefinition | SystemCardDefinition>;
   decks: Record<DeckId, string[]>;
-  hooks: Record<HookName, RuleDefinition[]>;
-  scenario: ScenarioDefinition;
-  expansions: ExpansionDefinition[];
 }
 
-export interface FrontState {
-  id: FrontId;
-  pressure: number;
-  protection: number;
-  impact: number;
-  collapsed: boolean;
-}
-
-export interface InstitutionInstance {
-  type: InstitutionType;
-  status: InstitutionStatus;
-  preventedThisRound: boolean;
-  threatenedThisRound: boolean;
+export interface DomainState {
+  id: DomainId;
+  progress: number;
 }
 
 export interface RegionState {
   id: RegionId;
-  vulnerability: Partial<Record<FrontId, number>>;
-  tokens: Record<TokenType, number>;
-  locks: LockType[];
-  institutions: InstitutionInstance[];
-}
-
-export interface ActionTarget {
-  kind: TargetKind;
-  regionId?: RegionId;
-  frontId?: FrontId;
+  extractionTokens: number;
+  vulnerability: Partial<Record<DomainId, number>>;
+  defenseRating: number;
+  bodiesPresent: Record<number, number>;
 }
 
 export interface QueuedIntent {
   slot: number;
-  actionId: string;
-  target: ActionTarget;
+  actionId: ActionId;
+  regionId?: RegionId;
+  domainId?: DomainId;
+  targetSeat?: number;
+  bodiesCommitted?: number;
+  evidenceCommitted?: number;
+  cardId?: string;
 }
 
 export interface PlayerState {
   seat: number;
-  roleId: RoleId;
-  burnout: number;
-  burnoutState: BurnoutState;
-  maxBurnout: number;
+  factionId: FactionId;
+  evidence: number;
   actionsRemaining: number;
   ready: boolean;
   queuedIntents: QueuedIntent[];
-  privateHints: string[];
+  resistanceHand: string[];
+  mandateId: string;
+  mandateRevealed: boolean;
 }
 
 export interface DeckState {
@@ -350,54 +248,21 @@ export interface DeckState {
   discardPile: string[];
 }
 
-export interface StagedWorldPhase {
-  captureCardId: string | null;
-  crisisCardIds: string[];
-  activeCrisisId: string | null;
-  band: number;
-  status: 'idle' | 'drawn';
-}
-
-export interface CharterClauseState {
+export interface BeaconState {
   id: string;
-  status: 'locked' | 'unlocked' | 'ratified';
-  progress: number;
-}
-
-export interface ActiveCompromise {
-  id: string;
-  prompt: string;
-  sourceId: string;
-  options: ChoiceOptionDefinition[];
-  votes: Record<number, boolean>;
-}
-
-export interface DelayedEffectState {
-  id: string;
-  afterRounds: number;
-  description: string;
-  effects: Effect[];
-  causedBy: string[];
+  active: boolean;
+  complete: boolean;
 }
 
 export interface StateDelta {
-  kind:
-    | 'track'
-    | 'front'
-    | 'resource'
-    | 'token'
-    | 'lock'
-    | 'institution'
-    | 'flag'
-    | 'charter'
-    | 'player';
+  kind: 'track' | 'domain' | 'extraction' | 'bodies' | 'evidence' | 'defense' | 'card' | 'player';
   label: string;
   before: number | string | boolean | null;
   after: number | string | boolean | null;
 }
 
 export interface EffectTrace {
-  effectType: Effect['type'];
+  effectType: Effect['type'] | ActionId | 'system_phase' | 'resolution_phase';
   status: 'executed' | 'skipped' | 'failed';
   message: string;
   causedBy: string[];
@@ -408,7 +273,7 @@ export interface DomainEvent {
   seq: number;
   round: number;
   phase: Phase;
-  sourceType: 'system' | 'command' | 'card' | 'action' | 'rule' | 'compromise' | 'hook';
+  sourceType: 'system' | 'command' | 'action' | 'card' | 'mandate' | 'beacon';
   sourceId: string;
   emoji: string;
   message: string;
@@ -423,99 +288,111 @@ export interface RngState {
   calls: number;
 }
 
-export interface DebugState {
-  climateRoll: number | null;
-  lastCaptureCards: string[];
-  lastCrisisCards: string[];
-  lastCrisisCount: number;
-  firedRuleIds: string[];
-}
-
 export interface EngineState {
+  version: string;
   seed: number;
   rng: RngState;
-  mode: GameMode;
-  scenarioId: string;
+  rulesetId: string;
+  mode: VictoryMode;
   round: number;
-  roundLimit: number;
   phase: Phase;
-  civicSpace: CivicSpace;
-  temperature: number;
-  resources: Record<ResourceType, number>;
-  globalTokens: Record<string, number>;
-  fronts: Record<FrontId, FrontState>;
+  extractionPool: number;
+  globalGaze: number;
+  northernWarMachine: number;
+  domains: Record<DomainId, DomainState>;
   regions: Record<RegionId, RegionState>;
   players: PlayerState[];
   decks: Record<DeckId, DeckState>;
-  stagedWorldPhase: StagedWorldPhase;
-  charter: Record<string, CharterClauseState>;
-  charterProgress: number;
-  scenarioFlags: Record<string, FlagValue>;
-  roundFlags: Record<string, FlagValue>;
-  delayedEffects: DelayedEffectState[];
-  activeCompromise: ActiveCompromise | null;
+  beacons: Record<string, BeaconState>;
+  activeBeaconIds: string[];
+  lastSystemCardIds: string[];
+  publicAttentionEvents: string[];
   commandLog: EngineCommand[];
   eventLog: DomainEvent[];
-  endingTier: string | null;
+  winner: string | null;
   lossReason: string | null;
-  debug: DebugState;
+  mandatesResolved: boolean;
+}
+
+export interface StartGameCommand {
+  type: 'StartGame';
+  rulesetId: string;
+  mode: VictoryMode;
+  playerCount: 2 | 3 | 4;
+  factionIds: FactionId[];
+  seed: number;
+}
+
+export interface QueueIntentCommand {
+  type: 'QueueIntent';
+  seat: number;
+  action: Omit<QueuedIntent, 'slot'>;
+}
+
+export interface RemoveQueuedIntentCommand {
+  type: 'RemoveQueuedIntent';
+  seat: number;
+  slot: number;
+}
+
+export interface ReorderQueuedIntentCommand {
+  type: 'ReorderQueuedIntent';
+  seat: number;
+  fromSlot: number;
+  toSlot: number;
+}
+
+export interface SetReadyCommand {
+  type: 'SetReady';
+  seat: number;
+  ready: boolean;
+}
+
+export interface ResolveSystemPhaseCommand {
+  type: 'ResolveSystemPhase';
+}
+
+export interface CommitCoalitionIntentCommand {
+  type: 'CommitCoalitionIntent';
+}
+
+export interface ResolveResolutionPhaseCommand {
+  type: 'ResolveResolutionPhase';
+}
+
+export interface SaveSnapshotCommand {
+  type: 'SaveSnapshot';
+}
+
+export interface LoadSnapshotCommand {
+  type: 'LoadSnapshot';
+  payload: SerializedGame;
 }
 
 export type EngineCommand =
-  | {
-      type: 'StartGame';
-      scenarioId: string;
-      mode: GameMode;
-      playerCount: 2 | 3 | 4;
-      roleIds: RoleId[];
-      seed: number;
-      expansionIds?: string[];
-    }
-  | {
-      type: 'QueueIntent';
-      seat: number;
-      actionId: string;
-      target: ActionTarget;
-    }
-  | { type: 'RemoveQueuedIntent'; seat: number; slot: number }
-  | { type: 'ReorderQueuedIntent'; seat: number; fromSlot: number; toSlot: number }
-  | { type: 'SetReady'; seat: number; ready: boolean }
-  | { type: 'DrawWorldCards' }
-  | { type: 'AdoptResolution' }
-  | { type: 'ResolveWorldPhase' }
-  | { type: 'CommitCoalitionIntent' }
-  | { type: 'VoteCompromise'; seat: number; accept: boolean }
-  | { type: 'ResolveEndPhase' }
-  | { type: 'SaveSnapshot' }
-  | { type: 'LoadSnapshot'; payload: SerializedGame };
+  | StartGameCommand
+  | QueueIntentCommand
+  | RemoveQueuedIntentCommand
+  | ReorderQueuedIntentCommand
+  | SetReadyCommand
+  | ResolveSystemPhaseCommand
+  | CommitCoalitionIntentCommand
+  | ResolveResolutionPhaseCommand
+  | SaveSnapshotCommand
+  | LoadSnapshotCommand;
 
 export interface SerializedGame {
   contentVersion: string;
-  scenarioId: string;
-  mode: GameMode;
+  rulesetId: string;
+  mode: VictoryMode;
   seed: number;
   rngState: RngState;
   snapshot: EngineState;
   commandLog: EngineCommand[];
 }
 
-export interface EffectContext {
-  actingSeat?: number;
-  target?: ActionTarget;
-  causedBy: string[];
-  sourceTags?: string[];
-}
-
 export interface DisabledActionReason {
-  actionId: string;
+  actionId: ActionId;
   disabled: boolean;
   reason?: string;
-  legalTargets: ActionTarget[];
-  finalCosts: Partial<Record<ResourceType, number>>;
-}
-
-export interface EndingSummary {
-  tier: string;
-  ratifiedClauses: number;
-  activeInstitutions: number;
 }

@@ -1,11 +1,8 @@
-import type { PackDefinition } from '../engine/types.ts';
-import basePack from './base/pack.ts';
-import witnessPack from './scenarios/witness_dignity/pack.ts';
-import greenResistancePack from './scenarios/green_resistance/pack.ts';
-import lastResortDefensePack from './expansions/last_resort_defense/pack.ts';
+import type { RulesetDefinition } from '../engine/types.ts';
+import baseDesignPack from './base_design/pack.ts';
 
-export const CONTENT_PACKS: PackDefinition[] = [basePack, witnessPack, greenResistancePack, lastResortDefensePack];
+export const CONTENT_PACKS: RulesetDefinition[] = [baseDesignPack];
 
-export function getPackById(packId: string): PackDefinition | undefined {
-  return CONTENT_PACKS.find((pack) => pack.id === packId);
+export function getRulesetById(rulesetId: string): RulesetDefinition | undefined {
+  return CONTENT_PACKS.find((pack) => pack.id === rulesetId);
 }

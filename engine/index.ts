@@ -1,9 +1,8 @@
-export { compileContent, getScenarioDefinition, listScenarios } from './content.ts';
+export { compileContent, getRulesetDefinition, listRulesets, listScenarios } from './content.ts';
 export { createRng, nextInt, nextRandom, shuffle } from './rng.ts';
 export {
   dispatchCommand,
   getDisabledActionReason,
-  getTemperatureBand,
   initializeGame,
   normalizeEngineState,
   replayCommands,
@@ -11,14 +10,16 @@ export {
 } from './runtime.ts';
 export {
   buildEffectPreview,
-  getAvailableFronts,
+  getAvailableDomains,
   getAvailableRegions,
-  getEndingTierSummary,
+  getMandateStatus,
+  getPhaseSummary,
+  getPlayerBodyTotal,
   getPlayerStatusSummary,
-  getRole,
-  getScenarioRuleStatus,
   getSeatActions,
   getSeatDisabledReason,
+  getSeatFaction,
+  getVictoryModeSummary,
 } from './selectors.ts';
 export { deserializeGame, replaySerializedGame, serializeGame } from './serializer.ts';
 export type * from './types.ts';

@@ -2,163 +2,88 @@ import type {
   ActionDefinition,
   CompiledContent,
   DisabledActionReason,
-  EndingSummary,
   EngineState,
-  FrontId,
+  FactionDefinition,
+  Phase,
   PlayerState,
   RegionId,
-  RoleDefinition,
+  VictoryMode,
 } from './types.ts';
-import { getDisabledActionReason, getTemperatureBand } from './runtime.ts';
-
-const DEFAULT_REGION_STATUS_LABELS: Record<RegionId, string> = {
-  Palestine: 'Palestine',
-  Lebanon: 'Lebanon',
-  Egypt: 'Egypt',
-  Sudan: 'Sudan',
-  Congo: 'Congo',
-  Yemen: 'Yemen',
-  Sahel: 'Sahel',
-  GulfStates: 'Gulf States',
-};
-
-export function getRole(state: EngineState, content: CompiledContent, seat: number): RoleDefinition {
-  return content.roles[state.players[seat].roleId];
-}
-
-export function getSeatActions(state: EngineState, content: CompiledContent, seat: number) {
-  const role = getRole(state, content, seat);
-  return {
-    standard: role.actionIds.map((actionId) => content.actions[actionId]),
-    breakthroughs: role.breakthroughActionIds.map((actionId) => content.actions[actionId]),
-  };
-}
-
-export function buildEffectPreview(action: ActionDefinition): string {
-  return action.effects
-    .slice(0, 3)
-    .map((effect) => {
-      switch (effect.type) {
-        case 'modify_front_stat':
-          return `${effect.front}.${effect.stat} ${effect.delta > 0 ? '+' : ''}${effect.delta}`;
-        case 'modify_track':
-          return effect.target.type === 'temperature'
-            ? `temperature ${effect.delta > 0 ? '+' : ''}${effect.delta}`
-            : effect.target.type === 'player_burnout'
-              ? `burnout ${effect.delta > 0 ? '+' : ''}${effect.delta}`
-              : 'track change';
-        case 'add_token':
-          return `+${effect.count} ${effect.token}`;
-        case 'remove_token':
-          return `-${effect.count} ${effect.token}`;
-        case 'add_lock':
-          return `add ${effect.lock}`;
-        case 'remove_lock':
-          return `remove ${effect.lock}`;
-        case 'gain_resource':
-          return `+${effect.amount} ${effect.resource}`;
-        case 'spend_resource':
-          return `-${effect.amount} ${effect.resource}`;
-        case 'draw_from_deck':
-          return `draw ${effect.count} ${effect.deck}`;
-        case 'ensure_institution':
-          return `build ${effect.institution}`;
-        case 'add_charter_progress':
-          return `+${effect.amount} charter progress`;
-        case 'ratify_first_available_charter':
-          return 'ratify a clause';
-        case 'choice':
-          return 'offer compromise';
-        case 'delayed_effect':
-          return `delayed ${effect.afterRounds}r`;
-        case 'set_flag':
-          return effect.key.startsWith('truth_window') ? 'open truth window' : 'set flag';
-        case 'conditional':
-          return 'conditional effect';
-        case 'log':
-          return effect.message;
-        case 'repair_institution':
-          return `repair ${effect.institution}`;
-        case 'damage_institution':
-          return 'damage institution';
-      }
-    })
-    .join(' • ');
-}
-
-export function getScenarioRuleStatus(
-  state: EngineState,
-  ruleId: string,
-  regionStatusLabels: Partial<Record<RegionId, string>> = DEFAULT_REGION_STATUS_LABELS,
-): { active: boolean; value: string } {
-  if (ruleId === 'witness_window') {
-    return {
-      active: Boolean(state.roundFlags.witness_window_available),
-      value: state.roundFlags.witness_window_available ? 'Ready' : 'Spent / inactive',
-    };
-  }
-
-  if (ruleId === 'aid_corridor') {
-    const active = state.regions.Palestine.locks.includes('AidAccess');
-    return {
-      active,
-      value: active ? `Locked in ${regionStatusLabels.Palestine ?? DEFAULT_REGION_STATUS_LABELS.Palestine}` : 'Open',
-    };
-  }
-
-  return { active: false, value: 'Unknown' };
-}
-
-export function getEndingTierSummary(state: EngineState): EndingSummary {
-  const ratifiedClauses = Object.values(state.charter).filter((clause) => clause.status === 'ratified').length;
-  const activeInstitutions = Object.values(state.regions).reduce((sum, region) => {
-    return sum + region.institutions.filter((institution) => institution.status === 'active').length;
-  }, 0);
-
-  if (ratifiedClauses >= 6 && activeInstitutions >= 3) {
-    return { tier: 'Rising', ratifiedClauses, activeInstitutions };
-  }
-
-  if (ratifiedClauses >= 4) {
-    return { tier: 'Dignified Resistance', ratifiedClauses, activeInstitutions };
-  }
-
-  if (ratifiedClauses >= 2) {
-    return { tier: 'Endurance', ratifiedClauses, activeInstitutions };
-  }
-
-  return { tier: 'Survival', ratifiedClauses, activeInstitutions };
-}
+import { getDisabledActionReason } from './runtime.ts';
 
 export function getAvailableRegions(): RegionId[] {
-  return [
-    'Palestine',
-    'Lebanon',
-    'Egypt',
-    'Sudan',
-    'Congo',
-    'Yemen',
-    'Sahel',
-    'GulfStates',
-  ];
+  return ['Congo', 'Levant', 'Amazon', 'Sahel', 'Mekong', 'Andes'];
 }
 
-export function getAvailableFronts(): FrontId[] {
-  return ['WAR', 'CLIMATE', 'RIGHTS', 'SPEECH_INFO', 'POVERTY', 'ENERGY', 'CULTURE'];
+export function getAvailableDomains() {
+  return [
+    'WarMachine',
+    'DyingPlanet',
+    'GildedCage',
+    'SilencedTruth',
+    'EmptyStomach',
+    'FossilGrip',
+    'StolenVoice',
+  ] as const;
+}
+
+export function getSeatActions(content: CompiledContent): ActionDefinition[] {
+  return Object.values(content.actions).sort((left, right) => left.resolvePriority - right.resolvePriority);
+}
+
+export function getSeatFaction(state: EngineState, content: CompiledContent, seat: number): FactionDefinition {
+  return content.factions[state.players[seat].factionId];
 }
 
 export function getSeatDisabledReason(
   state: EngineState,
   content: CompiledContent,
   seat: number,
-  actionId: string,
-  target?: DisabledActionReason['legalTargets'][number],
+  action: Parameters<typeof getDisabledActionReason>[3],
 ): DisabledActionReason {
-  return getDisabledActionReason(state, content, seat, actionId, target);
+  return getDisabledActionReason(state, content, seat, action);
+}
+
+export function getPlayerBodyTotal(state: EngineState, seat: number) {
+  return Object.values(state.regions).reduce((sum, region) => sum + (region.bodiesPresent[seat] ?? 0), 0);
+}
+
+export function getMandateStatus(state: EngineState, content: CompiledContent, seat: number) {
+  const player = state.players[seat];
+  const faction = content.factions[player.factionId];
+  return {
+    id: faction.mandate.id,
+    title: faction.mandate.title,
+    description: faction.mandate.description,
+    revealed: player.mandateRevealed,
+  };
+}
+
+export function getVictoryModeSummary(mode: VictoryMode) {
+  return mode === 'LIBERATION'
+    ? 'Win by holding every region at one Extraction Token or less.'
+    : 'Win by completing all three active Beacon objectives.';
+}
+
+export function getPhaseSummary(phase: Phase) {
+  switch (phase) {
+    case 'SYSTEM':
+      return 'Resolve the system strike and military backlash.';
+    case 'COALITION':
+      return 'Queue two actions per seat, then mark every seat ready.';
+    case 'RESOLUTION':
+      return 'Resolve the queued actions, then check victory and defeat.';
+    case 'WIN':
+      return 'The coalition achieved its win condition.';
+    case 'LOSS':
+      return 'The coalition failed the struggle.';
+  }
+}
+
+export function buildEffectPreview(action: ActionDefinition): string {
+  return action.description;
 }
 
 export function getPlayerStatusSummary(player: PlayerState) {
-  return `${player.burnoutState.toUpperCase()} • ${player.actionsRemaining} actions left`;
+  return `${player.evidence} Evidence • ${player.actionsRemaining} actions left`;
 }
-
-export { getTemperatureBand };

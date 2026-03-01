@@ -28,11 +28,19 @@
   "include": [
     "src/main.tsx",
     "src/App.tsx",
-    "src/i18n/**/*.ts",
-    "src/mvp/**/*.ts",
-    "src/mvp/**/*.tsx",
+    "src/i18n/index.ts",
+    "src/mvp/runtime.ts",
+    "src/mvp/urlState.ts",
+    "src/mvp/gameUiHelpers.ts",
+    "src/mvp/ToastStack.tsx",
+    "src/mvp/tabletop.tsx",
+    "src/mvp/HomeScreen.tsx",
+    "src/mvp/GameScreen.tsx",
+    "src/mvp/GuidelinesScreen.tsx",
+    "src/mvp/PlayerGuideScreen.tsx",
     "engine/**/*.ts",
-    "content/**/*.ts"
+    "content/index.ts",
+    "content/base_design/**/*.ts"
   ],
   "exclude": [
     "src/old_legacy/**/*",

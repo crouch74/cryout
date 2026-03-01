@@ -1628,12 +1628,40 @@ body {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: fill;
+  pointer-events: auto;
+  z-index: 0;
+}
+
+.board-world-map > svg {
+  width: 100%;
+  height: 100%;
   opacity: 0.29;
   filter: sepia(0.72) saturate(0.7) hue-rotate(338deg) brightness(1.02) contrast(0.92);
   mix-blend-mode: multiply;
-  pointer-events: none;
-  z-index: 0;
+}
+
+.board-world-map-svg path,
+.board-world-map-svg g {
+  transition: fill 140ms ease, stroke 140ms ease, opacity 140ms ease, filter 140ms ease;
+}
+
+.board-world-map-svg .map-region-hit,
+.board-world-map-svg .map-region-hit path {
+  cursor: pointer;
+}
+
+.board-world-map-svg .map-region-fill-hover,
+.board-world-map-svg .map-region-fill-hover path {
+  fill: rgba(120, 157, 116, 0.72);
+  stroke: rgba(245, 239, 227, 0.88);
+  filter: drop-shadow(0 0 8px rgba(120, 157, 116, 0.3));
+}
+
+.board-world-map-svg .map-region-fill-active,
+.board-world-map-svg .map-region-fill-active path {
+  fill: rgba(104, 145, 94, 0.86);
+  stroke: rgba(245, 239, 227, 0.94);
+  filter: drop-shadow(0 0 12px rgba(104, 145, 94, 0.4));
 }
 
 .region-map-marker {
@@ -1865,6 +1893,14 @@ body {
   pointer-events: none;
 }
 
+.printed-territory.is-floating {
+  width: min(320px, calc(100% - 28px));
+  min-height: 0;
+  transform: rotate(var(--territory-tilt));
+  pointer-events: auto;
+  z-index: 14;
+}
+
 .printed-territory::after {
   content: '';
   position: absolute;
@@ -1884,6 +1920,38 @@ body {
   padding: 16px 18px;
   background: transparent;
   border: 0;
+}
+
+.printed-territory-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.printed-territory-close {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(83, 70, 56, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 249, 241, 0.82);
+  color: rgba(83, 70, 56, 0.9);
+  font-family: var(--font-data);
+  font-size: 0.95rem;
+  line-height: 1;
+  box-shadow: 0 4px 10px rgba(87, 63, 38, 0.12);
+}
+
+.printed-territory-close:hover {
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.printed-territory-close:focus-visible {
+  outline: 2px solid rgba(67, 81, 106, 0.78);
+  outline-offset: 2px;
 }
 
 .printed-territory-caption {
@@ -2365,6 +2433,10 @@ body {
 
   .board-world-map {
     opacity: 0.24;
+  }
+
+  .printed-territory.is-floating {
+    width: min(300px, calc(100% - 24px));
   }
 
   .region-map-marker {

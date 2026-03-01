@@ -1,45 +1,36 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildRuntimeLocation, parseRuntimeRoute, type RuntimeOptions } from '../src/mvp/runtime.ts';
-
-const standardRuntime: RuntimeOptions = {
-  defaultPage: 'home',
-  forceOfflineOnly: false,
-  useHashRouting: false,
-  devMode: false,
-};
-
-const pagesRuntime: RuntimeOptions = {
-  defaultPage: 'offline',
-  forceOfflineOnly: true,
-  useHashRouting: true,
-  devMode: false,
-};
+import { buildRuntimeLocation, getRuntimeOptions, parseRuntimeRoute } from '../src/mvp/runtime.ts';
 
 test('pages runtime defaults the root entry to offline mode', () => {
-  const route = parseRuntimeRoute('/', '', 'witness_dignity', pagesRuntime);
+  const runtime = getRuntimeOptions();
+  const pagesRuntime = { ...runtime, defaultPage: 'offline' as const, forceOfflineOnly: true, useHashRouting: true };
+  const route = parseRuntimeRoute('/', '', 'base_design', pagesRuntime);
 
   assert.equal(route.page, 'offline');
-  assert.equal(route.roomId, null);
+  assert.equal(route.rulesetId, 'base_design');
 });
 
 test('pages runtime resolves hash routes for offline-safe navigation', () => {
-  const route = parseRuntimeRoute('/', '#/guidelines/green_resistance', 'witness_dignity', pagesRuntime);
+  const runtime = getRuntimeOptions();
+  const pagesRuntime = { ...runtime, defaultPage: 'offline' as const, forceOfflineOnly: true, useHashRouting: true };
+  const route = parseRuntimeRoute('/ignored', '#/guidelines', 'base_design', pagesRuntime);
 
   assert.equal(route.page, 'guidelines');
-  assert.equal(route.scenarioId, 'green_resistance');
+  assert.equal(route.rulesetId, 'base_design');
 });
 
 test('pages runtime coerces room URLs back to offline routes', () => {
-  const href = buildRuntimeLocation({ page: 'room', scenarioId: 'witness_dignity', roomId: 'room-7' }, pagesRuntime);
+  const runtime = getRuntimeOptions();
+  const pagesRuntime = { ...runtime, defaultPage: 'offline' as const, forceOfflineOnly: true, useHashRouting: true };
+  const href = buildRuntimeLocation({ page: 'room', rulesetId: 'base_design', roomId: 'room-7' }, pagesRuntime);
 
   assert.equal(href, '#/offline');
 });
 
 test('standard runtime keeps pathname routing untouched', () => {
-  const route = parseRuntimeRoute('/rooms/room-7', '', 'witness_dignity', standardRuntime);
+  const runtime = { ...getRuntimeOptions(), defaultPage: 'home' as const, forceOfflineOnly: false, useHashRouting: false };
+  const href = buildRuntimeLocation({ page: 'guidelines', rulesetId: 'base_design', roomId: null }, runtime);
 
-  assert.equal(route.page, 'room');
-  assert.equal(route.roomId, 'room-7');
-  assert.equal(buildRuntimeLocation(route, standardRuntime), '/rooms/room-7');
+  assert.equal(href, '/guidelines');
 });

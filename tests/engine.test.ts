@@ -1,114 +1,131 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { compileContent, dispatchCommand, initializeGame, listScenarios, type EngineCommand } from '../engine/index.ts';
+import { compileContent, dispatchCommand, initializeGame, listRulesets, type EngineCommand } from '../engine/index.ts';
 
 const startCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
   type: 'StartGame',
-  scenarioId: 'witness_dignity',
-  mode: 'CORE',
+  rulesetId: 'base_design',
+  mode: 'LIBERATION',
   playerCount: 2,
-  roleIds: ['organizer', 'investigative_journalist'],
+  factionIds: ['congo_basin_collective', 'levant_sumud'],
   seed: 4242,
-  expansionIds: [],
 };
 
-test('same seed produces deterministic deck order', () => {
-  const stateA = initializeGame(startCommand);
-  const stateB = initializeGame(startCommand);
-  const stateC = initializeGame({ ...startCommand, seed: 9999 });
-
-  assert.deepEqual(stateA.decks.capture.drawPile, stateB.decks.capture.drawPile);
-  assert.notDeepEqual(stateA.decks.capture.drawPile, stateC.decks.capture.drawPile);
+test('canonical ruleset registry exposes the design-faithful cutover ruleset', () => {
+  const rulesets = listRulesets();
+  assert.equal(rulesets.length, 1);
+  assert.equal(rulesets[0]?.id, 'base_design');
+  assert.equal(rulesets[0]?.regions.length, 6);
 });
 
-test('phase gating rejects coalition actions during world phase', () => {
-  const content = compileContent(startCommand.scenarioId);
+test('same seed produces deterministic system deck order', () => {
+  const stateA = initializeGame(startCommand);
+  const stateB = initializeGame(startCommand);
+  const stateC = initializeGame({ ...startCommand, seed: 99 });
+
+  assert.deepEqual(stateA.decks.system.drawPile, stateB.decks.system.drawPile);
+  assert.notDeepEqual(stateA.decks.system.drawPile, stateC.decks.system.drawPile);
+});
+
+test('phase gating rejects coalition actions during system phase', () => {
+  const content = compileContent(startCommand.rulesetId);
   const state = initializeGame(startCommand);
   const next = dispatchCommand(
     state,
-    { type: 'QueueIntent', seat: 0, actionId: 'community_mobilization', target: { kind: 'NONE' } },
+    {
+      type: 'QueueIntent',
+      seat: 0,
+      action: { actionId: 'organize', regionId: 'Congo' },
+    },
     content,
   );
 
-  assert.equal(next.phase, 'WORLD');
+  assert.equal(next.phase, 'SYSTEM');
   assert.equal(next.players[0].queuedIntents.length, 0);
   assert.equal(next.eventLog.at(-1)?.emoji, '❌');
 });
 
-test('draw world cards stages the crisis stack without resolving it immediately', () => {
-  const content = compileContent(startCommand.scenarioId);
+test('symbolic mode reveals exactly three active beacons', () => {
+  const state = initializeGame({ ...startCommand, mode: 'SYMBOLIC' });
+  assert.equal(state.activeBeaconIds.length, 3);
+  assert.equal(state.activeBeaconIds.every((beaconId) => state.beacons[beaconId]?.active), true);
+});
+
+test('system cards use authored vulnerability to target local harm', () => {
+  const content = compileContent(startCommand.rulesetId);
   const state = initializeGame(startCommand);
-  const next = dispatchCommand(state, { type: 'DrawWorldCards' }, content);
+  state.decks.system.drawPile = ['sys_carceral_decree'];
 
-  assert.equal(next.phase, 'WORLD');
-  assert.equal(next.stagedWorldPhase.status, 'drawn');
-  assert.equal(next.stagedWorldPhase.captureCardId !== null, true);
-  assert.equal(next.stagedWorldPhase.crisisCardIds.length, next.debug.lastCrisisCount);
-  assert.equal(next.decks.capture.discardPile.length, 0);
-  assert.equal(next.decks.crisis.discardPile.length, 0);
-});
+  const next = dispatchCommand(state, { type: 'ResolveSystemPhase' }, content);
 
-test('adopt resolution clears staged world cards and opens coalition planning', () => {
-  const content = compileContent(startCommand.scenarioId);
-  let state = initializeGame(startCommand);
-  state = dispatchCommand(state, { type: 'DrawWorldCards' }, content);
-  const stagedCapture = state.stagedWorldPhase.captureCardId;
-  const stagedCrises = [...state.stagedWorldPhase.crisisCardIds];
-
-  const next = dispatchCommand(state, { type: 'AdoptResolution' }, content);
-
+  assert.equal(next.regions.Levant.extractionTokens, state.regions.Levant.extractionTokens + 1);
   assert.equal(next.phase, 'COALITION');
-  assert.equal(next.stagedWorldPhase.status, 'idle');
-  assert.equal(stagedCapture ? next.decks.capture.discardPile.includes(stagedCapture) : true, true);
-  assert.deepEqual(next.decks.crisis.discardPile.slice(-stagedCrises.length), stagedCrises);
 });
 
-test('reordering queued intents preserves actions and renumbers slots', () => {
-  const content = compileContent(startCommand.scenarioId);
+test('any region reaching six extraction tokens causes immediate defeat', () => {
+  const content = compileContent(startCommand.rulesetId);
+  const state = initializeGame(startCommand);
+  state.regions.Levant.extractionTokens = 5;
+  state.decks.system.drawPile = ['sys_carceral_decree'];
+
+  const next = dispatchCommand(state, { type: 'ResolveSystemPhase' }, content);
+
+  assert.equal(next.phase, 'LOSS');
+  assert.match(next.lossReason ?? '', /Levant/);
+});
+
+test('liberation victory requires the public win and all active mandates', () => {
+  const content = compileContent(startCommand.rulesetId);
+  const state = initializeGame(startCommand);
+  state.phase = 'RESOLUTION';
+  for (const region of Object.values(state.regions)) {
+    region.extractionTokens = 1;
+  }
+  state.northernWarMachine = 5;
+  state.domains.DyingPlanet.progress = 2;
+
+  const next = dispatchCommand(state, { type: 'ResolveResolutionPhase' }, content);
+
+  assert.equal(next.phase, 'WIN');
+  assert.match(next.winner ?? '', /Liberation/);
+});
+
+test('a failed mandate voids a public liberation win', () => {
+  const content = compileContent(startCommand.rulesetId);
+  const state = initializeGame(startCommand);
+  state.phase = 'RESOLUTION';
+  for (const region of Object.values(state.regions)) {
+    region.extractionTokens = 1;
+  }
+  state.northernWarMachine = 7;
+  state.domains.DyingPlanet.progress = 0;
+
+  const next = dispatchCommand(state, { type: 'ResolveResolutionPhase' }, content);
+
+  assert.equal(next.phase, 'LOSS');
+  assert.match(next.lossReason ?? '', /secret mandate/i);
+  assert.equal(next.players.every((player) => player.mandateRevealed), true);
+});
+
+test('launch campaign consumes 2d6 of rng and can remove extraction on success', () => {
+  const content = compileContent(startCommand.rulesetId);
   let state = initializeGame(startCommand);
-  state = dispatchCommand(state, { type: 'ResolveWorldPhase' }, content);
-  state = dispatchCommand(state, { type: 'QueueIntent', seat: 0, actionId: 'community_mobilization', target: { kind: 'NONE' } }, content);
-  state = dispatchCommand(state, { type: 'QueueIntent', seat: 0, actionId: 'safe_passage', target: { kind: 'REGION', regionId: 'Palestine' } }, content);
+  state = dispatchCommand(state, { type: 'ResolveSystemPhase' }, content);
+  state.players[0].actionsRemaining = 1;
+  state = dispatchCommand(
+    state,
+    { type: 'QueueIntent', seat: 0, action: { actionId: 'launch_campaign', regionId: 'Congo', domainId: 'DyingPlanet', bodiesCommitted: 2, evidenceCommitted: 1 } },
+    content,
+  );
+  state.players[0].actionsRemaining = 0;
+  state.players[0].ready = true;
+  state.players[1].actionsRemaining = 0;
+  state.players[1].ready = true;
+  const rngCallsBefore = state.rng.calls;
 
-  const next = dispatchCommand(state, { type: 'ReorderQueuedIntent', seat: 0, fromSlot: 1, toSlot: 0 }, content);
+  const next = dispatchCommand(state, { type: 'CommitCoalitionIntent' }, content);
 
-  assert.deepEqual(next.players[0].queuedIntents.map((intent) => intent.actionId), ['safe_passage', 'community_mobilization']);
-  assert.deepEqual(next.players[0].queuedIntents.map((intent) => intent.slot), [0, 1]);
-  assert.equal(next.players[0].actionsRemaining, 0);
-});
-
-test('witness window cancels the first disinfo placement each round', () => {
-  const content = compileContent(startCommand.scenarioId);
-  let state = initializeGame(startCommand);
-  state.resources.evidence = 3;
-  state = dispatchCommand(state, { type: 'ResolveWorldPhase' }, content);
-  state.fronts.POVERTY.pressure = 7;
-  state.phase = 'END';
-
-  const next = dispatchCommand(state, { type: 'ResolveEndPhase' }, content);
-
-  assert.equal(next.roundFlags.witness_window_available, false);
-  assert.equal(next.regions.Palestine.tokens.disinfo, 0);
-  assert.equal(next.regions.Lebanon.tokens.disinfo, 1);
-  assert.equal(next.regions.Egypt.tokens.disinfo, 1);
-});
-
-test('aid corridor appears when war pressure crosses the trigger', () => {
-  const content = compileContent(startCommand.scenarioId);
-  const state = initializeGame({ ...startCommand, seed: 7 });
-  state.fronts.WAR.pressure = 8;
-
-  const next = dispatchCommand(state, { type: 'ResolveWorldPhase' }, content);
-
-  assert.equal(next.regions.Palestine.locks.includes('AidAccess'), true);
-});
-
-test('scenario registry exposes the booklet metadata and alternate scenario pack', () => {
-  const scenarios = listScenarios();
-  const greenResistance = compileContent('green_resistance').scenario;
-
-  assert.equal(scenarios.length >= 2, true);
-  assert.equal(greenResistance.name, 'Green Resistance');
-  assert.match(greenResistance.gameplay, /climate/i);
-  assert.match(greenResistance.mechanics, /Root Solidarity/i);
+  assert.equal(next.rng.calls, rngCallsBefore + 2);
+  assert.equal(next.phase, 'RESOLUTION');
+  assert.equal(next.regions.Congo.extractionTokens <= state.regions.Congo.extractionTokens, true);
 });

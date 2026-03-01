@@ -1,86 +1,75 @@
-# Where the Stones Cry Out 🪨
+# Where the Stones Cry Out
 
-A digital adaptation of the cooperative board game about Global South resistance movements fighting neocolonial extraction, militarism, and ecological destruction.
+A digital adaptation of the design-faithful six-region cooperative game about resisting extraction, militarism, hunger, censorship, and cultural erasure.
 
-## 🎮 Game Overview
+## Current Product
 
-2–4 players control resistance movements across 6 regions of the Global South. Together, you fight to expel extractors, break the war machine, and seize the world's gaze — before the System overwhelms you.
+This repo now ships the hard-cutover ruleset:
 
-### The Four Movements
-- 🌿 **Forest Defenders** (Congo Basin) — Forest Knowledge
-- 🫒 **The Sumud** (Levant) — Steadfastness under siege
-- 🌊 **Riverkeepers** (Mekong Delta) — Water Memory
-- 🌳 **The Guardians** (Amazon) — Earth Allies
+- 6 canonical regions: Congo, Levant, Amazon, Sahel, Mekong, Andes
+- 7 canonical domains: War Machine, Dying Planet, Gilded Cage, Silenced Truth, Empty Stomach, Fossil Grip, Stolen Voice
+- 2 resources: Bodies and Evidence
+- 2 victory modes: Liberation and Symbolic
+- 1 central threat system: Extraction Tokens
+- 2 global meters: Global Gaze and Northern War Machine
+- 4 asymmetric factions with secret mandates
 
-### 🎮 Features
-- **Cinematic Landing Page**: High-vibe entry point with dramatic narrative context for each scenario.
-- **Scenario Selector**: Choose your struggle, ranging from MENA solidarity to Global South environmental resistance.
-- **Real-time Tactical Map**: Coordinate between 6 vulnerable regions and monitor 7 global fronts.
-- **Coalition Planning**: Role-specific actions for Community Organizers and Investigative Journalists.
+The previous `witness_dignity` / `green_resistance` scenario line is no longer the shipped game.
 
-## 🚀 Quick Start
+## Game Loop
 
+Each round follows three phases:
 
-### With Docker (Recommended)
-```bash
-# Starts both the FastAPI Backend and Vite Frontend mapped via volume
-docker compose --profile all up --build
-```
+1. `SYSTEM`
+   The game resolves system cards, public-attention backlash, and military intervention.
+2. `COALITION`
+   Each seat queues two actions from the universal action set, then marks ready.
+3. `RESOLUTION`
+   Queued actions resolve in priority order, then the game checks Liberation or Symbolic victory and all secret mandates.
 
-### Without Docker
-**Backend API (Python 3.11+)**
-```bash
-cd backend
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-uvicorn server:app --host 0.0.0.0 --port 8001 --reload
-```
+## Core Defeat / Victory
 
-**Frontend React Engine**
+- Any region reaching `6` Extraction Tokens is an immediate loss.
+- `Liberation`: win if all six regions are at `1` or fewer Extraction Tokens at the end of Resolution.
+- `Symbolic`: win if all three active Beacons are complete at the end of Resolution.
+- In both modes, every secret mandate must also be satisfied or the coalition still fails.
+
+## Tech Stack
+
+- Frontend: React + TypeScript + Vite
+- Rules engine: TypeScript deterministic reducer with seeded replay
+- Room play: Node HTTP room service with seat-scoped mandate redaction
+- Styling: existing tabletop shell and CSS system
+
+## Quick Start
+
+### Frontend
+
 ```bash
 npm install
 npm run dev
 ```
 
-Open `http://localhost:5174` (dev) to play offline/locally or sync to the API backend at `:8001`.
+### Room Service
 
-## GitHub Pages Offline Build
 ```bash
-npm run build:pages
+npm run dev:rooms
 ```
 
-The Pages build is offline-only:
-- it uses hash routing so GitHub Pages can serve the app without backend rewrites
-- it disables room play in the UI
-- it falls back to a local table whenever the room service is unreachable in other builds
+### Full Test Suite
 
-## 🛠 Tech Stack
-- **Frontend Engine**: TypeScript + React + Vite
-- **Multiplayer Backend API**: Python + FastAPI + Pydantic
-- **Styling**: Vanilla Custom CSS with Dark Mode Glassmorphism
-- **Configuration Engine**: YAML Data-Driven Content Pack loader (No-Code Rulesets)
-
-## 📁 System Architecture
-```
-.
-├── backend/            # Python FastAPI Multiplayer Engine
-│   ├── engine/         # State definitions & Python DSL Evaluator
-│   ├── tests/          # Pytest Deterministic rules engine tests
-│   ├── server.py       # API routing and memory-bank validation
-│   └── Dockerfile
-├── content/            # Data-Driven Configurations
-│   ├── base_game/      # Shared YAML rules logic for Fronts, Decks, Roles
-│   └── scenarios/      # Setup data for scenarios
-├── src/                # React / Frontend Application
-│   ├── engine/         # TS rules engine & state logic syncing backend
-│   ├── App.tsx         # Dashboard views
-│   └── index.css       # Luxury Glassmorphism CSS system
-└── docker-compose.yml
+```bash
+npm test
 ```
 
-## 🎨 Design
-Visual style inspired by Palestinian Tatreez, Congolese popular painting, Amazonian body painting, and resistance poster art. Typography: Bebas Neue, Crimson Text, Caveat, Courier Prime.
+### Production Build
 
-## 📝 License
-This game is dedicated to the journalists, medics, and organizers documenting resistance in real time.
+```bash
+npm run build
+```
+
+## Notes
+
+- Local autosaves are intentionally versioned to the cutover ruleset and old saves are not forward-compatible.
+- The Node room service is the active multiplayer path.
+- Legacy prototypes remain in the repo for reference but are not the active product.

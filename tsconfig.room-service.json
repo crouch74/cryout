@@ -18,9 +18,13 @@
   },
   "include": [
     "engine/**/*.ts",
-    "content/**/*.ts",
+    "content/index.ts",
+    "content/base_design/**/*.ts",
     "room-service/**/*.ts",
-    "tests/**/*.ts"
+    "tests/**/*.ts",
+    "src/mvp/runtime.ts",
+    "src/mvp/urlState.ts",
+    "src/mvp/gameUiHelpers.ts"
   ],
   "exclude": [
     "src/**/*",

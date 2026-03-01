@@ -2,17 +2,15 @@ import type { Phase, PlayerState } from '../../engine/index.ts';
 
 export const GAME_A11Y_LABELS = {
   phaseProgress: 'Turn progress',
-  sharedResources: 'Shared resources',
-  scenarioDesk: 'Scenario desk sections',
-  coalitionDesk: 'Coalition desk sections',
+  sharedResources: 'Coalition resources',
+  coalitionDesk: 'Coalition desk',
   liveUpdates: 'Live game updates',
 } as const;
 
 export function getPhaseProgressSteps(phase: Phase) {
-  const sequence: Phase[] = ['WORLD', 'COALITION', 'COMPROMISE', 'END'];
-  const normalizedPhase = phase === 'WIN' || phase === 'LOSS' ? 'END' : phase;
-  const activeIndex = sequence.indexOf(normalizedPhase);
-
+  const sequence: Phase[] = ['SYSTEM', 'COALITION', 'RESOLUTION'];
+  const normalized = phase === 'WIN' || phase === 'LOSS' ? 'RESOLUTION' : phase;
+  const activeIndex = sequence.indexOf(normalized);
   return sequence.map((step, index) => ({
     step,
     number: index + 1,
@@ -26,5 +24,5 @@ export function getToastRole(tone: 'info' | 'success' | 'warning' | 'error') {
 }
 
 export function getActiveCoalitionSeat(players: PlayerState[]) {
-  return players.find((player) => !player.ready)?.seat ?? players.at(-1)?.seat ?? 0;
+  return players.find((player) => !player.ready && player.actionsRemaining > 0)?.seat ?? players.at(-1)?.seat ?? 0;
 }

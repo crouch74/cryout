@@ -3,33 +3,32 @@ import assert from 'node:assert/strict';
 import { buildAppPath, parseAppRoute } from '../src/mvp/urlState.ts';
 
 test('home route stays at the root path', () => {
-  const route = parseAppRoute('/', 'witness_dignity');
+  const route = parseAppRoute('/', 'base_design');
 
   assert.equal(route.page, 'home');
-  assert.equal(route.scenarioId, 'witness_dignity');
+  assert.equal(route.rulesetId, 'base_design');
   assert.equal(buildAppPath(route), '/');
 });
 
-test('guidelines routes carry only the selected scenario', () => {
-  const route = parseAppRoute('/guidelines/green_resistance', 'witness_dignity');
+test('guidelines route no longer carries scenario identifiers', () => {
+  const route = parseAppRoute('/guidelines', 'base_design');
 
   assert.equal(route.page, 'guidelines');
-  assert.equal(route.scenarioId, 'green_resistance');
-  assert.equal(buildAppPath(route), '/guidelines/green_resistance');
+  assert.equal(route.rulesetId, 'base_design');
+  assert.equal(buildAppPath(route), '/guidelines');
 });
 
 test('offline route is a single stable path', () => {
-  const route = parseAppRoute('/offline', 'witness_dignity');
+  const route = parseAppRoute('/offline', 'base_design');
 
   assert.equal(route.page, 'offline');
-  assert.equal(route.roomId, null);
   assert.equal(buildAppPath(route), '/offline');
 });
 
 test('room routes only preserve the room id', () => {
-  const route = parseAppRoute('/rooms/room-7', 'witness_dignity');
+  const route = parseAppRoute('/rooms/abc-def-ghi', 'base_design');
 
   assert.equal(route.page, 'room');
-  assert.equal(route.roomId, 'room-7');
-  assert.equal(buildAppPath(route), '/rooms/room-7');
+  assert.equal(route.roomId, 'abc-def-ghi');
+  assert.equal(buildAppPath(route), '/rooms/abc-def-ghi');
 });

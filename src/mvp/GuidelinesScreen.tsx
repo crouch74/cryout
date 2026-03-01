@@ -1,120 +1,73 @@
-import { listScenarios } from '../../engine/index.ts';
-import { LanguageSwitcher } from '../components/LanguageSwitcher.tsx';
-import { formatTemperature, getCivicSpaceLabel, localizeScenarioDefinition, t, type Locale } from '../i18n/index.ts';
-import { EngravedHeader, PaperSheet, TableSurface, TabletopControls, ThemePlate } from './tabletop.tsx';
+import { compileContent } from '../../engine/index.ts';
+import {
+  localizeActionField,
+  localizeRegionField,
+  localizeRulesetField,
+  t,
+  type Locale,
+} from '../i18n/index.ts';
+import { EngravedHeader, LocaleSwitcher, PaperSheet, TableSurface, ThemePlate } from './tabletop.tsx';
 
 interface GuidelinesScreenProps {
   locale: Locale;
   onLocaleChange: (locale: Locale) => void;
-  scenarioId: string;
-  onSelectScenario: (scenarioId: string) => void;
   onBackHome: () => void;
   onOpenOffline: () => void;
 }
 
-const SCENARIOS = listScenarios();
+const content = compileContent('base_design');
 
-function excerpt(text: string, maxLength: number) {
-  if (text.length <= maxLength) {
-    return text;
-  }
-
-  return `${text.slice(0, maxLength).trimEnd()}...`;
-}
-
-export function GuidelinesScreen({
-  locale,
-  onLocaleChange,
-  scenarioId,
-  onSelectScenario,
-  onBackHome,
-  onOpenOffline,
-}: GuidelinesScreenProps) {
-  const localizedScenarios = SCENARIOS.map(localizeScenarioDefinition);
-  const selectedScenario = localizedScenarios.find((scenario) => scenario.id === scenarioId) ?? localizedScenarios[0];
-
-  if (!selectedScenario) {
-    return null;
-  }
-
+export function GuidelinesScreen({ locale, onLocaleChange, onBackHome, onOpenOffline }: GuidelinesScreenProps) {
   return (
-    <TableSurface className="guidelines-table dossier-table">
-      <div className="guidelines-paper-layout dossier-layout">
-        <header className="setup-header">
-          <EngravedHeader
-            eyebrow={t('ui.guidelines.eyebrow', 'Guidelines')}
-            title={selectedScenario.name}
-            detail={selectedScenario.description}
-            actions={
-              <div className="header-control-stack">
-                <LanguageSwitcher locale={locale} onChange={onLocaleChange} />
-                <TabletopControls />
-                <div className="header-action-plates">
-                  <ThemePlate label={t('ui.guidelines.openOfflineMode', 'Open Offline Mode')} onClick={onOpenOffline} />
-                  <ThemePlate label={t('ui.guidelines.home', 'Home')} onClick={onBackHome} />
-                </div>
-              </div>
-            }
-          />
-        </header>
-
-        <main className="dossier-board">
-          <PaperSheet tone="folio" className="dossier-cover">
-            <span className="engraved-eyebrow">{t('ui.guidelines.scenarioPulse', 'Scenario pulse')}</span>
-            <h2>{selectedScenario.name}</h2>
-            <p>{excerpt(selectedScenario.moralCenter, 160)}</p>
-            <div className="setup-stat-ribbon">
-              <div><span>{t('ui.scenarioBooklet.civicSpace', 'Civic space')}</span><strong>{getCivicSpaceLabel(selectedScenario.setup.civicSpace)}</strong></div>
-              <div><span>{t('ui.scenarioBooklet.startingHeat', 'Starting heat')}</span><strong>{formatTemperature(selectedScenario.setup.temperature)}</strong></div>
-              <div><span>{t('ui.scenarioBooklet.roundWindow', 'Round window')}</span><strong>{t('ui.guidelines.roundWindowValue', '{{core}}-{{full}} rounds', { core: selectedScenario.roundLimit.CORE, full: selectedScenario.roundLimit.FULL })}</strong></div>
+    <TableSurface className="guidelines-table">
+      <PaperSheet tone="board" className="dossier-spread">
+        <EngravedHeader
+          eyebrow={t('ui.guide.rulesBrief', 'Rules Brief')}
+          title={localizeRulesetField(content.ruleset.id, 'name', content.ruleset.name)}
+          detail={localizeRulesetField(content.ruleset.id, 'description', content.ruleset.description)}
+          actions={
+            <div className="header-action-plates">
+              <LocaleSwitcher locale={locale} onChange={onLocaleChange} />
+              <ThemePlate label={t('ui.guide.backHome', 'Back Home')} onClick={onBackHome} />
+              <ThemePlate label={t('ui.guide.openTable', 'Open Table')} onClick={onOpenOffline} />
             </div>
+          }
+        />
+
+        <div className="guidelines-story-grid">
+          <PaperSheet tone="tray">
+            <span className="engraved-eyebrow">{t('ui.guide.victoryModes', 'Victory Modes')}</span>
+            <p>{t('ui.mode.liberation', 'Liberation')}: {t('ui.mode.liberationSummary', 'End Resolution with every region at 1 Extraction or less.')}</p>
+            <p>{t('ui.mode.symbolic', 'Symbolic')}: {t('ui.mode.symbolicSummary', 'Complete all three active Beacons.')}</p>
+            <p>{t('ui.guide.beacon2', 'Every faction carries a secret mandate. Reaching the public win condition without satisfying all mandates still ends in failure.')}</p>
           </PaperSheet>
 
-          <PaperSheet tone="booklet" className="dossier-spread">
-            <section className="dossier-page">
-              <span className="engraved-eyebrow">{t('ui.game.situation', 'Situation')}</span>
-              <h3>{t('ui.guidelines.howItShouldFeel', 'How This Scenario Should Feel')}</h3>
-              <p>{excerpt(selectedScenario.introduction, 260)}</p>
-              <p>{excerpt(selectedScenario.dramatization, 260)}</p>
-            </section>
-            <section className="dossier-page">
-              <span className="engraved-eyebrow">{t('ui.guidelines.playPattern', 'Play Pattern')}</span>
-              <h3>{t('ui.guidelines.mechanicalPressure', 'Mechanical Pressure')}</h3>
-              <p>{excerpt(selectedScenario.gameplay, 260)}</p>
-              <p>{excerpt(selectedScenario.mechanics, 260)}</p>
-            </section>
+          <PaperSheet tone="tray">
+            <span className="engraved-eyebrow">{t('ui.guide.coreThreat', 'Core Threat')}</span>
+            <p>{t('ui.guide.coreThreat1', 'Extraction Tokens are the center of the board. The system adds them through system cards and intervention.')}</p>
+            <p>{t('ui.guide.coreThreat2', 'Any region reaching 6 Extraction Tokens is an immediate loss.')}</p>
+            <p>{t('ui.guide.coreThreat3', 'Global Gaze and Northern War Machine shape how dangerous each round becomes.')}</p>
           </PaperSheet>
 
-          <div className="setup-rule-chips dossier-rule-slips">
-            {selectedScenario.specialRuleChips.map((rule) => (
-              <article key={rule.id} className="rule-slip">
-                <strong>{rule.label}</strong>
-                <p>{rule.description}</p>
-              </article>
-            ))}
-          </div>
-
-          <PaperSheet tone="tray" className="dossier-switch-rail">
-            <span className="engraved-eyebrow">{t('ui.guidelines.scenarios', 'Scenarios')}</span>
-            <div className="scenario-card-grid compact-scenario-rail">
-              {localizedScenarios.map((scenario) => (
-                <button
-                  key={scenario.id}
-                  type="button"
-                  className={`scenario-dossier-card ${scenario.id === selectedScenario.id ? 'is-active' : ''}`}
-                  onClick={() => onSelectScenario(scenario.id)}
-                >
-                  <span className="engraved-eyebrow">
-                    {scenario.id === selectedScenario.id ? t('ui.status.open', 'Open') : t('ui.guidelines.view', 'View')}
-                  </span>
-                  <strong>{scenario.name}</strong>
-                  <p>{excerpt(scenario.description, 90)}</p>
-                </button>
+          <PaperSheet tone="tray">
+            <span className="engraved-eyebrow">{t('ui.guide.universalActions', 'Universal Actions')}</span>
+            <ul>
+              {content.ruleset.actions.map((action) => (
+                <li key={action.id}><strong>{localizeActionField(action.id, 'name', action.name)}:</strong> {localizeActionField(action.id, 'description', action.description)}</li>
               ))}
-            </div>
+            </ul>
           </PaperSheet>
-        </main>
-      </div>
+
+          <PaperSheet tone="tray">
+            <span className="engraved-eyebrow">{t('ui.guide.canonicalRegions', 'Canonical Regions')}</span>
+            <ul>
+              {content.ruleset.regions.map((region) => (
+                <li key={region.id}><strong>{localizeRegionField(region.id, 'name', region.name)}:</strong> {localizeRegionField(region.id, 'description', region.description)}</li>
+              ))}
+            </ul>
+          </PaperSheet>
+        </div>
+      </PaperSheet>
     </TableSurface>
   );
 }

@@ -1,72 +1,61 @@
 import { compileContent } from './content.ts';
-import { createRng, nextRandom, shuffle } from './rng.ts';
+import { createRng, nextInt, shuffle } from './rng.ts';
 import type {
   ActionDefinition,
-  ActionTarget,
-  ActiveCompromise,
-  CivicSpace,
+  ActionId,
   CompiledContent,
   Condition,
-  DeckId,
-  DelayedEffectState,
   DisabledActionReason,
   DomainEvent,
+  DomainId,
   Effect,
-  EffectContext,
   EffectTrace,
-  EndingSummary,
   EngineCommand,
   EngineState,
-  FlagScope,
-  FlagValue,
-  FrontId,
-  FrontSelector,
-  InstitutionInstance,
-  InstitutionStatus,
-  InstitutionType,
-  LockType,
-  PlayerSelector,
+  FactionDefinition,
   PlayerState,
   QueuedIntent,
   RegionId,
   RegionSelector,
-  ResourceType,
+  ResistanceCardDefinition,
+  SeatSelector,
+  StartGameCommand,
   StateDelta,
-  ValueRef,
 } from './types.ts';
 
-const FRONT_IDS: FrontId[] = ['WAR', 'CLIMATE', 'RIGHTS', 'SPEECH_INFO', 'POVERTY', 'ENERGY', 'CULTURE'];
-const REGION_IDS: RegionId[] = [
-  'Palestine',
-  'Lebanon',
-  'Egypt',
-  'Sudan',
-  'Congo',
-  'Yemen',
-  'Sahel',
-  'GulfStates',
-];
+const REGION_IDS: RegionId[] = ['Congo', 'Levant', 'Amazon', 'Sahel', 'Mekong', 'Andes'];
+const ACTIONS_PER_TURN = 2;
+const EXTRACTION_DEFEAT_THRESHOLD = 6;
+const MAX_EXTRACTION_POOL = 36;
+
+interface ResolveContext {
+  actingSeat?: number;
+  targetRegionId?: RegionId;
+  targetDomainId?: DomainId;
+  causedBy: string[];
+}
+
+interface ApplyEffectSource {
+  sourceType: DomainEvent['sourceType'];
+  sourceId: string;
+  emoji: string;
+  message: string;
+  causedBy: string[];
+  context: ResolveContext;
+}
 
 function cloneState<T>(value: T): T {
   return structuredClone(value);
 }
 
-function createEmptyStagedWorldPhase(): EngineState['stagedWorldPhase'] {
-  return {
-    captureCardId: null,
-    crisisCardIds: [],
-    activeCrisisId: null,
-    band: 0,
-    status: 'idle',
-  };
-}
-
-export function normalizeEngineState(state: EngineState): EngineState {
-  const next = cloneState(state);
-  next.stagedWorldPhase = {
-    ...createEmptyStagedWorldPhase(),
-    ...(state.stagedWorldPhase ?? {}),
-  };
+function clamp(value: number, clampConfig: { min?: number; max?: number }): number {
+  let next = value;
+  if (clampConfig.min !== undefined) {
+    next = Math.max(clampConfig.min, next);
+  }
+  if (clampConfig.max !== undefined) {
+    next = Math.min(clampConfig.max, next);
+  }
   return next;
 }
 
@@ -74,66 +63,20 @@ function assertExists<T>(value: T | undefined | null, message: string): T {
   if (value === undefined || value === null) {
     throw new Error(message);
   }
-
   return value;
 }
 
-function clamp(value: number, limits?: { min?: number; max?: number }): number {
-  let next = value;
-
-  if (limits?.min !== undefined) {
-    next = Math.max(limits.min, next);
-  }
-
-  if (limits?.max !== undefined) {
-    next = Math.min(limits.max, next);
-  }
-
-  return next;
-}
-
-function civicSpaceIndex(space: CivicSpace): number {
-  switch (space) {
-    case 'OPEN':
-      return 0;
-    case 'NARROWED':
-      return 1;
-    case 'OBSTRUCTED':
-      return 2;
-    case 'REPRESSED':
-      return 3;
-    case 'CLOSED':
-      return 4;
-  }
-}
-
-function civicSpaceFromIndex(index: number): CivicSpace {
-  const clamped = clamp(index, { min: 0, max: 4 });
-  return ['OPEN', 'NARROWED', 'OBSTRUCTED', 'REPRESSED', 'CLOSED'][clamped] as CivicSpace;
-}
-
-export function getTemperatureBand(temperature: number) {
-  if (temperature <= 2) {
-    return { band: 0, crisisCount: 1, couplingMultiplier: 1 };
-  }
-
-  if (temperature <= 4) {
-    return { band: 1, crisisCount: 1, couplingMultiplier: 1 };
-  }
-
-  if (temperature <= 6) {
-    return { band: 2, crisisCount: 2, couplingMultiplier: 2 };
-  }
-
-  if (temperature <= 8) {
-    return { band: 3, crisisCount: 2, couplingMultiplier: 2 };
-  }
-
-  return { band: 4, crisisCount: 3, couplingMultiplier: 2 };
-}
-
-function nextEventSeq(state: EngineState): number {
+function nextEventSeq(state: EngineState) {
   return state.eventLog.length + 1;
+}
+
+function createDelta(
+  kind: StateDelta['kind'],
+  label: string,
+  before: StateDelta['before'],
+  after: StateDelta['after'],
+): StateDelta {
+  return { kind, label, before, after };
 }
 
 function addEvent(
@@ -145,8 +88,6 @@ function addEvent(
   causedBy: string[],
   trace: EffectTrace[] = [],
 ): void {
-  const deltas = trace.flatMap((entry) => entry.deltas);
-
   state.eventLog.push({
     seq: nextEventSeq(state),
     round: state.round,
@@ -156,7 +97,7 @@ function addEvent(
     emoji,
     message,
     causedBy,
-    deltas,
+    deltas: trace.flatMap((entry) => entry.deltas),
     trace,
   });
 }
@@ -176,129 +117,32 @@ function addRejectedCommandEvent(state: EngineState, command: EngineCommand, rea
   addSimpleEvent(state, 'command', command.type, '❌', reason, [command.type]);
 }
 
-function resolveDynamicKey(key: string, context: EffectContext): string {
-  if (key.includes('target_region')) {
-    return key.replaceAll('target_region', context.target?.regionId ?? 'UNKNOWN_REGION');
-  }
-
-  return key;
+function getSeatTotalBodies(state: EngineState, seat: number) {
+  return Object.values(state.regions).reduce((sum, region) => sum + (region.bodiesPresent[seat] ?? 0), 0);
 }
 
-function getFlagContainer(state: EngineState, scope: FlagScope): Record<string, FlagValue> {
-  return scope === 'round' ? state.roundFlags : state.scenarioFlags;
+function calculateExtractionPool(state: EngineState) {
+  const inPlay = Object.values(state.regions).reduce((sum, region) => sum + region.extractionTokens, 0);
+  return Math.max(0, MAX_EXTRACTION_POOL - inPlay);
 }
 
-function resolvePlayer(state: EngineState, selector: PlayerSelector, context: EffectContext): PlayerState | null {
-  if (selector === 'acting_player' && context.actingSeat !== undefined) {
-    return state.players[context.actingSeat] ?? null;
+function revealMandates(state: EngineState) {
+  for (const player of state.players) {
+    player.mandateRevealed = true;
   }
-
-  if (selector === 'target_player' && context.target?.kind === 'NONE' && context.actingSeat !== undefined) {
-    return state.players[context.actingSeat] ?? null;
-  }
-
-  if (typeof selector === 'number') {
-    return state.players[selector] ?? null;
-  }
-
-  return null;
+  state.mandatesResolved = true;
 }
 
-function resolveRegions(selector: RegionSelector, context: EffectContext): RegionId[] {
-  if (selector === 'ANY') {
-    return REGION_IDS;
-  }
-
-  if (selector === 'target_region') {
-    return context.target?.regionId ? [context.target.regionId] : [];
-  }
-
-  return [selector];
-}
-
-function resolveFront(selector: FrontSelector, context: EffectContext): FrontId | null {
-  if (selector === 'target_front') {
-    return context.target?.frontId ?? null;
-  }
-
-  return selector;
-}
-
-function updatePlayerBurnoutState(player: PlayerState): void {
-  const strainedThreshold = Math.ceil(player.maxBurnout * 0.7);
-
-  if (player.burnout >= player.maxBurnout) {
-    player.burnoutState = 'burnt';
-    return;
-  }
-
-  if (player.burnout >= strainedThreshold) {
-    player.burnoutState = 'strained';
-    return;
-  }
-
-  player.burnoutState = 'steady';
-}
-
-function markInstitutionReset(region: { institutions: InstitutionInstance[] }): void {
-  for (const institution of region.institutions) {
-    institution.preventedThisRound = false;
-    institution.threatenedThisRound = false;
-  }
-}
-
-function getFirstViableInstitution(region: { institutions: InstitutionInstance[] }): InstitutionInstance | undefined {
-  return region.institutions.find((institution) => institution.status !== 'destroyed');
-}
-
-function hasActiveInstitution(region: { institutions: InstitutionInstance[] }, type: InstitutionType): InstitutionInstance | undefined {
-  return region.institutions.find((institution) => institution.type === type && institution.status === 'active');
-}
-
-function createDelta(
-  kind: StateDelta['kind'],
-  label: string,
-  before: StateDelta['before'],
-  after: StateDelta['after'],
-): StateDelta {
-  return { kind, label, before, after };
-}
-
-function resolveValueRef(state: EngineState, reference: ValueRef, context: EffectContext): number | string | boolean {
-  switch (reference.type) {
-    case 'temperature':
-      return state.temperature;
-    case 'civic_space_index':
-      return civicSpaceIndex(state.civicSpace);
-    case 'resource':
-      return state.resources[reference.resource];
-    case 'front_stat':
-      return state.fronts[reference.front][reference.stat];
-    case 'player_burnout':
-      return resolvePlayer(state, reference.player, context)?.burnout ?? 0;
-    case 'player_actions_remaining':
-      return resolvePlayer(state, reference.player, context)?.actionsRemaining ?? 0;
-    case 'flag': {
-      const key = resolveDynamicKey(reference.key, context);
-      return getFlagContainer(state, reference.scope)[key] ?? 0;
-    }
-  }
-}
-
-function compareValues(
-  left: number | string | boolean,
-  right: number | string | boolean,
-  op: '>' | '>=' | '<' | '<=' | '==' | '!=',
-): boolean {
+function compareValues(left: number, right: number, op: '>' | '>=' | '<' | '<=' | '==' | '!=') {
   switch (op) {
     case '>':
-      return Number(left) > Number(right);
+      return left > right;
     case '>=':
-      return Number(left) >= Number(right);
+      return left >= right;
     case '<':
-      return Number(left) < Number(right);
+      return left < right;
     case '<=':
-      return Number(left) <= Number(right);
+      return left <= right;
     case '==':
       return left === right;
     case '!=':
@@ -306,566 +150,189 @@ function compareValues(
   }
 }
 
-function evaluateCondition(state: EngineState, condition: Condition, context: EffectContext): boolean {
-  switch (condition.kind) {
-    case 'compare': {
-      const left = resolveValueRef(state, condition.left, context);
-      const right = typeof condition.right === 'object' && condition.right !== null && 'type' in condition.right
-        ? resolveValueRef(state, condition.right, context)
-        : condition.right;
-      return compareValues(left, right, condition.op);
-    }
-    case 'all':
-      return condition.conditions.every((entry) => evaluateCondition(state, entry, context));
-    case 'any':
-      return condition.conditions.some((entry) => evaluateCondition(state, entry, context));
-    case 'not':
-      return !evaluateCondition(state, condition.condition, context);
-    case 'tokenCount': {
-      const total = resolveRegions(condition.region, context).reduce((sum, regionId) => {
-        return sum + (state.regions[regionId]?.tokens[condition.token] ?? 0);
-      }, 0);
-      return compareValues(total, condition.count, condition.op);
-    }
-    case 'hasLock':
-      return resolveRegions(condition.region, context).some((regionId) => state.regions[regionId]?.locks.includes(condition.lock));
-    case 'phaseIs':
-      return state.phase === condition.phase;
-    case 'modeIs':
-      return state.mode === condition.mode;
-    case 'flagIs': {
-      const key = resolveDynamicKey(condition.key, context);
-      return (getFlagContainer(state, condition.scope)[key] ?? false) === condition.value;
-    }
-    case 'frontCollapsed':
-      return state.fronts[condition.front].collapsed;
+function resolveSeatSelector(selector: SeatSelector | 'seat_owner', context: ResolveContext): number {
+  if (selector === 'acting_player' || selector === 'seat_owner') {
+    return context.actingSeat ?? 0;
   }
+  return selector;
 }
 
-function getDefaultTargetForAction(action: ActionDefinition): ActionTarget {
-  switch (action.targetKind) {
-    case 'REGION':
-      return { kind: 'REGION', regionId: 'Palestine' };
-    case 'FRONT':
-      return { kind: 'FRONT', frontId: 'WAR' };
-    case 'NONE':
-      return { kind: 'NONE' };
-  }
-}
-
-function getLegalTargets(action: ActionDefinition): ActionTarget[] {
-  switch (action.targetKind) {
-    case 'NONE':
-      return [{ kind: 'NONE' }];
-    case 'FRONT':
-      return FRONT_IDS.map((frontId) => ({ kind: 'FRONT', frontId }));
-    case 'REGION':
-      return REGION_IDS.map((regionId) => ({ kind: 'REGION', regionId }));
-  }
-}
-
-function findDisinfoPenaltyResource(action: ActionDefinition): ResourceType {
-  if (action.resourceCosts?.evidence !== undefined || action.journalismAction) {
-    return 'evidence';
-  }
-
-  if (action.resourceCosts?.capacity !== undefined) {
-    return 'capacity';
-  }
-
-  return 'solidarity';
-}
-
-function getActionCosts(state: EngineState, player: PlayerState, action: ActionDefinition, target: ActionTarget): Partial<Record<ResourceType, number>> {
-  const costs = { ...(action.resourceCosts ?? {}) };
-
-  if (player.burnoutState === 'strained' && (action.publicAction || action.burnoutCost !== undefined)) {
-    const resource = findDisinfoPenaltyResource(action);
-    costs[resource] = (costs[resource] ?? 0) + 1;
-  }
-
-  if (action.id === 'truth_window' && civicSpaceIndex(state.civicSpace) >= civicSpaceIndex('OBSTRUCTED')) {
-    costs.evidence = (costs.evidence ?? 0) + 1;
-  }
-
-  if (
-    target.kind === 'REGION' &&
-    (state.regions[target.regionId!].tokens.disinfo ?? 0) > 0 &&
-    !action.antiDisinfoAction
-  ) {
-    const resource = findDisinfoPenaltyResource(action);
-    costs[resource] = (costs[resource] ?? 0) + 1;
-  }
-
-  return costs;
-}
-
-function getDisabledReasonForTarget(
-  state: EngineState,
-  player: PlayerState,
-  action: ActionDefinition,
-  target: ActionTarget,
-): string | undefined {
-  if (state.phase !== 'COALITION') {
-    return 'Phase locked';
-  }
-
-  if (player.ready) {
-    return 'Seat already ready';
-  }
-
-  if (player.actionsRemaining <= 0) {
-    return 'No actions remaining';
-  }
-
-  if (action.mode === 'FULL' && state.mode !== 'FULL') {
-    return 'Full mode only';
-  }
-
-  if (action.mode === 'CORE' && state.mode !== 'CORE') {
-    return 'Core mode only';
-  }
-
-  if (player.burnoutState === 'burnt' && action.burnoutCost !== undefined) {
-    return 'Burnt out';
-  }
-
-  if (action.id === 'community_mobilization' && civicSpaceIndex(state.civicSpace) >= civicSpaceIndex('REPRESSED')) {
-    return 'Civic space closed to public mobilization';
-  }
-
-  if (target.kind === 'REGION') {
-    const region = state.regions[target.regionId!];
-    const hasTruthWindow = Boolean(state.roundFlags[`truth_window:${target.regionId}`]);
-    const isCensored = region.locks.includes('Censorship');
-
-    if (isCensored && (action.journalismAction || action.cultureAction) && !action.bypassesCensorship && !hasTruthWindow) {
-      return 'Censorship active';
-    }
-  }
-
-  for (const condition of action.disabledWhen ?? []) {
-    if (evaluateCondition(state, condition, { actingSeat: player.seat, target, causedBy: [action.id] })) {
-      return 'Action gated by scenario rules';
-    }
-  }
-
-  const costs = getActionCosts(state, player, action, target);
-  for (const [resource, amount] of Object.entries(costs) as Array<[ResourceType, number]>) {
-    if (state.resources[resource] < amount) {
-      return `Not enough ${resource}`;
-    }
-  }
-
-  return undefined;
-}
-
-export function getDisabledActionReason(
+function evaluateCondition(
   state: EngineState,
   content: CompiledContent,
-  seat: number,
-  actionId: string,
-  target?: ActionTarget,
-): DisabledActionReason {
-  const player = assertExists(state.players[seat], `Unknown player seat ${seat}.`);
-  const action = assertExists(content.actions[actionId], `Unknown action ${actionId}.`);
-  const legalTargets = getLegalTargets(action);
-  const resolvedTarget = target ?? getDefaultTargetForAction(action);
-  const reason = getDisabledReasonForTarget(state, player, action, resolvedTarget);
-
-  return {
-    actionId,
-    disabled: Boolean(reason),
-    reason,
-    legalTargets,
-    finalCosts: getActionCosts(state, player, action, resolvedTarget),
-  };
-}
-
-function createInitialPlayers(command: Extract<EngineCommand, { type: 'StartGame' }>, content: CompiledContent): PlayerState[] {
-  return command.roleIds.slice(0, command.playerCount).map((roleId, seat) => {
-    const role = assertExists(content.roles[roleId], `Unknown role ${roleId}.`);
-    const player: PlayerState = {
-      seat,
-      roleId,
-      burnout: 0,
-      burnoutState: 'steady',
-      maxBurnout: role.burnoutMax,
-      actionsRemaining: role.actionsPerTurn[command.mode],
-      ready: false,
-      queuedIntents: [],
-      privateHints: [],
-    };
-    return player;
-  });
-}
-
-function createInitialState(command: Extract<EngineCommand, { type: 'StartGame' }>, content: CompiledContent): EngineState {
-  let rng = createRng(command.seed);
-  const players = createInitialPlayers(command, content);
-  const scenario = content.scenario;
-
-  const fronts = Object.fromEntries(
-    FRONT_IDS.map((frontId) => {
-      const definition = content.fronts[frontId];
-      const overrides = scenario.setup.frontOverrides[frontId] ?? {};
-      return [
-        frontId,
-        {
-          id: frontId,
-          pressure: overrides.pressure ?? definition.initial.pressure,
-          protection: overrides.protection ?? definition.initial.protection,
-          impact: overrides.impact ?? definition.initial.impact,
-          collapsed: false,
-        },
-      ];
-    }),
-  ) as EngineState['fronts'];
-
-  const regions = Object.fromEntries(
-    REGION_IDS.map((regionId) => {
-      const definition = content.regions[regionId];
-      const override = scenario.setup.regionOverrides[regionId] ?? {};
-      const tokens = {
-        displacement: 0,
-        disinfo: 0,
-        compromise_debt: 0,
-        ...(override.tokens ?? {}),
-      };
-      return [
-        regionId,
-        {
-          id: regionId,
-          vulnerability: { ...definition.vulnerability, ...(override.vulnerability ?? {}) },
-          tokens,
-          locks: [...(override.locks ?? [])],
-          institutions: (override.institutions ?? []).map((institution) => ({
-            type: institution.institution,
-            status: institution.status ?? 'active',
-            preventedThisRound: false,
-            threatenedThisRound: false,
-          })),
-        },
-      ];
-    }),
-  ) as EngineState['regions'];
-
-  const decks = {
-    capture: { drawPile: [] as string[], discardPile: [] as string[] },
-    crisis: { drawPile: [] as string[], discardPile: [] as string[] },
-    culture: { drawPile: [] as string[], discardPile: [] as string[] },
-  };
-
-  for (const deck of ['capture', 'crisis', 'culture'] as DeckId[]) {
-    const cardIds = content.decks[deck].filter((cardId) => {
-      const card = content.cards[cardId];
-      return card.mode === 'BOTH' || card.mode === command.mode;
-    });
-    const [nextRng, shuffled] = shuffle(rng, cardIds);
-    rng = nextRng;
-    decks[deck].drawPile = shuffled;
-  }
-
-  const charter = Object.fromEntries(
-    Object.keys(content.charter).map((clauseId) => [
-      clauseId,
-      {
-        id: clauseId,
-        status: 'locked',
-        progress: 0,
-      },
-    ]),
-  ) as EngineState['charter'];
-
-  const state: EngineState = {
-    seed: command.seed,
-    rng,
-    mode: command.mode,
-    scenarioId: command.scenarioId,
-    round: 1,
-    roundLimit: scenario.roundLimit[command.mode],
-    phase: 'WORLD',
-    civicSpace: scenario.setup.civicSpace,
-    temperature: scenario.setup.temperature,
-    resources: {
-      solidarity: scenario.setup.resources.solidarity,
-      evidence: scenario.setup.resources.evidence,
-      capacity: scenario.setup.resources.capacity,
-      relief: scenario.setup.resources.relief,
-    },
-    globalTokens: { compromise_debt: 0 },
-    fronts,
-    regions,
-    players,
-    decks,
-    stagedWorldPhase: createEmptyStagedWorldPhase(),
-    charter,
-    charterProgress: 0,
-    scenarioFlags: {
-      charter_progress_total: 0,
-    },
-    roundFlags: {},
-    delayedEffects: [],
-    activeCompromise: null,
-    commandLog: [cloneState(command)],
-    eventLog: [],
-    endingTier: null,
-    lossReason: null,
-    debug: {
-      climateRoll: null,
-      lastCaptureCards: [],
-      lastCrisisCards: [],
-      lastCrisisCount: 0,
-      firedRuleIds: [],
-    },
-  };
-
-  if (command.playerCount === 2) {
-    state.resources.solidarity += 2;
-    state.resources.evidence += 1;
-    state.resources.capacity += 1;
-  } else if (command.playerCount === 3) {
-    state.resources.solidarity += 1;
-    state.resources.capacity += 1;
-  }
-
-  updateCharterUnlocks(state, content);
-  addSimpleEvent(state, 'system', 'game_start', '🌍', `Dignity Rising begins: ${scenario.name}`, ['StartGame']);
-  return state;
-}
-
-function recordPlayerCosts(state: EngineState, player: PlayerState, costs: Partial<Record<ResourceType, number>>, traces: EffectTrace[]): void {
-  for (const [resource, amount] of Object.entries(costs) as Array<[ResourceType, number]>) {
-    const before = state.resources[resource];
-    state.resources[resource] = clamp(state.resources[resource] - amount, { min: 0 });
-    traces.push({
-      effectType: 'spend_resource',
-      status: 'executed',
-      message: `Spent ${amount} ${resource}.`,
-      causedBy: [`seat:${player.seat}`],
-      deltas: [createDelta('resource', resource, before, state.resources[resource])],
-    });
+  condition: Condition,
+  context: ResolveContext,
+): boolean {
+  switch (condition.kind) {
+    case 'compare': {
+      let left = 0;
+      switch (condition.left.type) {
+        case 'global_gaze':
+          left = state.globalGaze;
+          break;
+        case 'northern_war_machine':
+          left = state.northernWarMachine;
+          break;
+        case 'round':
+          left = state.round;
+          break;
+        case 'domain_progress':
+          left = state.domains[assertExists(condition.left.domain, 'Missing domain on compare ref.')].progress;
+          break;
+        case 'region_extraction':
+          left = state.regions[assertExists(condition.left.region, 'Missing region on compare ref.')].extractionTokens;
+          break;
+        case 'player_evidence':
+          left = state.players[resolveSeatSelector(condition.left.player ?? 'seat_owner', context)]?.evidence ?? 0;
+          break;
+        case 'player_total_bodies':
+          left = getSeatTotalBodies(state, resolveSeatSelector(condition.left.player ?? 'seat_owner', context));
+          break;
+      }
+      return compareValues(left, condition.right, condition.op);
+    }
+    case 'all':
+      return condition.conditions.every((entry) => evaluateCondition(state, content, entry, context));
+    case 'any':
+      return condition.conditions.some((entry) => evaluateCondition(state, content, entry, context));
+    case 'not':
+      return !evaluateCondition(state, content, condition.condition, context);
+    case 'every_region_extraction_at_most':
+      return REGION_IDS.every((regionId) => state.regions[regionId].extractionTokens <= condition.count);
+    case 'all_active_beacons_complete':
+      return state.activeBeaconIds.every((beaconId) => state.beacons[beaconId]?.complete);
   }
 }
 
-function applyPreventiveLock(region: EngineState['regions'][RegionId], lock: LockType): boolean {
-  const clinic = hasActiveInstitution(region, 'LegalClinic');
+function resolveRegionSelector(
+  state: EngineState,
+  _content: CompiledContent,
+  selector: RegionSelector,
+  context: ResolveContext,
+): RegionId[] {
+  if (selector === 'target_region') {
+    return context.targetRegionId ? [context.targetRegionId] : [];
+  }
 
-  if (!clinic) {
+  if (typeof selector === 'string') {
+    return [selector];
+  }
+
+  const candidates = REGION_IDS
+    .map((regionId) => ({
+      regionId,
+      vulnerability: state.regions[regionId].vulnerability[selector.byVulnerability] ?? 0,
+      extraction: state.regions[regionId].extractionTokens,
+    }))
+    .filter((entry) => entry.vulnerability > 0);
+
+  if (candidates.length === 0) {
+    return [];
+  }
+
+  const highest = Math.max(...candidates.map((entry) => entry.vulnerability));
+  const tied = candidates.filter((entry) => entry.vulnerability === highest);
+  if (tied.length === 1) {
+    return [tied[0].regionId];
+  }
+
+  const [nextRng, index] = nextInt(state.rng, tied.length);
+  state.rng = nextRng;
+  return [tied[index].regionId];
+}
+
+function drawCard(state: EngineState, deckId: 'system' | 'resistance' | 'beacon'): string | null {
+  const deck = state.decks[deckId];
+  if (deck.drawPile.length === 0 && deck.discardPile.length > 0) {
+    const [nextRng, shuffled] = shuffle(state.rng, deck.discardPile);
+    state.rng = nextRng;
+    deck.drawPile = shuffled;
+    deck.discardPile = [];
+  }
+  return deck.drawPile.shift() ?? null;
+}
+
+function moveCardToDiscard(state: EngineState, deckId: 'system' | 'resistance', cardId: string) {
+  state.decks[deckId].discardPile.push(cardId);
+}
+
+function removeCardFromHand(state: EngineState, seat: number, cardId: string) {
+  const player = state.players[seat];
+  player.resistanceHand = player.resistanceHand.filter((id) => id !== cardId);
+}
+
+function getFaction(content: CompiledContent, player: PlayerState): FactionDefinition {
+  return content.factions[player.factionId];
+}
+
+function updateBeaconCompletion(state: EngineState, content: CompiledContent) {
+  for (const beaconId of state.activeBeaconIds) {
+    const beacon = content.beacons[beaconId];
+    state.beacons[beaconId].complete = evaluateCondition(state, content, beacon.condition, { causedBy: [beaconId] });
+  }
+}
+
+function checkExtractionLoss(state: EngineState) {
+  const breachedRegion = REGION_IDS.find((regionId) => state.regions[regionId].extractionTokens >= EXTRACTION_DEFEAT_THRESHOLD);
+  if (!breachedRegion) {
     return false;
   }
 
-  if ((lock === 'AidAccess' || lock === 'Surveillance') && !clinic.preventedThisRound) {
-    clinic.preventedThisRound = true;
-    return true;
-  }
-
-  return false;
-}
-
-function applyPreventiveDisplacement(region: EngineState['regions'][RegionId], context: EffectContext): boolean {
-  const microgrid = hasActiveInstitution(region, 'CommunityMicrogrid');
-
-  if (!microgrid || microgrid.preventedThisRound) {
-    return false;
-  }
-
-  if (context.sourceTags?.some((tag) => tag === 'CLIMATE' || tag === 'ENERGY')) {
-    microgrid.preventedThisRound = true;
-    return true;
-  }
-
-  return false;
-}
-
-function damageInstitutionInstance(instance: InstitutionInstance): InstitutionStatus {
-  if (instance.status === 'active') {
-    instance.status = 'damaged';
-  } else if (instance.status === 'damaged') {
-    instance.status = 'destroyed';
-  }
-
-  return instance.status;
-}
-
-function ratifyClause(state: EngineState, content: CompiledContent, clauseId: string, causedBy: string[]): void {
-  const clause = state.charter[clauseId];
-  const definition = content.charter[clauseId];
-  if (!clause || !definition || clause.status === 'ratified') {
-    return;
-  }
-
-  clause.status = 'ratified';
-  addSimpleEvent(state, 'system', clauseId, '✅', `Charter ratified: ${definition.title}.`, causedBy);
-  applyEffects(
-    state,
-    content,
-    definition.ratifyEffects,
-    {
-      sourceType: 'system',
-      sourceId: clauseId,
-      emoji: '⚖️',
-      message: definition.title,
-      causedBy,
-      context: { causedBy },
-    },
-  );
-}
-
-function ratifyFirstAvailableClause(state: EngineState, content: CompiledContent, causedBy: string[]): boolean {
-  updateCharterUnlocks(state, content);
-
-  const clause = Object.values(state.charter).find((entry) => entry.status === 'unlocked');
-  if (!clause) {
-    return false;
-  }
-
-  ratifyClause(state, content, clause.id, causedBy);
+  state.phase = 'LOSS';
+  state.lossReason = `${breachedRegion} reached ${EXTRACTION_DEFEAT_THRESHOLD} Extraction Tokens.`;
+  revealMandates(state);
+  addSimpleEvent(state, 'system', 'extraction_breach', '☠️', state.lossReason, ['extraction_breach']);
   return true;
 }
 
-function resolveCardDraw(state: EngineState, deck: DeckId): string | null {
-  if (state.decks[deck].drawPile.length === 0 && state.decks[deck].discardPile.length > 0) {
-    const [nextRng, reshuffled] = shuffle(state.rng, state.decks[deck].discardPile);
-    state.rng = nextRng;
-    state.decks[deck].drawPile = reshuffled;
-    state.decks[deck].discardPile = [];
+function checkPositiveVictory(state: EngineState, content: CompiledContent): boolean {
+  const liberationComplete = state.mode === 'LIBERATION'
+    && REGION_IDS.every((regionId) => state.regions[regionId].extractionTokens <= content.ruleset.liberationThreshold);
+  const symbolicComplete = state.mode === 'SYMBOLIC'
+    && state.activeBeaconIds.every((beaconId) => state.beacons[beaconId]?.complete);
+
+  if (!liberationComplete && !symbolicComplete) {
+    return false;
   }
 
-  return state.decks[deck].drawPile.shift() ?? null;
+  const failedMandates = state.players.filter((player) => {
+    const faction = getFaction(content, player);
+    return !evaluateCondition(state, content, faction.mandate.condition, { actingSeat: player.seat, causedBy: [faction.mandate.id] });
+  });
+
+  revealMandates(state);
+  if (failedMandates.length > 0) {
+    state.phase = 'LOSS';
+    state.lossReason = `Positive victory was reached, but ${failedMandates.length} secret mandate(s) failed.`;
+    addSimpleEvent(state, 'mandate', 'mandate_failure', '🕳️', state.lossReason, ['mandate_failure']);
+    return true;
+  }
+
+  state.phase = 'WIN';
+  state.winner = liberationComplete ? 'Liberation achieved.' : 'Symbolic beacons aligned.';
+  addSimpleEvent(state, 'beacon', 'victory', '✨', state.winner, ['victory']);
+  return true;
 }
 
-function resolveCard(state: EngineState, content: CompiledContent, cardId: string, causedBy: string[], context: EffectContext): void {
-  const card = content.cards[cardId];
-  if (!card) {
-    return;
-  }
-
-  applyEffects(
-    state,
-    content,
-    card.effects,
-    {
-      sourceType: 'card',
-      sourceId: card.id,
-      emoji: card.emoji,
-      message: card.name,
-      causedBy: [...causedBy, card.id],
-      context: { ...context, causedBy: [...causedBy, card.id], sourceTags: card.tags },
-    },
-  );
-  state.decks[card.deck].discardPile.push(card.id);
-}
-
-function stageWorldPhase(state: EngineState, content: CompiledContent, sourceId: 'DrawWorldCards' | 'ResolveWorldPhase'): void {
-  nextWorldPhaseSetup(state, content, sourceId);
-
-  const captureCardId = resolveCardDraw(state, 'capture');
-  const band = getTemperatureBand(state.temperature);
-  const crisisCardIds: string[] = [];
-
-  if (captureCardId) {
-    state.debug.lastCaptureCards = [captureCardId];
-  }
-  state.debug.lastCrisisCount = band.crisisCount;
-
-  for (let drawIndex = 0; drawIndex < band.crisisCount; drawIndex += 1) {
-    const crisisCardId = resolveCardDraw(state, 'crisis');
-    if (crisisCardId) {
-      crisisCardIds.push(crisisCardId);
+function resolveCardDraws(state: EngineState, seat: number, count: number): EffectTrace {
+  const player = state.players[seat];
+  const before = player.resistanceHand.length;
+  for (let index = 0; index < count; index += 1) {
+    const cardId = drawCard(state, 'resistance');
+    if (cardId) {
+      player.resistanceHand.push(cardId);
     }
   }
-
-  state.debug.lastCrisisCards = crisisCardIds;
-  state.stagedWorldPhase = {
-    captureCardId,
-    crisisCardIds,
-    activeCrisisId: crisisCardIds[0] ?? null,
-    band: band.band,
-    status: 'drawn',
+  return {
+    effectType: 'draw_resistance',
+    status: 'executed',
+    message: `Seat ${seat + 1} drew ${player.resistanceHand.length - before} resistance card(s).`,
+    causedBy: [`seat:${seat}`],
+    deltas: [createDelta('card', `seat:${seat}:hand`, before, player.resistanceHand.length)],
   };
-
-  addSimpleEvent(
-    state,
-    'command',
-    sourceId,
-    '🃏',
-    crisisCardIds.length > 0 ? 'World cards drawn and set on the table.' : 'World cards drawn. No crisis cards remained in the deck.',
-    [sourceId],
-  );
 }
 
-function nextWorldPhaseSetup(state: EngineState, content: CompiledContent, sourceId: 'DrawWorldCards' | 'ResolveWorldPhase'): void {
-  state.roundFlags = {};
-  state.debug = {
-    climateRoll: null,
-    lastCaptureCards: [],
-    lastCrisisCards: [],
-    lastCrisisCount: 0,
-    firedRuleIds: [],
-  };
-  state.stagedWorldPhase = createEmptyStagedWorldPhase();
-  for (const region of Object.values(state.regions)) {
-    markInstitutionReset(region);
-  }
-
-  resolveHook(state, content, 'on_round_start', { causedBy: [sourceId] });
-  applyClimateUpdate(state, content);
-}
-
-function adoptWorldPhase(state: EngineState, content: CompiledContent, sourceId: 'AdoptResolution' | 'ResolveWorldPhase'): void {
-  const staged = cloneState(state.stagedWorldPhase);
-  const baseCausedBy = [sourceId];
-
-  if (staged.captureCardId) {
-    resolveCard(state, content, staged.captureCardId, baseCausedBy, { causedBy: baseCausedBy });
-    resolveHook(state, content, 'on_capture_card_resolve', { causedBy: [...baseCausedBy, staged.captureCardId] });
-  }
-
-  for (const crisisCardId of staged.crisisCardIds) {
-    state.stagedWorldPhase.activeCrisisId = crisisCardId;
-    resolveCard(state, content, crisisCardId, baseCausedBy, { causedBy: baseCausedBy });
-    resolveHook(state, content, 'on_crisis_resolve', { causedBy: [...baseCausedBy, crisisCardId] });
-  }
-
-  resolveHook(state, content, 'on_world_phase_pre', { causedBy: baseCausedBy });
-  applyDelayedEffects(state, content);
-  state.stagedWorldPhase = createEmptyStagedWorldPhase();
-}
-
-function resolveHook(state: EngineState, content: CompiledContent, hookName: keyof CompiledContent['hooks'], context: EffectContext): void {
-  for (const hook of content.hooks[hookName]) {
-    if (hook.when && !evaluateCondition(state, hook.when, context)) {
-      continue;
-    }
-
-    state.debug.firedRuleIds.push(hook.id);
-    applyEffects(
-      state,
-      content,
-      hook.effects,
-      {
-        sourceType: 'hook',
-        sourceId: hook.id,
-        emoji: hook.emoji,
-        message: hook.message,
-        causedBy: [...context.causedBy, hook.id],
-        context: { ...context, causedBy: [...context.causedBy, hook.id] },
-      },
-    );
-  }
-}
-
-interface ApplyEffectSource {
-  sourceType: DomainEvent['sourceType'];
-  sourceId: string;
-  emoji: string;
-  message: string;
-  causedBy: string[];
-  context: EffectContext;
-}
-
-function applyEffects(state: EngineState, content: CompiledContent, effects: Effect[], source: ApplyEffectSource): void {
+function applyEffects(state: EngineState, content: CompiledContent, effects: Effect[], source: ApplyEffectSource): EffectTrace[] {
   const traces: EffectTrace[] = [];
 
   for (const effect of effects) {
@@ -877,499 +344,800 @@ function applyEffects(state: EngineState, content: CompiledContent, effects: Eff
       deltas: [],
     };
 
-    try {
-      switch (effect.type) {
-        case 'modify_track': {
-          if (effect.target.type === 'temperature') {
-            const before = state.temperature;
-            state.temperature = clamp(state.temperature + effect.delta, effect.clamp ?? { min: 0, max: 10 });
-            trace.message = `Temperature ${before} -> ${state.temperature}.`;
-            trace.deltas.push(createDelta('track', 'temperature', before, state.temperature));
-          } else if (effect.target.type === 'civic_space_index') {
-            const before = state.civicSpace;
-            const afterIndex = clamp(civicSpaceIndex(state.civicSpace) + effect.delta, effect.clamp ?? { min: 0, max: 4 });
-            state.civicSpace = civicSpaceFromIndex(afterIndex);
-            trace.message = `Civic space ${before} -> ${state.civicSpace}.`;
-            trace.deltas.push(createDelta('track', 'civicSpace', before, state.civicSpace));
-          } else if (effect.target.type === 'player_burnout') {
-            const player = resolvePlayer(state, effect.target.player, source.context);
-            if (!player) {
-              trace.status = 'skipped';
-              trace.message = 'No player available for burnout adjustment.';
-              break;
-            }
-            const before = player.burnout;
-            player.burnout = clamp(player.burnout + effect.delta, { min: 0, max: player.maxBurnout });
-            updatePlayerBurnoutState(player);
-            trace.message = `Seat ${player.seat} burnout ${before} -> ${player.burnout}.`;
-            trace.deltas.push(createDelta('player', `seat:${player.seat}:burnout`, before, player.burnout));
-          } else if (effect.target.type === 'player_actions_remaining') {
-            const player = resolvePlayer(state, effect.target.player, source.context);
-            if (!player) {
-              trace.status = 'skipped';
-              trace.message = 'No player available for action change.';
-              break;
-            }
-            const before = player.actionsRemaining;
-            player.actionsRemaining = clamp(player.actionsRemaining + effect.delta, effect.clamp ?? { min: 0 });
-            trace.message = `Seat ${player.seat} actions ${before} -> ${player.actionsRemaining}.`;
-            trace.deltas.push(createDelta('player', `seat:${player.seat}:actions`, before, player.actionsRemaining));
-          } else if (effect.target.type === 'resource') {
-            const before = state.resources[effect.target.resource];
-            state.resources[effect.target.resource] = clamp(
-              state.resources[effect.target.resource] + effect.delta,
-              effect.clamp ?? { min: 0, max: 99 },
-            );
-            trace.message = `${effect.target.resource} ${before} -> ${state.resources[effect.target.resource]}.`;
-            trace.deltas.push(
-              createDelta('resource', effect.target.resource, before, state.resources[effect.target.resource]),
-            );
-          } else if (effect.target.type === 'flag') {
-            const key = resolveDynamicKey(effect.target.key, source.context);
-            const flags = getFlagContainer(state, effect.target.scope);
-            const before = Number(flags[key] ?? 0);
-            const after = clamp(before + effect.delta, effect.clamp ?? { min: 0 });
-            flags[key] = after;
-            trace.message = `Flag ${key} ${before} -> ${after}.`;
-            trace.deltas.push(createDelta('flag', key, before, after));
-          }
-          break;
-        }
-        case 'modify_front_stat': {
-          const frontId = resolveFront(effect.front, source.context);
-          if (!frontId) {
-            trace.status = 'skipped';
-            trace.message = 'No front selected.';
-            break;
-          }
-          const front = state.fronts[frontId];
-          const before = front[effect.stat];
-          front[effect.stat] = clamp(front[effect.stat] + effect.delta, effect.clamp ?? { min: 0, max: 10 });
-          trace.message = `${frontId}.${effect.stat} ${before} -> ${front[effect.stat]}.`;
-          trace.deltas.push(createDelta('front', `${frontId}.${effect.stat}`, before, front[effect.stat]));
-          break;
-        }
-        case 'add_token': {
-          const regions = resolveRegions(effect.region, source.context);
-          if (effect.token === 'compromise_debt' && effect.region === 'ANY') {
-            const before = state.globalTokens.compromise_debt ?? 0;
-            state.globalTokens.compromise_debt = before + effect.count;
-            trace.message = `Compromise debt ${before} -> ${state.globalTokens.compromise_debt}.`;
-            trace.deltas.push(createDelta('token', 'global.compromise_debt', before, state.globalTokens.compromise_debt));
-            break;
-          }
-
-          for (const regionId of regions) {
-            if (effect.token === 'disinfo' && state.roundFlags.witness_window_available) {
-              const beforeFlag = state.roundFlags.witness_window_available;
-              state.roundFlags.witness_window_available = false;
-              trace.message = 'Witness Window cancels disinfo placement.';
-              trace.deltas.push(createDelta('flag', 'witness_window_available', beforeFlag, false));
-              break;
-            }
-
-            const region = state.regions[regionId];
-            if (effect.token === 'displacement' && (state.roundFlags[`prevent_displacement:${regionId}`] ?? false)) {
-              const beforeFlag = state.roundFlags[`prevent_displacement:${regionId}`];
-              state.roundFlags[`prevent_displacement:${regionId}`] = false;
-              trace.message = `Preparedness cancels displacement in ${regionId}.`;
-              trace.deltas.push(createDelta('flag', `prevent_displacement:${regionId}`, beforeFlag, false));
-              continue;
-            }
-
-            if (effect.token === 'displacement' && applyPreventiveDisplacement(region, source.context)) {
-              trace.message = `Community Microgrid absorbs displacement in ${regionId}.`;
-              continue;
-            }
-
-            const before = region.tokens[effect.token];
-            region.tokens[effect.token] += effect.count;
-            trace.deltas.push(createDelta('token', `${regionId}.${effect.token}`, before, region.tokens[effect.token]));
-            trace.message = `Added ${effect.count} ${effect.token} in ${regionId}.`;
-          }
-          break;
-        }
-        case 'remove_token': {
-          const regions = resolveRegions(effect.region, source.context);
-          if (effect.token === 'compromise_debt' && effect.region === 'ANY') {
-            const before = state.globalTokens.compromise_debt ?? 0;
-            state.globalTokens.compromise_debt = Math.max(0, before - effect.count);
-            trace.message = `Compromise debt ${before} -> ${state.globalTokens.compromise_debt}.`;
-            trace.deltas.push(createDelta('token', 'global.compromise_debt', before, state.globalTokens.compromise_debt));
-            break;
-          }
-
-          for (const regionId of regions) {
-            const region = state.regions[regionId];
-            const before = region.tokens[effect.token];
-            region.tokens[effect.token] = Math.max(0, region.tokens[effect.token] - effect.count);
-            trace.deltas.push(createDelta('token', `${regionId}.${effect.token}`, before, region.tokens[effect.token]));
-            trace.message = `Removed ${effect.count} ${effect.token} from ${regionId}.`;
-          }
-          break;
-        }
-        case 'add_lock': {
-          for (const regionId of resolveRegions(effect.region, source.context)) {
-            const region = state.regions[regionId];
-            if (applyPreventiveLock(region, effect.lock)) {
-              trace.message = `Legal Clinic prevents ${effect.lock} in ${regionId}.`;
-              continue;
-            }
-            if (!region.locks.includes(effect.lock)) {
-              region.locks.push(effect.lock);
-              trace.deltas.push(createDelta('lock', `${regionId}.${effect.lock}`, false, true));
-              trace.message = `Added ${effect.lock} in ${regionId}.`;
-            }
-          }
-          break;
-        }
-        case 'remove_lock': {
-          for (const regionId of resolveRegions(effect.region, source.context)) {
-            const region = state.regions[regionId];
-            if (region.locks.includes(effect.lock)) {
-              region.locks = region.locks.filter((lock) => lock !== effect.lock);
-              trace.deltas.push(createDelta('lock', `${regionId}.${effect.lock}`, true, false));
-              trace.message = `Removed ${effect.lock} from ${regionId}.`;
-            }
-          }
-          break;
-        }
-        case 'spend_resource': {
-          const before = state.resources[effect.resource];
-          state.resources[effect.resource] = Math.max(0, before - effect.amount);
-          trace.message = `Spent ${effect.amount} ${effect.resource}.`;
-          trace.deltas.push(createDelta('resource', effect.resource, before, state.resources[effect.resource]));
-          break;
-        }
-        case 'gain_resource': {
-          const before = state.resources[effect.resource];
-          state.resources[effect.resource] = before + effect.amount;
-          trace.message = `Gained ${effect.amount} ${effect.resource}.`;
-          trace.deltas.push(createDelta('resource', effect.resource, before, state.resources[effect.resource]));
-          break;
-        }
-        case 'conditional': {
-          const branch = evaluateCondition(state, effect.if, source.context) ? effect.then : effect.else ?? [];
-          trace.message = branch === effect.then ? 'Conditional branch succeeded.' : 'Conditional branch fell through.';
-          applyEffects(state, content, branch, source);
-          break;
-        }
-        case 'choice': {
-          if (effect.choiceType === 'compromise' && state.mode === 'FULL') {
-            const compromise: ActiveCompromise = {
-              id: `${source.sourceId}:compromise`,
-              prompt: effect.prompt,
-              sourceId: source.sourceId,
-              options: effect.options,
-              votes: {},
-            };
-            state.activeCompromise = compromise;
-            trace.message = 'Compromise offer prepared.';
-            resolveHook(state, content, 'on_compromise_offer', source.context);
-          } else {
-            trace.status = 'skipped';
-            trace.message = 'Compromise module inactive in Core mode.';
-          }
-          break;
-        }
-        case 'delayed_effect': {
-          const delayed: DelayedEffectState = {
-            id: `${source.sourceId}:delayed:${state.delayedEffects.length + 1}`,
-            afterRounds: effect.afterRounds,
-            description: effect.description,
-            effects: effect.effects,
-            causedBy: source.causedBy,
-          };
-          state.delayedEffects.push(delayed);
-          trace.message = `Scheduled delayed effect in ${effect.afterRounds} rounds.`;
-          break;
-        }
-        case 'log':
-          trace.message = effect.message;
-          break;
-        case 'set_flag': {
-          const flags = getFlagContainer(state, effect.scope);
-          const key = resolveDynamicKey(effect.key, source.context);
-          const before = flags[key] ?? false;
-          flags[key] = effect.value;
-          trace.message = `Flag ${key} set.`;
-          trace.deltas.push(createDelta('flag', key, before, effect.value));
-          break;
-        }
-        case 'draw_from_deck': {
-          for (let drawIndex = 0; drawIndex < effect.count; drawIndex += 1) {
-            const cardId = resolveCardDraw(state, effect.deck);
-            if (!cardId) {
-              trace.status = 'skipped';
-              trace.message = `Deck ${effect.deck} is empty.`;
-              break;
-            }
-            resolveCard(state, content, cardId, source.causedBy, source.context);
-          }
-          break;
-        }
-        case 'ensure_institution': {
-          for (const regionId of resolveRegions(effect.region, source.context)) {
-            const region = state.regions[regionId];
-            const existing = region.institutions.find((institution) => institution.type === effect.institution);
-            if (existing) {
-              const before = existing.status;
-              existing.status = effect.status ?? 'active';
-              trace.deltas.push(createDelta('institution', `${regionId}.${effect.institution}`, before, existing.status));
-              trace.message = `${effect.institution} restored in ${regionId}.`;
-            } else {
-              region.institutions.push({
-                type: effect.institution,
-                status: effect.status ?? 'active',
-                preventedThisRound: false,
-                threatenedThisRound: false,
-              });
-              trace.deltas.push(createDelta('institution', `${regionId}.${effect.institution}`, null, effect.status ?? 'active'));
-              trace.message = `${effect.institution} established in ${regionId}.`;
-            }
-          }
-          break;
-        }
-        case 'damage_institution': {
-          for (const regionId of resolveRegions(effect.region, source.context)) {
-            const region = state.regions[regionId];
-            const institution =
-              effect.institution !== undefined
-                ? region.institutions.find((entry) => entry.type === effect.institution && entry.status !== 'destroyed')
-                : getFirstViableInstitution(region);
-            if (!institution) {
-              trace.status = 'skipped';
-              trace.message = `No institution to damage in ${regionId}.`;
-              continue;
-            }
-            const before = institution.status;
-            const after = damageInstitutionInstance(institution);
-            trace.deltas.push(createDelta('institution', `${regionId}.${institution.type}`, before, after));
-            trace.message = `${institution.type} in ${regionId} is now ${after}.`;
-          }
-          break;
-        }
-        case 'repair_institution': {
-          for (const regionId of resolveRegions(effect.region, source.context)) {
-            const region = state.regions[regionId];
-            const institution = region.institutions.find((entry) => entry.type === effect.institution);
-            if (!institution) {
-              trace.status = 'skipped';
-              trace.message = `No ${effect.institution} in ${regionId}.`;
-              continue;
-            }
-            const before = institution.status;
-            institution.status = 'active';
-            trace.deltas.push(createDelta('institution', `${regionId}.${effect.institution}`, before, institution.status));
-            trace.message = `${effect.institution} repaired in ${regionId}.`;
-          }
-          break;
-        }
-        case 'add_charter_progress': {
-          const before = state.charterProgress;
-          state.charterProgress += effect.amount;
-          state.scenarioFlags.charter_progress_total = Number(state.scenarioFlags.charter_progress_total ?? 0) + effect.amount;
-          trace.message = `Charter progress ${before} -> ${state.charterProgress}.`;
-          trace.deltas.push(createDelta('charter', 'charterProgress', before, state.charterProgress));
-          break;
-        }
-        case 'ratify_first_available_charter': {
-          const ratified = ratifyFirstAvailableClause(state, content, source.causedBy);
-          if (!ratified) {
-            const before = state.charterProgress;
-            state.charterProgress += effect.fallbackProgress;
-            state.scenarioFlags.charter_progress_total = Number(state.scenarioFlags.charter_progress_total ?? 0) + effect.fallbackProgress;
-            trace.message = `No clause ready; charter progress ${before} -> ${state.charterProgress}.`;
-            trace.deltas.push(createDelta('charter', 'charterProgress', before, state.charterProgress));
-          } else {
-            trace.message = 'Ratified the first available charter clause.';
-          }
-          break;
-        }
+    switch (effect.type) {
+      case 'modify_gaze': {
+        const before = state.globalGaze;
+        state.globalGaze = clamp(state.globalGaze + effect.delta, effect.clamp ?? { min: 0, max: 20 });
+        trace.message = `Global Gaze ${before} -> ${state.globalGaze}.`;
+        trace.deltas.push(createDelta('track', 'globalGaze', before, state.globalGaze));
+        break;
       }
-    } catch (error) {
-      trace.status = 'failed';
-      trace.message = error instanceof Error ? error.message : String(error);
+      case 'modify_war_machine': {
+        const before = state.northernWarMachine;
+        state.northernWarMachine = clamp(
+          state.northernWarMachine + effect.delta,
+          effect.clamp ?? { min: 0, max: 12 },
+        );
+        trace.message = `Northern War Machine ${before} -> ${state.northernWarMachine}.`;
+        trace.deltas.push(createDelta('track', 'northernWarMachine', before, state.northernWarMachine));
+        break;
+      }
+      case 'modify_domain': {
+        const domainId = effect.domain === 'target_domain' ? source.context.targetDomainId : effect.domain;
+        if (!domainId) {
+          trace.status = 'skipped';
+          trace.message = 'No domain selected.';
+          break;
+        }
+        const before = state.domains[domainId].progress;
+        state.domains[domainId].progress = clamp(state.domains[domainId].progress + effect.delta, effect.clamp ?? { min: 0, max: 12 });
+        trace.message = `${domainId} ${before} -> ${state.domains[domainId].progress}.`;
+        trace.deltas.push(createDelta('domain', domainId, before, state.domains[domainId].progress));
+        break;
+      }
+      case 'add_extraction':
+      case 'remove_extraction': {
+        const regionIds = resolveRegionSelector(state, content, effect.region, source.context);
+        if (regionIds.length === 0) {
+          trace.status = 'skipped';
+          trace.message = 'No region selected.';
+          break;
+        }
+        for (const regionId of regionIds) {
+          const region = state.regions[regionId];
+          const beforeExtraction = region.extractionTokens;
+          const beforeDefense = region.defenseRating;
+          let pending = effect.amount;
+
+          if (effect.type === 'add_extraction') {
+            while (pending > 0 && region.defenseRating > 0) {
+              region.defenseRating -= 1;
+              pending -= 1;
+            }
+            if (beforeDefense !== region.defenseRating) {
+              trace.deltas.push(createDelta('defense', `${regionId}.defense`, beforeDefense, region.defenseRating));
+            }
+            if (pending > 0) {
+              region.extractionTokens = clamp(region.extractionTokens + pending, { min: 0, max: EXTRACTION_DEFEAT_THRESHOLD });
+            }
+          } else {
+            region.extractionTokens = clamp(region.extractionTokens - pending, { min: 0, max: EXTRACTION_DEFEAT_THRESHOLD });
+          }
+
+          if (beforeExtraction !== region.extractionTokens) {
+            trace.deltas.push(
+              createDelta('extraction', `${regionId}.extraction`, beforeExtraction, region.extractionTokens),
+            );
+          }
+        }
+        state.extractionPool = calculateExtractionPool(state);
+        break;
+      }
+      case 'add_bodies':
+      case 'remove_bodies': {
+        const regionIds = resolveRegionSelector(state, content, effect.region, source.context);
+        const seat = resolveSeatSelector(effect.seat, source.context);
+        for (const regionId of regionIds) {
+          const region = state.regions[regionId];
+          const before = region.bodiesPresent[seat] ?? 0;
+          region.bodiesPresent[seat] = effect.type === 'add_bodies'
+            ? before + effect.amount
+            : Math.max(0, before - effect.amount);
+          trace.deltas.push(createDelta('bodies', `${regionId}.seat:${seat}`, before, region.bodiesPresent[seat]));
+        }
+        break;
+      }
+      case 'gain_evidence':
+      case 'lose_evidence': {
+        const seat = resolveSeatSelector(effect.seat, source.context);
+        const player = state.players[seat];
+        const before = player.evidence;
+        player.evidence = effect.type === 'gain_evidence'
+          ? player.evidence + effect.amount
+          : Math.max(0, player.evidence - effect.amount);
+        trace.deltas.push(createDelta('evidence', `seat:${seat}:evidence`, before, player.evidence));
+        break;
+      }
+      case 'set_defense': {
+        const regionIds = resolveRegionSelector(state, content, effect.region, source.context);
+        for (const regionId of regionIds) {
+          const region = state.regions[regionId];
+          const before = region.defenseRating;
+          region.defenseRating = Math.max(region.defenseRating, effect.amount);
+          trace.deltas.push(createDelta('defense', `${regionId}.defense`, before, region.defenseRating));
+        }
+        break;
+      }
+      case 'draw_resistance': {
+        traces.push(resolveCardDraws(state, resolveSeatSelector(effect.seat, source.context), effect.count));
+        trace.status = 'skipped';
+        trace.message = 'Draw handled by helper trace.';
+        break;
+      }
+      case 'log':
+        trace.message = effect.message;
+        break;
     }
 
     traces.push(trace);
   }
 
-  addEvent(state, source.sourceType, source.sourceId, source.emoji, source.message, source.causedBy, traces);
+  return traces;
 }
 
-function applyClimateUpdate(state: EngineState, content: CompiledContent): void {
-  const band = getTemperatureBand(state.temperature);
-  const [nextRng, roll] = nextRandom(state.rng);
-  state.rng = nextRng;
-  state.debug.climateRoll = roll;
-
-  let threshold = 1;
-  if (band.band <= 1) {
-    threshold = 0.45;
-  } else if (band.band <= 3) {
-    threshold = 0.25;
-  } else {
-    threshold = 0;
+function getCampaignSupportBonus(
+  state: EngineState,
+  content: CompiledContent,
+  seat: number,
+  intent: QueuedIntent,
+): { bonus: number; card: ResistanceCardDefinition | null } {
+  if (!intent.cardId) {
+    return { bonus: 0, card: null };
   }
 
-  if (band.band === 4 || roll >= threshold) {
-    applyEffects(
-      state,
-      content,
-      [{ type: 'modify_track', target: { type: 'temperature' }, delta: 1, clamp: { min: 0, max: 10 } }],
+  const card = content.cards[intent.cardId];
+  const player = state.players[seat];
+  if (!card || card.deck !== 'resistance' || card.type !== 'support' || !player.resistanceHand.includes(intent.cardId)) {
+    return { bonus: 0, card: null };
+  }
+
+  let bonus = card.campaignBonus ?? 0;
+  if (card.domainBonus && card.domainBonus !== intent.domainId) {
+    bonus = 0;
+  }
+  if (card.regionBonus && card.regionBonus !== 'ANY' && card.regionBonus !== intent.regionId) {
+    bonus = 0;
+  }
+  return { bonus, card };
+}
+
+function addSystemAttentionEvent(state: EngineState, message: string) {
+  state.publicAttentionEvents.push(message);
+  addSimpleEvent(state, 'system', 'public_attention', '👁️', message, ['public_attention']);
+}
+
+function resolveMilitaryIntervention(state: EngineState, content: CompiledContent) {
+  if (state.northernWarMachine < 8) {
+    return;
+  }
+
+  const [targetRegionId] = resolveRegionSelector(state, content, { byVulnerability: 'WarMachine' }, { causedBy: ['intervention'] });
+  if (!targetRegionId) {
+    return;
+  }
+
+  const region = state.regions[targetRegionId];
+  if (region.defenseRating > 0) {
+    const before = region.defenseRating;
+    region.defenseRating -= 1;
+    addEvent(state, 'system', 'military_intervention', '🛡️', `Defense absorbed intervention in ${targetRegionId}.`, ['intervention'], [
       {
-        sourceType: 'system',
-        sourceId: 'climate_update',
-        emoji: '🔥',
-        message: 'Climate clock advances.',
-        causedBy: ['climate_update'],
-        context: { causedBy: ['climate_update'] },
+        effectType: 'system_phase',
+        status: 'executed',
+        message: `Defense ${before} -> ${region.defenseRating}.`,
+        causedBy: ['intervention'],
+        deltas: [createDelta('defense', `${targetRegionId}.defense`, before, region.defenseRating)],
       },
-    );
-  } else {
-    addSimpleEvent(state, 'system', 'climate_update', '🌡️', 'Temperature holds this round.', ['climate_update']);
-  }
-}
-
-function applyDelayedEffects(state: EngineState, content: CompiledContent): void {
-  const remaining: DelayedEffectState[] = [];
-
-  for (const delayed of state.delayedEffects) {
-    const nextDelay = delayed.afterRounds - 1;
-    if (nextDelay <= 0) {
-      applyEffects(
-        state,
-        content,
-        delayed.effects,
-        {
-          sourceType: 'system',
-          sourceId: delayed.id,
-          emoji: '⏳',
-          message: delayed.description,
-          causedBy: delayed.causedBy,
-          context: { causedBy: delayed.causedBy },
-        },
-      );
-    } else {
-      remaining.push({ ...delayed, afterRounds: nextDelay });
-    }
+    ]);
+    return;
   }
 
-  state.delayedEffects = remaining;
-}
+  const seatPresence = state.players
+    .map((player) => ({ seat: player.seat, bodies: region.bodiesPresent[player.seat] ?? 0 }))
+    .sort((left, right) => right.bodies - left.bodies);
+  const targetSeat = seatPresence[0]?.bodies ? seatPresence[0].seat : null;
 
-function updateCollapseState(state: EngineState, content: CompiledContent): string | null {
-  for (const frontId of FRONT_IDS) {
-    const definition = content.fronts[frontId];
-    const collapsed = definition.collapseConditions.some((condition) =>
-      evaluateCondition(state, condition, { causedBy: [`collapse:${frontId}`] }),
-    );
-    state.fronts[frontId].collapsed = collapsed;
-
-    if (collapsed) {
-      state.phase = 'LOSS';
-      state.lossReason = `${definition.name} collapsed`;
-      addSimpleEvent(state, 'system', `collapse:${frontId}`, '❌', `${definition.name} collapsed.`, [`collapse:${frontId}`]);
-      return state.lossReason;
-    }
+  if (targetSeat !== null) {
+    const before = region.bodiesPresent[targetSeat];
+    region.bodiesPresent[targetSeat] = Math.max(0, before - 2);
+    addEvent(state, 'system', 'military_intervention', '⚔️', `Military intervention hit ${targetRegionId}.`, ['intervention'], [
+      {
+        effectType: 'system_phase',
+        status: 'executed',
+        message: `Bodies ${before} -> ${region.bodiesPresent[targetSeat]}.`,
+        causedBy: ['intervention'],
+        deltas: [createDelta('bodies', `${targetRegionId}.seat:${targetSeat}`, before, region.bodiesPresent[targetSeat])],
+      },
+    ]);
+    return;
   }
 
-  return null;
+  const traces = applyEffects(
+    state,
+    content,
+    [{ type: 'add_extraction', region: targetRegionId, amount: 1 }],
+    {
+      sourceType: 'system',
+      sourceId: 'military_intervention',
+      emoji: '⚔️',
+      message: `Military intervention entrenched extraction in ${targetRegionId}.`,
+      causedBy: ['intervention'],
+      context: { causedBy: ['intervention'] },
+    },
+  );
+  addEvent(state, 'system', 'military_intervention', '⚔️', `Military intervention entrenched extraction in ${targetRegionId}.`, ['intervention'], traces);
 }
 
-function updateCharterUnlocks(state: EngineState, content: CompiledContent): void {
-  for (const clauseId of Object.keys(content.charter)) {
-    const clause = state.charter[clauseId];
-    const definition = content.charter[clauseId];
-    if (clause.status === 'ratified') {
-      continue;
-    }
-    const unlocked = definition.prerequisites.every((condition) =>
-      evaluateCondition(state, condition, { causedBy: [`charter:${clauseId}`] }),
-    );
-    clause.status = unlocked ? 'unlocked' : 'locked';
+function resolveSystemCard(state: EngineState, content: CompiledContent, cardId: string) {
+  const card = assertExists(content.cards[cardId], `Missing card ${cardId}.`);
+  if (card.deck !== 'system') {
+    throw new Error(`Card ${cardId} is not a system card.`);
   }
+  const traces = applyEffects(
+    state,
+    content,
+    card.effects,
+    {
+      sourceType: 'card',
+      sourceId: card.id,
+      emoji: '🂠',
+      message: card.name,
+      causedBy: [card.id],
+      context: { causedBy: [card.id] },
+    },
+  );
+  moveCardToDiscard(state, 'system', cardId);
+  addEvent(state, 'card', card.id, '🂠', `${card.name}: ${card.text}`, [card.id], traces);
 }
 
-function applyInstitutionPassives(state: EngineState): void {
-  for (const region of Object.values(state.regions)) {
-    for (const institution of region.institutions) {
-      if (institution.status !== 'active') {
-        continue;
+function createInitialPlayers(command: StartGameCommand, content: CompiledContent): PlayerState[] {
+  return command.factionIds.slice(0, command.playerCount).map((factionId, seat) => ({
+    seat,
+    factionId,
+    evidence: 1,
+    actionsRemaining: ACTIONS_PER_TURN,
+    ready: false,
+    queuedIntents: [],
+    resistanceHand: [],
+    mandateId: content.factions[factionId].mandate.id,
+    mandateRevealed: false,
+  }));
+}
+
+function createInitialState(command: StartGameCommand, content: CompiledContent): EngineState {
+  let rng = createRng(command.seed);
+  const players = createInitialPlayers(command, content);
+
+  const decks = {
+    system: { drawPile: [] as string[], discardPile: [] as string[] },
+    resistance: { drawPile: [] as string[], discardPile: [] as string[] },
+    beacon: { drawPile: [] as string[], discardPile: [] as string[] },
+  };
+
+  for (const deckId of ['system', 'resistance', 'beacon'] as const) {
+    const [nextRng, shuffled] = shuffle(rng, content.decks[deckId]);
+    rng = nextRng;
+    decks[deckId].drawPile = shuffled;
+  }
+
+  const regions = Object.fromEntries(
+    REGION_IDS.map((regionId) => [
+      regionId,
+      {
+        id: regionId,
+        extractionTokens: regionId === 'Levant' || regionId === 'Congo' ? 2 : 1,
+        vulnerability: { ...content.regions[regionId].vulnerability },
+        defenseRating: 0,
+        bodiesPresent: Object.fromEntries(players.map((player) => [player.seat, 0])),
+      },
+    ]),
+  ) as EngineState['regions'];
+
+  for (const player of players) {
+    const faction = content.factions[player.factionId];
+    regions[faction.homeRegion].bodiesPresent[player.seat] = 4;
+  }
+
+  const beacons = Object.fromEntries(
+    content.decks.beacon.map((beaconId) => [
+      beaconId,
+      {
+        id: beaconId,
+        active: false,
+        complete: false,
+      },
+    ]),
+  ) as EngineState['beacons'];
+
+  const activeBeaconIds: string[] = [];
+  if (command.mode === 'SYMBOLIC') {
+    for (let index = 0; index < 3; index += 1) {
+      const beaconId = decks.beacon.drawPile.shift() ?? null;
+      if (beaconId) {
+        activeBeaconIds.push(beaconId);
+        beacons[beaconId].active = true;
       }
+    }
+  }
 
-      switch (institution.type) {
-        case 'MutualAidHub':
-          if (region.tokens.displacement > 0) {
-            state.resources.solidarity += 1;
-            addSimpleEvent(state, 'system', `${region.id}.MutualAidHub`, '🤝', `${region.id} Mutual Aid Hub generates solidarity.`, [`institution:${region.id}:MutualAidHub`]);
-          }
-          break;
-        case 'IndependentMediaNetwork':
-          if (region.tokens.disinfo > 0) {
-            region.tokens.disinfo -= 1;
-            addSimpleEvent(state, 'system', `${region.id}.IndependentMediaNetwork`, '🛰️', `${region.id} Independent Media Network strips out disinfo.`, [`institution:${region.id}:IndependentMediaNetwork`]);
-          } else {
-            state.roundFlags[`truth_window:${region.id}`] = true;
-            addSimpleEvent(state, 'system', `${region.id}.IndependentMediaNetwork`, '📣', `${region.id} Independent Media Network opens a truth window.`, [`institution:${region.id}:IndependentMediaNetwork`]);
-          }
-          break;
-        case 'LegalClinic':
-          break;
-        case 'CommunityMicrogrid':
-          state.resources.capacity += 1;
-          addSimpleEvent(state, 'system', `${region.id}.CommunityMicrogrid`, '⚡', `${region.id} Community Microgrid strengthens local capacity.`, [`institution:${region.id}:CommunityMicrogrid`]);
-          break;
+  const state: EngineState = {
+    version: 'design-cutover-1',
+    seed: command.seed,
+    rng,
+    rulesetId: command.rulesetId,
+    mode: command.mode,
+    round: 1,
+    phase: 'SYSTEM',
+    extractionPool: 0,
+    globalGaze: 5,
+    northernWarMachine: 7,
+    domains: Object.fromEntries(
+      Object.values(content.domains).map((domain) => [domain.id, { id: domain.id, progress: domain.initialProgress }]),
+    ) as EngineState['domains'],
+    regions,
+    players,
+    decks,
+    beacons,
+    activeBeaconIds,
+    lastSystemCardIds: [],
+    publicAttentionEvents: [],
+    commandLog: [cloneState(command)],
+    eventLog: [],
+    winner: null,
+    lossReason: null,
+    mandatesResolved: false,
+  };
+
+  for (const player of state.players) {
+    const drawTrace = resolveCardDraws(state, player.seat, 1);
+    addEvent(state, 'system', 'starting_hands', '🃏', `Seat ${player.seat + 1} drew an opening resistance card.`, ['StartGame'], [drawTrace]);
+  }
+
+  state.extractionPool = calculateExtractionPool(state);
+  updateBeaconCompletion(state, content);
+  addSimpleEvent(state, 'system', 'game_start', '🌍', `${content.ruleset.name} begins in ${state.mode} mode.`, ['StartGame']);
+  return state;
+}
+
+function getBaseActionDefinition(content: CompiledContent, actionId: ActionId): ActionDefinition {
+  return assertExists(content.actions[actionId], `Unknown action ${actionId}.`);
+}
+
+function getDisabledReasonForIntent(
+  state: EngineState,
+  content: CompiledContent,
+  seat: number,
+  intent: Omit<QueuedIntent, 'slot'>,
+  options?: { resolvingQueued?: boolean },
+): string | undefined {
+  const player = state.players[seat];
+  const action = getBaseActionDefinition(content, intent.actionId);
+  if (!player) {
+    return 'Unknown seat';
+  }
+  if (state.phase !== 'COALITION') {
+    return 'Phase locked';
+  }
+  if (!options?.resolvingQueued && player.ready) {
+    return 'Seat already ready';
+  }
+  if (!options?.resolvingQueued && player.actionsRemaining <= 0) {
+    return 'No actions remaining';
+  }
+  if (action.needsRegion && !intent.regionId) {
+    return 'Select a region';
+  }
+  if (action.needsDomain && !intent.domainId) {
+    return 'Select a domain';
+  }
+  if (action.needsTargetSeat && (intent.targetSeat === undefined || intent.targetSeat === seat)) {
+    return 'Select another seat';
+  }
+  if (action.id === 'build_solidarity') {
+    if ((state.regions[intent.regionId!].bodiesPresent[seat] ?? 0) < 3) {
+      return 'Need 3 Bodies in region';
+    }
+  }
+  if (action.id === 'international_outreach') {
+    const faction = getFaction(content, player);
+    const cost = 2 + faction.outreachPenalty;
+    if (player.evidence < cost) {
+      return 'Not enough Evidence';
+    }
+  }
+  if (action.id === 'smuggle_evidence') {
+    if (player.evidence <= 0) {
+      return 'No Evidence to move';
+    }
+    if ((state.regions[intent.regionId!].bodiesPresent[seat] ?? 0) < 1) {
+      return 'Need 1 Body in region';
+    }
+  }
+  if (action.id === 'defend') {
+    if (!intent.bodiesCommitted || intent.bodiesCommitted < 1) {
+      return 'Commit at least 1 Body';
+    }
+    if ((state.regions[intent.regionId!].bodiesPresent[seat] ?? 0) < intent.bodiesCommitted) {
+      return 'Not enough Bodies in region';
+    }
+  }
+  if (action.id === 'launch_campaign') {
+    if (!intent.bodiesCommitted || intent.bodiesCommitted < 1) {
+      return 'Commit at least 1 Body';
+    }
+    if ((state.regions[intent.regionId!].bodiesPresent[seat] ?? 0) < intent.bodiesCommitted) {
+      return 'Not enough Bodies in region';
+    }
+    if ((intent.evidenceCommitted ?? 0) > player.evidence) {
+      return 'Not enough Evidence';
+    }
+    if (intent.cardId) {
+      const card = content.cards[intent.cardId];
+      if (!card || card.deck !== 'resistance' || card.type !== 'support' || !player.resistanceHand.includes(intent.cardId)) {
+        return 'Support card unavailable';
       }
     }
   }
+  if (action.id === 'play_card') {
+    if (!intent.cardId) {
+      return 'Select a card';
+    }
+    const card = content.cards[intent.cardId];
+    if (!card || card.deck !== 'resistance' || card.type !== 'action' || !player.resistanceHand.includes(intent.cardId)) {
+      return 'Action card unavailable';
+    }
+  }
+
+  return undefined;
 }
 
-function calculateEndingSummary(state: EngineState): EndingSummary {
-  const ratifiedClauses = Object.values(state.charter).filter((clause) => clause.status === 'ratified').length;
-  const activeInstitutions = Object.values(state.regions).reduce((sum, region) => {
-    return sum + region.institutions.filter((institution) => institution.status === 'active').length;
-  }, 0);
-
-  if (ratifiedClauses >= 6 && activeInstitutions >= 3) {
-    return { tier: 'Rising', ratifiedClauses, activeInstitutions };
-  }
-
-  if (ratifiedClauses >= 4) {
-    return { tier: 'Dignified Resistance', ratifiedClauses, activeInstitutions };
-  }
-
-  if (ratifiedClauses >= 2) {
-    return { tier: 'Endurance', ratifiedClauses, activeInstitutions };
-  }
-
-  return { tier: 'Survival', ratifiedClauses, activeInstitutions };
+export function getDisabledActionReason(
+  state: EngineState,
+  content: CompiledContent,
+  seat: number,
+  action: Omit<QueuedIntent, 'slot'>,
+): DisabledActionReason {
+  const reason = getDisabledReasonForIntent(state, content, seat, action);
+  return {
+    actionId: action.actionId,
+    disabled: Boolean(reason),
+    reason,
+  };
 }
 
-function sortCoalitionIntents(intents: Array<{ seat: number; intent: QueuedIntent }>, content: CompiledContent) {
+function sortCoalitionIntents(content: CompiledContent, intents: Array<{ seat: number; intent: QueuedIntent }>) {
   return intents.slice().sort((left, right) => {
-    const leftAction = content.actions[left.intent.actionId];
-    const rightAction = content.actions[right.intent.actionId];
-
+    const leftAction = getBaseActionDefinition(content, left.intent.actionId);
+    const rightAction = getBaseActionDefinition(content, right.intent.actionId);
     if (leftAction.resolvePriority !== rightAction.resolvePriority) {
       return leftAction.resolvePriority - rightAction.resolvePriority;
     }
-
     if (left.seat !== right.seat) {
       return left.seat - right.seat;
     }
-
-    if (left.intent.slot !== right.intent.slot) {
-      return left.intent.slot - right.intent.slot;
-    }
-
-    return left.intent.actionId.localeCompare(right.intent.actionId);
+    return left.intent.slot - right.intent.slot;
   });
 }
 
-export function initializeGame(command: Extract<EngineCommand, { type: 'StartGame' }>): EngineState {
-  const content = compileContent(command.scenarioId, command.expansionIds ?? []);
+function rollDie(state: EngineState, sides: number): number {
+  const [next, value] = nextInt(state.rng, sides);
+  state.rng = next;
+  return value + 1;
+}
+
+function resolveOrganize(state: EngineState, content: CompiledContent, seat: number, intent: QueuedIntent): EffectTrace[] {
+  const player = state.players[seat];
+  const faction = getFaction(content, player);
+  const regionId = assertExists(intent.regionId, 'Organize requires region.');
+  const region = state.regions[regionId];
+  const roll = rollDie(state, 6);
+  let bodies = roll + (region.extractionTokens >= 4 ? 2 : 0);
+  if (regionId === faction.homeRegion) {
+    bodies += faction.organizeBonus;
+  } else if (faction.id === 'levant_sumud') {
+    bodies = Math.max(1, bodies - 1);
+  }
+
+  return applyEffects(
+    state,
+    content,
+    [{ type: 'add_bodies', region: regionId, seat, amount: bodies }],
+    {
+      sourceType: 'action',
+      sourceId: 'organize',
+      emoji: '✊',
+      message: `Seat ${seat + 1} organized in ${regionId}.`,
+      causedBy: ['organize'],
+      context: { actingSeat: seat, targetRegionId: regionId, causedBy: ['organize'] },
+    },
+  );
+}
+
+function resolveInvestigate(state: EngineState, content: CompiledContent, seat: number, intent: QueuedIntent): EffectTrace[] {
+  const player = state.players[seat];
+  const faction = getFaction(content, player);
+  const regionId = assertExists(intent.regionId, 'Investigate requires region.');
+  const evidenceGain = 2 + (regionId === faction.homeRegion ? faction.investigateBonus : 0);
+  const traces = applyEffects(
+    state,
+    content,
+    [{ type: 'gain_evidence', seat, amount: evidenceGain }],
+    {
+      sourceType: 'action',
+      sourceId: 'investigate',
+      emoji: '🔎',
+      message: `Seat ${seat + 1} investigated ${regionId}.`,
+      causedBy: ['investigate'],
+      context: { actingSeat: seat, targetRegionId: regionId, causedBy: ['investigate'] },
+    },
+  );
+  traces.push(resolveCardDraws(state, seat, 1));
+  return traces;
+}
+
+function resolveBuildSolidarity(state: EngineState, content: CompiledContent, seat: number, intent: QueuedIntent): EffectTrace[] {
+  const regionId = assertExists(intent.regionId, 'Build Solidarity requires region.');
+  const domainId = assertExists(intent.domainId, 'Build Solidarity requires domain.');
+  return applyEffects(
+    state,
+    content,
+    [
+      { type: 'remove_bodies', region: regionId, seat, amount: 3 },
+      { type: 'modify_domain', domain: domainId, delta: 1 },
+    ],
+    {
+      sourceType: 'action',
+      sourceId: 'build_solidarity',
+      emoji: '🤝',
+      message: `Seat ${seat + 1} built solidarity in ${regionId}.`,
+      causedBy: ['build_solidarity'],
+      context: { actingSeat: seat, targetRegionId: regionId, targetDomainId: domainId, causedBy: ['build_solidarity'] },
+    },
+  );
+}
+
+function resolveSmuggleEvidence(state: EngineState, content: CompiledContent, seat: number, intent: QueuedIntent): EffectTrace[] {
+  const regionId = assertExists(intent.regionId, 'Smuggle Evidence requires region.');
+  const targetSeat = assertExists(intent.targetSeat, 'Smuggle Evidence requires target seat.');
+  const faction = getFaction(content, state.players[seat]);
+  const transferAmount = faction.id === 'amazon_guardians' ? 1 : Math.min(2, state.players[seat].evidence);
+  return applyEffects(
+    state,
+    content,
+    [
+      { type: 'remove_bodies', region: regionId, seat, amount: 1 },
+      { type: 'lose_evidence', seat, amount: transferAmount },
+      { type: 'gain_evidence', seat: targetSeat, amount: transferAmount },
+    ],
+    {
+      sourceType: 'action',
+      sourceId: 'smuggle_evidence',
+      emoji: '📨',
+      message: `Seat ${seat + 1} smuggled evidence to seat ${targetSeat + 1}.`,
+      causedBy: ['smuggle_evidence'],
+      context: { actingSeat: seat, targetRegionId: regionId, causedBy: ['smuggle_evidence'] },
+    },
+  );
+}
+
+function resolveInternationalOutreach(state: EngineState, content: CompiledContent, seat: number): EffectTrace[] {
+  const faction = getFaction(content, state.players[seat]);
+  const cost = 2 + faction.outreachPenalty;
+  return applyEffects(
+    state,
+    content,
+    [
+      { type: 'lose_evidence', seat, amount: cost },
+      { type: 'modify_gaze', delta: 1 },
+    ],
+    {
+      sourceType: 'action',
+      sourceId: 'international_outreach',
+      emoji: '📡',
+      message: `Seat ${seat + 1} raised international pressure.`,
+      causedBy: ['international_outreach'],
+      context: { actingSeat: seat, causedBy: ['international_outreach'] },
+    },
+  );
+}
+
+function resolveDefend(state: EngineState, content: CompiledContent, seat: number, intent: QueuedIntent): EffectTrace[] {
+  const regionId = assertExists(intent.regionId, 'Defend requires region.');
+  const bodies = assertExists(intent.bodiesCommitted, 'Defend requires committed bodies.');
+  const faction = getFaction(content, state.players[seat]);
+  const defenseAmount = bodies + (regionId === faction.homeRegion ? faction.defenseBonus : 0) - (faction.id === 'mekong_echo_network' && regionId !== 'Mekong' ? 1 : 0);
+  return applyEffects(
+    state,
+    content,
+    [
+      { type: 'remove_bodies', region: regionId, seat, amount: bodies },
+      { type: 'set_defense', region: regionId, amount: Math.max(1, defenseAmount) },
+    ],
+    {
+      sourceType: 'action',
+      sourceId: 'defend',
+      emoji: '🛡️',
+      message: `Seat ${seat + 1} fortified ${regionId}.`,
+      causedBy: ['defend'],
+      context: { actingSeat: seat, targetRegionId: regionId, causedBy: ['defend'] },
+    },
+  );
+}
+
+function resolvePlayCard(state: EngineState, content: CompiledContent, seat: number, intent: QueuedIntent): EffectTrace[] {
+  const cardId = assertExists(intent.cardId, 'Play Card requires card.');
+  const regionId = intent.regionId;
+  const card = assertExists(content.cards[cardId], `Missing card ${cardId}.`);
+  if (card.deck !== 'resistance' || card.type !== 'action') {
+    throw new Error(`${cardId} is not an action card.`);
+  }
+  removeCardFromHand(state, seat, cardId);
+  moveCardToDiscard(state, 'resistance', cardId);
+  return applyEffects(
+    state,
+    content,
+    card.effects ?? [],
+    {
+      sourceType: 'card',
+      sourceId: card.id,
+      emoji: '🃏',
+      message: `${card.name} resolved.`,
+      causedBy: ['play_card', card.id],
+      context: { actingSeat: seat, targetRegionId: regionId, causedBy: ['play_card', card.id] },
+    },
+  );
+}
+
+function resolveLaunchCampaign(state: EngineState, content: CompiledContent, seat: number, intent: QueuedIntent): EffectTrace[] {
+  const regionId = assertExists(intent.regionId, 'Launch Campaign requires region.');
+  const domainId = assertExists(intent.domainId, 'Launch Campaign requires domain.');
+  const committedBodies = assertExists(intent.bodiesCommitted, 'Launch Campaign requires bodies.');
+  const committedEvidence = intent.evidenceCommitted ?? 0;
+  const player = state.players[seat];
+  const faction = getFaction(content, player);
+  const support = getCampaignSupportBonus(state, content, seat, intent);
+
+  const spendTrace = applyEffects(
+    state,
+    content,
+    [
+      { type: 'remove_bodies', region: regionId, seat, amount: committedBodies },
+      { type: 'lose_evidence', seat, amount: committedEvidence },
+    ],
+    {
+      sourceType: 'action',
+      sourceId: 'launch_campaign_spend',
+      emoji: '⚔️',
+      message: 'Campaign costs paid.',
+      causedBy: ['launch_campaign'],
+      context: { actingSeat: seat, targetRegionId: regionId, targetDomainId: domainId, causedBy: ['launch_campaign'] },
+    },
+  );
+
+  if (support.card) {
+    removeCardFromHand(state, seat, support.card.id);
+    moveCardToDiscard(state, 'resistance', support.card.id);
+  }
+
+  const dieOne = rollDie(state, 6);
+  const dieTwo = rollDie(state, 6);
+  let modifier = Math.floor(committedBodies / 2) + committedEvidence;
+  modifier += Math.floor(state.globalGaze / 5);
+  modifier -= Math.floor(state.northernWarMachine / 4);
+  if (regionId === faction.homeRegion) {
+    modifier += faction.campaignBonus;
+  }
+  if (faction.campaignDomainBonus === domainId) {
+    modifier += 1;
+  }
+  modifier += support.bonus;
+
+  const total = dieOne + dieTwo + modifier;
+  const success = total >= 8;
+  const traces = [...spendTrace];
+
+  traces.push({
+    effectType: 'launch_campaign',
+    status: 'executed',
+    message: `Campaign rolled ${dieOne}+${dieTwo}+${modifier} = ${total}.`,
+    causedBy: ['launch_campaign'],
+    deltas: [],
+  });
+
+  if (success) {
+    const victoryEffects: Effect[] = [
+      { type: 'remove_extraction', region: regionId, amount: total >= 11 ? 2 : 1 },
+      { type: 'modify_domain', domain: domainId, delta: 1 },
+    ];
+    if (domainId === 'WarMachine' && total >= 10) {
+      victoryEffects.push({ type: 'modify_war_machine', delta: -1 });
+    }
+    traces.push(
+      ...applyEffects(
+        state,
+        content,
+        victoryEffects,
+        {
+          sourceType: 'action',
+          sourceId: 'launch_campaign_success',
+          emoji: '🔥',
+          message: `Campaign succeeded in ${regionId}.`,
+          causedBy: ['launch_campaign'],
+          context: { actingSeat: seat, targetRegionId: regionId, targetDomainId: domainId, causedBy: ['launch_campaign'] },
+        },
+      ),
+    );
+  } else {
+    const backlashEffects: Effect[] = total <= 5
+      ? [
+          { type: 'add_extraction', region: regionId, amount: 1 },
+          { type: 'modify_war_machine', delta: 1 },
+        ]
+      : [{ type: 'modify_gaze', delta: 1 }];
+    traces.push(
+      ...applyEffects(
+        state,
+        content,
+        backlashEffects,
+        {
+          sourceType: 'action',
+          sourceId: 'launch_campaign_failure',
+          emoji: '💥',
+          message: `Campaign failed in ${regionId}.`,
+          causedBy: ['launch_campaign'],
+          context: { actingSeat: seat, targetRegionId: regionId, targetDomainId: domainId, causedBy: ['launch_campaign'] },
+        },
+      ),
+    );
+  }
+
+  return traces;
+}
+
+function resolveQueuedAction(state: EngineState, content: CompiledContent, seat: number, intent: QueuedIntent) {
+  const action = getBaseActionDefinition(content, intent.actionId);
+  let traces: EffectTrace[] = [];
+
+  switch (action.id) {
+    case 'organize':
+      traces = resolveOrganize(state, content, seat, intent);
+      break;
+    case 'investigate':
+      traces = resolveInvestigate(state, content, seat, intent);
+      break;
+    case 'launch_campaign':
+      traces = resolveLaunchCampaign(state, content, seat, intent);
+      break;
+    case 'build_solidarity':
+      traces = resolveBuildSolidarity(state, content, seat, intent);
+      break;
+    case 'smuggle_evidence':
+      traces = resolveSmuggleEvidence(state, content, seat, intent);
+      break;
+    case 'international_outreach':
+      traces = resolveInternationalOutreach(state, content, seat);
+      break;
+    case 'defend':
+      traces = resolveDefend(state, content, seat, intent);
+      break;
+    case 'play_card':
+      traces = resolvePlayCard(state, content, seat, intent);
+      break;
+  }
+
+  addEvent(
+    state,
+    'action',
+    action.id,
+    '🪨',
+    `Seat ${seat + 1} resolved ${action.name}.`,
+    [action.id],
+    traces,
+  );
+}
+
+export function normalizeEngineState(state: EngineState): EngineState {
+  const next = cloneState(state);
+  next.extractionPool = calculateExtractionPool(next);
+  next.activeBeaconIds = next.activeBeaconIds ?? [];
+  next.publicAttentionEvents = next.publicAttentionEvents ?? [];
+  next.lastSystemCardIds = next.lastSystemCardIds ?? [];
+  next.mandatesResolved = next.mandatesResolved ?? false;
+  return next;
+}
+
+export function initializeGame(command: StartGameCommand): EngineState {
+  const content = compileContent(command.rulesetId);
   return createInitialState(command, content);
 }
 
@@ -1385,38 +1153,24 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
     return next;
   }
 
+  if (command.type === 'StartGame') {
+    return initializeGame(command);
+  }
+
   const next = normalizeEngineState(state);
   next.commandLog.push(cloneState(command));
 
   switch (command.type) {
-    case 'StartGame':
-      return initializeGame(command);
     case 'QueueIntent': {
-      if (next.phase !== 'COALITION') {
-        addRejectedCommandEvent(next, command, 'Cannot queue actions outside Coalition.');
+      const reason = getDisabledReasonForIntent(next, content, command.seat, command.action);
+      if (reason) {
+        addRejectedCommandEvent(next, command, reason);
         return next;
       }
-
       const player = next.players[command.seat];
-      const action = content.actions[command.actionId];
-      if (!player || !action) {
-        addRejectedCommandEvent(next, command, 'Unknown player or action.');
-        return next;
-      }
-
-      const disabled = getDisabledActionReason(next, content, command.seat, command.actionId, command.target);
-      if (disabled.disabled) {
-        addRejectedCommandEvent(next, command, disabled.reason ?? 'Action is disabled.');
-        return next;
-      }
-
-      const slot = player.queuedIntents.length;
-      player.queuedIntents.push({ slot, actionId: command.actionId, target: command.target });
+      player.queuedIntents.push({ ...command.action, slot: player.queuedIntents.length });
       player.actionsRemaining -= 1;
-      addSimpleEvent(next, 'command', 'QueueIntent', '🤝', `${action.name} queued for seat ${command.seat + 1}.`, [
-        'QueueIntent',
-        action.id,
-      ]);
+      addSimpleEvent(next, 'command', 'QueueIntent', '📝', `Seat ${command.seat + 1} queued ${command.action.actionId}.`, ['QueueIntent']);
       return next;
     }
     case 'RemoveQueuedIntent': {
@@ -1424,145 +1178,96 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
         addRejectedCommandEvent(next, command, 'Cannot remove intents outside Coalition.');
         return next;
       }
-
       const player = next.players[command.seat];
-      if (!player) {
-        addRejectedCommandEvent(next, command, 'Unknown player.');
-        return next;
-      }
-
-      const removed = player.queuedIntents.find((intent) => intent.slot === command.slot);
-      if (!removed) {
+      const removed = player?.queuedIntents.find((intent) => intent.slot === command.slot);
+      if (!player || !removed) {
         addRejectedCommandEvent(next, command, 'Queued intent not found.');
         return next;
       }
-
-      player.queuedIntents = player.queuedIntents.filter((intent) => intent.slot !== command.slot);
-      player.queuedIntents.forEach((intent, slot) => {
-        intent.slot = slot;
-      });
+      player.queuedIntents = player.queuedIntents.filter((intent) => intent.slot !== command.slot).map((intent, slot) => ({ ...intent, slot }));
       player.actionsRemaining += 1;
       player.ready = false;
-      addSimpleEvent(next, 'command', 'RemoveQueuedIntent', '↩️', `Removed queued action for seat ${command.seat + 1}.`, [
-        'RemoveQueuedIntent',
-      ]);
+      addSimpleEvent(next, 'command', 'RemoveQueuedIntent', '↩️', `Seat ${command.seat + 1} pulled a queued move.`, ['RemoveQueuedIntent']);
       return next;
     }
     case 'ReorderQueuedIntent': {
       if (next.phase !== 'COALITION') {
-        addRejectedCommandEvent(next, command, 'Cannot reorder planned moves outside Coalition.');
+        addRejectedCommandEvent(next, command, 'Cannot reorder intents outside Coalition.');
         return next;
       }
-
       const player = next.players[command.seat];
-      if (!player) {
-        addRejectedCommandEvent(next, command, 'Unknown player.');
+      if (!player || command.fromSlot < 0 || command.fromSlot >= player.queuedIntents.length || command.toSlot < 0 || command.toSlot >= player.queuedIntents.length) {
+        addRejectedCommandEvent(next, command, 'Queued intent not found.');
         return next;
       }
-
       const queue = player.queuedIntents.slice();
-      if (
-        command.fromSlot < 0
-        || command.fromSlot >= queue.length
-        || command.toSlot < 0
-        || command.toSlot >= queue.length
-      ) {
-        addRejectedCommandEvent(next, command, 'Planned move not found.');
-        return next;
-      }
-
       const [moved] = queue.splice(command.fromSlot, 1);
       queue.splice(command.toSlot, 0, moved);
       player.queuedIntents = queue.map((intent, slot) => ({ ...intent, slot }));
       player.ready = false;
-      addSimpleEvent(
-        next,
-        'command',
-        'ReorderQueuedIntent',
-        '🪵',
-        `Planned moves reordered for seat ${command.seat + 1}.`,
-        ['ReorderQueuedIntent'],
-      );
+      addSimpleEvent(next, 'command', 'ReorderQueuedIntent', '🔀', `Seat ${command.seat + 1} reordered planned moves.`, ['ReorderQueuedIntent']);
       return next;
     }
     case 'SetReady': {
       if (next.phase !== 'COALITION') {
-        addRejectedCommandEvent(next, command, 'Ready state only matters in Coalition.');
+        addRejectedCommandEvent(next, command, 'Ready state is only valid in Coalition.');
         return next;
       }
-
       const player = next.players[command.seat];
       if (!player) {
-        addRejectedCommandEvent(next, command, 'Unknown player.');
+        addRejectedCommandEvent(next, command, 'Unknown seat.');
         return next;
       }
-
       if (command.ready && player.actionsRemaining > 0) {
-        addRejectedCommandEvent(next, command, 'All actions must be queued before readying.');
+        addRejectedCommandEvent(next, command, 'Spend or queue all actions before readying.');
         return next;
       }
-
       player.ready = command.ready;
       addSimpleEvent(next, 'command', 'SetReady', command.ready ? '✅' : '⚪', `Seat ${command.seat + 1} is ${command.ready ? 'ready' : 'not ready'}.`, ['SetReady']);
       return next;
     }
-    case 'DrawWorldCards': {
-      if (next.phase !== 'WORLD') {
-        addRejectedCommandEvent(next, command, 'World phase is not active.');
+    case 'ResolveSystemPhase': {
+      if (next.phase !== 'SYSTEM') {
+        addRejectedCommandEvent(next, command, 'System phase is not active.');
         return next;
       }
 
-      if (next.stagedWorldPhase.status === 'drawn') {
-        addRejectedCommandEvent(next, command, 'World cards are already drawn.');
+      next.lastSystemCardIds = [];
+      next.publicAttentionEvents = [];
+      const drawCount = next.globalGaze >= 10 ? 2 : 1;
+      if (drawCount > 1) {
+        addSystemAttentionEvent(next, 'Global Gaze is high. The system strikes twice this round.');
+      }
+
+      for (let drawIndex = 0; drawIndex < drawCount; drawIndex += 1) {
+        const cardId = drawCard(next, 'system');
+        if (!cardId) {
+          continue;
+        }
+        next.lastSystemCardIds.push(cardId);
+        resolveSystemCard(next, content, cardId);
+        if (checkExtractionLoss(next)) {
+          return next;
+        }
+      }
+
+      resolveMilitaryIntervention(next, content);
+      if (checkExtractionLoss(next)) {
         return next;
       }
 
-      stageWorldPhase(next, content, 'DrawWorldCards');
-      return next;
-    }
-    case 'AdoptResolution': {
-      if (next.phase !== 'WORLD') {
-        addRejectedCommandEvent(next, command, 'World phase is not active.');
-        return next;
+      for (const region of Object.values(next.regions)) {
+        region.defenseRating = 0;
       }
 
-      if (next.stagedWorldPhase.status !== 'drawn') {
-        addRejectedCommandEvent(next, command, 'Draw the world cards before adopting the resolution.');
-        return next;
-      }
-
-      adoptWorldPhase(next, content, 'AdoptResolution');
-
-      if (updateCollapseState(next, content)) {
-        return next;
+      for (const player of next.players) {
+        player.actionsRemaining = ACTIONS_PER_TURN;
+        player.ready = false;
+        player.queuedIntents = [];
       }
 
       next.phase = 'COALITION';
-      addSimpleEvent(next, 'command', 'AdoptResolution', '🧭', 'Resolution adopted. Coalition planning opens.', [
-        'AdoptResolution',
-      ]);
-      return next;
-    }
-    case 'ResolveWorldPhase': {
-      if (next.phase !== 'WORLD') {
-        addRejectedCommandEvent(next, command, 'World phase is not active.');
-        return next;
-      }
-
-      if (next.stagedWorldPhase.status !== 'drawn') {
-        stageWorldPhase(next, content, 'ResolveWorldPhase');
-      }
-
-      adoptWorldPhase(next, content, 'ResolveWorldPhase');
-
-      if (updateCollapseState(next, content)) {
-        return next;
-      }
-
-      next.phase = 'COALITION';
-      addSimpleEvent(next, 'command', 'ResolveWorldPhase', '🌍', 'World phase resolved. Coalition planning opens.', [
-        'ResolveWorldPhase',
-      ]);
+      addSimpleEvent(next, 'command', 'ResolveSystemPhase', '🌐', 'System phase resolved. Coalition planning opens.', ['ResolveSystemPhase']);
       return next;
     }
     case 'CommitCoalitionIntent': {
@@ -1570,63 +1275,29 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
         addRejectedCommandEvent(next, command, 'Coalition commit is only valid in Coalition.');
         return next;
       }
-
       if (!next.players.every((player) => player.ready)) {
-        addRejectedCommandEvent(next, command, 'All seats must be ready before committing.');
+        addRejectedCommandEvent(next, command, 'All seats must be ready before resolving.');
         return next;
       }
 
-      const queued = next.players.flatMap((player) => player.queuedIntents.map((intent) => ({ seat: player.seat, intent })));
-      const ordered = sortCoalitionIntents(queued, content);
+      const ordered = sortCoalitionIntents(
+        content,
+        next.players.flatMap((player) => player.queuedIntents.map((intent) => ({ seat: player.seat, intent }))),
+      );
 
       for (const { seat, intent } of ordered) {
-        const player = next.players[seat];
-        const action = content.actions[intent.actionId];
-        const disabled = getDisabledActionReason(next, content, seat, intent.actionId, intent.target);
-        if (disabled.disabled) {
-          addSimpleEvent(next, 'action', intent.actionId, '❌', `${action.name} failed: ${disabled.reason}.`, [
+        const reason = getDisabledReasonForIntent(next, content, seat, intent, { resolvingQueued: true });
+        if (reason) {
+          addSimpleEvent(next, 'action', intent.actionId, '❌', `Seat ${seat + 1} failed to resolve ${intent.actionId}: ${reason}.`, [
             'CommitCoalitionIntent',
-            action.id,
+            intent.actionId,
           ]);
           continue;
         }
-
-        const traces: EffectTrace[] = [];
-        const costs = getActionCosts(next, player, action, intent.target);
-        recordPlayerCosts(next, player, costs, traces);
-
-        if (action.burnoutCost !== undefined) {
-          const before = player.burnout;
-          player.burnout = clamp(player.burnout + action.burnoutCost, { min: 0, max: player.maxBurnout });
-          updatePlayerBurnoutState(player);
-          traces.push({
-            effectType: 'modify_track',
-            status: 'executed',
-            message: `${action.name} increases burnout.`,
-            causedBy: ['CommitCoalitionIntent', action.id],
-            deltas: [createDelta('player', `seat:${seat}:burnout`, before, player.burnout)],
-          });
+        resolveQueuedAction(next, content, seat, intent);
+        if (checkExtractionLoss(next)) {
+          return next;
         }
-
-        addEvent(next, 'action', action.id, '🤝', `${content.roles[player.roleId].name} resolves ${action.name}.`, ['CommitCoalitionIntent', action.id], traces);
-        applyEffects(
-          next,
-          content,
-          action.effects,
-          {
-            sourceType: 'action',
-            sourceId: action.id,
-            emoji: action.burnoutCost !== undefined ? '🧠' : '🛡️',
-            message: action.name,
-            causedBy: ['CommitCoalitionIntent', action.id],
-            context: { actingSeat: seat, target: intent.target, causedBy: ['CommitCoalitionIntent', action.id] },
-          },
-        );
-        resolveHook(next, content, 'on_player_action', {
-          actingSeat: seat,
-          target: intent.target,
-          causedBy: ['CommitCoalitionIntent', action.id],
-        });
       }
 
       for (const player of next.players) {
@@ -1634,100 +1305,44 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
         player.queuedIntents = [];
       }
 
-      if (updateCollapseState(next, content)) {
-        return next;
-      }
-
-      next.phase = next.activeCompromise ? 'COMPROMISE' : 'END';
+      next.phase = 'RESOLUTION';
       addSimpleEvent(next, 'command', 'CommitCoalitionIntent', '⚖️', 'Coalition intents resolved.', ['CommitCoalitionIntent']);
       return next;
     }
-    case 'VoteCompromise': {
-      if (next.phase !== 'COMPROMISE' || !next.activeCompromise) {
-        addRejectedCommandEvent(next, command, 'No active compromise to vote on.');
+    case 'ResolveResolutionPhase': {
+      if (next.phase !== 'RESOLUTION') {
+        addRejectedCommandEvent(next, command, 'Resolution phase is not active.');
         return next;
       }
 
-      next.activeCompromise.votes[command.seat] = command.accept;
-      addSimpleEvent(next, 'compromise', next.activeCompromise.id, '🤝', `Seat ${command.seat + 1} voted ${command.accept ? 'YES' : 'NO'}.`, [
-        'VoteCompromise',
-        next.activeCompromise.id,
-      ]);
-
-      if (Object.keys(next.activeCompromise.votes).length < next.players.length) {
+      updateBeaconCompletion(next, content);
+      if (checkPositiveVictory(next, content)) {
         return next;
       }
-
-      const yesVotes = Object.values(next.activeCompromise.votes).filter(Boolean).length;
-      const accepted = yesVotes > next.players.length / 2;
-      const option = accepted ? next.activeCompromise.options[0] : next.activeCompromise.options[1];
-      applyEffects(
-        next,
-        content,
-        option.effects,
-        {
-          sourceType: 'compromise',
-          sourceId: next.activeCompromise.id,
-          emoji: accepted ? '🤝' : '❌',
-          message: `${next.activeCompromise.prompt} (${option.label})`,
-          causedBy: ['VoteCompromise', next.activeCompromise.id],
-          context: { causedBy: ['VoteCompromise', next.activeCompromise.id] },
-        },
-      );
-      next.activeCompromise = null;
-      next.phase = 'END';
-      return next;
-    }
-    case 'ResolveEndPhase': {
-      if (next.phase !== 'END') {
-        addRejectedCommandEvent(next, command, 'End phase is not active.');
+      if (checkExtractionLoss(next)) {
         return next;
       }
-
-      const band = getTemperatureBand(next.temperature);
-      for (let pass = 0; pass < band.couplingMultiplier; pass += 1) {
-        resolveHook(next, content, 'on_end_phase', { causedBy: ['ResolveEndPhase'] });
-      }
-
-      if (band.band === 4) {
-        resolveHook(next, content, 'on_end_phase', { causedBy: ['ResolveEndPhase', 'band4'] });
-      }
-
-      applyInstitutionPassives(next);
-      updateCharterUnlocks(next, content);
-      resolveHook(next, content, 'on_check_win_loss', { causedBy: ['ResolveEndPhase'] });
-
-      if (updateCollapseState(next, content)) {
-        return next;
-      }
-
-      if (next.round >= next.roundLimit) {
-        const ending = calculateEndingSummary(next);
-        next.endingTier = ending.tier;
-        next.phase = 'WIN';
-        addSimpleEvent(next, 'system', 'ending', '✅', `The coalition survives. Ending tier: ${ending.tier}.`, ['ResolveEndPhase']);
+      if (next.round >= content.ruleset.suddenDeathRound) {
+        next.phase = 'LOSS';
+        next.lossReason = `Round ${content.ruleset.suddenDeathRound} ended without a decisive victory.`;
+        revealMandates(next);
+        addSimpleEvent(next, 'system', 'sudden_death', '⌛', next.lossReason, ['sudden_death']);
         return next;
       }
 
       next.round += 1;
-      next.phase = 'WORLD';
-      next.activeCompromise = null;
-      for (const player of next.players) {
-        const role = content.roles[player.roleId];
-        updatePlayerBurnoutState(player);
-        player.actionsRemaining = Math.max(1, role.actionsPerTurn[next.mode] - (player.burnoutState === 'burnt' ? 1 : 0));
-        player.ready = false;
-        player.queuedIntents = [];
-      }
-      addSimpleEvent(next, 'command', 'ResolveEndPhase', '🧩', `Round ${next.round} begins.`, ['ResolveEndPhase']);
+      next.phase = 'SYSTEM';
+      addSimpleEvent(next, 'command', 'ResolveResolutionPhase', '🔁', `Round ${next.round} begins.`, ['ResolveResolutionPhase']);
       return next;
     }
+    default:
+      return next;
   }
 }
 
 export function serializeForReplay(state: EngineState) {
   return {
-    scenarioId: state.scenarioId,
+    rulesetId: state.rulesetId,
     mode: state.mode,
     seed: state.seed,
     commands: state.commandLog,
@@ -1735,17 +1350,15 @@ export function serializeForReplay(state: EngineState) {
 }
 
 export function replayCommands(commandLog: EngineCommand[]): EngineState {
-  const startCommand = commandLog[0];
-  if (!startCommand || startCommand.type !== 'StartGame') {
+  const start = commandLog[0];
+  if (!start || start.type !== 'StartGame') {
     throw new Error('Replay requires a StartGame command at position 0.');
   }
 
-  let state = initializeGame(startCommand);
-  const content = compileContent(startCommand.scenarioId, startCommand.expansionIds ?? []);
-
+  let state = initializeGame(start);
+  const content = compileContent(start.rulesetId);
   for (const command of commandLog.slice(1)) {
     state = dispatchCommand(state, command, content);
   }
-
   return state;
 }

@@ -8,7 +8,7 @@ import {
   type HTMLAttributes,
   type ReactNode,
 } from 'react';
-import { formatNumber, t } from '../i18n/index.ts';
+import { LOCALE_OPTIONS, formatNumber, t, type Locale } from '../i18n/index.ts';
 
 type ContrastMode = 'default' | 'high';
 type MotionMode = 'full' | 'reduced';
@@ -165,6 +165,31 @@ export function TabletopControls() {
         onClick={() => setMotionMode(motionMode === 'reduced' ? 'full' : 'reduced')}
       />
     </div>
+  );
+}
+
+export function LocaleSwitcher({
+  locale,
+  onChange,
+}: {
+  locale: Locale;
+  onChange: (locale: Locale) => void;
+}) {
+  return (
+    <label className="locale-switcher">
+      <span className="engraved-eyebrow">{t('ui.language.label', 'Language')}</span>
+      <select
+        value={locale}
+        onChange={(event) => onChange(event.target.value as Locale)}
+        aria-label={t('ui.language.label', 'Language')}
+      >
+        {LOCALE_OPTIONS.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 

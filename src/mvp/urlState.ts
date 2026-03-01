@@ -1,29 +1,24 @@
-import type { GameMode, RegionId, RoleId } from '../../engine/index.ts';
+import type { FactionId, RegionId, VictoryMode } from '../../engine/index.ts';
 
 export interface SetupConfig {
   surface: 'local' | 'room';
-  scenarioId: string;
-  mode: GameMode;
+  rulesetId: string;
+  mode: VictoryMode;
   playerCount: 2 | 3 | 4;
-  roleIds: RoleId[];
+  factionIds: FactionId[];
   seed: number;
   roomUrl: string;
-  expansionIds: string[];
 }
 
 export interface GameViewState {
   focusedSeat: number;
   regionId: RegionId | null;
   eventSeq: number | null;
-  showDebug: boolean;
-  openTray: 'none' | 'scenario' | 'actions' | 'player' | 'notes' | 'deck';
-  scenarioSection: 'brief' | 'fronts' | 'charter';
-  spotlight: string | null;
 }
 
 export interface AppRoute {
   page: 'home' | 'guidelines' | 'player-guide' | 'offline' | 'room';
-  scenarioId: string;
+  rulesetId: string;
   roomId: string | null;
 }
 
@@ -31,10 +26,6 @@ export const DEFAULT_GAME_VIEW_STATE: GameViewState = {
   focusedSeat: 0,
   regionId: null,
   eventSeq: null,
-  showDebug: false,
-  openTray: 'actions',
-  scenarioSection: 'fronts',
-  spotlight: null,
 };
 
 function decodePathSegment(value: string | undefined) {
@@ -45,44 +36,32 @@ function encodePathSegment(value: string) {
   return encodeURIComponent(value);
 }
 
-export function parseAppRoute(pathname: string, defaultScenarioId: string): AppRoute {
+export function parseAppRoute(pathname: string, defaultRulesetId: string): AppRoute {
   const segments = pathname.split('/').filter(Boolean);
 
   if (segments[0] === 'guidelines') {
-    return {
-      page: 'guidelines',
-      scenarioId: decodePathSegment(segments[1]) ?? defaultScenarioId,
-      roomId: null,
-    };
+    return { page: 'guidelines', rulesetId: defaultRulesetId, roomId: null };
   }
 
   if (segments[0] === 'player-guide') {
-    return {
-      page: 'player-guide',
-      scenarioId: defaultScenarioId,
-      roomId: null,
-    };
+    return { page: 'player-guide', rulesetId: defaultRulesetId, roomId: null };
   }
 
   if (segments[0] === 'offline') {
-    return {
-      page: 'offline',
-      scenarioId: defaultScenarioId,
-      roomId: null,
-    };
+    return { page: 'offline', rulesetId: defaultRulesetId, roomId: null };
   }
 
   if (segments[0] === 'rooms' && segments[1]) {
     return {
       page: 'room',
-      scenarioId: defaultScenarioId,
+      rulesetId: defaultRulesetId,
       roomId: decodePathSegment(segments[1]),
     };
   }
 
   return {
     page: 'home',
-    scenarioId: defaultScenarioId,
+    rulesetId: defaultRulesetId,
     roomId: null,
   };
 }
@@ -90,7 +69,7 @@ export function parseAppRoute(pathname: string, defaultScenarioId: string): AppR
 export function buildAppPath(route: AppRoute) {
   switch (route.page) {
     case 'guidelines':
-      return `/guidelines/${encodePathSegment(route.scenarioId)}`;
+      return '/guidelines';
     case 'player-guide':
       return '/player-guide';
     case 'offline':
