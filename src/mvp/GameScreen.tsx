@@ -683,13 +683,6 @@ export function GameScreen({
                     : t('ui.game.localTable', 'Local Table')}
                   onClick={() => {}}
                 />
-                {devMode ? (
-                  <ThemePlate
-                    label={showDebugPanel ? t('ui.game.hideDebug', 'Hide Debug') : t('ui.game.showDebug', 'Show Debug')}
-                    active={showDebugPanel}
-                    onClick={() => setShowDebugPanel((current) => !current)}
-                  />
-                ) : null}
                 <ThemePlate
                   label={copied ? t('ui.game.saveCopied', 'Save Copied') : t('ui.game.exportSave', 'Export Save')}
                   onClick={() => {
@@ -1104,6 +1097,18 @@ export function GameScreen({
           </PaperSheet>
         </aside>
       </main>
+
+      {devMode ? (
+        <button
+          type="button"
+          className={`dev-panel-toggle ${showDebugPanel ? 'is-active' : ''}`}
+          aria-expanded={showDebugPanel}
+          aria-controls="debug-panel-title"
+          onClick={() => setShowDebugPanel((current) => !current)}
+        >
+          {showDebugPanel ? t('ui.debug.hidePanel', 'Hide Dev Panel') : t('ui.debug.showPanel', 'Dev Panel')}
+        </button>
+      ) : null}
 
       {devMode && showDebugPanel ? (
         <DebugOverlay

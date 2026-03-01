@@ -248,6 +248,8 @@
     "debug": {
       "devPanel": "لوحة التطوير",
       "title": "ديبج",
+      "showPanel": "لوحة التطوير",
+      "hidePanel": "اخفِ لوحة التطوير",
       "closePanel": "اقفل اللوحة",
       "autoplayEyebrow": "تشغيل تلقائي",
       "autoplayTitle": "شغّل جولات لوحدها",

@@ -248,6 +248,8 @@
     "debug": {
       "devPanel": "Development panel",
       "title": "Debug",
+      "showPanel": "Dev Panel",
+      "hidePanel": "Hide Dev Panel",
       "closePanel": "Close Panel",
       "autoplayEyebrow": "Autoplay",
       "autoplayTitle": "Run rounds automatically",

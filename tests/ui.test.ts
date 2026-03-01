@@ -106,6 +106,8 @@ test('game screen source keeps a landmark-based operator layout', () => {
   assert.match(source, /Prepared Moves/);
   assert.match(source, /Play Move/);
   assert.match(source, /Suggested next move/);
+  assert.match(source, /dev-panel-toggle/);
+  assert.match(source, /ui\.debug\.showPanel/);
 });
 
 test('default game view state is simplified for the cutover shell', () => {
