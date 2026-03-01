@@ -11,11 +11,16 @@ import {
   type EngineCommand,
 } from '../engine/index.ts';
 import {
+  getActionDockItems,
   buildIntentPreview,
+  getFrontTrackRows,
   GAME_A11Y_LABELS,
   getActiveCoalitionSeat,
   getPhasePresentation,
   getPhaseProgressSteps,
+  getPlayerStripSummary,
+  getRegionDangerState,
+  getStatusRibbonItems,
   getToastRole,
   getTrackPresentation,
 } from '../src/mvp/gameUiHelpers.ts';
@@ -70,6 +75,10 @@ test('phase and preview helpers expose calibrated presentation copy', () => {
   state.phase = 'COALITION';
   const phase = getPhasePresentation('COALITION');
   const tracks = getTrackPresentation(state);
+  const ribbon = getStatusRibbonItems(state, content);
+  const fronts = getFrontTrackRows(state, content);
+  const dock = getActionDockItems(state, content, 0);
+  const strip = getPlayerStripSummary(state.players[0], content, state);
   const preview = buildIntentPreview(
     { actionId: 'launch_campaign', regionId: 'Congo', domainId: 'WarMachine', bodiesCommitted: 2, evidenceCommitted: 1 },
     content.actions.launch_campaign,
@@ -81,8 +90,19 @@ test('phase and preview helpers expose calibrated presentation copy', () => {
   assert.equal(phase.verb, 'Organizes');
   assert.equal(tracks.globalGaze.max, 20);
   assert.equal(tracks.northernWarMachine.max, 12);
+  assert.equal(ribbon.some((item) => item.id === 'globalGaze'), true);
+  assert.equal(fronts.length, 7);
+  assert.equal(dock.some((item) => item.actionId === 'organize'), true);
+  assert.match(strip.mandateTitle, /Forest|Siege|River|Sacrifice/i);
   assert.equal(preview.some((chip) => chip.tone === 'risk'), true);
   assert.equal(preview.some((chip) => chip.tone === 'benefit'), true);
+});
+
+test('region danger states escalate by extraction thresholds', () => {
+  assert.equal(getRegionDangerState(2).tone, 'safe');
+  assert.equal(getRegionDangerState(4).tone, 'strained');
+  assert.equal(getRegionDangerState(5).pulsing, true);
+  assert.equal(getRegionDangerState(6).tone, 'breach');
 });
 
 test('active coalition seat advances to the first seat that still has work', () => {
@@ -95,19 +115,18 @@ test('active coalition seat advances to the first seat that still has work', () 
   assert.equal(getActiveCoalitionSeat(state.players), 1);
 });
 
-test('game screen source keeps a landmark-based operator layout', () => {
+test('game screen source keeps the compressed board layout contract', () => {
   const source = readFileSync(new URL('../src/mvp/GameScreen.tsx', import.meta.url), 'utf8');
 
   assert.match(source, /<header/);
   assert.match(source, /<main/);
   assert.match(source, /<aside/);
-  assert.match(source, /Resolve System Phase/);
-  assert.match(source, /Solemn Charge/);
-  assert.match(source, /Prepared Moves/);
-  assert.match(source, /Play Move/);
-  assert.match(source, /Suggested next move/);
-  assert.match(source, /dev-panel-toggle/);
-  assert.match(source, /ui\.debug\.showPanel/);
+  assert.match(source, /StatusRibbon/);
+  assert.match(source, /ActionDock/);
+  assert.match(source, /ContextPanel/);
+  assert.match(source, /FrontTrackBar/);
+  assert.match(source, /Commit Prepared Moves/);
+  assert.match(source, /QueueIntent/);
 });
 
 test('default game view state is simplified for the cutover shell', () => {

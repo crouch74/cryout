@@ -1,0 +1,30 @@
+export type IconType =
+  | 'bodies'
+  | 'evidence'
+  | 'defense'
+  | 'extraction'
+  | 'globalGaze'
+  | 'warMachine'
+  | 'round'
+  | 'modeLiberation'
+  | 'objective'
+  | 'organize'
+  | 'investigate'
+  | 'launchCampaign'
+  | 'buildSolidarity'
+  | 'smuggleEvidence'
+  | 'internationalOutreach'
+  | 'defend'
+  | 'playCard'
+  | 'frontWar'
+  | 'frontPlanet'
+  | 'frontCage'
+  | 'frontTruth'
+  | 'frontHunger'
+  | 'frontFossil'
+  | 'frontVoice'
+  | 'ledger'
+  | 'seat';
+
+export type IconState = 'default' | 'hover' | 'selected' | 'critical' | 'disabled' | 'gain';
+export type IconBaseShape = 'none' | 'circle' | 'hex' | 'diamond' | 'rounded-rect';

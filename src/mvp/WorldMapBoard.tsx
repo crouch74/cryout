@@ -1,19 +1,8 @@
-import {
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-} from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { getAvailableRegions, type CompiledContent, type EngineState, type RegionId } from '../../engine/index.ts';
-import {
-  formatNumber,
-  localizeBeaconField,
-  localizeDomainField,
-  localizeRegionField,
-  t,
-} from '../i18n/index.ts';
+import { localizeRegionField } from '../i18n/index.ts';
+import { RegionHoverCard } from './RegionHoverCard.tsx';
+import { getRegionDangerState } from './gameUiHelpers.ts';
 import {
   BOARD_REGION_MAP_MANIFEST,
   getBoardRegionAnchorPathIds,
@@ -27,26 +16,8 @@ interface WorldMapBoardProps {
   content: CompiledContent;
   selectedRegionId: RegionId | null;
   onSelectRegion: (regionId: RegionId) => void;
-}
-
-function getPressureLevel(extractionTokens: number) {
-  if (extractionTokens >= 6) {
-    return 'critical';
-  }
-  if (extractionTokens >= 4) {
-    return 'high';
-  }
-  if (extractionTokens >= 2) {
-    return 'medium';
-  }
-  return 'low';
-}
-
-function getDominantVulnerabilities(state: EngineState, regionId: RegionId) {
-  return Object.entries(state.regions[regionId].vulnerability)
-    .sort((left, right) => right[1] - left[1])
-    .slice(0, 2)
-    .map(([domainId]) => domainId);
+  onClearSelection?: () => void;
+  selectedRegionPopup?: ReactNode;
 }
 
 function getCoverageByRegion() {
@@ -55,53 +26,55 @@ function getCoverageByRegion() {
   ) as Record<RegionId, string[]>;
 }
 
+function getStrainLabel(extractionTokens: number) {
+  if (extractionTokens >= 6) {
+    return 'Breach line';
+  }
+  if (extractionTokens >= 5) {
+    return 'Near collapse';
+  }
+  if (extractionTokens >= 3) {
+    return 'Strained';
+  }
+  return 'Holding';
+}
+
+function getMarkerPosition(regionId: RegionId, computed: { x: string; y: string } | undefined) {
+  const base = computed ?? BOARD_REGION_MAP_MANIFEST[regionId].marker;
+  if (regionId === 'Amazon') {
+    return { x: '30.2%', y: '73.1%' };
+  }
+  if (regionId === 'Andes') {
+    return { x: '23.4%', y: '79.6%' };
+  }
+  return base;
+}
+
 export function WorldMapBoard({
   state,
   content,
   selectedRegionId,
   onSelectRegion,
+  onClearSelection,
+  selectedRegionPopup,
 }: WorldMapBoardProps) {
-  const [cardVisible, setCardVisible] = useState(true);
   const [hoveredRegionId, setHoveredRegionId] = useState<RegionId | null>(null);
-  const [svgMarkup, setSvgMarkup] = useState<string>('');
+  const [svgMarkup, setSvgMarkup] = useState('');
   const [computedAnchors, setComputedAnchors] = useState<Partial<Record<RegionId, { x: string; y: string }>>>({});
-  const [cardStyle, setCardStyle] = useState<CSSProperties>({ opacity: 0 });
-  const boardRef = useRef<HTMLDivElement | null>(null);
-  const cardRef = useRef<HTMLElement | null>(null);
+  const [popupStyle, setPopupStyle] = useState<CSSProperties>({ opacity: 0 });
+  const boardRef = useRef<HTMLElement | null>(null);
   const svgHostRef = useRef<HTMLDivElement | null>(null);
+  const popupRef = useRef<HTMLElement | null>(null);
   const markerRefs = useRef<Partial<Record<RegionId, HTMLButtonElement | null>>>({});
   const regionIds = getAvailableRegions();
   const activeRegionId = selectedRegionId
     ?? regionIds.slice().sort((left, right) => state.regions[right].extractionTokens - state.regions[left].extractionTokens)[0];
-  const activeRegion = state.regions[activeRegionId];
-  const activeRegionMeta = content.regions[activeRegionId];
-  const activeRegionLayout = BOARD_REGION_MAP_MANIFEST[activeRegionId];
-  const activePressure = getPressureLevel(activeRegion.extractionTokens);
-  const visibleBodies = state.players
-    .map((player) => ({
-      seat: player.seat,
-      count: activeRegion.bodiesPresent[player.seat] ?? 0,
-    }))
-    .filter((entry) => entry.count > 0);
-  const activeBeaconSummary = state.mode === 'SYMBOLIC'
-    ? state.activeBeaconIds.map((beaconId) => ({
-        id: beaconId,
-        title: localizeBeaconField(beaconId, 'title', content.beacons[beaconId].title),
-        complete: state.beacons[beaconId]?.complete ?? false,
-      }))
-    : [];
-  const regionsAtOrBelowThreshold = regionIds.filter((regionId) => state.regions[regionId].extractionTokens <= 1).length;
-  const regionsNearBreach = regionIds.filter((regionId) => state.regions[regionId].extractionTokens >= 4).length;
-  const highlightedRegionIds = useMemo(() => {
-    const ids = new Set<RegionId>();
-    if (cardVisible) {
-      ids.add(activeRegionId);
-    }
-    if (hoveredRegionId) {
-      ids.add(hoveredRegionId);
-    }
-    return ids;
-  }, [activeRegionId, cardVisible, hoveredRegionId]);
+
+  const boardState = useMemo(() => ({
+    warCritical: state.northernWarMachine >= 9,
+    gazeElevated: state.globalGaze >= 15,
+    regionCritical: regionIds.some((regionId) => state.regions[regionId].extractionTokens >= 5),
+  }), [regionIds, state.globalGaze, state.northernWarMachine, state.regions]);
 
   useEffect(() => {
     let cancelled = false;
@@ -124,6 +97,7 @@ export function WorldMapBoard({
     if (!svgMarkup) {
       return;
     }
+
     setComputedAnchors(computeRegionInteriorAnchorPercentages(svgMarkup, getCoverageByRegion()));
   }, [svgMarkup]);
 
@@ -137,17 +111,13 @@ export function WorldMapBoard({
     if (!rootSvg) {
       return;
     }
+
     rootSvg.classList.add('board-world-map-svg');
     const interactionRegionByPathId = new Map<string, RegionId>();
 
     for (const regionId of regionIds) {
       for (const id of getBoardRegionInteractionPathIds(regionId)) {
         interactionRegionByPathId.set(id, regionId);
-        const target = rootSvg.querySelector<SVGElement>(`#${id}`);
-        if (!target) {
-          continue;
-        }
-        target.classList.add('map-region-hit');
       }
     }
 
@@ -178,7 +148,6 @@ export function WorldMapBoard({
         return;
       }
       event.stopPropagation();
-      setCardVisible(true);
       onSelectRegion(regionId);
     };
 
@@ -203,10 +172,7 @@ export function WorldMapBoard({
       return;
     }
 
-    const allCoverageIds = new Set(
-      regionIds.flatMap((regionId) => BOARD_REGION_MAP_MANIFEST[regionId].svgCoverage),
-    );
-
+    const allCoverageIds = new Set(regionIds.flatMap((regionId) => BOARD_REGION_MAP_MANIFEST[regionId].svgCoverage));
     for (const id of allCoverageIds) {
       const target = rootSvg.querySelector(`#${id}`);
       if (!target) {
@@ -215,260 +181,142 @@ export function WorldMapBoard({
       target.classList.remove('map-region-fill-active', 'map-region-fill-hover');
     }
 
-    const hoveredIds = hoveredRegionId ? BOARD_REGION_MAP_MANIFEST[hoveredRegionId].svgCoverage : [];
-    for (const id of hoveredIds) {
-      const target = rootSvg.querySelector(`#${id}`);
-      if (target) {
-        target.classList.add('map-region-fill-hover');
-      }
+    const emphasized = new Set<RegionId>([activeRegionId]);
+    if (hoveredRegionId) {
+      emphasized.add(hoveredRegionId);
     }
 
-    for (const regionId of highlightedRegionIds) {
+    for (const regionId of emphasized) {
       for (const id of BOARD_REGION_MAP_MANIFEST[regionId].svgCoverage) {
         const target = rootSvg.querySelector(`#${id}`);
         if (target) {
-          target.classList.add('map-region-fill-active');
+          target.classList.add(regionId === hoveredRegionId ? 'map-region-fill-hover' : 'map-region-fill-active');
         }
       }
     }
-  }, [highlightedRegionIds, hoveredRegionId, regionIds, svgMarkup]);
+  }, [activeRegionId, hoveredRegionId, regionIds, svgMarkup]);
+
+  const hoverRegionId = hoveredRegionId ?? activeRegionId;
+  const hoverRegion = state.regions[hoverRegionId];
+  const hoverBodies = state.players.reduce((sum, player) => sum + (hoverRegion.bodiesPresent[player.seat] ?? 0), 0);
 
   useLayoutEffect(() => {
-    if (!cardVisible || !boardRef.current || !cardRef.current || !markerRefs.current[activeRegionId]) {
+    if (!selectedRegionId || !boardRef.current || !popupRef.current || !markerRefs.current[selectedRegionId]) {
+      setPopupStyle({ opacity: 0 });
       return;
     }
 
     const boardRect = boardRef.current.getBoundingClientRect();
-    const markerRect = markerRefs.current[activeRegionId]!.getBoundingClientRect();
-    const cardRect = cardRef.current.getBoundingClientRect();
+    const markerRect = markerRefs.current[selectedRegionId]!.getBoundingClientRect();
+    const popupRect = popupRef.current.getBoundingClientRect();
     const markerCenterX = markerRect.left - boardRect.left + markerRect.width / 2;
     const markerCenterY = markerRect.top - boardRect.top + markerRect.height / 2;
-    const margin = 14;
-    const gap = 18;
+    const gap = 16;
+    const margin = 12;
 
     let left = markerCenterX + gap;
-    let top = markerCenterY - cardRect.height / 2;
+    let top = markerCenterY - popupRect.height / 2;
 
-    if (left + cardRect.width + margin > boardRect.width) {
-      left = markerCenterX - cardRect.width - gap;
+    if (left + popupRect.width + margin > boardRect.width) {
+      left = markerCenterX - popupRect.width - gap;
     }
+
     if (left < margin) {
-      left = Math.min(Math.max(markerCenterX - cardRect.width / 2, margin), boardRect.width - cardRect.width - margin);
+      left = Math.max(margin, Math.min(markerCenterX - popupRect.width / 2, boardRect.width - popupRect.width - margin));
     }
 
     if (top < margin) {
       top = markerCenterY + gap;
     }
-    if (top + cardRect.height + margin > boardRect.height) {
-      top = boardRect.height - cardRect.height - margin;
-    }
-    top = Math.max(margin, top);
 
-    setCardStyle({
+    if (top + popupRect.height + margin > boardRect.height) {
+      top = boardRect.height - popupRect.height - margin;
+    }
+
+    setPopupStyle({
       left: `${Math.round(left)}px`,
       top: `${Math.round(top)}px`,
       opacity: 1,
     });
-  }, [activeRegionId, cardVisible, computedAnchors, hoveredRegionId]);
+  }, [selectedRegionId, computedAnchors, hoveredRegionId]);
 
   return (
-    <section className="board-map-theatre" onClick={() => setCardVisible(false)}>
-      <div className="board-metric-cluster">
-        <article className="printed-meter">
-          <span className="engraved-eyebrow">{t('ui.map.viewport', 'World Map')}</span>
-          <strong>{t('ui.map.viewportDetail', 'SVG board restored as a live state layer')}</strong>
-          <span>{t('ui.map.viewportNote', 'Markers reflect extraction, defense, and comrades on the current six-region ruleset.')}</span>
-        </article>
-        <article className="printed-meter">
-          <span className="engraved-eyebrow">{t('ui.map.legend', 'Legend')}</span>
-          <strong>{t('ui.map.legendDetail', 'Read the board at a glance')}</strong>
-          <div className="map-legend-list">
-            <span><em className="token-glyph token-glyph-disc">X</em> {t('ui.game.extraction', 'Extraction')}</span>
-            <span><em className="token-glyph token-glyph-cube">D</em> {t('ui.game.defense', 'Defense')}</span>
-            <span><em className="token-glyph token-glyph-bar">C</em> {t('ui.game.comrades', 'Comrades')}</span>
-          </div>
-        </article>
-        <article className="printed-meter">
-          <span className="engraved-eyebrow">{t('ui.map.selectedRegion', 'Selected Region')}</span>
-          <strong>{localizeRegionField(activeRegionId, 'name', activeRegionMeta.name)}</strong>
-          <span>{localizeRegionField(activeRegionId, 'strapline', activeRegionMeta.strapline)}</span>
-        </article>
-      </div>
+    <section
+      ref={boardRef}
+      className="board-map-shell"
+      data-war-critical={boardState.warCritical}
+      data-gaze-elevated={boardState.gazeElevated}
+      data-region-critical={boardState.regionCritical}
+    >
+      <div
+        className="board-map-canvas"
+        style={{
+          ['--map-canvas-width' as string]: WORLD_MAP_SVG_METADATA.viewport.canvasWidth,
+          ['--map-canvas-height' as string]: WORLD_MAP_SVG_METADATA.viewport.canvasHeight,
+          ['--map-canvas-left' as string]: WORLD_MAP_SVG_METADATA.viewport.canvasLeft,
+          ['--map-canvas-top' as string]: WORLD_MAP_SVG_METADATA.viewport.canvasTop,
+        }}
+      >
+        <div ref={svgHostRef} className="board-world-map" aria-hidden="true" />
 
-      <div ref={boardRef} className="board-replica-grid">
-        <div className="board-map-viewport">
-          <div
-            className="board-map-canvas"
-            style={{
-              ['--map-canvas-width' as string]: WORLD_MAP_SVG_METADATA.viewport.canvasWidth,
-              ['--map-canvas-height' as string]: WORLD_MAP_SVG_METADATA.viewport.canvasHeight,
-              ['--map-canvas-left' as string]: WORLD_MAP_SVG_METADATA.viewport.canvasLeft,
-              ['--map-canvas-top' as string]: WORLD_MAP_SVG_METADATA.viewport.canvasTop,
-            }}
-          >
-            <div ref={svgHostRef} className="board-world-map" aria-hidden="true" />
+        {regionIds.map((regionId) => {
+          const region = state.regions[regionId];
+          const danger = getRegionDangerState(region.extractionTokens);
+          const marker = getMarkerPosition(regionId, computedAnchors[regionId]);
+          const totalBodies = state.players.reduce((sum, player) => sum + (region.bodiesPresent[player.seat] ?? 0), 0);
 
-            {regionIds.map((regionId) => {
-              const region = state.regions[regionId];
-              const regionMeta = content.regions[regionId];
-              const layout = BOARD_REGION_MAP_MANIFEST[regionId];
-              const totalBodies = state.players.reduce((sum, player) => sum + (region.bodiesPresent[player.seat] ?? 0), 0);
-              const marker = computedAnchors[regionId] ?? layout.marker;
+          return (
+            <button
+              key={regionId}
+              ref={(element) => {
+                markerRefs.current[regionId] = element;
+              }}
+              type="button"
+              className={`region-token-marker ${activeRegionId === regionId ? 'is-selected' : ''}`.trim()}
+              data-region-tone={danger.tone}
+              data-region-pulsing={danger.pulsing}
+              onClick={() => onSelectRegion(regionId)}
+              onMouseEnter={() => setHoveredRegionId(regionId)}
+              onMouseLeave={() => setHoveredRegionId((current) => (current === regionId ? null : current))}
+              style={{
+                ['--map-point-x' as string]: marker.x,
+                ['--map-point-y' as string]: marker.y,
+                ['--region-tone' as string]: danger.color,
+              }}
+            >
+              <span className="sr-only">{localizeRegionField(regionId, 'name', content.regions[regionId].name)}</span>
+              <span className="region-token-ring" />
+              <span className="region-token-stack">
+                <span className="region-token-count extraction-count">{region.extractionTokens}</span>
+                <span className="region-token-count defense-count">{region.defenseRating}</span>
+                <span className="region-token-count bodies-count">{totalBodies}</span>
+              </span>
+            </button>
+          );
+        })}
 
-              return (
-                <button
-                  key={regionId}
-                  ref={(element) => {
-                    markerRefs.current[regionId] = element;
-                  }}
-                  type="button"
-                  className={`region-map-marker ${activeRegionId === regionId ? 'is-active' : ''}`.trim()}
-                  data-pressure={getPressureLevel(region.extractionTokens)}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setCardVisible(true);
-                    onSelectRegion(regionId);
-                  }}
-                  onMouseEnter={() => setHoveredRegionId(regionId)}
-                  onMouseLeave={() => setHoveredRegionId((current) => (current === regionId ? null : current))}
-                  style={{
-                    ['--map-point-x' as string]: marker.x,
-                    ['--map-point-y' as string]: marker.y,
-                    ['--label-offset-x' as string]: layout.labelOffset.x,
-                    ['--label-offset-y' as string]: layout.labelOffset.y,
-                    ['--territory-accent' as string]: layout.accent,
-                  }}
-                >
-                  <span className="region-map-label">{localizeRegionField(regionId, 'name', regionMeta.name)}</span>
-                  <span className="region-map-anchor" />
-                  <span className="region-map-piece-cluster">
-                    <span className="token-glyph token-glyph-disc">X{formatNumber(region.extractionTokens)}</span>
-                    <span className="token-glyph token-glyph-cube">D{formatNumber(region.defenseRating)}</span>
-                    <span className="token-glyph token-glyph-bar">C{formatNumber(totalBodies)}</span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+        <div className="board-map-hover">
+          {!selectedRegionId ? (
+            <RegionHoverCard
+              regionName={localizeRegionField(hoverRegionId, 'name', content.regions[hoverRegionId].name)}
+              extraction={hoverRegion.extractionTokens}
+              defense={hoverRegion.defenseRating}
+              bodies={hoverBodies}
+              strainLabel={getStrainLabel(hoverRegion.extractionTokens)}
+            />
+          ) : null}
         </div>
 
-        {cardVisible ? (
-          <article
-            ref={cardRef}
-            className="printed-territory is-floating"
-            data-pressure={activePressure}
-            onClick={(event) => event.stopPropagation()}
-            style={{
-              ...cardStyle,
-              ['--territory-tilt' as string]: activeRegionLayout.territoryTilt,
-              ['--territory-accent' as string]: activeRegionLayout.accent,
-            }}
-          >
-            <div className="printed-territory-button">
-              <div className="printed-territory-header">
-                <div>
-                  <span className="printed-territory-caption">{t('ui.map.selectedRegion', 'Selected Region')}</span>
-                  <h3>{localizeRegionField(activeRegionId, 'name', activeRegionMeta.name)}</h3>
-                </div>
-                <button
-                  type="button"
-                  className="printed-territory-close"
-                  onClick={() => setCardVisible(false)}
-                  aria-label={t('ui.regionDrawer.close', 'Close')}
-                >
-                  ×
-                </button>
-              </div>
-
-              <div className="region-state-tooltip">
-                <p>{localizeRegionField(activeRegionId, 'strapline', activeRegionMeta.strapline)}</p>
-              </div>
-
-              <div className="territory-token-cluster">
-                <span className="token-glyph token-glyph-disc">
-                  {t('ui.game.extractionShort', 'X')} {formatNumber(activeRegion.extractionTokens)}
-                </span>
-                <span className="token-glyph token-glyph-cube">
-                  {t('ui.game.defenseShort', 'D')} {formatNumber(activeRegion.defenseRating)}
-                </span>
-                <span className="token-glyph token-glyph-bar">
-                  {t('ui.game.vulnerability', 'Vulnerability')} {formatNumber(Math.max(...Object.values(activeRegion.vulnerability), 0))}
-                </span>
-              </div>
-
-              <div className="region-tooltip-ledger">
-                <span>
-                  {t('ui.map.dominantDomains', 'Pressure line')}: {getDominantVulnerabilities(state, activeRegionId)
-                    .map((domainId) => localizeDomainField(domainId, 'name', content.domains[domainId as keyof typeof content.domains].name))
-                    .join(', ')}
-                </span>
-                <span>
-                  {t('ui.map.comradesPresent', 'Comrades present')}: {visibleBodies.length === 0
-                    ? t('ui.debug.none', 'none')
-                    : visibleBodies.map((entry) => `${t('ui.game.seatShort', 'S')}${formatNumber(entry.seat + 1)}:${formatNumber(entry.count)}`).join(' • ')}
-                </span>
-              </div>
-
-              <div className="region-state-tooltip">
-                <p>{localizeRegionField(activeRegionId, 'description', activeRegionMeta.description)}</p>
-              </div>
-            </div>
+        {selectedRegionId && selectedRegionPopup ? (
+          <article ref={popupRef} className="selected-region-popup" style={popupStyle}>
+            {selectedRegionPopup}
+            {onClearSelection ? (
+              <button type="button" className="selected-region-popup-close" onClick={onClearSelection} aria-label="Close region panel">
+                Close
+              </button>
+            ) : null}
           </article>
         ) : null}
-      </div>
-
-      <div className="board-metric-cluster">
-        <article className="printed-meter mission-slip" data-severity={regionsNearBreach > 0 ? 'critical' : 'steady'}>
-          <span className="engraved-eyebrow">{t('ui.game.currentObjective', 'Current Objective')}</span>
-          <div className="mission-slip-head">
-            <strong>{t('ui.game.missionSlip', 'Mission Slip')}</strong>
-            <span className="urgency-badge">
-              {state.mode === 'LIBERATION'
-                ? regionsNearBreach > 0
-                  ? t('ui.game.breachNear', 'Breach Near')
-                  : t('ui.game.thresholdHeld', 'Threshold Held')
-                : activeBeaconSummary.every((beacon) => beacon.complete)
-                  ? t('ui.game.beaconsAligned', 'Beacons Aligned')
-                  : t('ui.game.openBeacons', 'Open Beacons')}
-            </span>
-          </div>
-          <strong>
-            {state.mode === 'LIBERATION'
-              ? t('ui.mode.liberationSummary', 'End Resolution with every region at 1 Extraction or less.')
-              : t('ui.mode.symbolicSummary', 'Complete all three active Beacons.')}
-          </strong>
-          <span>
-            {state.mode === 'LIBERATION'
-              ? t('ui.mode.liberationProgress', '{{count}} regions already sit at the threshold.', {
-                  count: regionIds.filter((regionId) => state.regions[regionId].extractionTokens <= 1).length,
-                })
-              : t('ui.mode.symbolicProgress', '{{count}} of {{total}} active Beacons are complete.', {
-                  count: activeBeaconSummary.filter((beacon) => beacon.complete).length,
-                  total: activeBeaconSummary.length,
-                })}
-          </span>
-        </article>
-
-        <article className="printed-meter mission-slip" data-severity={activePressure}>
-          <span className="engraved-eyebrow">{t('ui.game.liveBeaconStatus', 'Beacon / threshold status')}</span>
-          <div className="mission-slip-head">
-            <strong>{t('ui.game.thresholdStatus', 'Threshold Status')}</strong>
-            <span className="urgency-badge">
-              {state.mode === 'LIBERATION'
-                ? t('ui.game.regionsAboveThreshold', '{{count}} regions above threshold', { count: regionIds.length - regionsAtOrBelowThreshold })
-                : t('ui.game.openBeaconsCount', '{{count}} open beacons', { count: activeBeaconSummary.filter((beacon) => !beacon.complete).length })}
-            </span>
-          </div>
-          {state.mode === 'LIBERATION' ? (
-            <span>{t('ui.mode.liberationStatus', 'Keep every theatre below the breach line while preserving all solemn charges.')}</span>
-          ) : (
-            <div className="region-tooltip-ledger">
-              {activeBeaconSummary.map((beacon) => (
-                <span key={beacon.id}>{beacon.complete ? '✓' : '•'} {beacon.title}</span>
-              ))}
-            </div>
-          )}
-        </article>
       </div>
     </section>
   );

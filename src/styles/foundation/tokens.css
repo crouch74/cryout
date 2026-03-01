@@ -17,21 +17,21 @@
   --font-data: 'JetBrains Mono', 'Courier New', monospace;
 
   /* Text */
-  --text-1: #edf0f7;
-  --text-2: #b8c4d9;
-  --text-3: #8a9bb5;
-  --text-disabled: #5c6e87;
+  --text-1: #1f1912;
+  --text-2: #564b3e;
+  --text-3: #7a6d5c;
+  --text-disabled: #9a907f;
 
-  /* Surfaces — darker, near-black tactical base */
-  --surface-0: #07090c;
-  --surface-1: #0c1018;
-  --surface-2: #111820;
-  --surface-3: rgba(255, 255, 255, 0.05);
-  --surface-glass: rgba(8, 12, 20, 0.94);
+  /* Surfaces */
+  --surface-0: #e8dfc9;
+  --surface-1: #efe6d4;
+  --surface-2: #f8f2e7;
+  --surface-3: rgba(72, 53, 30, 0.06);
+  --surface-glass: rgba(248, 242, 231, 0.92);
 
   /* Lines */
-  --line-soft: rgba(255, 255, 255, 0.08);
-  --line-strong: rgba(255, 255, 255, 0.18);
+  --line-soft: rgba(73, 58, 40, 0.14);
+  --line-strong: rgba(62, 45, 25, 0.24);
 
   /* Elevation Tiers */
   --tier-a-bg: #141e2e;
@@ -42,9 +42,9 @@
   --tier-c-border: rgba(255, 255, 255, 0.04);
 
   /* Shadows */
-  --shadow-0: 0 28px 70px rgba(0, 0, 0, 0.55);
-  --shadow-1: 0 16px 40px rgba(0, 0, 0, 0.45);
-  --shadow-2: 0 0 0 1px rgba(166, 210, 255, 0.18), 0 18px 40px rgba(0, 0, 0, 0.50);
+  --shadow-0: 0 24px 60px rgba(68, 46, 24, 0.18);
+  --shadow-1: 0 12px 30px rgba(68, 46, 24, 0.14);
+  --shadow-2: 0 0 0 1px rgba(73, 58, 40, 0.14), 0 18px 36px rgba(68, 46, 24, 0.12);
 
   /* Type Scale */
   --type-0: 0.75rem;
@@ -57,22 +57,22 @@
   --line-height-copy: 1.6;
 
   /* Accents — higher saturation, tactical feel */
-  --accent-primary: #5ee9d5;
-  --accent-primary-strong: #22c5a8;
-  --accent-secondary: #6db3ff;
-  --accent-danger: #ff4d4d;
-  --accent-warning: #ffb347;
-  --accent-success: #4dff91;
+  --accent-primary: #c6a75e;
+  --accent-primary-strong: #9b7d3d;
+  --accent-secondary: #2d3a64;
+  --accent-danger: #a32e2e;
+  --accent-warning: #e3a008;
+  --accent-success: #5f8d6d;
 
   /* Heat System — pressure-dependent coloring */
-  --heat-low: rgba(94, 233, 213, 0.15);
-  --heat-medium: rgba(255, 179, 71, 0.20);
-  --heat-high: rgba(255, 120, 60, 0.28);
-  --heat-critical: rgba(255, 77, 77, 0.35);
-  --heat-low-border: rgba(94, 233, 213, 0.30);
-  --heat-medium-border: rgba(255, 179, 71, 0.40);
-  --heat-high-border: rgba(255, 120, 60, 0.50);
-  --heat-critical-border: rgba(255, 77, 77, 0.60);
+  --heat-low: rgba(95, 141, 109, 0.15);
+  --heat-medium: rgba(216, 164, 0, 0.22);
+  --heat-high: rgba(191, 97, 42, 0.22);
+  --heat-critical: rgba(139, 30, 30, 0.18);
+  --heat-low-border: rgba(95, 141, 109, 0.4);
+  --heat-medium-border: rgba(216, 164, 0, 0.45);
+  --heat-high-border: rgba(191, 97, 42, 0.45);
+  --heat-critical-border: rgba(139, 30, 30, 0.55);
 
   /* Tactical */
   --tactical-green: #39ff14;
@@ -89,13 +89,31 @@
   --scenario-glow-b: rgba(109, 179, 255, 0.12);
 
   /* Front Colors */
-  --front-war: #ff6b5a;
-  --front-climate: #5ee9d5;
-  --front-rights: #6db3ff;
-  --front-speech-info: #a98eff;
-  --front-poverty: #ffb347;
-  --front-energy: #7de05c;
-  --front-culture: #ff8f6b;
+  --front-war: #9e1b1b;
+  --front-climate: #3e6f4f;
+  --front-rights: #8b5e3c;
+  --front-speech-info: #2d3a64;
+  --front-poverty: #c9a227;
+  --front-energy: #1f1f1f;
+  --front-culture: #6e4a7e;
+
+  --board-sand: #e8dfc9;
+  --board-ivory: #f8f2e7;
+  --board-ink: #1f1912;
+  --board-grain-opacity: 0.03;
+  --board-topography-opacity: 0.08;
+  --board-war-vignette: rgba(163, 46, 46, 0.12);
+  --board-gaze-halo: rgba(227, 160, 8, 0.18);
+  --status-liberation: #c6a75e;
+  --status-gaze: #e3a008;
+  --status-war: #a32e2e;
+  --status-pool: #2a2a2a;
+  --status-round: #d6c7a8;
+  --map-safe: #5f8d6d;
+  --map-strained: #d8a400;
+  --map-critical: #8b1e1e;
+  --context-surface: rgba(248, 242, 231, 0.97);
+  --dock-surface: rgba(244, 235, 217, 0.96);
 
   /* Region Colors */
   --region-north-america: #5ee9d5;
