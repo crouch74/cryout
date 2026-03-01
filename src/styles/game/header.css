@@ -94,10 +94,26 @@
 .game-kpi-chip {
   border-radius: var(--radius-md);
   border: 1px solid var(--line-soft);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.03);
   padding: 10px;
   display: grid;
   gap: 10px;
+  transition: border-color var(--motion-mid), box-shadow var(--motion-mid);
+}
+
+.game-kpi-chip[data-severity='elevated'] {
+  border-color: var(--heat-medium-border);
+}
+
+.game-kpi-chip[data-severity='high'] {
+  border-color: var(--heat-high-border);
+  box-shadow: inset 0 0 16px var(--heat-high);
+}
+
+.game-kpi-chip[data-severity='critical'] {
+  border-color: var(--heat-critical-border);
+  box-shadow: inset 0 0 20px var(--heat-critical);
+  animation: heat-breathe var(--motion-breathe);
 }
 
 .game-kpi-trigger {
@@ -112,7 +128,35 @@
 }
 
 .game-kpi-trigger strong {
+  font-family: var(--font-data);
   font-size: var(--type-3);
+}
+
+/* KPI Gauge Bar */
+.kpi-gauge-track {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.kpi-gauge-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent-primary);
+  transition: width var(--motion-mid), background-color var(--motion-mid);
+}
+
+[data-severity='elevated'] .kpi-gauge-fill {
+  background: var(--accent-warning);
+}
+
+[data-severity='high'] .kpi-gauge-fill {
+  background: #ff7840;
+}
+
+[data-severity='critical'] .kpi-gauge-fill {
+  background: var(--accent-danger);
 }
 
 .game-kpi-detail {
@@ -146,6 +190,7 @@ html[dir='rtl'] .phase-progress-step:not(:last-child)::after {
 }
 
 @media (max-width: 980px) {
+
   .game-header-shell,
   .game-header-kpis,
   .phase-progress-list {
@@ -158,5 +203,103 @@ html[dir='rtl'] .phase-progress-step:not(:last-child)::after {
 
   .game-header-actions {
     justify-content: flex-start;
+  }
+}
+
+/* Now Bar */
+.now-bar {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: calc(-1 * var(--space-1));
+  margin-bottom: var(--space-2);
+  padding: 20px 24px;
+  border-left: 4px solid var(--accent-primary);
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 0, 0, 0.04) 3px, rgba(0, 0, 0, 0.04) 6px),
+    var(--tier-a-bg);
+}
+
+.now-bar-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.now-bar-phase {
+  display: grid;
+  gap: 4px;
+  min-width: 180px;
+}
+
+.now-bar-phase strong {
+  font-size: var(--type-3);
+  font-family: var(--font-display);
+  color: var(--accent-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.now-bar-details {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-3);
+}
+
+.now-detail-row {
+  display: grid;
+  gap: 4px;
+}
+
+.now-detail-row p {
+  font-size: var(--type-1);
+  color: var(--text-1);
+  line-height: 1.4;
+}
+
+.now-detail-row.blocker {
+  color: var(--accent-warning);
+}
+
+.now-detail-row.blocker p {
+  color: var(--accent-warning);
+  font-weight: 600;
+}
+
+.now-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.two-step-resolve {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* Active Phase Token */
+.phase-progress-step-active .phase-progress-index {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 4px rgba(94, 233, 213, 0.2);
+  z-index: 2;
+  animation: phase-pulse 2.4s ease-in-out infinite;
+}
+
+.phase-progress-step-active .phase-progress-label {
+  font-size: var(--type-2);
+  font-weight: 800;
+}
+
+@keyframes phase-pulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 4px rgba(94, 233, 213, 0.15);
+  }
+
+  50% {
+    box-shadow: 0 0 0 8px rgba(94, 233, 213, 0.08), 0 0 20px rgba(94, 233, 213, 0.12);
   }
 }

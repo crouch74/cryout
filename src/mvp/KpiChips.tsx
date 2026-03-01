@@ -5,6 +5,8 @@ interface KpiChipItem {
   label: string;
   value: string;
   detail: string;
+  severity?: 'normal' | 'elevated' | 'high' | 'critical';
+  gaugePercent?: number;
 }
 
 interface KpiChipsProps {
@@ -24,6 +26,7 @@ export function KpiChips({ items }: KpiChipsProps) {
             key={item.id}
             className={`game-kpi-chip ${isOpen ? 'is-open' : ''}`}
             role="listitem"
+            data-severity={item.severity ?? 'normal'}
             onMouseEnter={() => setOpenId(item.id)}
             onMouseLeave={() => setOpenId((current) => (current === item.id ? null : current))}
           >
@@ -36,6 +39,14 @@ export function KpiChips({ items }: KpiChipsProps) {
               <span className="eyebrow">{item.label}</span>
               <strong>{item.value}</strong>
             </button>
+            {item.gaugePercent !== undefined && (
+              <div className="kpi-gauge-track">
+                <div
+                  className="kpi-gauge-fill"
+                  style={{ width: `${Math.min(100, Math.max(0, item.gaugePercent))}%` }}
+                />
+              </div>
+            )}
             <p className="game-kpi-detail">{item.detail}</p>
           </div>
         );

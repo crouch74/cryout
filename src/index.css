@@ -4,6 +4,7 @@
 @import './styles/foundation/accessibility.css';
 @import './styles/shell/home.css';
 @import './styles/shell/guidelines.css';
+@import './styles/shell/playerguide.css';
 @import './styles/game/layout.css';
 @import './styles/game/header.css';
 @import './styles/game/map.css';

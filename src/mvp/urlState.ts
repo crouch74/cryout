@@ -22,7 +22,7 @@ export interface GameViewState {
 }
 
 export interface AppRoute {
-  page: 'home' | 'guidelines' | 'offline' | 'room';
+  page: 'home' | 'guidelines' | 'player-guide' | 'offline' | 'room';
   scenarioId: string;
   roomId: string | null;
 }
@@ -56,6 +56,14 @@ export function parseAppRoute(pathname: string, defaultScenarioId: string): AppR
     };
   }
 
+  if (segments[0] === 'player-guide') {
+    return {
+      page: 'player-guide',
+      scenarioId: defaultScenarioId,
+      roomId: null,
+    };
+  }
+
   if (segments[0] === 'offline') {
     return {
       page: 'offline',
@@ -83,6 +91,8 @@ export function buildAppPath(route: AppRoute) {
   switch (route.page) {
     case 'guidelines':
       return `/guidelines/${encodePathSegment(route.scenarioId)}`;
+    case 'player-guide':
+      return '/player-guide';
     case 'offline':
       return '/offline';
     case 'room':

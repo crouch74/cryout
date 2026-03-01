@@ -1,13 +1,26 @@
 .game-screen {
   display: grid;
-  gap: var(--space-3);
+  grid-template-rows: auto auto 1fr auto;
+  height: 100vh;
+  gap: 0;
+  overflow: hidden;
+  background-color: var(--surface-0);
+}
+
+.game-header-shell {
+  padding: var(--space-1) var(--space-3);
+  border-bottom: 1px solid var(--line-soft);
+  z-index: 10;
 }
 
 .game-layout {
   display: grid;
-  grid-template-columns: 320px minmax(0, 1fr) 420px;
+  grid-template-columns: 320px minmax(0, 1fr) 320px;
   gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
   min-height: 0;
+  /* Critical for internal scroll */
+  overflow: hidden;
 }
 
 .game-sidebar,
@@ -15,152 +28,141 @@
   min-height: 0;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  gap: var(--space-2);
+  gap: var(--space-1);
 }
 
 .game-panel-body,
 .game-log-list {
   min-height: 0;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: grid;
   gap: var(--space-2);
+  padding-right: 4px;
+}
+
+.game-panel-body::-webkit-scrollbar {
+  width: 4px;
+}
+
+.game-panel-body::-webkit-scrollbar-thumb {
+  background: var(--line-soft);
+  border-radius: 2px;
+}
+
+/* New Tabletop Console */
+.game-console {
+  background: var(--surface-glass);
+  border-top: 1px solid var(--line-strong);
+  backdrop-filter: blur(12px);
+  padding: 12px var(--space-3);
+  display: grid;
+  grid-template-columns: 240px 1fr 240px;
+  gap: var(--space-3);
+  align-items: center;
+  z-index: 20;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.console-resources {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.console-resource-chip {
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line-soft);
+  border-radius: 100px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-data);
+  font-size: var(--type-1);
+  transition: transform var(--motion-fast), border-color var(--motion-fast);
+}
+
+.console-resource-chip.is-pulsed {
+  border-color: var(--accent-primary);
+  transform: scale(1.05);
+}
+
+.console-player-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.console-player-info strong {
+  color: var(--seat-accent, var(--text-1));
+  font-size: var(--type-2);
 }
 
 .game-resource-bar {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: var(--space-2);
+  display: none;
+  /* Replaced by console-resources */
 }
 
-.game-resource-card {
-  padding: 14px 16px;
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.04);
-  min-height: 92px;
-  display: grid;
-  align-content: start;
-  gap: 8px;
-}
-
-.game-resource-card strong {
-  font-size: var(--type-3);
-}
-
-.game-rule-card.is-active,
-.game-log-entry.is-active,
-.coalition-seat-card.is-active,
-.coalition-board.is-focused,
-.map-region-card.is-active,
-.game-charter-card.status-ratified {
-  box-shadow: var(--shadow-2);
-}
-
-.game-front-card.is-collapsed {
-  border-color: rgba(255, 139, 139, 0.35);
-}
-
-.game-front-metrics {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.game-front-metrics div,
-.home-story-grid article,
-.game-charter-card,
-.game-rule-card {
-  display: grid;
-  gap: 6px;
-}
-
-.game-front-metrics span {
-  color: var(--text-3);
-  font-size: var(--type-1);
+/* Refined UI components */
+.status-chip {
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-family: var(--font-data);
+  font-size: var(--type-0);
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.05em;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line-soft);
 }
 
-.game-front-icon,
-.game-log-icon {
-  color: var(--text-1);
-  font-size: var(--type-1);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.status-chip.critical {
+  color: var(--accent-danger);
+  border-color: rgba(255, 77, 77, 0.3);
 }
 
-.game-log-entry-main {
-  width: 100%;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 12px;
-  text-align: left;
-  padding: 0;
+.status-chip.high {
+  color: var(--accent-warning);
+  border-color: rgba(255, 179, 71, 0.3);
 }
 
-[data-seat='seat-1'] {
-  --seat-accent: var(--seat-1);
+.status-chip.elevated {
+  color: var(--accent-secondary);
+  border-color: rgba(109, 179, 255, 0.3);
 }
 
-[data-seat='seat-2'] {
-  --seat-accent: var(--seat-2);
+.status-chip.normal {
+  color: var(--accent-success);
+  border-color: rgba(77, 255, 145, 0.3);
 }
 
-[data-seat='seat-3'] {
-  --seat-accent: var(--seat-3);
-}
-
-[data-seat='seat-4'] {
-  --seat-accent: var(--seat-4);
-}
-
-.game-active-seat,
-.coalition-seat-card,
-.coalition-board {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
-}
-
-.game-active-seat {
-  padding: 16px 18px;
-  border-radius: var(--radius-md);
-}
-
-.game-active-seat[data-seat],
-.coalition-seat-card[data-seat],
-.coalition-board[data-seat] {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--seat-accent) 35%, transparent);
-}
-
-html[dir='rtl'] .game-log-entry-main {
-  text-align: right;
-}
-
-@media (max-width: 1380px) {
+@media (max-width: 1440px) {
   .game-layout {
-    grid-template-columns: 300px minmax(0, 1fr);
+    grid-template-columns: 280px 1fr 280px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .game-layout {
+    grid-template-columns: 260px 1fr;
   }
 
   .game-sidebar:last-child {
-    grid-column: 1 / -1;
+    display: none;
+    /* Hide log on smaller screens or move it */
   }
 }
 
-@media (max-width: 1180px) {
-  .game-layout,
-  .game-resource-bar {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 760px) {
-  .app-root {
-    padding: var(--space-2);
+@media (max-width: 800px) {
+  .game-screen {
+    height: auto;
+    overflow: auto;
   }
 
-  .game-front-metrics {
+  .game-layout {
     grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    height: auto;
   }
 }

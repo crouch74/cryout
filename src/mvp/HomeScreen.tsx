@@ -14,6 +14,7 @@ interface HomeScreenProps {
   onLoadSave: (serialized: string) => void;
   onLoadAutosave: () => void;
   onOpenGuidelines: (scenarioId: string) => void;
+  onOpenPlayerGuide: () => void;
   mode?: 'home' | 'offline';
 }
 
@@ -44,6 +45,7 @@ export function HomeScreen({
   onLoadSave,
   onLoadAutosave,
   onOpenGuidelines,
+  onOpenPlayerGuide,
   mode = 'home',
 }: HomeScreenProps) {
   const [saveText, setSaveText] = useState('');
@@ -129,40 +131,70 @@ export function HomeScreen({
                 ? t('ui.home.scenarioGuidelines', 'Scenario Guidelines')
                 : t('ui.home.openGuidelines', 'Open Guidelines')}
             </button>
+            <button className="secondary-button" onClick={onOpenPlayerGuide}>
+              📜 {t('ui.home.playerGuide', 'Player Guide')}
+            </button>
           </div>
         </div>
 
-        <aside className="home-hero-aside shell-card">
-          <span className="eyebrow">{t('ui.home.selectedChapter', 'Selected Chapter')}</span>
-          <h2>{selectedScenario.name}</h2>
-          <p>{excerpt(selectedScenario.description, 130)}</p>
-          <div className="home-scenario-metrics">
-            <div>
-              <span className="eyebrow">{t('ui.scenarioBooklet.civicSpace', 'Civic space')}</span>
-              <strong>{getCivicSpaceLabel(selectedScenario.setup.civicSpace)}</strong>
-            </div>
-            <div>
-              <span className="eyebrow">{t('ui.scenarioBooklet.startingHeat', 'Starting heat')}</span>
-              <strong>+{selectedScenario.setup.temperature}°C</strong>
-            </div>
-            <div>
-              <span className="eyebrow">{t('ui.scenarioBooklet.roundWindow', 'Round window')}</span>
-              <strong>
-                {t('ui.home.roundWindow', '{{core}} core rounds / {{full}} full rounds', {
-                  core: selectedScenario.roundLimit.CORE,
-                  full: selectedScenario.roundLimit.FULL,
-                })}
-              </strong>
+        <aside className="home-hero-aside tier-a-panel">
+          <div className="home-aside-header">
+            <span className="eyebrow">{t('ui.home.selectedChapter', 'Selected Chapter')}</span>
+            <div className="scenario-teach-trigger">
+              <details>
+                <summary>{t('ui.home.teachIn60', 'Teach in 60s')}</summary>
+                <div className="teach-content tier-c-panel">
+                  <p>{selectedScenario.story}</p>
+                  <strong>How to win:</strong>
+                  <p>{t('ui.home.winCondition', 'Ratify clauses in the Charter while keeping Fronts from collapsing.')}</p>
+                </div>
+              </details>
             </div>
           </div>
+
+          <h2>{selectedScenario.name}</h2>
+
+          <div className="scenario-decision-grid">
+            {/* Part 1: Fantasy Line */}
+            <div className="decision-section fantasy">
+              <p className="fantasy-line">"{selectedScenario.introduction.split('.')[0]}."</p>
+            </div>
+
+            {/* Part 2: Difficulty Knobs */}
+            <div className="decision-section knobs">
+              <div className="knob-item">
+                <span>🌡️</span>
+                <strong>{selectedScenario.setup.temperature}°C</strong>
+              </div>
+              <div className="knob-item">
+                <span>⚖️</span>
+                <strong>{getCivicSpaceLabel(selectedScenario.setup.civicSpace)}</strong>
+              </div>
+              <div className="knob-item">
+                <span>⏳</span>
+                <strong>{selectedScenario.roundLimit.CORE} Rounds</strong>
+              </div>
+            </div>
+
+            {/* Part 3: What Changes */}
+            <div className="decision-section changes">
+              <span className="eyebrow">{t('ui.home.whatChanges', 'What Changes')}</span>
+              <ul className="changes-list">
+                {selectedScenario.specialRuleChips.slice(0, 3).map(chip => (
+                  <li key={chip.id}>{chip.label}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
           <div className="home-story-grid">
             <article>
               <span className="eyebrow">{t('ui.home.premise', 'Premise')}</span>
-              <p>{excerpt(selectedScenario.introduction, 170)}</p>
+              <p>{excerpt(selectedScenario.description, 130)}</p>
             </article>
             <article>
               <span className="eyebrow">{t('ui.home.playPressure', 'Play pressure')}</span>
-              <p>{excerpt(selectedScenario.gameplay, 170)}</p>
+              <p>{excerpt(selectedScenario.gameplay ?? '', 170)}</p>
             </article>
           </div>
         </aside>

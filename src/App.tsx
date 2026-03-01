@@ -13,6 +13,7 @@ import {
 import { GameScreen } from './mvp/GameScreen.tsx';
 import { GuidelinesScreen } from './mvp/GuidelinesScreen.tsx';
 import { HomeScreen } from './mvp/HomeScreen.tsx';
+import { PlayerGuideScreen } from './mvp/PlayerGuideScreen.tsx';
 import { ToastStack, type ToastMessage } from './mvp/ToastStack.tsx';
 import { getLocaleDirection, isLocale, localizeContent, setLocale, t, type Locale } from './i18n/index.ts';
 import {
@@ -119,9 +120,9 @@ export default function App() {
     setSession((current) =>
       current
         ? {
-            ...current,
-            content: localizeContent(compileContent(current.state.scenarioId, setupConfig.expansionIds)),
-          }
+          ...current,
+          content: localizeContent(compileContent(current.state.scenarioId, setupConfig.expansionIds)),
+        }
         : current,
     );
   }, [locale, session?.state.scenarioId, setupConfig.expansionIds]);
@@ -227,10 +228,10 @@ export default function App() {
         ? buildAppPath({ page: 'room', scenarioId: setupConfig.scenarioId, roomId: session.roomId })
         : buildAppPath({ page: 'offline', scenarioId: setupConfig.scenarioId, roomId: null })
       : buildAppPath({
-          page: route.page,
-          scenarioId: setupConfig.scenarioId,
-          roomId: route.roomId,
-        });
+        page: route.page,
+        scenarioId: setupConfig.scenarioId,
+        roomId: route.roomId,
+      });
     window.history.replaceState(null, '', pathname);
   }, [hydrating, route.page, route.roomId, session, setupConfig.scenarioId]);
 
@@ -462,6 +463,12 @@ export default function App() {
           onBackHome={() => setRoute({ page: 'home', scenarioId: setupConfig.scenarioId, roomId: null })}
           onOpenOffline={() => setRoute({ page: 'offline', scenarioId: setupConfig.scenarioId, roomId: null })}
         />
+      ) : route.page === 'player-guide' ? (
+        <PlayerGuideScreen
+          locale={locale}
+          onLocaleChange={setSelectedLocale}
+          onBackHome={() => setRoute({ page: 'home', scenarioId: setupConfig.scenarioId, roomId: null })}
+        />
       ) : (
         <HomeScreen
           locale={locale}
@@ -476,6 +483,7 @@ export default function App() {
             setSetupConfig((current) => ({ ...current, scenarioId }));
             setRoute({ page: 'guidelines', scenarioId, roomId: null });
           }}
+          onOpenPlayerGuide={() => setRoute({ page: 'player-guide', scenarioId: setupConfig.scenarioId, roomId: null })}
           mode={route.page === 'offline' ? 'offline' : 'home'}
         />
       )}

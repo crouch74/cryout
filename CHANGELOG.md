@@ -2,6 +2,52 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.0] - 2026-03-01
+
+### Added
+- 📖 **Localized Player Guide** — implemented a comprehensive, in-game rulebook structured as a multi-chapter professional guide.
+- 🌍 **Full Arabic Support (ar-EG)** — added complete Egyptian Arabic localization for the entire Player Guide, including navigation, glossary, and complex game mechanics.
+- 📜 **Rulebook Sections** — added dedicated chapters for Overview, Setup, Round Structure, Roles, Fronts, Regions, Resources, Cards, Charter, and Winning/Losing.
+- 📖 **Interactive Glossary** — included a searchableized reference for key game terms (Burnout, Capture Engine, Civic Space, etc.) in both languages.
+
+## [0.6.0] - 2026-03-01
+
+### Changed
+- 🗺️ **World Map Redesign** — transformed the map from a standard grid into an immersive "Physical Board Game" layout.
+- 🎨 **Premium Board Aesthetic** — implemented a charcoal-textured "Board Frame" with tactile linen effects, coordinates, and a decorative compass rose.
+- 📍 **Tactical Node Visualization** — replaced rectangular region cards with circular command nodes, featuring enhanced "Heat" glows and pulsing pressure animations.
+- 🔗 **Topological Connections** — added visual SVG link paths between regions to illustrate the interconnected nature of the operational theatre.
+- 🃏 **Physical Action Components** — updated action cards and queue tokens with deeper shadows, linen textures, and refined elevation for a more tangible feel.
+- 🛡️ **Phase Tracker Integration** — the main phase control now rests at the bottom of the map as a physical board component, improving spatial coherence.
+
+## [0.5.0] - 2026-03-01
+
+### Changed
+- 🎲 **Tabletop UI Refactor** — transformed the game into a fixed-viewport experience to emulate a physical board game and eliminate page scrolling.
+- 📟 **Persistent Game Console** — introduced a blurry glassmorphism footer console as a persistent hub for player resources, identity, and the "Ready" action.
+- 🃏 **Action Toolkit (Card Hand)** — reimagined player actions as a horizontal deck of interactable cards, replacing vertical accordions.
+- 🔍 **Reading View Animation** — added a "zoom-to-read" overlay with smooth backdrop-blur transitions when selecting an action card.
+- 🧱 **Unified Layout Strategy** — sidebar panels now use internal scrolling, ensuring the world map remains the centerpiece without jumping.
+- 🧹 **Code Hygiene** — removed over 500 lines of legacy UI code to ensure the new tabletop logic is clean and maintainable.
+
+## [0.4.0] - 2026-03-01
+
+### Changed
+- 🎨 **Complete UI/UX Overhaul** — shifted from "SaaS dashboard" to "tactical command center" aesthetic
+- 🎨 Darkened base palette to near-black charcoal (`#07090c`) with higher-contrast accents
+- 🔤 Mixed typography: **Crimson Pro** serif for headings (political authority), **JetBrains Mono** for data/logs (intelligence briefing)
+- 📊 KPI chips now include severity-driven gauge bars (teal→orange→red thresholds)
+- 🗺️ World Theatre map: tactical grid overlay, dot-grid silhouette, pressure-dependent region glows
+- 🔴 Region cards pulse with heat-map coloring based on pressure level (low/medium/high/critical)
+- ⚡ Phase progress token now pulses with a breathing animation on the active phase
+- 🎯 Color-coded stat pills: displacement (amber), disinfo (violet), locks (red), institutions (blue)
+- 💀 Collapsed front cards glow with danger-red inner shadow
+- 📐 Resource values, action costs, and eyebrow labels use monospace font
+- 🌀 Enhanced metric-pulse animation with stronger scale and color flash
+- 🖥️ CRT scanline overlay and tighter 24px tactical grid on the body background
+- 🎖️ Primary buttons: uppercase, display font, tactical glow shadow
+- 📋 Now Bar: scanline texture background, uppercase phase name
+
 ## [0.3.1] - 2026-03-01
 
 ### Changed

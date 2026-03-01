@@ -1,0 +1,890 @@
+/* ══════════════════════════════════════════════════════════
+   Player Guide Screen — Rulebook Layout
+   ══════════════════════════════════════════════════════════ */
+
+.player-guide-screen {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: var(--space-3);
+    min-height: 100dvh;
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: var(--space-3);
+}
+
+/* ── Navigation Sidebar ── */
+
+.guide-nav {
+    position: sticky;
+    top: var(--space-3);
+    height: fit-content;
+    max-height: calc(100dvh - var(--space-3) * 2);
+    overflow-y: auto;
+    display: grid;
+    gap: var(--space-2);
+    align-content: start;
+}
+
+.guide-nav-header {
+    display: grid;
+    gap: 8px;
+}
+
+.guide-nav-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 4px;
+}
+
+.guide-nav-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-2);
+    font-family: var(--font-body);
+    font-size: var(--type-1);
+    font-weight: 600;
+    text-align: left;
+    transition:
+        background-color var(--motion-fast),
+        color var(--motion-fast),
+        border-color var(--motion-fast),
+        transform var(--motion-fast);
+    cursor: pointer;
+}
+
+.guide-nav-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-1);
+    transform: translateX(2px);
+}
+
+.guide-nav-item.is-active {
+    background: linear-gradient(135deg, rgba(94, 233, 213, 0.12), rgba(109, 179, 255, 0.08));
+    border-color: rgba(94, 233, 213, 0.30);
+    color: var(--accent-primary);
+    font-weight: 700;
+}
+
+.guide-nav-icon {
+    flex-shrink: 0;
+    font-size: 1rem;
+}
+
+.guide-back-btn {
+    margin-top: 8px;
+}
+
+/* ── Content Area ── */
+
+.guide-content {
+    overflow-y: auto;
+    max-height: calc(100dvh - var(--space-3) * 2);
+    padding-right: var(--space-1);
+}
+
+.guide-section {
+    display: grid;
+    gap: var(--space-3);
+    padding-bottom: var(--space-5);
+    animation: guideSlideIn 360ms ease both;
+}
+
+@keyframes guideSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ── Section Header ── */
+
+.guide-section-header {
+    display: grid;
+    gap: 10px;
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--line-soft);
+}
+
+.guide-section-icon {
+    font-size: 2.4rem;
+    line-height: 1;
+}
+
+.guide-section-subtitle {
+    color: var(--text-2);
+    font-size: var(--type-2);
+    line-height: var(--line-height-copy);
+    max-width: 72ch;
+}
+
+/* ── Callout Ribbon ── */
+
+.guide-callout-ribbon {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.guide-callout {
+    display: grid;
+    gap: 2px;
+    padding: 16px 24px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, rgba(94, 233, 213, 0.10), rgba(109, 179, 255, 0.06));
+    border: 1px solid rgba(94, 233, 213, 0.20);
+    text-align: center;
+    min-width: 120px;
+    transition: transform var(--motion-fast);
+}
+
+.guide-callout:hover {
+    transform: translateY(-2px);
+}
+
+.guide-callout-number {
+    font-family: var(--font-display);
+    font-size: var(--type-4);
+    font-weight: 800;
+    color: var(--accent-primary);
+}
+
+.guide-callout-label {
+    font-family: var(--font-data);
+    font-size: var(--type-0);
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+}
+
+/* ── Prose Blocks ── */
+
+.guide-prose {
+    display: grid;
+    gap: var(--space-2);
+}
+
+.guide-prose h3 {
+    padding-top: 4px;
+}
+
+.guide-prose p {
+    color: var(--text-2);
+    line-height: var(--line-height-copy);
+    max-width: 72ch;
+}
+
+.guide-prose strong {
+    color: var(--text-1);
+}
+
+.guide-prose em {
+    color: var(--accent-primary);
+    font-style: italic;
+}
+
+.guide-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 8px;
+}
+
+.guide-list li {
+    padding-left: 20px;
+    position: relative;
+    color: var(--text-2);
+    line-height: 1.5;
+}
+
+.guide-list li::before {
+    content: '▸';
+    position: absolute;
+    left: 0;
+    color: var(--accent-primary);
+    font-weight: 800;
+}
+
+/* ── Tip Box ── */
+
+.guide-tip {
+    padding: 14px 18px;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 179, 71, 0.08);
+    border: 1px solid rgba(255, 179, 71, 0.22);
+    color: var(--text-2);
+    line-height: 1.5;
+}
+
+.guide-tip strong {
+    color: var(--accent-warning);
+}
+
+/* ── Principles Grid (Overview) ── */
+
+.guide-principles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--space-2);
+}
+
+.guide-principle {
+    display: grid;
+    gap: 8px;
+    text-align: center;
+    padding: var(--space-3);
+    transition: transform var(--motion-fast);
+}
+
+.guide-principle:hover {
+    transform: translateY(-3px);
+}
+
+.guide-principle-icon {
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.guide-principle p {
+    color: var(--text-2);
+    font-size: var(--type-1);
+    line-height: 1.5;
+}
+
+/* ── Two Column Layout ── */
+
+.guide-two-col {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-2);
+}
+
+/* ── Mode Cards (Setup) ── */
+
+.guide-mode-card {
+    padding: var(--space-2);
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--line-soft);
+    display: grid;
+    gap: 8px;
+}
+
+.guide-mode-card p {
+    color: var(--text-2);
+    font-size: var(--type-1);
+    line-height: 1.5;
+}
+
+/* ── Phase Timeline ── */
+
+.guide-phase-timeline {
+    display: grid;
+    gap: var(--space-2);
+    position: relative;
+}
+
+.guide-phase-timeline::before {
+    content: '';
+    position: absolute;
+    left: 28px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(180deg,
+            var(--accent-primary) 0%,
+            var(--accent-secondary) 50%,
+            var(--accent-warning) 100%);
+    opacity: 0.25;
+}
+
+.guide-phase-card {
+    display: grid;
+    gap: var(--space-1);
+    padding-left: 60px;
+    position: relative;
+}
+
+.guide-phase-number {
+    position: absolute;
+    left: 12px;
+    top: 18px;
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--type-1);
+    z-index: 1;
+}
+
+.phase-world .guide-phase-number {
+    background: linear-gradient(135deg, rgba(255, 77, 77, 0.25), rgba(255, 179, 71, 0.20));
+    border: 1px solid rgba(255, 77, 77, 0.40);
+    color: var(--accent-danger);
+}
+
+.phase-coalition .guide-phase-number {
+    background: linear-gradient(135deg, rgba(94, 233, 213, 0.20), rgba(109, 179, 255, 0.15));
+    border: 1px solid rgba(94, 233, 213, 0.35);
+    color: var(--accent-primary);
+}
+
+.phase-end .guide-phase-number {
+    background: linear-gradient(135deg, rgba(255, 179, 71, 0.20), rgba(255, 127, 92, 0.15));
+    border: 1px solid rgba(255, 179, 71, 0.35);
+    color: var(--accent-warning);
+}
+
+.phase-charter .guide-phase-number {
+    background: linear-gradient(135deg, rgba(109, 179, 255, 0.20), rgba(169, 142, 255, 0.15));
+    border: 1px solid rgba(109, 179, 255, 0.35);
+    color: var(--accent-secondary);
+}
+
+.guide-phase-card p {
+    color: var(--text-2);
+    line-height: var(--line-height-copy);
+}
+
+/* ── Role Cards ── */
+
+.guide-role-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-2);
+}
+
+.guide-role-card {
+    display: grid;
+    gap: var(--space-1);
+    border-top: 3px solid var(--role-accent, var(--accent-primary));
+    transition: transform var(--motion-fast);
+}
+
+.guide-role-card:hover {
+    transform: translateY(-2px);
+}
+
+.guide-role-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.guide-role-icon {
+    font-size: 1.5rem;
+}
+
+.guide-role-passive {
+    color: var(--text-3);
+    font-size: var(--type-1);
+    font-family: var(--font-narrative);
+    line-height: 1.5;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--line-soft);
+}
+
+.guide-role-actions {
+    display: grid;
+    gap: 8px;
+}
+
+.guide-role-stat-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* ── Burnout Explainer ── */
+
+.guide-burnout-explainer {
+    border-left: 3px solid var(--accent-danger);
+}
+
+/* ── Front Cards ── */
+
+.guide-fronts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--space-2);
+}
+
+.guide-front-card {
+    display: grid;
+    gap: var(--space-1);
+    border-top: 3px solid var(--front-accent, var(--accent-primary));
+    transition: transform var(--motion-fast);
+}
+
+.guide-front-card:hover {
+    transform: translateY(-2px);
+}
+
+.guide-front-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.guide-front-icon {
+    font-size: 1.4rem;
+}
+
+.guide-front-card p {
+    color: var(--text-2);
+    font-size: var(--type-1);
+    line-height: 1.5;
+}
+
+.guide-coupling-box {
+    display: grid;
+    gap: 4px;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--line-soft);
+}
+
+/* ── Front Track Anatomy ── */
+
+.guide-front-tracks {
+    display: grid;
+    gap: var(--space-2);
+}
+
+.guide-track-item {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--space-1);
+    align-items: start;
+}
+
+.guide-track-badge {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-family: var(--font-data);
+    font-size: var(--type-0);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.guide-track-badge.pressure {
+    background: rgba(255, 77, 77, 0.15);
+    border: 1px solid rgba(255, 77, 77, 0.35);
+    color: var(--accent-danger);
+}
+
+.guide-track-badge.protection {
+    background: rgba(94, 233, 213, 0.12);
+    border: 1px solid rgba(94, 233, 213, 0.30);
+    color: var(--accent-primary);
+}
+
+.guide-track-badge.impact {
+    background: rgba(255, 179, 71, 0.15);
+    border: 1px solid rgba(255, 179, 71, 0.35);
+    color: var(--accent-warning);
+}
+
+.guide-track-item p {
+    color: var(--text-2);
+    line-height: 1.5;
+}
+
+/* ── Region Cards ── */
+
+.guide-region-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: var(--space-2);
+}
+
+.guide-region-card {
+    display: grid;
+    gap: 8px;
+    border-left: 3px solid var(--region-accent, var(--accent-primary));
+    transition: transform var(--motion-fast);
+}
+
+.guide-region-card:hover {
+    transform: translateX(3px);
+}
+
+.guide-region-header {
+    display: grid;
+    gap: 4px;
+}
+
+.guide-region-vuln {
+    font-family: var(--font-data);
+    font-size: var(--type-0);
+    color: var(--text-3);
+    letter-spacing: 0.06em;
+}
+
+/* ── Resource Cards ── */
+
+.guide-resource-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-2);
+}
+
+.guide-resource-card {
+    display: grid;
+    gap: var(--space-1);
+    transition: transform var(--motion-fast);
+}
+
+.guide-resource-card:hover {
+    transform: translateY(-2px);
+}
+
+.guide-resource-icon {
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.guide-resource-card p {
+    color: var(--text-2);
+    font-size: var(--type-1);
+    line-height: 1.5;
+}
+
+.resource-solidarity {
+    border-top: 3px solid var(--accent-primary);
+}
+
+.resource-evidence {
+    border-top: 3px solid var(--accent-secondary);
+}
+
+.resource-capacity {
+    border-top: 3px solid var(--accent-warning);
+}
+
+.resource-relief {
+    border-top: 3px solid var(--front-culture);
+}
+
+/* ── Deck Cards ── */
+
+.guide-deck-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: var(--space-2);
+}
+
+.guide-deck-card {
+    display: grid;
+    gap: var(--space-2);
+}
+
+.guide-deck-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.guide-deck-icon {
+    font-size: 1.5rem;
+}
+
+.guide-deck-card p {
+    color: var(--text-2);
+    line-height: 1.5;
+}
+
+.guide-pillar-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.guide-pillar {
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--line-soft);
+    font-family: var(--font-data);
+    font-size: var(--type-0);
+    color: var(--text-2);
+}
+
+.deck-capture {
+    border-top: 3px solid var(--accent-danger);
+}
+
+.deck-crisis {
+    border-top: 3px solid var(--accent-warning);
+}
+
+.deck-culture {
+    border-top: 3px solid var(--accent-primary);
+}
+
+.guide-card-example {
+    display: grid;
+    gap: 8px;
+}
+
+.guide-example-card {
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--line-soft);
+    display: grid;
+    gap: 4px;
+}
+
+.guide-example-card p {
+    font-size: var(--type-1);
+}
+
+/* ── Charter Cards ── */
+
+.guide-charter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--space-2);
+}
+
+.guide-charter-card {
+    display: grid;
+    gap: var(--space-1);
+    border-top: 3px solid var(--accent-secondary);
+    transition: transform var(--motion-fast);
+}
+
+.guide-charter-card:hover {
+    transform: translateY(-2px);
+}
+
+.guide-charter-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.guide-charter-icon {
+    font-size: 1.3rem;
+}
+
+.guide-charter-prereq,
+.guide-charter-effect {
+    display: grid;
+    gap: 4px;
+}
+
+.guide-charter-prereq p,
+.guide-charter-effect p {
+    color: var(--text-2);
+    font-size: var(--type-1);
+    line-height: 1.4;
+}
+
+/* ── Winning & Losing ── */
+
+.guide-outcome-win {
+    border-top: 3px solid var(--accent-success);
+}
+
+.guide-outcome-loss {
+    border-top: 3px solid var(--accent-danger);
+}
+
+.guide-tier-list {
+    display: grid;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.guide-tier {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.guide-tier p {
+    font-size: var(--type-1);
+}
+
+.guide-tier-badge {
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-family: var(--font-data);
+    font-size: var(--type-0);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+}
+
+.tier-gold {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.20), rgba(255, 179, 71, 0.15));
+    border: 1px solid rgba(255, 215, 0, 0.40);
+    color: #ffd700;
+}
+
+.tier-silver {
+    background: rgba(192, 192, 192, 0.15);
+    border: 1px solid rgba(192, 192, 192, 0.30);
+    color: #c0c0c0;
+}
+
+.tier-bronze {
+    background: rgba(205, 127, 50, 0.15);
+    border: 1px solid rgba(205, 127, 50, 0.30);
+    color: #cd7f32;
+}
+
+.tier-survival {
+    background: rgba(255, 77, 77, 0.12);
+    border: 1px solid rgba(255, 77, 77, 0.30);
+    color: var(--accent-danger);
+}
+
+.guide-defeat-list li::before {
+    content: '✕';
+    color: var(--accent-danger);
+}
+
+/* ── Glossary ── */
+
+.guide-glossary-list {
+    display: grid;
+    gap: 0;
+}
+
+.guide-glossary-entry {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: var(--space-2);
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line-soft);
+    align-items: start;
+}
+
+.guide-glossary-entry:last-child {
+    border-bottom: none;
+}
+
+.guide-glossary-entry dt {
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--accent-primary);
+    font-size: var(--type-1);
+}
+
+.guide-glossary-entry dd {
+    margin: 0;
+    color: var(--text-2);
+    font-size: var(--type-1);
+    line-height: 1.5;
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 980px) {
+    .player-guide-screen {
+        grid-template-columns: 1fr;
+    }
+
+    .guide-nav {
+        position: static;
+        max-height: none;
+    }
+
+    .guide-nav-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .guide-nav-item {
+        padding: 8px 12px;
+        font-size: var(--type-0);
+    }
+
+    .guide-content {
+        max-height: none;
+    }
+
+    .guide-role-grid,
+    .guide-resource-grid,
+    .guide-two-col,
+    .guide-deck-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .guide-glossary-entry {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+
+    .guide-phase-timeline::before {
+        display: none;
+    }
+
+    .guide-phase-card {
+        padding-left: var(--space-2);
+    }
+
+    .guide-phase-number {
+        position: static;
+        width: auto;
+        height: auto;
+        padding: 4px 10px;
+        display: inline-flex;
+    }
+}
+
+html[dir='rtl'] .guide-nav-item:hover {
+    transform: translateX(-2px);
+}
+
+html[dir='rtl'] .guide-list li {
+    padding-left: 0;
+    padding-right: 20px;
+}
+
+html[dir='rtl'] .guide-list li::before {
+    left: auto;
+    right: 0;
+}
+
+html[dir='rtl'] .guide-region-card {
+    border-left: none;
+    border-right: 3px solid var(--region-accent, var(--accent-primary));
+}
+
+html[dir='rtl'] .guide-region-card:hover {
+    transform: translateX(-3px);
+}
+
+html[dir='rtl'] .guide-burnout-explainer {
+    border-left: none;
+    border-right: 3px solid var(--accent-danger);
+}

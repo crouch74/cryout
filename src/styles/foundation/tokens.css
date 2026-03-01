@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;800&family=Crimson+Pro:wght@700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap');
 
 :root {
   --space-1: 8px;
@@ -9,22 +9,44 @@
   --radius-sm: 12px;
   --radius-md: 20px;
   --radius-lg: 28px;
+
+  /* Typography */
   --font-display: 'Space Grotesk', sans-serif;
   --font-body: 'Manrope', sans-serif;
-  --text-1: #f5f7fb;
-  --text-2: #cbd6ea;
-  --text-3: #9eabc3;
-  --text-disabled: #718099;
-  --surface-0: #0c1522;
-  --surface-1: #101d2f;
-  --surface-2: #14243a;
-  --surface-3: rgba(255, 255, 255, 0.06);
-  --surface-glass: rgba(14, 25, 40, 0.78);
-  --line-soft: rgba(255, 255, 255, 0.07);
-  --line-strong: rgba(255, 255, 255, 0.16);
-  --shadow-0: 0 28px 70px rgba(2, 8, 18, 0.44);
-  --shadow-1: 0 16px 40px rgba(2, 10, 20, 0.34);
-  --shadow-2: 0 0 0 1px rgba(166, 210, 255, 0.18), 0 18px 40px rgba(6, 18, 32, 0.42);
+  --font-narrative: 'Crimson Pro', Georgia, serif;
+  --font-data: 'JetBrains Mono', 'Courier New', monospace;
+
+  /* Text */
+  --text-1: #edf0f7;
+  --text-2: #b8c4d9;
+  --text-3: #8a9bb5;
+  --text-disabled: #5c6e87;
+
+  /* Surfaces — darker, near-black tactical base */
+  --surface-0: #07090c;
+  --surface-1: #0c1018;
+  --surface-2: #111820;
+  --surface-3: rgba(255, 255, 255, 0.05);
+  --surface-glass: rgba(8, 12, 20, 0.94);
+
+  /* Lines */
+  --line-soft: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.18);
+
+  /* Elevation Tiers */
+  --tier-a-bg: #141e2e;
+  --tier-a-border: rgba(255, 255, 255, 0.14);
+  --tier-b-bg: #0e1620;
+  --tier-b-border: rgba(255, 255, 255, 0.08);
+  --tier-c-bg: #07090c;
+  --tier-c-border: rgba(255, 255, 255, 0.04);
+
+  /* Shadows */
+  --shadow-0: 0 28px 70px rgba(0, 0, 0, 0.55);
+  --shadow-1: 0 16px 40px rgba(0, 0, 0, 0.45);
+  --shadow-2: 0 0 0 1px rgba(166, 210, 255, 0.18), 0 18px 40px rgba(0, 0, 0, 0.50);
+
+  /* Type Scale */
   --type-0: 0.75rem;
   --type-1: 0.875rem;
   --type-2: 1rem;
@@ -33,49 +55,76 @@
   --type-5: clamp(2rem, 4vw, 2.5rem);
   --line-height-tight: 1.1;
   --line-height-copy: 1.6;
-  --accent-primary: #7dd3c7;
-  --accent-primary-strong: #2fb7a0;
-  --accent-secondary: #8ec5ff;
-  --accent-danger: #ff8b8b;
-  --accent-warning: #f3c16d;
-  --accent-success: #7ce0a6;
-  --seat-1: #7dd3c7;
-  --seat-2: #8ec5ff;
-  --seat-3: #f3c16d;
-  --seat-4: #ff9d7b;
-  --scenario-glow-a: rgba(125, 211, 199, 0.22);
-  --scenario-glow-b: rgba(142, 197, 255, 0.22);
-  --front-war: #f08c82;
-  --front-climate: #7dd3c7;
-  --front-rights: #8ec5ff;
-  --front-speech-info: #b49dff;
-  --front-poverty: #f3c16d;
-  --front-energy: #93d87b;
-  --front-culture: #ffad8c;
-  --region-north-america: #7dd3c7;
-  --region-latin-america: #8ccc7a;
-  --region-europe: #8ec5ff;
-  --region-mena: #ff9d7b;
-  --region-sub-saharan-africa: #f3c16d;
-  --region-south-asia: #c6a0ff;
-  --region-southeast-asia: #79b6ff;
-  --region-pacific-islands: #7cdfff;
+
+  /* Accents — higher saturation, tactical feel */
+  --accent-primary: #5ee9d5;
+  --accent-primary-strong: #22c5a8;
+  --accent-secondary: #6db3ff;
+  --accent-danger: #ff4d4d;
+  --accent-warning: #ffb347;
+  --accent-success: #4dff91;
+
+  /* Heat System — pressure-dependent coloring */
+  --heat-low: rgba(94, 233, 213, 0.15);
+  --heat-medium: rgba(255, 179, 71, 0.20);
+  --heat-high: rgba(255, 120, 60, 0.28);
+  --heat-critical: rgba(255, 77, 77, 0.35);
+  --heat-low-border: rgba(94, 233, 213, 0.30);
+  --heat-medium-border: rgba(255, 179, 71, 0.40);
+  --heat-high-border: rgba(255, 120, 60, 0.50);
+  --heat-critical-border: rgba(255, 77, 77, 0.60);
+
+  /* Tactical */
+  --tactical-green: #39ff14;
+  --tactical-grid: rgba(255, 255, 255, 0.018);
+
+  /* Seat Colors */
+  --seat-1: #5ee9d5;
+  --seat-2: #6db3ff;
+  --seat-3: #ffb347;
+  --seat-4: #ff7b5c;
+
+  /* Scenario Glows */
+  --scenario-glow-a: rgba(94, 233, 213, 0.12);
+  --scenario-glow-b: rgba(109, 179, 255, 0.12);
+
+  /* Front Colors */
+  --front-war: #ff6b5a;
+  --front-climate: #5ee9d5;
+  --front-rights: #6db3ff;
+  --front-speech-info: #a98eff;
+  --front-poverty: #ffb347;
+  --front-energy: #7de05c;
+  --front-culture: #ff8f6b;
+
+  /* Region Colors */
+  --region-north-america: #5ee9d5;
+  --region-latin-america: #7dcc6a;
+  --region-europe: #6db3ff;
+  --region-mena: #ff7b5c;
+  --region-sub-saharan-africa: #ffb347;
+  --region-south-asia: #b98fff;
+  --region-southeast-asia: #5ea8ff;
+  --region-pacific-islands: #5cd9ff;
+
+  /* Motion */
   --motion-fast: 160ms ease;
   --motion-mid: 180ms ease;
   --motion-pulse: 220ms ease;
+  --motion-breathe: 2.4s ease-in-out infinite;
 }
 
 .app-root[data-scenario-tone='verdant'] {
-  --scenario-glow-a: rgba(140, 214, 122, 0.22);
-  --scenario-glow-b: rgba(243, 193, 109, 0.2);
-  --accent-primary: #8cd67a;
-  --accent-primary-strong: #5aaf43;
-  --accent-secondary: #f3c16d;
+  --scenario-glow-a: rgba(125, 214, 106, 0.14);
+  --scenario-glow-b: rgba(255, 179, 71, 0.12);
+  --accent-primary: #7dd66a;
+  --accent-primary-strong: #4aaf33;
+  --accent-secondary: #ffb347;
 }
 
 .app-root[data-scenario-tone='witness'] {
-  --scenario-glow-a: rgba(125, 211, 199, 0.22);
-  --scenario-glow-b: rgba(142, 197, 255, 0.22);
+  --scenario-glow-a: rgba(94, 233, 213, 0.12);
+  --scenario-glow-b: rgba(109, 179, 255, 0.12);
 }
 
 html[lang='ar-EG'] {
