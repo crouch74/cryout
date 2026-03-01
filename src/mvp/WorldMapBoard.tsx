@@ -20,7 +20,7 @@ import {
   getBoardRegionInteractionPathIds,
   WORLD_MAP_SVG_METADATA,
 } from './worldMapSvgManifest.ts';
-import { computeRegionAnchorPercentages } from './svgPathCentroid.ts';
+import { computeRegionInteriorAnchorPercentages } from './svgPathCentroid.ts';
 
 interface WorldMapBoardProps {
   state: EngineState;
@@ -124,7 +124,7 @@ export function WorldMapBoard({
     if (!svgMarkup) {
       return;
     }
-    setComputedAnchors(computeRegionAnchorPercentages(svgMarkup, getCoverageByRegion()));
+    setComputedAnchors(computeRegionInteriorAnchorPercentages(svgMarkup, getCoverageByRegion()));
   }, [svgMarkup]);
 
   useEffect(() => {
