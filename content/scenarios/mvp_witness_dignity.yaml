@@ -1,7 +1,17 @@
 scenario:
   id: mvp_witness_dignity
   name: "Witness & Dignity"
+  introduction: |
+    In a world where the stones themselves seem to cry out against injustice, you lead a coalition of truth-seekers and community organizers. 
+    The "Witness & Dignity" scenario focuses on the intense pressures within the MENA region, where global solidarity is the only shield against escalating conflict and climate collapse.
+  story: |
+    "The dust never settles here," Aisha wrote in her last transmission. 
+    In the ruins of what was once a vibrant neighborhood, the silence is deafening. 
+    But then, a rhythmic tapping. A child, hit by the debris of a fallen world, is using a stone to pulse a signal into the night. 
+    They are not just rubble. They are witnesses. 
+    And as long as we can hear them, we must act.
   description: "High pressure in MENA (focusing on Palestine). Evolving climate risks in the Global South."
+
   
   initial_state:
     temperature: 2

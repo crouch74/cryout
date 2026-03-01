@@ -2,7 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2026-03-01
+
+### Added
+- ✨ Premium **Home Screen** with scenario selection and dramatized narrative introductions.
+- 📖 **Story & Dramatization** system for scenarios to set thematic context and "vibe" before gameplay.
+- 🌍 New **Green Resistance** mock scenario to demonstrate scenario selection variety.
+- 🔄 Navigation flow between Home and Game states with "Reset to Home" capability.
+- 🎨 Vibrant, high-fidelity CSS design system for the landing experience with glassmorphism and animations.
+
+### Fixed
+- 🛡️ Graceful handling of `null` game state during the scenario selection phase.
+- 🛠️ Type-safe `ScenarioMetadata` and `Scenario` interface definitions.
+
 ## [0.2.1] - 2026-03-01
+
 
 ### Fixed
 - 🛠 Fix `NameError: name 'string' is not defined` in `backend/engine/state.py` (CharterClause model).

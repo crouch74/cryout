@@ -29,6 +29,14 @@ export interface Effect {
         options: Array<{ label: string; effects: Effect[] }>;
     };
     log?: { emoji: string; message: string };
+    id?: string; // For tracing
+    caused_by?: string; // ID of the card/rule that triggered this
+}
+
+export interface EffectTrace {
+    effect: Effect;
+    status: 'executed' | 'failed' | 'skipped';
+    reason?: string;
 }
 
 // Cards
@@ -54,12 +62,22 @@ export interface Front {
     impact: number;
 }
 
+// Institutions
+export interface Institution {
+    id: string;
+    name: string;
+    type: 'legal' | 'media' | 'energy' | 'relief' | 'organization';
+    bonus_description: string;
+    status: 'active' | 'damaged' | 'destroyed';
+}
+
 // Region Definition
 export interface Region {
     id: RegionId;
     vulnerability: Partial<Record<FrontId, number>>;
     tokens: Partial<Record<TokenType, number>>;
     locks: LockType[];
+    institutions: Institution[];
 }
 
 // Role Definition
@@ -68,6 +86,7 @@ export interface ActionDef {
     name: string;
     description: string;
     burnout_cost?: number;
+    resource_costs?: Partial<Record<keyof GameState['resources'], number>>;
     effects: Effect[];
 }
 
@@ -87,6 +106,21 @@ export interface PlayerState {
     roleId: string;
     burnout: number;
     actionsRemaining: number;
+    isReady: boolean;
+}
+
+export interface PlayerIntent {
+    playerId: number;
+    actionId: string;
+    targetId?: string; // regionId or frontId
+}
+
+export interface CharterClause {
+    id: string;
+    title: string;
+    description: string;
+    status: 'locked' | 'unlocked' | 'ratified';
+    prerequisites: string[]; // Conditions
 }
 
 // Global Game State
@@ -105,8 +139,32 @@ export interface GameState {
     regions: Record<string, Region>;
 
     players: PlayerState[];
+    pendingIntents: PlayerIntent[];
+
+    charter: CharterClause[];
+
     currentRound: number;
     phase: "WORLD" | "COALITION" | "COMPROMISE" | "END";
+    scenarioId: string;
 
-    logs: Array<{ emoji: string; message: string; timestamp: number }>;
+    logs: Array<{
+        emoji: string;
+        message: string;
+        timestamp: number;
+        traces?: EffectTrace[];
+    }>;
 }
+
+export interface ScenarioMetadata {
+    id: string;
+    name: string;
+    description: string;
+    introduction: string;
+    story: string;
+    vibe_image?: string;
+}
+
+export interface Scenario extends ScenarioMetadata {
+    initial_state: Partial<GameState>;
+}
+

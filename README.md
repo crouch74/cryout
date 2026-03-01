@@ -12,12 +12,14 @@ A digital adaptation of the cooperative board game about Global South resistance
 - 🌊 **Riverkeepers** (Mekong Delta) — Water Memory
 - 🌳 **The Guardians** (Amazon) — Earth Allies
 
-### Victory Conditions (Mode A: Liberation)
-1. **Expel the Extractors**: 4+ regions have ≤2 Extraction Tokens
-2. **Break the War Machine**: Northern War Machine ≤4
-3. **Seize the Gaze**: Global Gaze ≥12
+### 🎮 Features
+- **Cinematic Landing Page**: High-vibe entry point with dramatic narrative context for each scenario.
+- **Scenario Selector**: Choose your struggle, ranging from MENA solidarity to Global South environmental resistance.
+- **Real-time Tactical Map**: Coordinate between 6 vulnerable regions and monitor 7 global fronts.
+- **Coalition Planning**: Role-specific actions for Community Organizers and Investigative Journalists.
 
 ## 🚀 Quick Start
+
 
 ### With Docker (Recommended)
 ```bash
