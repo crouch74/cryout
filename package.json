@@ -8,6 +8,7 @@
     "dev:ui": "vite",
     "dev:rooms": "node --experimental-transform-types room-service/server.ts",
     "build": "tsc -p tsconfig.app.json && tsc -p tsconfig.room-service.json && vite build",
+    "build:pages": "tsc -p tsconfig.app.json && tsc -p tsconfig.room-service.json && vite build --mode pages",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "node --experimental-transform-types --test tests/*.test.ts",

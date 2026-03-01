@@ -15,11 +15,10 @@ import { GuidelinesScreen } from './mvp/GuidelinesScreen.tsx';
 import { HomeScreen } from './mvp/HomeScreen.tsx';
 import { PlayerGuideScreen } from './mvp/PlayerGuideScreen.tsx';
 import { ToastStack, type ToastMessage } from './mvp/ToastStack.tsx';
+import { buildRuntimeLocation, getRuntimeOptions, parseRuntimeRoute } from './mvp/runtime.ts';
 import { getLocaleDirection, isLocale, localizeContent, setLocale, t, type Locale } from './i18n/index.ts';
 import {
   DEFAULT_GAME_VIEW_STATE,
-  buildAppPath,
-  parseAppRoute,
   type AppRoute,
   type GameViewState,
   type SetupConfig,
@@ -36,6 +35,8 @@ interface ActiveSession {
 const AUTOSAVE_KEY = 'dignity-rising-autosave';
 const LOCALE_KEY = 'dignity-rising-locale';
 const DEFAULT_SCENARIO_ID = listScenarios()[0]?.id ?? 'witness_dignity';
+const ROOM_HEALTH_TIMEOUT_MS = 1_500;
+const RUNTIME = getRuntimeOptions();
 
 const DEFAULT_CONFIG: SetupConfig = {
   surface: 'local',
@@ -88,21 +89,67 @@ export default function App() {
     const stored = globalThis.localStorage?.getItem(LOCALE_KEY);
     return stored && isLocale(stored) ? stored : 'en';
   });
-  const [initialRoute] = useState(() => parseAppRoute(window.location.pathname, DEFAULT_SCENARIO_ID));
+  const [initialRoute] = useState(() =>
+    parseRuntimeRoute(window.location.pathname, window.location.hash, DEFAULT_SCENARIO_ID, RUNTIME),
+  );
   const [route, setRoute] = useState<AppRoute>(initialRoute);
   const [setupConfig, setSetupConfig] = useState<SetupConfig>(() => ({
     ...DEFAULT_CONFIG,
     scenarioId: initialRoute.scenarioId,
-    surface: initialRoute.page === 'room' ? 'room' : DEFAULT_CONFIG.surface,
+    surface: RUNTIME.forceOfflineOnly ? 'local' : initialRoute.page === 'room' ? 'room' : DEFAULT_CONFIG.surface,
   }));
   const [viewState, setViewState] = useState<GameViewState>(DEFAULT_GAME_VIEW_STATE);
   const [session, setSession] = useState<ActiveSession | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [hydrating, setHydrating] = useState(initialRoute.page === 'room' && Boolean(initialRoute.roomId));
+  const [roomServiceReachable, setRoomServiceReachable] = useState<boolean>(RUNTIME.forceOfflineOnly ? false : true);
+  const [roomServiceChecking, setRoomServiceChecking] = useState(false);
+
+  const startLocalSession = useEffectEvent((config: SetupConfig, reason?: Omit<ToastMessage, 'id'>) => {
+    const content = localizeContent(compileContent(config.scenarioId, config.expansionIds));
+    const state = initializeGame({
+      type: 'StartGame',
+      scenarioId: config.scenarioId,
+      mode: config.mode,
+      playerCount: config.playerCount,
+      roleIds: config.roleIds,
+      seed: config.seed,
+      expansionIds: config.expansionIds,
+    });
+
+    setSetupConfig((current) => ({ ...current, ...config, surface: 'local' }));
+    setSession({
+      surface: 'local',
+      roomId: null,
+      roomUrl: config.roomUrl,
+      content,
+      state,
+    });
+    setRoute({ page: 'offline', scenarioId: config.scenarioId, roomId: null });
+
+    if (reason) {
+      pushToast(reason);
+    }
+  });
 
   const pushToast = useEffectEvent((toast: Omit<ToastMessage, 'id'>) => {
     const id = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     setToasts((current) => [...current, { ...toast, id }]);
+  });
+
+  const switchRoomSessionToLocal = useEffectEvent((toast: Omit<ToastMessage, 'id'>) => {
+    setSetupConfig((current) => ({ ...current, surface: 'local' }));
+    setSession((current) =>
+      current && current.surface === 'room'
+        ? {
+          ...current,
+          surface: 'local',
+          roomId: null,
+        }
+        : current,
+    );
+    setRoute((current) => ({ ...current, page: 'offline', roomId: null }));
+    pushToast(toast);
   });
 
   useEffect(() => {
@@ -134,6 +181,52 @@ export default function App() {
 
     localStorage.setItem(AUTOSAVE_KEY, serializeGame(session.state));
   }, [session]);
+
+  useEffect(() => {
+    if (RUNTIME.forceOfflineOnly) {
+      setRoomServiceReachable(false);
+      setRoomServiceChecking(false);
+      return;
+    }
+
+    let cancelled = false;
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), ROOM_HEALTH_TIMEOUT_MS);
+
+    setRoomServiceChecking(true);
+
+    const probeRoomService = async () => {
+      try {
+        const response = await fetch(`${setupConfig.roomUrl}/api/health`, { signal: controller.signal });
+        if (!response.ok) {
+          throw new Error(`Room health probe failed with status ${response.status}`);
+        }
+
+        if (!cancelled) {
+          setRoomServiceReachable(true);
+        }
+      } catch (roomError) {
+        if ((roomError as Error).name !== 'AbortError') {
+          console.error(roomError);
+        }
+        if (!cancelled) {
+          setRoomServiceReachable(false);
+        }
+      } finally {
+        if (!cancelled) {
+          setRoomServiceChecking(false);
+        }
+      }
+    };
+
+    void probeRoomService();
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [setupConfig.roomUrl]);
 
   useEffect(() => {
     if (!hydrating) {
@@ -170,6 +263,8 @@ export default function App() {
         } catch (roomError) {
           console.error(roomError);
           if (!cancelled) {
+            setSetupConfig((current) => ({ ...current, surface: 'local' }));
+            setRoute((current) => ({ ...current, page: 'offline', roomId: null }));
             pushToast({
               tone: 'error',
               title: t('ui.toast.roomUnavailableTitle', 'Room unavailable'),
@@ -206,12 +301,24 @@ export default function App() {
     const interval = window.setInterval(async () => {
       try {
         const response = await fetch(`${session.roomUrl}/api/rooms/${session.roomId}`);
+        if (!response.ok) {
+          throw new Error(`Room poll failed with status ${response.status}`);
+        }
         const payload = (await response.json()) as { state: EngineState };
         setSession((current) =>
           current && current.surface === 'room' ? { ...current, state: payload.state } : current,
         );
       } catch (roomError) {
         console.error(roomError);
+        switchRoomSessionToLocal({
+          tone: 'warning',
+          title: t('ui.toast.roomSyncLostTitle', 'Room sync lost'),
+          message: t(
+            'ui.toast.roomSyncLostMessage',
+            'The room service stopped responding. The current table has been kept alive in offline mode.',
+          ),
+          dismissAfterMs: 5200,
+        });
       }
     }, 750);
 
@@ -225,43 +332,27 @@ export default function App() {
 
     const pathname = session
       ? session.surface === 'room' && session.roomId
-        ? buildAppPath({ page: 'room', scenarioId: setupConfig.scenarioId, roomId: session.roomId })
-        : buildAppPath({ page: 'offline', scenarioId: setupConfig.scenarioId, roomId: null })
-      : buildAppPath({
+        ? buildRuntimeLocation({ page: 'room', scenarioId: setupConfig.scenarioId, roomId: session.roomId }, RUNTIME)
+        : buildRuntimeLocation({ page: 'offline', scenarioId: setupConfig.scenarioId, roomId: null }, RUNTIME)
+      : buildRuntimeLocation({
         page: route.page,
         scenarioId: setupConfig.scenarioId,
         roomId: route.roomId,
-      });
+      }, RUNTIME);
     window.history.replaceState(null, '', pathname);
   }, [hydrating, route.page, route.roomId, session, setupConfig.scenarioId]);
 
   const startSession = async (config: SetupConfig) => {
     const nextConfig = {
       ...config,
+      surface: RUNTIME.forceOfflineOnly ? 'local' : config.surface,
       seed: generateSessionSeed(),
     };
     setSetupConfig(nextConfig);
     setViewState(DEFAULT_GAME_VIEW_STATE);
 
     if (nextConfig.surface === 'local') {
-      const content = localizeContent(compileContent(nextConfig.scenarioId, nextConfig.expansionIds));
-      const state = initializeGame({
-        type: 'StartGame',
-        scenarioId: nextConfig.scenarioId,
-        mode: nextConfig.mode,
-        playerCount: nextConfig.playerCount,
-        roleIds: nextConfig.roleIds,
-        seed: nextConfig.seed,
-        expansionIds: nextConfig.expansionIds,
-      });
-      setSession({
-        surface: 'local',
-        roomId: null,
-        roomUrl: nextConfig.roomUrl,
-        content,
-        state,
-      });
-      setRoute((current) => ({ ...current, page: 'offline', roomId: null }));
+      startLocalSession(nextConfig);
       return;
     }
 
@@ -278,6 +369,9 @@ export default function App() {
           expansionIds: nextConfig.expansionIds,
         }),
       });
+      if (!response.ok) {
+        throw new Error(`Room create failed with status ${response.status}`);
+      }
 
       const payload = (await response.json()) as { roomId: string; state: EngineState };
       const content = localizeContent(compileContent(nextConfig.scenarioId, nextConfig.expansionIds));
@@ -295,14 +389,15 @@ export default function App() {
       });
     } catch (roomError) {
       console.error(roomError);
-      pushToast({
-        tone: 'error',
+      setRoomServiceReachable(false);
+      startLocalSession(nextConfig, {
+        tone: 'warning',
         title: t('ui.toast.roomUnavailableTitle', 'Room unavailable'),
         message: t(
-          'ui.toast.roomServiceUnavailableMessage',
-          'Could not reach the room service. Start `npm run dev:rooms` and try again.',
+          'ui.toast.roomServiceFallbackMessage',
+          'Could not reach the room service. Online mode was disabled and the game started offline instead.',
         ),
-        dismissAfterMs: 4800,
+        dismissAfterMs: 5200,
       });
     }
   };
@@ -330,15 +425,22 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ commands: [command] }),
       });
+      if (!response.ok) {
+        throw new Error(`Room command failed with status ${response.status}`);
+      }
       const payload = (await response.json()) as { state: EngineState };
       setSession({ ...session, state: payload.state });
     } catch (roomError) {
       console.error(roomError);
-      pushToast({
-        tone: 'error',
+      setRoomServiceReachable(false);
+      switchRoomSessionToLocal({
+        tone: 'warning',
         title: t('ui.toast.commandFailedTitle', 'Command failed'),
-        message: t('ui.toast.commandFailedMessage', 'The room service rejected the command dispatch.'),
-        dismissAfterMs: 4000,
+        message: t(
+          'ui.toast.commandFailedFallbackMessage',
+          'The room service rejected the command dispatch. The table has been switched to offline mode.',
+        ),
+        dismissAfterMs: 5200,
       });
     }
   };
@@ -475,6 +577,9 @@ export default function App() {
           onLocaleChange={setSelectedLocale}
           config={setupConfig}
           hasAutosave={Boolean(localStorage.getItem(AUTOSAVE_KEY))}
+          roomPlayAvailable={roomServiceReachable}
+          roomPlayChecking={roomServiceChecking}
+          roomPlayDisabledByBuild={RUNTIME.forceOfflineOnly}
           onConfigChange={(patch) => setSetupConfig((current) => ({ ...current, ...patch }))}
           onStart={startSession}
           onLoadSave={loadSerialized}

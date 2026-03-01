@@ -45,6 +45,16 @@ npm run dev
 
 Open `http://localhost:5174` (dev) to play offline/locally or sync to the API backend at `:8001`.
 
+## GitHub Pages Offline Build
+```bash
+npm run build:pages
+```
+
+The Pages build is offline-only:
+- it uses hash routing so GitHub Pages can serve the app without backend rewrites
+- it disables room play in the UI
+- it falls back to a local table whenever the room service is unreachable in other builds
+
 ## 🛠 Tech Stack
 - **Frontend Engine**: TypeScript + React + Vite
 - **Multiplayer Backend API**: Python + FastAPI + Pydantic

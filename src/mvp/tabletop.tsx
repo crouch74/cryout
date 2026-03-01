@@ -128,14 +128,21 @@ export function EngravedHeader({
 export function ThemePlate({
   label,
   active,
+  disabled,
   onClick,
 }: {
   label: ReactNode;
   active?: boolean;
+  disabled?: boolean;
   onClick: () => void;
 }) {
   return (
-    <button type="button" className={`engraved-plate ${active ? 'is-active' : ''}`} onClick={onClick}>
+    <button
+      type="button"
+      className={`engraved-plate ${active ? 'is-active' : ''}`.trim()}
+      disabled={disabled}
+      onClick={onClick}
+    >
       {label}
     </button>
   );

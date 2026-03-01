@@ -10,6 +10,9 @@ interface HomeScreenProps {
   onLocaleChange: (locale: Locale) => void;
   config: SetupConfig;
   hasAutosave: boolean;
+  roomPlayAvailable: boolean;
+  roomPlayChecking: boolean;
+  roomPlayDisabledByBuild: boolean;
   onConfigChange: (patch: Partial<SetupConfig>) => void;
   onStart: (config: SetupConfig) => void;
   onLoadSave: (serialized: string) => void;
@@ -41,6 +44,9 @@ export function HomeScreen({
   onLocaleChange,
   config,
   hasAutosave,
+  roomPlayAvailable,
+  roomPlayChecking,
+  roomPlayDisabledByBuild,
   onConfigChange,
   onStart,
   onLoadSave,
@@ -161,8 +167,16 @@ export function HomeScreen({
               <h2>{t('ui.home.tableConfiguration', 'Table Configuration')}</h2>
               <div className="plate-toggle-row">
                 <ThemePlate label={t('ui.home.localTable', 'Local Table')} active={config.surface === 'local'} onClick={() => onConfigChange({ surface: 'local' })} />
-                <ThemePlate label={t('ui.home.roomPlay', 'Room Play')} active={config.surface === 'room'} onClick={() => onConfigChange({ surface: 'room' })} />
+                <ThemePlate
+                  label={t('ui.home.roomPlay', 'Room Play')}
+                  active={config.surface === 'room'}
+                  disabled={roomPlayDisabledByBuild}
+                  onClick={() => onConfigChange({ surface: 'room' })}
+                />
               </div>
+              {roomPlayDisabledByBuild ? (
+                <p>{t('ui.home.roomPlayDisabledPages', 'Room play is disabled in the GitHub Pages build. Offline mode is always used there.')}</p>
+              ) : null}
               <div className="paper-form-grid">
                 <label>
                   <span>{t('ui.home.mode', 'Mode')}</span>
@@ -181,15 +195,27 @@ export function HomeScreen({
                 </label>
               </div>
               {config.surface === 'room' ? (
-                <label>
-                  <span>{t('ui.home.roomUrl', 'Room Service URL')}</span>
-                  <input
-                    type="text"
-                    value={config.roomUrl}
-                    onChange={(event) => onConfigChange({ roomUrl: event.target.value })}
-                    placeholder="http://localhost:3010"
-                  />
-                </label>
+                <>
+                  <label>
+                    <span>{t('ui.home.roomUrl', 'Room Service URL')}</span>
+                    <input
+                      type="text"
+                      value={config.roomUrl}
+                      onChange={(event) => onConfigChange({ roomUrl: event.target.value })}
+                      placeholder="http://localhost:3010"
+                    />
+                  </label>
+                  <p>
+                    {roomPlayChecking
+                      ? t('ui.home.roomChecking', 'Checking room service availability...')
+                      : roomPlayAvailable
+                        ? t('ui.home.roomAvailable', 'Room service reachable. Online room play is available.')
+                        : t(
+                          'ui.home.roomUnavailableFallback',
+                          'Room service unavailable. Starting the game will fall back to a local offline table.',
+                        )}
+                  </p>
+                </>
               ) : null}
             </PaperSheet>
 
