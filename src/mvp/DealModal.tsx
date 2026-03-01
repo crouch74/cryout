@@ -13,40 +13,40 @@ export function DealModal({ state, content, onCommand }: DealModalProps) {
   }
 
   return (
-    <div className="modal-shell">
-      <div className="modal-card">
-        <h2>{t('ui.dealModal.title', 'Compromise Offer')}</h2>
+    <div className="modal-shell" role="presentation">
+      <div className="modal-card" role="dialog" aria-modal="true" aria-labelledby="compromise-title">
+        <h2 id="compromise-title">{t('ui.dealModal.title', 'Compromise Offer')}</h2>
         <p>{state.activeCompromise.prompt}</p>
 
-        <div className="compromise-options">
+        <div className="modal-option-grid">
           {state.activeCompromise.options.map((option) => (
-            <div key={option.id} className="compromise-option">
+            <article key={option.id} className="shell-card modal-option-card">
               <strong>{option.label}</strong>
               <p>{option.description}</p>
-            </div>
+            </article>
           ))}
         </div>
 
-        <div className="vote-grid">
+        <div className="modal-vote-grid">
           {state.players.map((player) => {
             const role = content.roles[player.roleId];
             const vote = state.activeCompromise?.votes[player.seat];
             return (
-              <div key={player.seat} className="vote-row">
+              <div key={player.seat} className="modal-vote-row">
                 <span>
                   Seat {player.seat + 1}: {role.shortName}
                 </span>
                 {vote === undefined ? (
-                  <div className="vote-actions">
-                    <button onClick={() => onCommand({ type: 'VoteCompromise', seat: player.seat, accept: true })}>
+                  <div className="modal-vote-actions">
+                    <button className="primary-button compact-button" onClick={() => onCommand({ type: 'VoteCompromise', seat: player.seat, accept: true })}>
                       {t('ui.dealModal.yes', 'YES')}
                     </button>
-                    <button onClick={() => onCommand({ type: 'VoteCompromise', seat: player.seat, accept: false })}>
+                    <button className="secondary-button compact-button" onClick={() => onCommand({ type: 'VoteCompromise', seat: player.seat, accept: false })}>
                       {t('ui.dealModal.no', 'NO')}
                     </button>
                   </div>
                 ) : (
-                  <span>{vote ? t('ui.dealModal.yes', 'YES') : t('ui.dealModal.no', 'NO')}</span>
+                  <span className="status-pill neutral">{vote ? t('ui.dealModal.yes', 'YES') : t('ui.dealModal.no', 'NO')}</span>
                 )}
               </div>
             );

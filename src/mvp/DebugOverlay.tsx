@@ -1,5 +1,4 @@
-import type { EngineState } from '../../engine/index.ts';
-import { getTemperatureBand } from '../../engine/index.ts';
+import { getTemperatureBand, type EngineState } from '../../engine/index.ts';
 import { t } from '../i18n/index.ts';
 
 interface DebugOverlayProps {
@@ -11,8 +10,8 @@ export function DebugOverlay({ state, roomId }: DebugOverlayProps) {
   const band = getTemperatureBand(state.temperature);
 
   return (
-    <div className="debug-overlay">
-      <h4>{t('ui.debug.title', 'Debug')}</h4>
+    <aside className="debug-panel shell-card" aria-labelledby="debug-panel-title">
+      <h4 id="debug-panel-title">{t('ui.debug.title', 'Debug')}</h4>
       <div className="debug-grid">
         <span>{t('ui.debug.seed', 'Seed')}</span>
         <span>{state.seed}</span>
@@ -39,6 +38,6 @@ export function DebugOverlay({ state, roomId }: DebugOverlayProps) {
           </>
         )}
       </div>
-    </div>
+    </aside>
   );
 }

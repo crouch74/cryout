@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   buildEffectPreview,
   compileContent,
@@ -9,6 +10,7 @@ import {
   initializeGame,
   type EngineCommand,
 } from '../engine/index.ts';
+import { GAME_A11Y_LABELS, getPhaseProgressSteps, getToastRole } from '../src/mvp/gameUiHelpers.ts';
 
 const startCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
   type: 'StartGame',
@@ -54,4 +56,41 @@ test('scenario chip selectors and effect previews expose useful UI text', () => 
 
   const preview = buildEffectPreview(content.actions.community_mobilization);
   assert.match(preview, /solidarity/i);
+});
+
+test('phase progress helper marks the active step and exposes step semantics', () => {
+  const steps = getPhaseProgressSteps('COALITION');
+
+  assert.equal(steps.length, 4);
+  assert.equal(steps[1]?.step, 'COALITION');
+  assert.equal(steps[1]?.state, 'active');
+  assert.equal(steps[1]?.current, 'step');
+  assert.equal(steps[0]?.state, 'complete');
+  assert.equal(steps[2]?.state, 'upcoming');
+});
+
+test('game screen source includes landmark and labelled navigation markup', () => {
+  const source = readFileSync(new URL('../src/mvp/GameScreen.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /<header/);
+  assert.match(source, /<main/);
+  assert.match(source, /<aside/);
+  assert.match(source, /aria-label=\{t\('ui\.game\.scenarioDeskSections'/);
+  assert.match(source, /aria-label=\{t\('ui\.game\.coalitionDeskSections'/);
+  assert.match(source, /aria-describedby=/);
+});
+
+test('disabled reason explains phase gating and helper text is expected inline', () => {
+  const content = compileContent(startCommand.scenarioId);
+  const state = initializeGame(startCommand);
+  const disabled = getSeatDisabledReason(state, content, 0, 'community_mobilization', { kind: 'NONE' });
+
+  assert.equal(disabled.reason, 'Phase locked');
+  assert.equal(disabled.disabled, true);
+});
+
+test('toast helpers expose polite live-region metadata and status roles', () => {
+  assert.equal(GAME_A11Y_LABELS.liveUpdates, 'Live game updates');
+  assert.equal(getToastRole('success'), 'status');
+  assert.equal(getToastRole('error'), 'alert');
 });

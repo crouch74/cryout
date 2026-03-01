@@ -1,0 +1,124 @@
+.overlay-drawer,
+.debug-panel {
+  position: fixed;
+  top: var(--space-2);
+  right: var(--space-2);
+  width: min(430px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  z-index: 60;
+  padding: var(--space-2);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line-strong);
+  background: rgba(10, 18, 30, 0.97);
+  box-shadow: var(--shadow-0);
+}
+
+.overlay-trace-drawer {
+  right: min(468px, calc(100vw - 32px));
+}
+
+.overlay-header,
+.overlay-section,
+.modal-card,
+.modal-option-grid,
+.modal-vote-grid {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.overlay-actions {
+  justify-content: flex-end;
+}
+
+.overlay-action-card,
+.trace-card {
+  display: grid;
+  gap: 12px;
+}
+
+.trace-card.status-failed {
+  border-color: rgba(255, 139, 139, 0.3);
+}
+
+.trace-card.status-executed {
+  border-color: rgba(125, 211, 199, 0.24);
+}
+
+.trace-caused-by {
+  color: var(--text-3);
+  font-size: var(--type-1);
+}
+
+.modal-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: var(--space-2);
+  background: rgba(2, 8, 16, 0.65);
+  backdrop-filter: blur(10px);
+}
+
+.modal-card {
+  width: min(820px, 100%);
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line-strong);
+  background: rgba(9, 18, 30, 0.96);
+  box-shadow: var(--shadow-0);
+}
+
+.modal-option-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.modal-vote-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.debug-panel {
+  top: auto;
+  bottom: var(--space-2);
+  width: min(380px, calc(100vw - 32px));
+}
+
+.debug-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 14px;
+  font-size: var(--type-1);
+}
+
+html[dir='rtl'] .overlay-drawer,
+html[dir='rtl'] .debug-panel {
+  left: var(--space-2);
+  right: auto;
+}
+
+html[dir='rtl'] .overlay-trace-drawer {
+  left: min(468px, calc(100vw - 32px));
+  right: auto;
+}
+
+html[dir='rtl'] .overlay-actions {
+  justify-content: flex-start;
+}
+
+@media (max-width: 1180px) {
+  .overlay-drawer,
+  .overlay-trace-drawer {
+    left: var(--space-2);
+    right: var(--space-2);
+    width: auto;
+  }
+
+  .overlay-trace-drawer {
+    top: auto;
+    bottom: var(--space-2);
+    max-height: 46vh;
+  }
+}

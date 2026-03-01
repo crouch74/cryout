@@ -1,0 +1,78 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--type-2);
+  line-height: var(--line-height-copy);
+  color: var(--text-1);
+  background:
+    radial-gradient(circle at top left, var(--scenario-glow-a), transparent 24%),
+    radial-gradient(circle at 85% 20%, var(--scenario-glow-b), transparent 26%),
+    linear-gradient(155deg, #07111d 0%, #0a1522 44%, #0f1a2b 100%);
+  background-attachment: fixed;
+}
+
+html[dir='rtl'] body,
+html[dir='rtl'] .app-root {
+  direction: rtl;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: radial-gradient(circle at center, black 42%, transparent 100%);
+}
+
+a,
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0;
+}
+
+p {
+  color: var(--text-2);
+}
+
+.app-root {
+  min-height: 100vh;
+  padding: var(--space-3);
+}
+
+.loading-shell {
+  min-height: calc(100vh - (var(--space-3) * 2));
+  display: grid;
+  place-items: center;
+}
+
+.loading-card {
+  width: min(560px, 100%);
+}

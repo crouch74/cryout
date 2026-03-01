@@ -1,61 +1,96 @@
 import type { FrontId, RegionId } from '../../engine/index.ts';
 
-export const REGION_LAYOUT: Record<
+export const REGION_THEMES: Record<
   RegionId,
   {
     area: string;
-    accent: string;
     strapline: string;
+    themeClass: string;
   }
 > = {
   NorthAmerica: {
     area: 'north-america',
-    accent: '#0f766e',
     strapline: 'Media power, rights drift, upstream pressure.',
+    themeClass: 'region-theme-north-america',
   },
   LatinAmerica: {
     area: 'latin-america',
-    accent: '#15803d',
     strapline: 'Culture, poverty, and solidarity networks.',
+    themeClass: 'region-theme-latin-america',
   },
   Europe: {
     area: 'europe',
-    accent: '#1d4ed8',
     strapline: 'Diplomatic leverage, speech pressure, legal spillover.',
+    themeClass: 'region-theme-europe',
   },
   MENA: {
     area: 'mena',
-    accent: '#c2410c',
     strapline: 'War pressure, aid corridors, witness focus.',
+    themeClass: 'region-theme-mena',
   },
   SubSaharanAfrica: {
     area: 'sub-saharan-africa',
-    accent: '#b45309',
     strapline: 'Climate, poverty, and infrastructure fragility.',
+    themeClass: 'region-theme-sub-saharan-africa',
   },
   SouthAsia: {
     area: 'south-asia',
-    accent: '#7c3aed',
     strapline: 'Heat stress, energy transitions, mass exposure.',
+    themeClass: 'region-theme-south-asia',
   },
   SoutheastAsia: {
     area: 'southeast-asia',
-    accent: '#2563eb',
     strapline: 'Disinfo corridors across dense coastal systems.',
+    themeClass: 'region-theme-southeast-asia',
   },
   PacificIslands: {
     area: 'pacific-islands',
-    accent: '#0891b2',
     strapline: 'Sea-level front line and climate alarms.',
+    themeClass: 'region-theme-pacific-islands',
   },
 };
 
-export const FRONT_ACCENTS: Record<FrontId, string> = {
-  WAR: '#b91c1c',
-  CLIMATE: '#0f766e',
-  RIGHTS: '#1d4ed8',
-  SPEECH_INFO: '#6d28d9',
-  POVERTY: '#c2410c',
-  ENERGY: '#14532d',
-  CULTURE: '#b45309',
+export const FRONT_THEMES: Record<
+  FrontId,
+  {
+    themeClass: string;
+    icon: string;
+    pattern: string;
+  }
+> = {
+  WAR: {
+    themeClass: 'front-theme-war',
+    icon: 'Shield',
+    pattern: 'Containment corridors',
+  },
+  CLIMATE: {
+    themeClass: 'front-theme-climate',
+    icon: 'Storm',
+    pattern: 'Heatwave bands',
+  },
+  RIGHTS: {
+    themeClass: 'front-theme-rights',
+    icon: 'Scale',
+    pattern: 'Civic pressure lines',
+  },
+  SPEECH_INFO: {
+    themeClass: 'front-theme-speech-info',
+    icon: 'Signal',
+    pattern: 'Broadcast interference',
+  },
+  POVERTY: {
+    themeClass: 'front-theme-poverty',
+    icon: 'Grain',
+    pattern: 'Supply fractures',
+  },
+  ENERGY: {
+    themeClass: 'front-theme-energy',
+    icon: 'Grid',
+    pattern: 'Transition grid',
+  },
+  CULTURE: {
+    themeClass: 'front-theme-culture',
+    icon: 'Pulse',
+    pattern: 'Narrative echo',
+  },
 };

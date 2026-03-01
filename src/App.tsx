@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useEffectEvent, useState } from 'react';
 import {
   compileContent,
   deserializeGame,
@@ -13,7 +13,8 @@ import {
 import { GameScreen } from './mvp/GameScreen.tsx';
 import { GuidelinesScreen } from './mvp/GuidelinesScreen.tsx';
 import { HomeScreen } from './mvp/HomeScreen.tsx';
-import { localizeContent, t } from './i18n/index.ts';
+import { ToastStack, type ToastMessage } from './mvp/ToastStack.tsx';
+import { getLocaleDirection, isLocale, localizeContent, setLocale, t, type Locale } from './i18n/index.ts';
 import {
   DEFAULT_GAME_VIEW_STATE,
   buildAppPath,
@@ -22,7 +23,6 @@ import {
   type GameViewState,
   type SetupConfig,
 } from './mvp/urlState.ts';
-import './index.css';
 
 interface ActiveSession {
   surface: 'local' | 'room';
@@ -33,6 +33,7 @@ interface ActiveSession {
 }
 
 const AUTOSAVE_KEY = 'dignity-rising-autosave';
+const LOCALE_KEY = 'dignity-rising-locale';
 const DEFAULT_SCENARIO_ID = listScenarios()[0]?.id ?? 'witness_dignity';
 
 const DEFAULT_CONFIG: SetupConfig = {
@@ -82,6 +83,10 @@ function createConfigFromState(
 }
 
 export default function App() {
+  const [locale, setSelectedLocale] = useState<Locale>(() => {
+    const stored = globalThis.localStorage?.getItem(LOCALE_KEY);
+    return stored && isLocale(stored) ? stored : 'en';
+  });
   const [initialRoute] = useState(() => parseAppRoute(window.location.pathname, DEFAULT_SCENARIO_ID));
   const [route, setRoute] = useState<AppRoute>(initialRoute);
   const [setupConfig, setSetupConfig] = useState<SetupConfig>(() => ({
@@ -91,9 +96,35 @@ export default function App() {
   }));
   const [viewState, setViewState] = useState<GameViewState>(DEFAULT_GAME_VIEW_STATE);
   const [session, setSession] = useState<ActiveSession | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [hydrating, setHydrating] = useState(initialRoute.page === 'room' && Boolean(initialRoute.roomId));
+
+  const pushToast = useEffectEvent((toast: Omit<ToastMessage, 'id'>) => {
+    const id = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    setToasts((current) => [...current, { ...toast, id }]);
+  });
+
+  useEffect(() => {
+    setLocale(locale);
+    localStorage.setItem(LOCALE_KEY, locale);
+    document.documentElement.lang = locale;
+    document.documentElement.dir = getLocaleDirection(locale);
+  }, [locale]);
+
+  useEffect(() => {
+    if (!session) {
+      return;
+    }
+
+    setSession((current) =>
+      current
+        ? {
+            ...current,
+            content: localizeContent(compileContent(current.state.scenarioId, setupConfig.expansionIds)),
+          }
+        : current,
+    );
+  }, [locale, session?.state.scenarioId, setupConfig.expansionIds]);
 
   useEffect(() => {
     if (!session || session.surface !== 'local') {
@@ -129,11 +160,24 @@ export default function App() {
             content: localizeContent(compileContent(payload.state.scenarioId, nextConfig.expansionIds)),
             state: payload.state,
           });
-          setError(null);
+          pushToast({
+            tone: 'success',
+            title: t('ui.toast.roomRestoredTitle', 'Room restored'),
+            message: t('ui.toast.roomRestoredMessage', 'The permalink resolved into a live room session.'),
+            dismissAfterMs: 2400,
+          });
         } catch (roomError) {
           console.error(roomError);
           if (!cancelled) {
-            setError('Room permalink could not be restored. Start `npm run dev:rooms` and try again.');
+            pushToast({
+              tone: 'error',
+              title: t('ui.toast.roomUnavailableTitle', 'Room unavailable'),
+              message: t(
+                'ui.toast.roomPermalinkFailedMessage',
+                'Room permalink could not be restored. Start `npm run dev:rooms` and try again.',
+              ),
+              dismissAfterMs: 4800,
+            });
           }
         } finally {
           if (!cancelled) {
@@ -191,8 +235,6 @@ export default function App() {
   }, [hydrating, route.page, route.roomId, session, setupConfig.scenarioId]);
 
   const startSession = async (config: SetupConfig) => {
-    setError(null);
-    setNotice(null);
     const nextConfig = {
       ...config,
       seed: generateSessionSeed(),
@@ -252,7 +294,15 @@ export default function App() {
       });
     } catch (roomError) {
       console.error(roomError);
-      setError('Could not reach the room service. Start `npm run dev:rooms` and try again.');
+      pushToast({
+        tone: 'error',
+        title: t('ui.toast.roomUnavailableTitle', 'Room unavailable'),
+        message: t(
+          'ui.toast.roomServiceUnavailableMessage',
+          'Could not reach the room service. Start `npm run dev:rooms` and try again.',
+        ),
+        dismissAfterMs: 4800,
+      });
     }
   };
 
@@ -283,7 +333,12 @@ export default function App() {
       setSession({ ...session, state: payload.state });
     } catch (roomError) {
       console.error(roomError);
-      setError('Command dispatch failed.');
+      pushToast({
+        tone: 'error',
+        title: t('ui.toast.commandFailedTitle', 'Command failed'),
+        message: t('ui.toast.commandFailedMessage', 'The room service rejected the command dispatch.'),
+        dismissAfterMs: 4000,
+      });
     }
   };
 
@@ -302,17 +357,32 @@ export default function App() {
         state: payload.snapshot,
       });
       setRoute((current) => ({ ...current, page: 'offline', roomId: null }));
-      setError(null);
+      pushToast({
+        tone: 'success',
+        title: t('ui.toast.saveRestoredTitle', 'Save restored'),
+        message: t('ui.toast.saveRestoredMessage', 'Serialized state loaded into a local table.'),
+        dismissAfterMs: 2600,
+      });
     } catch (loadError) {
       console.error(loadError);
-      setError('Save payload could not be parsed.');
+      pushToast({
+        tone: 'error',
+        title: t('ui.toast.saveInvalidTitle', 'Save invalid'),
+        message: t('ui.toast.saveInvalidMessage', 'Save payload could not be parsed.'),
+        dismissAfterMs: 4200,
+      });
     }
   };
 
   const loadAutosave = () => {
     const raw = localStorage.getItem(AUTOSAVE_KEY);
     if (!raw) {
-      setError('No autosave found.');
+      pushToast({
+        tone: 'warning',
+        title: t('ui.toast.autosaveMissingTitle', 'Autosave missing'),
+        message: t('ui.toast.autosaveMissingMessage', 'No autosave was found for this browser.'),
+        dismissAfterMs: 3200,
+      });
       return;
     }
 
@@ -322,17 +392,36 @@ export default function App() {
   const exportSave = async (serialized: string) => {
     try {
       await navigator.clipboard.writeText(serialized);
-      setNotice('Serialized save copied to clipboard.');
+      pushToast({
+        tone: 'success',
+        title: t('ui.toast.saveCopiedTitle', 'Save copied'),
+        message: t('ui.toast.saveCopiedMessage', 'Serialized save copied to the clipboard.'),
+        dismissAfterMs: 2600,
+      });
     } catch (clipboardError) {
       console.error(clipboardError);
-      setNotice('Clipboard unavailable. Copy the save from devtools state if needed.');
+      pushToast({
+        tone: 'warning',
+        title: t('ui.toast.clipboardUnavailableTitle', 'Clipboard unavailable'),
+        message: t(
+          'ui.toast.clipboardUnavailableMessage',
+          'Copy the serialized save from devtools state if needed.',
+        ),
+        dismissAfterMs: 4200,
+      });
     }
   };
 
+  const scenarioTone = (session?.state.scenarioId ?? setupConfig.scenarioId) === 'green_resistance'
+    ? 'verdant'
+    : 'witness';
+  const localeDirection = getLocaleDirection(locale);
+
+  setLocale(locale);
+
   return (
-    <div className="app-root">
-      {notice && <div className="banner notice">{notice}</div>}
-      {error && <div className="banner error">{error}</div>}
+    <div className="app-root" data-scenario-tone={scenarioTone} dir={localeDirection} lang={locale}>
+      <ToastStack toasts={toasts} onDismiss={(id) => setToasts((current) => current.filter((toast) => toast.id !== id))} />
       {hydrating ? (
         <div className="loading-shell">
           <div className="loading-card">
@@ -343,6 +432,8 @@ export default function App() {
         </div>
       ) : session ? (
         <GameScreen
+          locale={locale}
+          onLocaleChange={setSelectedLocale}
           surface={session.surface}
           roomId={session.roomId}
           state={session.state}
@@ -350,6 +441,7 @@ export default function App() {
           viewState={viewState}
           onViewStateChange={(patch) => setViewState((current) => ({ ...current, ...patch }))}
           onCommand={sendCommand}
+          onToast={pushToast}
           onBack={() => {
             setSession(null);
             setViewState(DEFAULT_GAME_VIEW_STATE);
@@ -363,6 +455,8 @@ export default function App() {
         />
       ) : route.page === 'guidelines' ? (
         <GuidelinesScreen
+          locale={locale}
+          onLocaleChange={setSelectedLocale}
           scenarioId={setupConfig.scenarioId}
           onSelectScenario={(scenarioId) => setSetupConfig((current) => ({ ...current, scenarioId }))}
           onBackHome={() => setRoute({ page: 'home', scenarioId: setupConfig.scenarioId, roomId: null })}
@@ -370,6 +464,8 @@ export default function App() {
         />
       ) : (
         <HomeScreen
+          locale={locale}
+          onLocaleChange={setSelectedLocale}
           config={setupConfig}
           hasAutosave={Boolean(localStorage.getItem(AUTOSAVE_KEY))}
           onConfigChange={(patch) => setSetupConfig((current) => ({ ...current, ...patch }))}

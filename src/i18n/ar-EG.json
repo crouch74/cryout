@@ -1,0 +1,527 @@
+{
+  "content": {
+    "fronts": {
+      "WAR": { "name": "الحرب" },
+      "CLIMATE": { "name": "المناخ" },
+      "RIGHTS": { "name": "حقوق الإنسان" },
+      "SPEECH_INFO": { "name": "الكلام والمعلومة" },
+      "POVERTY": { "name": "الفقر" },
+      "ENERGY": { "name": "الطاقة" },
+      "CULTURE": { "name": "الفن والثقافة" }
+    },
+    "regions": {
+      "MENA": { "name": "غرب آسيا وشمال أفريقيا" },
+      "SubSaharanAfrica": { "name": "أفريقيا جنوب الصحراء" },
+      "SouthAsia": { "name": "جنوب آسيا" },
+      "SoutheastAsia": { "name": "جنوب شرق آسيا" },
+      "LatinAmerica": { "name": "أبيا يالا / أمريكا اللاتينية" },
+      "Europe": { "name": "أوروبا" },
+      "NorthAmerica": { "name": "تيرتل آيلاند / أمريكا الشمالية" },
+      "PacificIslands": { "name": "موانا / جزر المحيط الهادي" }
+    },
+    "roles": {
+      "organizer": {
+        "name": "منظّم مجتمعي",
+        "shortName": "المنظّم",
+        "passive": "بيبني التضامن وبيحافظ على حركة الناس لما الممرات بتتقفل."
+      },
+      "investigative_journalist": {
+        "name": "صحفي استقصائي",
+        "shortName": "الصحفي",
+        "passive": "بيحوّل الشهادة لدليل وبيفتح شقوق للحقيقة."
+      },
+      "human_rights_lawyer": {
+        "name": "محامي حقوق إنسان",
+        "shortName": "المحامي",
+        "passive": "بيفك الأقفال، ويزوّد ضغط ردّ الحق، ويحمي طرق الإنصاف."
+      },
+      "climate_energy_planner": {
+        "name": "مسؤول تخطيط مناخ وطاقة",
+        "shortName": "المخطط",
+        "passive": "بيبني بنية مرنة تقلّل تمدد أثر المناخ."
+      }
+    },
+    "institutions": {
+      "MutualAidHub": {
+        "name": "مركز مساندة متبادلة",
+        "description": "بيولد تضامن لما يكون فيه نزوح."
+      },
+      "IndependentMediaNetwork": {
+        "name": "شبكة إعلام مستقل",
+        "description": "بتحوّل الضغط لنافذات حقيقة وبتشيل التضليل."
+      },
+      "LegalClinic": {
+        "name": "عيادة قانونية",
+        "description": "بتوقف أول قفل سيطرة بيتفرض كل جولة."
+      },
+      "CommunityMicrogrid": {
+        "name": "شبكة مصغّرة مجتمعية",
+        "description": "بتمتص ضربة تدهور واحدة مناخية أو طاقية كل جولة."
+      }
+    },
+    "actions": {
+      "rest_and_care": {
+        "name": "راحة ورعاية",
+        "description": "رجّع النفس وثبّت الائتلاف."
+      },
+      "cultural_resonance": {
+        "name": "صدى ثقافي",
+        "description": "اسحب وحلّ بطاقة ثقافية في منطقة مختارة."
+      },
+      "mutual_aid_network": {
+        "name": "شبكة مساندة متبادلة",
+        "description": "ابني شبكة تضامن وخفّف النزوح."
+      },
+      "community_mobilization": {
+        "name": "حشد مجتمعي",
+        "description": "حوّل الظهور لتضامن."
+      },
+      "safe_passage": {
+        "name": "ممر آمن",
+        "description": "افتح ممرات للمدنيين أو طلّع الناس من الخطر المباشر."
+      },
+      "mass_mobilization": {
+        "name": "تعبئة واسعة",
+        "description": "حوّل زخم الائتلاف لفعل عام واسع."
+      },
+      "field_investigation": {
+        "name": "تحقيق ميداني",
+        "description": "اجمع أدلة وافتح شباك للحقيقة في المنطقة المستهدفة."
+      },
+      "counter_disinfo": {
+        "name": "مواجهة التضليل",
+        "description": "بوّظ السرديات الكدابة وامسح ضغط التضليل."
+      },
+      "truth_window": {
+        "name": "شباك حقيقة",
+        "description": "افتح سكة بديلة للثقافة والصحافة في منطقة الرقابة خانقاها."
+      },
+      "global_expose": {
+        "name": "كشف عالمي",
+        "description": "حوّل الدليل لموجة حقيقة عابرة للمناطق."
+      },
+      "emergency_injunction": {
+        "name": "أمر قضائي عاجل",
+        "description": "شيل أقفال الوصول والمراقبة من منطقة."
+      },
+      "clear_aid_corridor": {
+        "name": "فتح ممر إغاثة",
+        "description": "افتح تاني طريق الإغاثة وقلّل الضرر الفوري."
+      },
+      "remedy_dossier": {
+        "name": "ملف ردّ حق",
+        "description": "حضّر ملف قانوني لردّ حق ممكن يتنفذ."
+      },
+      "international_tribunal": {
+        "name": "محكمة دولية",
+        "description": "حوّل الضغط القانوني لاختراق كبير في الحقوق."
+      },
+      "build_microgrid": {
+        "name": "بناء شبكة مصغّرة",
+        "description": "ابني مرونة طاقة محلية في منطقة هشّة."
+      },
+      "disaster_preparedness": {
+        "name": "استعداد للكوارث",
+        "description": "جهّز المجتمعات قبل ما صدمات المناخ تضرب."
+      },
+      "resilience_retrofit": {
+        "name": "تقوية المرونة",
+        "description": "قوّي الأنظمة المحلية قدام الانهيارات اللي بتيجي فوق بعض."
+      },
+      "rapid_decarbonization": {
+        "name": "خفض كربون سريع",
+        "description": "افرض تحوّل كبير ناحية حماية المناخ."
+      }
+    },
+    "charter": {
+      "protected_humanitarian_corridors": {
+        "title": "ممرات إنسانية محمية",
+        "description": "طرق وصول المدنيين تفضل مفتوحة حتى مع التصعيد."
+      },
+      "right_to_information": {
+        "title": "حق الناس تعرف",
+        "description": "فيه حماية للتقارير المستقلة ولمطالب الحقيقة قدام الكل."
+      },
+      "right_to_remedy": {
+        "title": "حق ردّ الحق",
+        "description": "الوصول لردّ الحق يبقى ممكن يتنفذ عبر المناطق المستهدفة."
+      },
+      "climate_reparations_compact": {
+        "title": "اتفاق تعويضات مناخية",
+        "description": "الموارد تتحرك أولًا للناس اللي عايشين جوّه الأزمة."
+      },
+      "energy_commons": {
+        "title": "الطاقة حق مشترك",
+        "description": "بنية المرونة المحلية تتشاف كجزء من شغل حقوقي جماعي."
+      },
+      "cultural_survival_covenant": {
+        "title": "عهد بقاء الثقافة",
+        "description": "الثقافة تتحمى كحق مادي، مش رفاهية."
+      }
+    },
+    "scenarios": {
+      "witness_dignity": {
+        "name": "الشهادة والكرامة",
+        "description": "غرب آسيا وشمال أفريقيا تحت ضغط مركّب من الحرب والحقوق، بينما المناخ بيسرّع الأزمة الأوسع.",
+        "introduction": "ائتلاف من منظّمين وصحفيين ومحامين ومسؤولي تخطيط بيشتغل جوه مساحة مدنية بتضيق عشان يحموا المدنيين، ويخلّوا الحقيقة ماشية، ويبْنوا مؤسسات تقدر تعيش أطول من آلة الاحتواء.",
+        "story": "سيناريو الشهادة والكرامة بيحافظ على فلسطين كمركز أخلاقي للحكاية من غير ما يحوّل المنطقة لفرجة. الائتلاف بيتحرك تحت ضغط قاسي، وبيحاول يسيب ممرات الرعاية وردّ الحق والشهادة مفتوحة، بينما ضغط المناخ بيزوّد كل جبهة.",
+        "dramatization": "المفروض الطاولة تحسّها في نفس الوقت غرفة أخبار طوارئ، وغرفة فرز قانوني، وممر دعم متبادل. كل مكسب هش. كل تأخير ليه تكلفة على المدنيين. السيناريو مكتوب علشان الشهادة والرعاية والوضوح السياسي يفضلوا في الواجهة بدل الاستعراض.",
+        "gameplay": "الشهادة والكرامة بيبدأ تحت ضغط فوري. الحرب والحقوق والفقر كلهم مهددين إنهم يسبقوا الائتلاف قبل ما المؤسسات طويلة النفس تثبّت الخريطة. أقوى أسلوب لعب هنا هو الإيقاع المتظبط: احمِ غرب آسيا وشمال أفريقيا من نزوح بيعلى، وابني دليل وتضامن كفاية عشان تفتح تقدّم الميثاق.",
+        "mechanics": "السيناريو بيكافئ الشهادة العلنية والتوقيت الدقيق. شباك الشهادة بيلغي أول وضع تضليل في الجولة لما الائتلاف يحافظ على دليل عالي، بينما ممر الإغاثة بيعاقب ضغط الحرب لما يسيبوه يفلت بقفل الوصول في غرب آسيا وشمال أفريقيا. توقّع لعبة أضيق وأكثر تكتيكًا، بعدد أقل من الأدوار الآمنة وتركيز أكبر على ترتيب الإعلام والقانون والإغاثة.",
+        "moralCenter": "فلسطين هنا هي المركز الأخلاقي: تركيز على الحقوق، من غير فرجة، ومتمسكة بحماية المدنيين.",
+        "specialRuleChips": {
+          "witness_window": {
+            "label": "شباك الشهادة",
+            "description": "لو الدليل 3 أو أكتر، أول وضع تضليل في كل جولة بيتلغي."
+          },
+          "aid_corridor": {
+            "label": "ممر الإغاثة",
+            "description": "لما ضغط الحرب يوصل 8، غرب آسيا وشمال أفريقيا بياخد قفل وصول للمساعدات لحد ما المنظّم أو المحامي يشيله."
+          }
+        }
+      },
+      "green_resistance": {
+        "name": "المقاومة الخضرا",
+        "description": "مجتمعات الغابات بتواجه موجة استخراج متنسقة، والمناخ والطاقة والحقوق بيقوّوا بعض.",
+        "introduction": "الائتلاف بينقل تركيزه لمدافعين عن الأرض، ومجتمعات الأنهار، وصحفيين حركيين بيحاولوا يثبتوا الخط عبر أبيا يالا / أمريكا اللاتينية، وأفريقيا جنوب الصحراء، والجبهة المناخية الأوسع.",
+        "story": "المقاومة الخضرا بتقدّم الدفاع البيئي في الصفوف الأولى كصراع على الذاكرة والسيادة والبقاء. الامتيازات، والأمن الخاص، وحملات التضليل بتمهّد الطريق للاستخراج، بينما المجتمعات المحلية بتحاول تمنع الغابات والأنهار ومستقبل الطاقة من إنه يتحول لمناطق تضحية.",
+        "dramatization": "السيناريو ده المفروض يبقى أبطأ، وأرطب، وأكثر ارتباطًا بالأرض من الشهادة والكرامة. دور يبقى حصار لطريق قطع شجر، والدور اللي بعده جولة شهادات، وبعده شبكة طاقة مرتجلة بتحافظ على عيادة قرية شغالة بينما الدخان بيقفل الأفق.",
+        "gameplay": "المقاومة الخضرا بتبدأ بقدرة شعبية أكبر من الشهادة والكرامة، لكن الائتلاف متوزع على مناطق أكتر وبيبدأ بمساحة مدنية أضيق. التحدي هو منع تصاعد المناخ والطاقة من خلق أزمة نزوح بتتدحرج، وفي نفس الوقت تفضل تستثمر في الثقافة والحماية القانونية والبنية طويلة النفس.",
+        "mechanics": "تضامن الجذور بيحوّل الحماية الثقافية لزخم عن طريق توليد تضامن في بداية الجولة لما الفن والثقافة يبقوا ثابتين. دوامة الاستخراج بتعاقب تجاهل ضغط المناخ بدفع نزوح جديد لأبيا يالا / أمريكا اللاتينية وأفريقيا جنوب الصحراء قبل ما مرحلة العالم تخلص. السيناريو بيكافئ بناء المؤسسات على أكتر من مكان، وبيعاقب سيب الجبهات البيئية تسرح.",
+        "moralCenter": "المدافعون الأصليون عن الأرض ومجتمعات الغابات بيتعامل معاهم كأبطال عندهم فاعلية، مش كخلفية لقصة كارثة مناخية.",
+        "specialRuleChips": {
+          "root_solidarity": {
+            "label": "تضامن الجذور",
+            "description": "في بداية الجولة، لو حماية الفن والثقافة 5 أو أكتر، اكسب 1 تضامن."
+          },
+          "extraction_spiral": {
+            "label": "دوامة الاستخراج",
+            "description": "لما ضغط المناخ يوصل 7 أو أكتر، أبيا يالا / أمريكا اللاتينية وأفريقيا جنوب الصحراء كل واحدة تاخد 1 نزوح أثناء مرحلة العالم."
+          }
+        }
+      }
+    }
+  },
+  "worldMap": {
+    "straplines": {
+      "NorthAmerica": "قوة إعلامية، تراجع حقوقي، وضغط إمبراطوري من المنبع.",
+      "LatinAmerica": "دفاع عن الأرض، وذاكرة، وشبكات تضامن.",
+      "Europe": "ثقل دبلوماسي، ونظام حدود، وامتداد قانوني.",
+      "MENA": "ضغط حرب، وممرات إغاثة، وشهادة تحت الحصار.",
+      "SubSaharanAfrica": "مناخ، واستخراج، وبنية تحتية هشّة.",
+      "SouthAsia": "ضغط حر، وتحولات طاقة، وتعرّض واسع.",
+      "SoutheastAsia": "ممرات تضليل جوه أنظمة ساحلية مكتظة.",
+      "PacificIslands": "خط مواجهة محيطي وإنذارات مناخية."
+    }
+  },
+  "ui": {
+    "app": {
+      "restoringEyebrow": "بنرجّع الجلسة",
+      "restoringTitle": "بنعيد تركيب حالة الطاولة",
+      "restoringBody": "الرابط الدائم بيتحوّل دلوقتي لجلسة شغالة."
+    },
+    "language": {
+      "label": "اللغة"
+    },
+    "toast": {
+      "roomRestoredTitle": "تم استرجاع الغرفة",
+      "roomRestoredMessage": "الرابط الدائم رجّع جلسة غرفة شغالة.",
+      "roomUnavailableTitle": "الغرفة غير متاحة",
+      "roomPermalinkFailedMessage": "ما قدرناش نرجّع الغرفة من الرابط. شغّل `npm run dev:rooms` وحاول تاني.",
+      "roomServiceUnavailableMessage": "ما قدرناش نوصل لخدمة الغرف. شغّل `npm run dev:rooms` وحاول تاني.",
+      "commandFailedTitle": "الأمر فشل",
+      "commandFailedMessage": "خدمة الغرف رفضت تنفيذ الأمر.",
+      "saveRestoredTitle": "الحفظ رجع",
+      "saveRestoredMessage": "حالة الحفظ المتسلسلة اتحمّلت على طاولة محلية.",
+      "saveInvalidTitle": "الحفظ غير صالح",
+      "saveInvalidMessage": "ما قدرناش نفك بيانات الحفظ.",
+      "autosaveMissingTitle": "مفيش حفظ تلقائي",
+      "autosaveMissingMessage": "مافيش حفظ تلقائي موجود في المتصفح ده.",
+      "saveCopiedTitle": "الحفظ اتنسخ",
+      "saveCopiedMessage": "بيانات الحفظ المتسلسلة اتنسخت للحافظة.",
+      "clipboardUnavailableTitle": "الحافظة غير متاحة",
+      "clipboardUnavailableMessage": "لو احتجت، انسخ الحفظ المتسلسل من حالة أدوات المطوّر.",
+      "roundCollapsedTitle": "الجولة انهارت",
+      "phaseAdvancedTitle": "المرحلة اتقدمت",
+      "intentQueuedTitle": "النية اتضافت",
+      "intentQueuedMessage": "اتضافت {{action}} للمقعد {{seat}}.",
+      "intentQueuedFromRegionMessage": "اتضافت {{action}} من {{region}}.",
+      "intentRemovedTitle": "النية اتشالت",
+      "intentRemovedMessage": "اتشالت {{action}} من المقعد {{seat}}.",
+      "seatReopenedTitle": "المقعد اتفتح تاني",
+      "seatReopenedMessage": "المقعد {{seat}} رجع للتخطيط.",
+      "seatReadyTitle": "المقعد جاهز",
+      "seatReadyMessage": "المقعد {{seat}} قفل قائمته وبقى جاهز.",
+      "liveGameUpdates": "تحديثات اللعبة المباشرة",
+      "dismissNotification": "اقفل الإشعار"
+    },
+    "guidelines": {
+      "eyebrow": "الدليل",
+      "openOfflineMode": "افتح الوضع المحلي",
+      "home": "الرئيسية",
+      "scenarioPulse": "نبض السيناريو",
+      "roundWindowValue": "{{core}}-{{full}} جولات",
+      "guidebook": "الدليل",
+      "howItShouldFeel": "الإحساس المفروض السيناريو يوصله",
+      "playPattern": "نمط اللعب",
+      "tableFeel": "إحساس الطاولة",
+      "mechanicalPressure": "الضغط الميكانيكي",
+      "scenarios": "السيناريوهات",
+      "switchGuide": "بدّل الدليل",
+      "view": "شوف"
+    },
+    "status": {
+      "ready": "جاهز",
+      "planning": "بيخطط",
+      "open": "مفتوح",
+      "unknown": "مش معروف",
+      "lockedInRegion": "مقفول في {{region}}",
+      "spentInactive": "مستهلك / غير نشط",
+      "collapsedFront": "جبهة منهارة",
+      "contestableFront": "لسه ممكن تتنازع",
+      "waitingForAllSeats": "مستني كل المقاعد",
+      "compromiseVoteLive": "تصويت التسوية شغّال. خلّص النافذة علشان تكمل.",
+      "noTraceRecorded": "مفيش أثر متسجل للجزء ده.",
+      "noStateDeltas": "مفيش فروق حالة",
+      "noActionsQueued": "لسه مفيش أفعال متضافة.",
+      "noActiveLocks": "مفيش أقفال نشطة.",
+      "noInstitutionsYet": "لسه مفيش مؤسسات."
+    },
+    "home": {
+      "noScenariosTitle": "مفيش سيناريوهات",
+      "noScenariosBody": "سجل المحتوى ما رجّعش أي سيناريو قابل للعب.",
+      "eyebrow": "نسخة MVP شغالة",
+      "title": "صعود الكرامة",
+      "subtitle": "لعبة استراتيجية تعاونية عن حماية المدنيين، والدفاع عن الحقيقة، وبناء المؤسسات تحت ضغط خصم كبير ومتشعب.",
+      "tagHope": "بناء طويل النفس",
+      "tagResilience": "صمود موجع",
+      "tagSatire": "سخرية مُرّة موجهة لفوق",
+      "openBooklet": "افتح كتيّب السيناريو",
+      "jumpSetup": "انط لإعداد الطاولة",
+      "copySetup": "انسخ رابط الإعداد",
+      "selectedChapter": "الفصل المختار",
+      "launch": "ابدأ",
+      "localTable": "طاولة محلية",
+      "roomPlay": "لعب غرفة",
+      "scenario": "السيناريو",
+      "mode": "الوضع",
+      "modeCore": "أساسي",
+      "modeFull": "كامل",
+      "playerCount": "عدد اللاعبين",
+      "seed": "البذرة",
+      "roomUrl": "رابط خدمة الغرف",
+      "startLocal": "ابدأ طاولة محلية",
+      "createRoom": "أنشئ غرفة",
+      "loadAutosave": "حمّل آخر حفظ تلقائي",
+      "coalitionSeats": "مقاعد الائتلاف",
+      "seatLabel": "المقعد {{seat}}",
+      "loadSave": "حمّل حفظ",
+      "savePlaceholder": "الصق هنا بيانات الحفظ المتسلسلة.",
+      "loadSaveButton": "حمّل الحفظ على طاولة محلية",
+      "rolesMustBeUnique": "لازم الأدوار تكون مختلفة.",
+      "pasteSaveFirst": "الصق بيانات الحفظ الأول.",
+      "civicSpaceHeat": "{{civicSpace}} مساحة مدنية مع حرارة بداية +{{temperature}}C",
+      "roundWindow": "{{core}} جولات أساسية / {{full}} جولات كاملة",
+      "distinctCrisisFrames": "أطر أزمات مختلفة.",
+      "seatsConfigured": "المقاعد متجهزة للطاولة دي.",
+      "sameScreenTable": "طاولة على نفس الشاشة.",
+      "syncedRoomSession": "جلسة غرفة متزامنة.",
+      "scenarioGuidelines": "إرشادات السيناريو",
+      "openGuidelines": "افتح الإرشادات",
+      "premise": "المدخل",
+      "playPressure": "ضغط اللعب",
+      "scenarioMenu": "قائمة السيناريوهات",
+      "selected": "مختار",
+      "available": "متاح",
+      "tableConfiguration": "ضبط الطاولة",
+      "seatAssignments": "توزيع الأدوار على المقاعد",
+      "utilities": "أدوات",
+      "routesStayStable": "المسارات بتفضل ثابتة بينما السيناريو المختار وحالة الطاولة الشغالة بيتغيروا."
+    },
+    "scenarioBooklet": {
+      "eyebrow": "كتيّب السيناريو",
+      "title": "حكايات، وقواعد، وجوّ الطاولة",
+      "subtitle": "اقرأ كل ملف كأنه صفحات من دليل الحملة، وبعدها خُد الفصل المختار مباشرة للإعداد.",
+      "copyChapter": "انسخ رابط الفصل",
+      "previous": "الفصل السابق",
+      "next": "الفصل التالي",
+      "chapter": "الفصل {{chapter}}",
+      "rulesFolio": "ورق القواعد",
+      "story": "الحكاية",
+      "dramatization": "الجوّ الدرامي",
+      "moralCenter": "المركز الأخلاقي",
+      "civicSpace": "المساحة المدنية",
+      "startingHeat": "الحرارة الافتتاحية",
+      "roundWindow": "نافذة الجولات",
+      "gameplay": "أسلوب اللعب",
+      "mechanics": "الميكانيك",
+      "pressureProfile": "شكل الضغط",
+      "featuredRegions": "المناطق البارزة",
+      "roundWindowValue": "{{core}} أساسي / {{full}} كامل"
+    },
+    "game": {
+      "commandTable": "طاولة القيادة العامة",
+      "roundSummary": "الجولة {{round}} من {{roundLimit}} | {{surface}} | {{description}}",
+      "localSurface": "طاولة محلية",
+      "roomSurface": "الغرفة {{roomId}}",
+      "temperature": "الحرارة",
+      "temperatureBand": "المستوى {{band}} | {{crisisCount}} بطاقات أزمة",
+      "temperatureDetail": "الشريحة {{band}}. في {{count}} بطاقة أزمة{{plural}} في مرحلة العالم الجاية.",
+      "civicSpace": "المساحة المدنية",
+      "civicSpaceHelp": "ضغط على قدرة التنظيم العام",
+      "civicSpaceDetail": "بتقيس قد إيه لسه فيه مساحة تنظيم متاحة للائتلاف.",
+      "charter": "الميثاق",
+      "ratifiedCount": "{{count}} متوافق عليهم",
+      "charterDetail": "مسار النتيجة: {{tier}}.",
+      "copyView": "انسخ رابط العرض",
+      "exportSave": "صدّر الحفظ",
+      "hideDebug": "اخفِ التصحيح",
+      "showDebug": "اظهر التصحيح",
+      "back": "رجوع",
+      "solidarity": "تضامن",
+      "evidence": "دليل",
+      "capacity": "قدرة",
+      "relief": "إغاثة",
+      "compromiseDebt": "دين التسوية",
+      "scenarioDesk": "ركن السيناريو",
+      "brief": "ملخص",
+      "fronts": "الجبهات",
+      "charterPanel": "الميثاق",
+      "situation": "الوضع",
+      "moralCenter": "المركز الأخلاقي",
+      "specialRules": "قواعد خاصة",
+      "pressureTriggers": "إمتى الضغط بيشتغل",
+      "systemicFronts": "الجبهات المنظومية",
+      "frontsSubtitle": "ضغط، وحماية، وأثر",
+      "pressure": "ضغط",
+      "protection": "حماية",
+      "impact": "أثر",
+      "peoplesCharter": "ميثاق الناس",
+      "clausesRatified": "{{count}} بنود مُصدَّق عليها",
+      "worldTheatre": "مسرح العالم",
+      "regionalPressureBoard": "لوحة الضغط الإقليمي",
+      "displacement": "نزوح",
+      "disinfo": "تضليل",
+      "locks": "أقفال",
+      "institutions": "مؤسسات",
+      "risk": "خطر {{count}}",
+      "roundControl": "التحكم في الجولة",
+      "phaseLabel": "مرحلة {{phase}}",
+      "roundControlBody": "ما تتحركش غير لما الطاولة تبقى جاهزة. الجلسة الحالية دايمًا لها رابط مباشر.",
+      "resolveWorldPhase": "حلّ مرحلة العالم",
+      "resolveEndPhase": "حلّ مرحلة النهاية",
+      "commitCoalitionIntent": "ثبّت نوايا الائتلاف",
+      "coalitionHolds": "الائتلاف صامد",
+      "collapse": "انهيار",
+      "endingTier": "مستوى النهاية: {{tier}}",
+      "coalitionDesk": "ركن الائتلاف",
+      "intentWorkspace": "مساحة النوايا",
+      "effectTraceLog": "سجل أثر التأثيرات",
+      "actions": "أفعال",
+      "log": "السجل",
+      "seat": "المقعد {{seat}}",
+      "eventsCount": "{{count}} أحداث",
+      "everySeatReady": "كل المقاعد جاهزة. ثبّت قائمة الائتلاف علشان تحل التأثيرات.",
+      "seatsStillPlanning": "{{count}} مقعد{{plural}} لسه بيخطط. خلّي كل المقاعد جاهزة عشان تفتح تثبيت الائتلاف.",
+      "worldPhaseOutlook": "مرحلة العالم هتسحب {{count}} بطاقة أزمة{{plural}} في الشريحة {{band}}.",
+      "coalitionPhaseOutlook": "{{count}} فعل متضاف{{plural}} هيتحلوا أول ما كل المقاعد تبقى جاهزة.",
+      "compromisePhaseOutlook": "تصويت التسوية شغّال. احسم العرض علشان تكمل الجولة.",
+      "endPhaseOutlook": "حل مرحلة النهاية بيحرّك التأثيرات المؤجلة، ويفحص النتائج، ويبدأ الجولة الجاية.",
+      "winOutlook": "الائتلاف صمد. راجع نتيجة الميثاق وصدّر حالة قابلة للمشاركة.",
+      "lossOutlook": "الائتلاف انهار قبل ما الميثاق يثبت.",
+      "activeSeat": "المقعد النشط",
+      "activeSeatStatus": "المقعد {{seat}} · {{status}}",
+      "developerTools": "أدوات المطوّر",
+      "sharedResources": "الموارد المشتركة",
+      "scenarioDeskSections": "أقسام ركن السيناريو",
+      "mapLegend": "مفتاح الخريطة",
+      "openRegion": "افتح المنطقة",
+      "coalitionDeskSections": "أقسام ركن الائتلاف",
+      "coalitionActionPlanning": "تخطيط أفعال الائتلاف",
+      "recentEvents": "أحدث الأحداث",
+      "turnProgress": "تقدّم الدور"
+    },
+    "frontPatterns": {
+      "WAR": "ممرات حصار",
+      "CLIMATE": "أحزمة موجات حر",
+      "RIGHTS": "خطوط ضغط على الحقوق",
+      "SPEECH_INFO": "تشويش بث",
+      "POVERTY": "شقوق في الإمداد",
+      "ENERGY": "شبكة انتقال",
+      "CULTURE": "صدى الحكاية"
+    },
+    "actionBoard": {
+      "burnout": "استنزاف {{current}}/{{max}}",
+      "queued": "متضاف {{count}}",
+      "slotsLeft": "أماكن فاضية {{count}}",
+      "status": "الحالة {{status}}",
+      "toolkit": "عدة الشغل",
+      "breakthrough": "اختراق",
+      "target": "الهدف",
+      "queueAction": "ضيف الفعل",
+      "setReady": "علّم جاهز",
+      "unsetReady": "شيل الجاهزية",
+      "hide": "اخفِ",
+      "show": "اظهر",
+      "selectedAction": "الفعل المختار",
+      "projectedEffect": "الأثر المتوقع",
+      "availableNow": "متاح للإضافة دلوقتي.",
+      "noActionsForSeat": "مفيش أفعال متاحة للمقعد ده.",
+      "readyUnlocksDuringCoalition": "الجاهزية بتتفتح في مرحلة الائتلاف.",
+      "queueMoreBeforeReady": "ضيف {{count}} فعل{{plural}} كمان قبل ما تعلّم جاهز.",
+      "seatReadyToCommit": "المقعد جاهز يقفل ويثبت قائمة الائتلاف."
+    },
+    "regionDrawer": {
+      "focusedSeat": "المقعد اللي عليه التركيز: {{seat}}",
+      "close": "اقفل",
+      "tokensLocks": "العلامات والأقفال",
+      "vulnerabilities": "نقط الضعف",
+      "actionsTargeting": "أفعال بتستهدف {{region}}",
+      "queueForSeat": "ضيف للمقعد {{seat}}"
+    },
+    "dealModal": {
+      "title": "عرض تسوية",
+      "yes": "أيوه",
+      "no": "لأ"
+    },
+    "traceDrawer": {
+      "close": "اقفل"
+    },
+    "debug": {
+      "title": "تصحيح",
+      "seed": "البذرة",
+      "rngCalls": "مرات RNG",
+      "band": "المستوى",
+      "bandValue": "{{band}} / أزمات {{count}}",
+      "climateRoll": "رمية المناخ",
+      "na": "مش موجود",
+      "firedRules": "القواعد اللي اشتغلت",
+      "none": "مفيش",
+      "delayedEffects": "تأثيرات مؤجلة",
+      "compromiseDebt": "دين التسوية",
+      "flags": "أعلام",
+      "room": "الغرفة"
+    },
+    "phases": {
+      "WORLD": "العالم",
+      "COALITION": "الائتلاف",
+      "COMPROMISE": "التسوية",
+      "END": "النهاية",
+      "WIN": "نصر",
+      "LOSS": "خسارة"
+    },
+    "civicSpace": {
+      "OPEN": "مفتوحة",
+      "NARROWED": "ضيقة",
+      "OBSTRUCTED": "متعطلة",
+      "REPRESSED": "مقموعه",
+      "CLOSED": "مقفولة"
+    },
+    "endingTier": {
+      "Rising": "طلوع",
+      "Dignified Resistance": "مقاومة بكرامة",
+      "Endurance": "استحمال",
+      "Survival": "بقاء"
+    }
+  }
+}

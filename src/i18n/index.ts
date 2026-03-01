@@ -9,11 +9,43 @@ import type {
   ScenarioDefinition,
 } from '../../engine/index.ts';
 import enCatalog from './en.json';
+import arEGCatalog from './ar-EG.json';
 
 type Catalog = typeof enCatalog;
 type InterpolationValue = string | number;
+export type Locale = 'en' | 'ar-EG';
 
-const catalog = enCatalog;
+export const LOCALE_OPTIONS: Array<{ value: Locale; label: string }> = [
+  { value: 'en', label: 'English' },
+  { value: 'ar-EG', label: 'العربية (مصر)' },
+];
+
+const catalogs: Record<Locale, Catalog> = {
+  en: enCatalog,
+  'ar-EG': arEGCatalog,
+};
+
+let activeLocale: Locale = 'en';
+
+function getCatalog() {
+  return catalogs[activeLocale];
+}
+
+export function isLocale(value: string): value is Locale {
+  return value === 'en' || value === 'ar-EG';
+}
+
+export function getLocale(): Locale {
+  return activeLocale;
+}
+
+export function setLocale(locale: Locale) {
+  activeLocale = locale;
+}
+
+export function getLocaleDirection(locale: Locale = activeLocale): 'ltr' | 'rtl' {
+  return locale === 'ar-EG' ? 'rtl' : 'ltr';
+}
 
 function lookup(path: string): unknown {
   return path.split('.').reduce<unknown>((value, segment) => {
@@ -22,7 +54,7 @@ function lookup(path: string): unknown {
     }
 
     return undefined;
-  }, catalog);
+  }, getCatalog());
 }
 
 function interpolate(template: string, values?: Record<string, InterpolationValue>): string {

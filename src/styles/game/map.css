@@ -1,0 +1,251 @@
+.game-map-panel {
+  overflow: hidden;
+}
+
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.map-legend-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-2);
+  font-size: var(--type-1);
+}
+
+.map-legend-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.map-stage {
+  position: relative;
+  min-height: clamp(480px, 62vh, 760px);
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.04), transparent 28%),
+    linear-gradient(180deg, rgba(6, 14, 24, 0.94), rgba(9, 18, 31, 0.96));
+}
+
+.map-silhouette {
+  position: absolute;
+  inset: 8% 10% 26% 8%;
+  opacity: 0.22;
+  background:
+    radial-gradient(circle at 16% 22%, rgba(255, 255, 255, 0.18), transparent 11%),
+    radial-gradient(circle at 44% 20%, rgba(255, 255, 255, 0.14), transparent 13%),
+    radial-gradient(circle at 63% 33%, rgba(255, 255, 255, 0.16), transparent 16%),
+    radial-gradient(circle at 81% 60%, rgba(255, 255, 255, 0.16), transparent 12%);
+  filter: blur(16px);
+  pointer-events: none;
+}
+
+.map-grid {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: repeat(6, minmax(76px, 1fr));
+  grid-template-areas:
+    "north-america north-america north-america north-america . europe europe mena mena south-asia southeast-asia southeast-asia"
+    "north-america north-america north-america north-america . europe europe mena mena south-asia southeast-asia southeast-asia"
+    ". latin-america latin-america latin-america sub-saharan-africa sub-saharan-africa mena mena south-asia south-asia southeast-asia pacific-islands"
+    ". latin-america latin-america latin-america sub-saharan-africa sub-saharan-africa . . south-asia south-asia pacific-islands pacific-islands"
+    ". latin-america latin-america latin-america . . . . . . pacific-islands pacific-islands"
+    ". . . . . . . . . . . .";
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+.map-region-card {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 18px;
+  border-left: 0;
+  min-height: 172px;
+}
+
+.map-region-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid color-mix(in srgb, var(--region-accent) 28%, transparent);
+  pointer-events: none;
+}
+
+.map-region-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  color: var(--text-2);
+  font-size: var(--type-1);
+}
+
+.map-region-cta {
+  justify-self: start;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.map-footer {
+  position: absolute;
+  left: var(--space-3);
+  right: var(--space-3);
+  bottom: var(--space-3);
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.8fr);
+  gap: var(--space-2);
+  align-items: center;
+  background: rgba(9, 18, 30, 0.94);
+}
+
+.map-footer-copy {
+  display: grid;
+  gap: 10px;
+}
+
+.map-footer-actions {
+  display: grid;
+  gap: 10px;
+  justify-items: stretch;
+}
+
+.map-primary-action {
+  width: 100%;
+  min-height: 56px;
+}
+
+.phase-note,
+.ending-card {
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+}
+
+.phase-note {
+  background: rgba(243, 193, 109, 0.08);
+  color: #f9dfb4;
+  border: 1px solid rgba(243, 193, 109, 0.2);
+}
+
+.ending-card {
+  background: rgba(125, 211, 199, 0.08);
+  border: 1px solid rgba(125, 211, 199, 0.2);
+}
+
+.front-theme-war {
+  --front-accent: var(--front-war);
+}
+
+.front-theme-climate {
+  --front-accent: var(--front-climate);
+}
+
+.front-theme-rights {
+  --front-accent: var(--front-rights);
+}
+
+.front-theme-speech-info {
+  --front-accent: var(--front-speech-info);
+}
+
+.front-theme-poverty {
+  --front-accent: var(--front-poverty);
+}
+
+.front-theme-energy {
+  --front-accent: var(--front-energy);
+}
+
+.front-theme-culture {
+  --front-accent: var(--front-culture);
+}
+
+.game-front-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.game-front-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--front-accent) 18%, transparent), transparent 45%),
+    repeating-linear-gradient(
+      135deg,
+      transparent 0,
+      transparent 10px,
+      color-mix(in srgb, var(--front-accent) 16%, transparent) 10px,
+      color-mix(in srgb, var(--front-accent) 16%, transparent) 12px
+    );
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.region-theme-north-america {
+  --region-accent: var(--region-north-america);
+}
+
+.region-theme-latin-america {
+  --region-accent: var(--region-latin-america);
+}
+
+.region-theme-europe {
+  --region-accent: var(--region-europe);
+}
+
+.region-theme-mena {
+  --region-accent: var(--region-mena);
+}
+
+.region-theme-sub-saharan-africa {
+  --region-accent: var(--region-sub-saharan-africa);
+}
+
+.region-theme-south-asia {
+  --region-accent: var(--region-south-asia);
+}
+
+.region-theme-southeast-asia {
+  --region-accent: var(--region-southeast-asia);
+}
+
+.region-theme-pacific-islands {
+  --region-accent: var(--region-pacific-islands);
+}
+
+@media (max-width: 1180px) {
+  .map-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto;
+    grid-template-areas: none;
+  }
+
+  .map-region-card {
+    grid-area: auto !important;
+  }
+
+  .map-footer {
+    position: static;
+    margin: 0 var(--space-3) var(--space-3);
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .map-region-metrics {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,121 @@
+.coalition-workspace,
+.coalition-board,
+.coalition-seat-tabs,
+.coalition-queue-list,
+.coalition-action-chooser,
+.coalition-selected-panel,
+.coalition-ready-block {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.coalition-seat-tabs {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.coalition-seat-card {
+  border-radius: var(--radius-md);
+  padding: 6px;
+}
+
+.coalition-seat-trigger {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+}
+
+.coalition-board {
+  padding: var(--space-2);
+  border-radius: var(--radius-lg);
+}
+
+.coalition-burnout-meter,
+.coalition-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: var(--text-2);
+  font-size: var(--type-1);
+}
+
+.coalition-section {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line-soft);
+  background: rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+}
+
+.coalition-section-body {
+  padding: 0 var(--space-2) var(--space-2);
+}
+
+.coalition-queue-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.coalition-action-chooser {
+  grid-template-columns: 1fr;
+}
+
+.coalition-action-toggle {
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.035);
+  color: inherit;
+  display: grid;
+  gap: 6px;
+}
+
+.coalition-action-toggle span {
+  color: var(--text-3);
+  font-size: var(--type-1);
+}
+
+.coalition-action-toggle.is-active {
+  box-shadow: var(--shadow-2);
+}
+
+.coalition-action-toggle-breakthrough {
+  background: linear-gradient(135deg, rgba(243, 193, 109, 0.1), rgba(255, 173, 140, 0.07));
+  border-color: rgba(243, 193, 109, 0.24);
+}
+
+.coalition-selected-card {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.coalition-selected-card.is-breakthrough {
+  border-color: rgba(243, 193, 109, 0.24);
+}
+
+.action-target,
+.coalition-effect-preview {
+  display: grid;
+  gap: 10px;
+}
+
+.ready-button.active {
+  background: rgba(125, 211, 199, 0.16);
+}
+
+html[dir='rtl'] .coalition-seat-trigger,
+html[dir='rtl'] .coalition-action-toggle {
+  text-align: right;
+}
+
+@media (max-width: 760px) {
+  .coalition-seat-tabs {
+    grid-template-columns: 1fr;
+  }
+}

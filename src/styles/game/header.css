@@ -1,0 +1,162 @@
+.game-header-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.8fr);
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.game-header-copy {
+  display: grid;
+  gap: 12px;
+}
+
+.game-header-copy p {
+  max-width: 64ch;
+}
+
+.game-header-status {
+  align-items: stretch;
+}
+
+.game-header-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.phase-progress-nav {
+  grid-column: 1 / -1;
+}
+
+.phase-progress-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.phase-progress-step {
+  position: relative;
+}
+
+.phase-progress-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 22px;
+  left: calc(100% - 6px);
+  width: calc(100% + 12px);
+  height: 2px;
+  background: var(--line-soft);
+}
+
+.phase-progress-step-complete:not(:last-child)::after,
+.phase-progress-step-active:not(:last-child)::after {
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+}
+
+.phase-progress-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-2);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.phase-progress-index {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line-soft);
+}
+
+.phase-progress-step-active .phase-progress-index,
+.phase-progress-step-complete .phase-progress-index {
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  color: #07111d;
+}
+
+.phase-progress-step-active .phase-progress-label {
+  color: var(--text-1);
+}
+
+.game-header-kpis {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.game-kpi-chip {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line-soft);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 10px;
+  display: grid;
+  gap: 10px;
+}
+
+.game-kpi-trigger {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  text-align: left;
+}
+
+.game-kpi-trigger strong {
+  font-size: var(--type-3);
+}
+
+.game-kpi-detail {
+  display: none;
+  font-size: var(--type-1);
+}
+
+.game-kpi-chip:hover .game-kpi-detail,
+.game-kpi-chip:focus-within .game-kpi-detail,
+.game-kpi-chip.is-open .game-kpi-detail {
+  display: block;
+}
+
+.game-dev-tools {
+  grid-column: 1 / -1;
+  color: var(--text-3);
+}
+
+.game-dev-tools summary {
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+html[dir='rtl'] .game-kpi-trigger {
+  text-align: right;
+}
+
+html[dir='rtl'] .phase-progress-step:not(:last-child)::after {
+  left: auto;
+  right: calc(100% - 6px);
+}
+
+@media (max-width: 980px) {
+  .game-header-shell,
+  .game-header-kpis,
+  .phase-progress-list {
+    grid-template-columns: 1fr;
+  }
+
+  .phase-progress-step::after {
+    display: none;
+  }
+
+  .game-header-actions {
+    justify-content: flex-start;
+  }
+}
