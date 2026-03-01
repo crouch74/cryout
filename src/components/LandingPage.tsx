@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 export const LandingPage: React.FC = () => {
     const navigate = useNavigate();
+    const assetBase = `${import.meta.env.BASE_URL}assets/`;
 
     return (
         <div className="landing-page">
@@ -31,7 +32,7 @@ export const LandingPage: React.FC = () => {
                 <h2 className="section-title">Who Stands With the Earth?</h2>
                 <div className="movements-grid">
                     <div className="movement-card">
-                        <div className="movement-image" style={{ backgroundImage: "url('/assets/organizer.png')" }} />
+                        <div className="movement-image" style={{ backgroundImage: `url('${assetBase}organizer.png')` }} />
                         <div className="movement-content">
                             <h3>Community Organizers</h3>
                             <p>
@@ -42,7 +43,7 @@ export const LandingPage: React.FC = () => {
                         </div>
                     </div>
                     <div className="movement-card">
-                        <div className="movement-image" style={{ backgroundImage: "url('/assets/journalist.png')" }} />
+                        <div className="movement-image" style={{ backgroundImage: `url('${assetBase}journalist.png')` }} />
                         <div className="movement-content">
                             <h3>Investigative Journalists</h3>
                             <p>

@@ -1566,10 +1566,11 @@ body {
 
 .board-replica-grid {
   position: relative;
+  z-index: 2;
   display: block;
   min-height: 560px;
   padding: 24px;
-  overflow: hidden;
+  overflow: visible;
   border-radius: 28px;
   border: 1px solid rgba(83, 70, 56, 0.16);
   background:
@@ -1604,12 +1605,22 @@ body {
   opacity: 0.45;
 }
 
+.board-map-viewport {
+  position: absolute;
+  inset: 24px;
+  overflow: hidden;
+  border-radius: 20px;
+  z-index: 1;
+}
+
 .board-map-canvas {
   position: absolute;
   width: var(--map-canvas-width);
   height: var(--map-canvas-height);
   left: var(--map-canvas-left);
   top: var(--map-canvas-top);
+  overflow: visible;
+  z-index: 1;
 }
 
 .board-world-map {
@@ -1850,7 +1861,7 @@ body {
     inset 0 0 0 2px rgba(255, 255, 255, 0.36),
     inset 0 0 0 4px rgba(83, 70, 56, 0.08);
   transform: translate(var(--tooltip-offset-x), var(--tooltip-offset-y)) rotate(var(--territory-tilt));
-  z-index: 3;
+  z-index: 12;
   pointer-events: none;
 }
 
@@ -1977,6 +1988,8 @@ body {
 }
 
 .board-bottom-cards {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 12px;

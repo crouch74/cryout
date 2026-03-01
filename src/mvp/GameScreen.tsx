@@ -77,6 +77,7 @@ const AUTOPLAY_SPEED_DELAYS: Record<AutoPlaySpeedLevel, number> = {
   5: 320,
 };
 const TERMINAL_PHASES: Phase[] = ['WIN', 'LOSS'];
+const WORLD_MAP_ASSET_URL = `${import.meta.env.BASE_URL}assets/world-map-board.svg`;
 
 function seatTone(seat: number) {
   return `seat-${seat + 1}`;
@@ -84,6 +85,14 @@ function seatTone(seat: number) {
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
+}
+
+function parsePercent(value: string) {
+  return Number.parseFloat(value);
+}
+
+function parsePixelOffset(value: string) {
+  return Number.parseFloat(value);
 }
 
 function renderRegionStack(count: number, className: string, keyPrefix: string) {
@@ -94,29 +103,77 @@ function renderRegionStack(count: number, className: string, keyPrefix: string) 
   return <span key={keyPrefix} className={className} data-depth={Math.min(count, 3)} />;
 }
 
+const MAP_FOCUS_REFERENCE_WIDTH = 980;
+const MAP_FOCUS_REFERENCE_HEIGHT = 560;
+const MAP_FOCUS_MARGIN_X = 4.5;
+const MAP_FOCUS_MARGIN_Y = 6.5;
+const MAP_FOCUS_MIN_WIDTH = 28;
+const MAP_FOCUS_MAX_WIDTH = 74;
+const MAP_FOCUS_MIN_HEIGHT = 26;
+const MAP_FOCUS_MAX_HEIGHT = 64;
+
+function pxToPercentX(px: number) {
+  return (px / MAP_FOCUS_REFERENCE_WIDTH) * 100;
+}
+
+function pxToPercentY(px: number) {
+  return (px / MAP_FOCUS_REFERENCE_HEIGHT) * 100;
+}
+
+function estimateLabelHalfWidth(label: string) {
+  return clamp(20 + label.length * 4.2, 34, 84);
+}
+
+function getRegionMarkerBounds(regionId: RegionId) {
+  const blueprint = BOARD_REGION_BLUEPRINT[regionId];
+  const anchorX = parsePercent(blueprint.mapPoint.x);
+  const anchorY = parsePercent(blueprint.mapPoint.y);
+  const labelHalfWidth = estimateLabelHalfWidth(blueprint.shortLabel);
+  const labelHalfHeight = 12;
+  const anchorRadius = 8;
+  const clusterHalfWidth = 28;
+  const clusterBottom = 28;
+
+  let minX = anchorX - pxToPercentX(anchorRadius);
+  let maxX = anchorX + pxToPercentX(anchorRadius);
+  let minY = anchorY - pxToPercentY(anchorRadius);
+  let maxY = anchorY + pxToPercentY(clusterBottom);
+
+  for (const callout of [blueprint.desktopCallout, blueprint.compactCallout]) {
+    const labelCenterX = anchorX + pxToPercentX(parsePixelOffset(callout.labelX));
+    const labelCenterY = anchorY + pxToPercentY(parsePixelOffset(callout.labelY));
+
+    minX = Math.min(minX, labelCenterX - pxToPercentX(labelHalfWidth), anchorX - pxToPercentX(clusterHalfWidth));
+    maxX = Math.max(maxX, labelCenterX + pxToPercentX(labelHalfWidth), anchorX + pxToPercentX(clusterHalfWidth));
+    minY = Math.min(minY, labelCenterY - pxToPercentY(labelHalfHeight));
+    maxY = Math.max(maxY, labelCenterY + pxToPercentY(labelHalfHeight), anchorY + pxToPercentY(clusterBottom));
+  }
+
+  return { minX, maxX, minY, maxY };
+}
+
 function getScenarioMapFocus(regionIds: RegionId[]) {
   const focusRegions = regionIds.length > 0 ? regionIds : (Object.keys(BOARD_REGION_BLUEPRINT) as RegionId[]);
-  const points = focusRegions.map((regionId) => BOARD_REGION_BLUEPRINT[regionId].mapPoint);
-  const xs = points.map((point) => Number.parseFloat(point.x));
-  const ys = points.map((point) => Number.parseFloat(point.y));
-  const minX = Math.min(...xs);
-  const maxX = Math.max(...xs);
-  const minY = Math.min(...ys);
-  const maxY = Math.max(...ys);
-  const paddedSpan = Math.max(maxX - minX + 24, maxY - minY + 24, 36);
-  const visibleSpan = clamp(paddedSpan, 36, 68);
-  const halfSpan = visibleSpan / 2;
-  const centerX = clamp((minX + maxX) / 2, halfSpan, 100 - halfSpan);
-  const centerY = clamp((minY + maxY) / 2, halfSpan, 100 - halfSpan);
-  const left = centerX - halfSpan;
-  const top = centerY - halfSpan;
-  const scale = 100 / visibleSpan;
+  const bounds = focusRegions.map(getRegionMarkerBounds);
+  const minX = Math.min(...bounds.map((bound) => bound.minX));
+  const maxX = Math.max(...bounds.map((bound) => bound.maxX));
+  const minY = Math.min(...bounds.map((bound) => bound.minY));
+  const maxY = Math.max(...bounds.map((bound) => bound.maxY));
+
+  const visibleWidth = clamp(maxX - minX + MAP_FOCUS_MARGIN_X * 2, MAP_FOCUS_MIN_WIDTH, MAP_FOCUS_MAX_WIDTH);
+  const visibleHeight = clamp(maxY - minY + MAP_FOCUS_MARGIN_Y * 2, MAP_FOCUS_MIN_HEIGHT, MAP_FOCUS_MAX_HEIGHT);
+  const centerX = clamp((minX + maxX) / 2, visibleWidth / 2, 100 - visibleWidth / 2);
+  const centerY = clamp((minY + maxY) / 2, visibleHeight / 2, 100 - visibleHeight / 2);
+  const left = centerX - visibleWidth / 2;
+  const top = centerY - visibleHeight / 2;
+  const widthScale = 100 / visibleWidth;
+  const heightScale = 100 / visibleHeight;
 
   return {
-    width: `${scale * 100}%`,
-    height: `${scale * 100}%`,
-    left: `${left * -scale}%`,
-    top: `${top * -scale}%`,
+    width: `${widthScale * 100}%`,
+    height: `${heightScale * 100}%`,
+    left: `${left * -widthScale}%`,
+    top: `${top * -heightScale}%`,
   };
 }
 
@@ -571,118 +628,120 @@ export function GameScreen({
             </div>
 
             <div className="tabletop-map-grid board-replica-grid">
-              <div
-                className="board-map-canvas"
-                style={
-                  {
-                    '--map-canvas-width': mapFocus.width,
-                    '--map-canvas-height': mapFocus.height,
-                    '--map-canvas-left': mapFocus.left,
-                    '--map-canvas-top': mapFocus.top,
-                  } as CSSProperties
-                }
-              >
-                <img
-                  src="/assets/world-map-board.svg"
-                  alt={t('ui.game.worldMapBackground', 'Illustrated world map background')}
-                  className="board-world-map"
-                  aria-hidden="true"
-                />
-                {Object.values(state.regions).map((region) => {
-                  const blueprint = BOARD_REGION_BLUEPRINT[region.id];
-                  const totalPressure = region.tokens.displacement + region.tokens.disinfo + region.locks.length;
-                  const severity = totalPressure <= 1 ? 'low' : totalPressure <= 3 ? 'medium' : totalPressure <= 5 ? 'high' : 'critical';
-                  return (
-                    <button
-                      key={region.id}
-                      type="button"
-                      className={`tabletop-region-card region-map-marker ${viewState.regionId === region.id ? 'is-active' : ''} ${blueprint.themeClass}`}
-                      style={
-                        {
-                          '--territory-accent': blueprint.accent,
-                          '--territory-tilt': `${blueprint.tilt}deg`,
-                          '--map-point-x': blueprint.mapPoint.x,
-                          '--map-point-y': blueprint.mapPoint.y,
-                          '--label-offset-x': blueprint.desktopCallout.labelX,
-                          '--label-offset-y': blueprint.desktopCallout.labelY,
-                          '--tooltip-offset-x': blueprint.desktopCallout.tooltipX,
-                          '--tooltip-offset-y': blueprint.desktopCallout.tooltipY,
-                          '--label-offset-x-compact': blueprint.compactCallout.labelX,
-                          '--label-offset-y-compact': blueprint.compactCallout.labelY,
-                          '--tooltip-offset-x-compact': blueprint.compactCallout.tooltipX,
-                          '--tooltip-offset-y-compact': blueprint.compactCallout.tooltipY,
-                        } as CSSProperties
-                      }
-                      data-pressure={severity}
-                      onMouseEnter={() => setInspectedRegionId(region.id)}
-                      onMouseLeave={() => setInspectedRegionId((current) => (current === region.id ? null : current))}
-                      onFocus={() => setInspectedRegionId(region.id)}
-                      onBlur={() => setInspectedRegionId((current) => (current === region.id ? null : current))}
-                      onClick={() => onViewStateChange({ regionId: region.id })}
-                      aria-label={t(
-                        'ui.game.regionTokenLabel',
-                        '{{region}}. {{displacement}} displacement, {{disinfo}} disinfo, {{locks}} locks, {{institutions}} institutions.',
-                        {
-                          region: content.regions[region.id].name,
-                          displacement: region.tokens.displacement,
-                          disinfo: region.tokens.disinfo,
-                          locks: region.locks.length,
-                          institutions: region.institutions.length,
-                        },
-                      )}
-                    >
-                      <span className="region-map-anchor" aria-hidden="true" />
-                      <span className="region-map-label">{blueprint.shortLabel}</span>
-                      <span className="region-map-piece-cluster" aria-hidden="true">
-                        {renderRegionStack(region.tokens.displacement, 'region-state-stack region-state-stack-disc', `${region.id}-displacement`)}
-                        {renderRegionStack(region.tokens.disinfo, 'region-state-stack region-state-stack-cube', `${region.id}-disinfo`)}
-                        {renderRegionStack(region.locks.length, 'region-state-stack region-state-stack-lock', `${region.id}-locks`)}
-                        {renderRegionStack(region.institutions.length, 'region-state-stack region-state-stack-mat', `${region.id}-institutions`)}
-                      </span>
-                    </button>
-                  );
-                })}
-                {inspectedRegion && inspectedRegionDefinition && inspectedRegionBlueprint ? (
-                  <article
-                    className="printed-territory region-state-tooltip"
-                    style={
-                      {
-                        '--territory-accent': inspectedRegionBlueprint.accent,
-                        '--territory-tilt': `${inspectedRegionBlueprint.tilt}deg`,
-                        '--map-point-x': inspectedRegionBlueprint.mapPoint.x,
-                        '--map-point-y': inspectedRegionBlueprint.mapPoint.y,
-                        '--tooltip-offset-x': inspectedRegionBlueprint.desktopCallout.tooltipX,
-                        '--tooltip-offset-y': inspectedRegionBlueprint.desktopCallout.tooltipY,
-                        '--tooltip-offset-x-compact': inspectedRegionBlueprint.compactCallout.tooltipX,
-                        '--tooltip-offset-y-compact': inspectedRegionBlueprint.compactCallout.tooltipY,
-                      } as CSSProperties
-                    }
-                  >
-                    <div className="printed-territory-button">
-                      <span className="printed-territory-caption">{inspectedRegionBlueprint.shortLabel}</span>
-                      <strong>{inspectedRegionDefinition.name}</strong>
-                      <p>{inspectedRegionBlueprint.strapline}</p>
-                      <div className="territory-token-cluster" aria-hidden="true">
-                        <span className="token-glyph token-glyph-disc">{formatNumber(inspectedRegion.tokens.displacement)}</span>
-                        <span className="token-glyph token-glyph-cube">{formatNumber(inspectedRegion.tokens.disinfo)}</span>
-                        <span className="token-glyph token-glyph-bar">{formatNumber(inspectedRegion.locks.length)}</span>
-                        <span className="token-glyph token-glyph-mat">{formatNumber(inspectedRegion.institutions.length)}</span>
-                      </div>
-                      <div className="region-tooltip-ledger">
-                        <span>{t('ui.regionTooltip.locks', 'Locks')}: {inspectedRegion.locks.length === 0 ? t('ui.status.none', 'None') : inspectedRegion.locks.join(', ')}</span>
-                        <span>
-                          {t('ui.regionTooltip.vulnerability', 'Highest vulnerability')}: {inspectedVulnerabilities.length === 0
-                            ? t('ui.status.none', 'None')
-                            : inspectedVulnerabilities
-                              .map(([front, value]) => `${content.fronts[front as keyof CompiledContent['fronts']].name} ${value}`)
-                              .join(' • ')}
+              <div className="board-map-viewport">
+                <div
+                  className="board-map-canvas"
+                  style={
+                    {
+                      '--map-canvas-width': mapFocus.width,
+                      '--map-canvas-height': mapFocus.height,
+                      '--map-canvas-left': mapFocus.left,
+                      '--map-canvas-top': mapFocus.top,
+                    } as CSSProperties
+                  }
+                >
+                  <img
+                    src={WORLD_MAP_ASSET_URL}
+                    alt={t('ui.game.worldMapBackground', 'Illustrated world map background')}
+                    className="board-world-map"
+                    aria-hidden="true"
+                  />
+                  {Object.values(state.regions).map((region) => {
+                    const blueprint = BOARD_REGION_BLUEPRINT[region.id];
+                    const totalPressure = region.tokens.displacement + region.tokens.disinfo + region.locks.length;
+                    const severity = totalPressure <= 1 ? 'low' : totalPressure <= 3 ? 'medium' : totalPressure <= 5 ? 'high' : 'critical';
+                    return (
+                      <button
+                        key={region.id}
+                        type="button"
+                        className={`tabletop-region-card region-map-marker ${viewState.regionId === region.id ? 'is-active' : ''} ${blueprint.themeClass}`}
+                        style={
+                          {
+                            '--territory-accent': blueprint.accent,
+                            '--territory-tilt': `${blueprint.tilt}deg`,
+                            '--map-point-x': blueprint.mapPoint.x,
+                            '--map-point-y': blueprint.mapPoint.y,
+                            '--label-offset-x': blueprint.desktopCallout.labelX,
+                            '--label-offset-y': blueprint.desktopCallout.labelY,
+                            '--tooltip-offset-x': blueprint.desktopCallout.tooltipX,
+                            '--tooltip-offset-y': blueprint.desktopCallout.tooltipY,
+                            '--label-offset-x-compact': blueprint.compactCallout.labelX,
+                            '--label-offset-y-compact': blueprint.compactCallout.labelY,
+                            '--tooltip-offset-x-compact': blueprint.compactCallout.tooltipX,
+                            '--tooltip-offset-y-compact': blueprint.compactCallout.tooltipY,
+                          } as CSSProperties
+                        }
+                        data-pressure={severity}
+                        onMouseEnter={() => setInspectedRegionId(region.id)}
+                        onMouseLeave={() => setInspectedRegionId((current) => (current === region.id ? null : current))}
+                        onFocus={() => setInspectedRegionId(region.id)}
+                        onBlur={() => setInspectedRegionId((current) => (current === region.id ? null : current))}
+                        onClick={() => onViewStateChange({ regionId: region.id })}
+                        aria-label={t(
+                          'ui.game.regionTokenLabel',
+                          '{{region}}. {{displacement}} displacement, {{disinfo}} disinfo, {{locks}} locks, {{institutions}} institutions.',
+                          {
+                            region: content.regions[region.id].name,
+                            displacement: region.tokens.displacement,
+                            disinfo: region.tokens.disinfo,
+                            locks: region.locks.length,
+                            institutions: region.institutions.length,
+                          },
+                        )}
+                      >
+                        <span className="region-map-anchor" aria-hidden="true" />
+                        <span className="region-map-label">{blueprint.shortLabel}</span>
+                        <span className="region-map-piece-cluster" aria-hidden="true">
+                          {renderRegionStack(region.tokens.displacement, 'region-state-stack region-state-stack-disc', `${region.id}-displacement`)}
+                          {renderRegionStack(region.tokens.disinfo, 'region-state-stack region-state-stack-cube', `${region.id}-disinfo`)}
+                          {renderRegionStack(region.locks.length, 'region-state-stack region-state-stack-lock', `${region.id}-locks`)}
+                          {renderRegionStack(region.institutions.length, 'region-state-stack region-state-stack-mat', `${region.id}-institutions`)}
                         </span>
-                        <span>{t('ui.regionTooltip.openDetails', 'Click to open full regional dossier.')}</span>
-                      </div>
-                    </div>
-                  </article>
-                ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
+              {inspectedRegion && inspectedRegionDefinition && inspectedRegionBlueprint ? (
+                <article
+                  className="printed-territory region-state-tooltip"
+                  style={
+                    {
+                      '--territory-accent': inspectedRegionBlueprint.accent,
+                      '--territory-tilt': `${inspectedRegionBlueprint.tilt}deg`,
+                      '--map-point-x': inspectedRegionBlueprint.mapPoint.x,
+                      '--map-point-y': inspectedRegionBlueprint.mapPoint.y,
+                      '--tooltip-offset-x': inspectedRegionBlueprint.desktopCallout.tooltipX,
+                      '--tooltip-offset-y': inspectedRegionBlueprint.desktopCallout.tooltipY,
+                      '--tooltip-offset-x-compact': inspectedRegionBlueprint.compactCallout.tooltipX,
+                      '--tooltip-offset-y-compact': inspectedRegionBlueprint.compactCallout.tooltipY,
+                    } as CSSProperties
+                  }
+                >
+                  <div className="printed-territory-button">
+                    <span className="printed-territory-caption">{inspectedRegionBlueprint.shortLabel}</span>
+                    <strong>{inspectedRegionDefinition.name}</strong>
+                    <p>{inspectedRegionBlueprint.strapline}</p>
+                    <div className="territory-token-cluster" aria-hidden="true">
+                      <span className="token-glyph token-glyph-disc">{formatNumber(inspectedRegion.tokens.displacement)}</span>
+                      <span className="token-glyph token-glyph-cube">{formatNumber(inspectedRegion.tokens.disinfo)}</span>
+                      <span className="token-glyph token-glyph-bar">{formatNumber(inspectedRegion.locks.length)}</span>
+                      <span className="token-glyph token-glyph-mat">{formatNumber(inspectedRegion.institutions.length)}</span>
+                    </div>
+                    <div className="region-tooltip-ledger">
+                      <span>{t('ui.regionTooltip.locks', 'Locks')}: {inspectedRegion.locks.length === 0 ? t('ui.status.none', 'None') : inspectedRegion.locks.join(', ')}</span>
+                      <span>
+                        {t('ui.regionTooltip.vulnerability', 'Highest vulnerability')}: {inspectedVulnerabilities.length === 0
+                          ? t('ui.status.none', 'None')
+                          : inspectedVulnerabilities
+                            .map(([front, value]) => `${content.fronts[front as keyof CompiledContent['fronts']].name} ${value}`)
+                            .join(' • ')}
+                      </span>
+                      <span>{t('ui.regionTooltip.openDetails', 'Click to open full regional dossier.')}</span>
+                    </div>
+                  </div>
+                </article>
+              ) : null}
             </div>
 
             <div className={`board-bottom-cards ${useOfflineSeatOrder ? 'is-offline-turn-order' : ''}`.trim()}>

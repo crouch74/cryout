@@ -19,7 +19,7 @@ export interface BoardRegionSvgManifestEntry {
 }
 
 export const WORLD_MAP_SVG_METADATA = {
-  assetPath: '/assets/world-map-board.svg',
+  assetPath: 'assets/world-map-board.svg',
   viewBox: '30.767 241.591 784.077 458.627',
   idConvention: 'ISO 3166-1 alpha-2 where available; some multi-part countries use <g> wrappers.',
 } as const;
