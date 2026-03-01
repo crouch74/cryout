@@ -303,7 +303,7 @@ function checkPositiveVictory(state: EngineState, content: CompiledContent): boo
   revealMandates(state);
   if (failedMandates.length > 0) {
     state.phase = 'LOSS';
-    state.lossReason = `Positive victory was reached, but ${failedMandates.length} secret mandate(s) failed.`;
+    state.lossReason = `Public victory was reached, but ${failedMandates.length} solemn charge(s) failed.`;
     addSimpleEvent(state, 'mandate', 'mandate_failure', '🕳️', state.lossReason, ['mandate_failure']);
     return true;
   }
@@ -534,7 +534,7 @@ function resolveMilitaryIntervention(state: EngineState, content: CompiledConten
       {
         effectType: 'system_phase',
         status: 'executed',
-        message: `Bodies ${before} -> ${region.bodiesPresent[targetSeat]}.`,
+        message: `Comrades ${before} -> ${region.bodiesPresent[targetSeat]}.`,
         causedBy: ['intervention'],
         deltas: [createDelta('bodies', `${targetRegionId}.seat:${targetSeat}`, before, region.bodiesPresent[targetSeat])],
       },
@@ -887,8 +887,8 @@ function resolveBuildSolidarity(state: EngineState, content: CompiledContent, se
 }
 
 function resolveSmuggleEvidence(state: EngineState, content: CompiledContent, seat: number, intent: QueuedIntent): EffectTrace[] {
-  const regionId = assertExists(intent.regionId, 'Smuggle Evidence requires region.');
-  const targetSeat = assertExists(intent.targetSeat, 'Smuggle Evidence requires target seat.');
+  const regionId = assertExists(intent.regionId, 'Smuggle Witness requires region.');
+  const targetSeat = assertExists(intent.targetSeat, 'Smuggle Witness requires target seat.');
   const faction = getFaction(content, state.players[seat]);
   const transferAmount = faction.id === 'amazon_guardians' ? 1 : Math.min(2, state.players[seat].evidence);
   return applyEffects(
@@ -903,7 +903,7 @@ function resolveSmuggleEvidence(state: EngineState, content: CompiledContent, se
       sourceType: 'action',
       sourceId: 'smuggle_evidence',
       emoji: '📨',
-      message: `Seat ${seat + 1} smuggled evidence to seat ${targetSeat + 1}.`,
+      message: `Seat ${seat + 1} smuggled witness to seat ${targetSeat + 1}.`,
       causedBy: ['smuggle_evidence'],
       context: { actingSeat: seat, targetRegionId: regionId, causedBy: ['smuggle_evidence'] },
     },
@@ -924,7 +924,7 @@ function resolveInternationalOutreach(state: EngineState, content: CompiledConte
       sourceType: 'action',
       sourceId: 'international_outreach',
       emoji: '📡',
-      message: `Seat ${seat + 1} raised international pressure.`,
+      message: `Seat ${seat + 1} raised a global appeal.`,
       causedBy: ['international_outreach'],
       context: { actingSeat: seat, causedBy: ['international_outreach'] },
     },

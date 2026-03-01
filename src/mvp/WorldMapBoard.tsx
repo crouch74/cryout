@@ -90,6 +90,8 @@ export function WorldMapBoard({
         complete: state.beacons[beaconId]?.complete ?? false,
       }))
     : [];
+  const regionsAtOrBelowThreshold = regionIds.filter((regionId) => state.regions[regionId].extractionTokens <= 1).length;
+  const regionsNearBreach = regionIds.filter((regionId) => state.regions[regionId].extractionTokens >= 4).length;
   const highlightedRegionIds = useMemo(() => {
     const ids = new Set<RegionId>();
     if (cardVisible) {
@@ -275,7 +277,16 @@ export function WorldMapBoard({
         <article className="printed-meter">
           <span className="engraved-eyebrow">{t('ui.map.viewport', 'World Map')}</span>
           <strong>{t('ui.map.viewportDetail', 'SVG board restored as a live state layer')}</strong>
-          <span>{t('ui.map.viewportNote', 'Markers reflect extraction, defense, and bodies on the current six-region ruleset.')}</span>
+          <span>{t('ui.map.viewportNote', 'Markers reflect extraction, defense, and comrades on the current six-region ruleset.')}</span>
+        </article>
+        <article className="printed-meter">
+          <span className="engraved-eyebrow">{t('ui.map.legend', 'Legend')}</span>
+          <strong>{t('ui.map.legendDetail', 'Read the board at a glance')}</strong>
+          <div className="map-legend-list">
+            <span><em className="token-glyph token-glyph-disc">X</em> {t('ui.game.extraction', 'Extraction')}</span>
+            <span><em className="token-glyph token-glyph-cube">D</em> {t('ui.game.defense', 'Defense')}</span>
+            <span><em className="token-glyph token-glyph-bar">C</em> {t('ui.game.comrades', 'Comrades')}</span>
+          </div>
         </article>
         <article className="printed-meter">
           <span className="engraved-eyebrow">{t('ui.map.selectedRegion', 'Selected Region')}</span>
@@ -333,7 +344,7 @@ export function WorldMapBoard({
                   <span className="region-map-piece-cluster">
                     <span className="token-glyph token-glyph-disc">X{formatNumber(region.extractionTokens)}</span>
                     <span className="token-glyph token-glyph-cube">D{formatNumber(region.defenseRating)}</span>
-                    <span className="token-glyph token-glyph-bar">B{formatNumber(totalBodies)}</span>
+                    <span className="token-glyph token-glyph-bar">C{formatNumber(totalBodies)}</span>
                   </span>
                 </button>
               );
@@ -355,7 +366,10 @@ export function WorldMapBoard({
           >
             <div className="printed-territory-button">
               <div className="printed-territory-header">
-                <span className="printed-territory-caption">{localizeRegionField(activeRegionId, 'strapline', activeRegionMeta.strapline)}</span>
+                <div>
+                  <span className="printed-territory-caption">{t('ui.map.selectedRegion', 'Selected Region')}</span>
+                  <h3>{localizeRegionField(activeRegionId, 'name', activeRegionMeta.name)}</h3>
+                </div>
                 <button
                   type="button"
                   className="printed-territory-close"
@@ -367,8 +381,7 @@ export function WorldMapBoard({
               </div>
 
               <div className="region-state-tooltip">
-                <h3>{localizeRegionField(activeRegionId, 'name', activeRegionMeta.name)}</h3>
-                <p>{localizeRegionField(activeRegionId, 'description', activeRegionMeta.description)}</p>
+                <p>{localizeRegionField(activeRegionId, 'strapline', activeRegionMeta.strapline)}</p>
               </div>
 
               <div className="territory-token-cluster">
@@ -390,10 +403,14 @@ export function WorldMapBoard({
                     .join(', ')}
                 </span>
                 <span>
-                  {t('ui.map.bodiesPresent', 'Bodies present')}: {visibleBodies.length === 0
+                  {t('ui.map.comradesPresent', 'Comrades present')}: {visibleBodies.length === 0
                     ? t('ui.debug.none', 'none')
                     : visibleBodies.map((entry) => `${t('ui.game.seatShort', 'S')}${formatNumber(entry.seat + 1)}:${formatNumber(entry.count)}`).join(' • ')}
                 </span>
+              </div>
+
+              <div className="region-state-tooltip">
+                <p>{localizeRegionField(activeRegionId, 'description', activeRegionMeta.description)}</p>
               </div>
             </div>
           </article>
@@ -401,8 +418,20 @@ export function WorldMapBoard({
       </div>
 
       <div className="board-metric-cluster">
-        <article className="printed-meter">
+        <article className="printed-meter mission-slip" data-severity={regionsNearBreach > 0 ? 'critical' : 'steady'}>
           <span className="engraved-eyebrow">{t('ui.game.currentObjective', 'Current Objective')}</span>
+          <div className="mission-slip-head">
+            <strong>{t('ui.game.missionSlip', 'Mission Slip')}</strong>
+            <span className="urgency-badge">
+              {state.mode === 'LIBERATION'
+                ? regionsNearBreach > 0
+                  ? t('ui.game.breachNear', 'Breach Near')
+                  : t('ui.game.thresholdHeld', 'Threshold Held')
+                : activeBeaconSummary.every((beacon) => beacon.complete)
+                  ? t('ui.game.beaconsAligned', 'Beacons Aligned')
+                  : t('ui.game.openBeacons', 'Open Beacons')}
+            </span>
+          </div>
           <strong>
             {state.mode === 'LIBERATION'
               ? t('ui.mode.liberationSummary', 'End Resolution with every region at 1 Extraction or less.')
@@ -420,10 +449,18 @@ export function WorldMapBoard({
           </span>
         </article>
 
-        <article className="printed-meter">
+        <article className="printed-meter mission-slip" data-severity={activePressure}>
           <span className="engraved-eyebrow">{t('ui.game.liveBeaconStatus', 'Beacon / threshold status')}</span>
+          <div className="mission-slip-head">
+            <strong>{t('ui.game.thresholdStatus', 'Threshold Status')}</strong>
+            <span className="urgency-badge">
+              {state.mode === 'LIBERATION'
+                ? t('ui.game.regionsAboveThreshold', '{{count}} regions above threshold', { count: regionIds.length - regionsAtOrBelowThreshold })
+                : t('ui.game.openBeaconsCount', '{{count}} open beacons', { count: activeBeaconSummary.filter((beacon) => !beacon.complete).length })}
+            </span>
+          </div>
           {state.mode === 'LIBERATION' ? (
-            <span>{t('ui.mode.liberationStatus', 'Keep every theatre below the breach line while preserving all secret mandates.')}</span>
+            <span>{t('ui.mode.liberationStatus', 'Keep every theatre below the breach line while preserving all solemn charges.')}</span>
           ) : (
             <div className="region-tooltip-ledger">
               {activeBeaconSummary.map((beacon) => (

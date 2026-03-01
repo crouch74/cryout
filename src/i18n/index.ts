@@ -1,5 +1,5 @@
-import enCatalog from './en.json';
-import arEGCatalog from './ar-EG.json';
+import enCatalog from './en.json' with { type: 'json' };
+import arEGCatalog from './ar-EG.json' with { type: 'json' };
 
 type Catalog = typeof enCatalog;
 type InterpolationValue = string | number;

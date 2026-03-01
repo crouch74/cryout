@@ -103,7 +103,7 @@ test('a failed mandate voids a public liberation win', () => {
   const next = dispatchCommand(state, { type: 'ResolveResolutionPhase' }, content);
 
   assert.equal(next.phase, 'LOSS');
-  assert.match(next.lossReason ?? '', /secret mandate/i);
+  assert.match(next.lossReason ?? '', /solemn charge/i);
   assert.equal(next.players.every((player) => player.mandateRevealed), true);
 });
 

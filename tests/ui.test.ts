@@ -10,7 +10,15 @@ import {
   initializeGame,
   type EngineCommand,
 } from '../engine/index.ts';
-import { GAME_A11Y_LABELS, getActiveCoalitionSeat, getPhaseProgressSteps, getToastRole } from '../src/mvp/gameUiHelpers.ts';
+import {
+  buildIntentPreview,
+  GAME_A11Y_LABELS,
+  getActiveCoalitionSeat,
+  getPhasePresentation,
+  getPhaseProgressSteps,
+  getToastRole,
+  getTrackPresentation,
+} from '../src/mvp/gameUiHelpers.ts';
 import { DEFAULT_GAME_VIEW_STATE } from '../src/mvp/urlState.ts';
 
 const startCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
@@ -53,6 +61,28 @@ test('phase progress helper marks the active step for the cutover loop', () => {
   assert.equal(steps[1]?.step, 'COALITION');
   assert.equal(steps[1]?.state, 'active');
   assert.equal(steps[0]?.state, 'complete');
+  assert.equal(steps[1]?.verb, 'Organizes');
+});
+
+test('phase and preview helpers expose calibrated presentation copy', () => {
+  const content = compileContent(startCommand.rulesetId);
+  const state = initializeGame(startCommand);
+  state.phase = 'COALITION';
+  const phase = getPhasePresentation('COALITION');
+  const tracks = getTrackPresentation(state);
+  const preview = buildIntentPreview(
+    { actionId: 'launch_campaign', regionId: 'Congo', domainId: 'WarMachine', bodiesCommitted: 2, evidenceCommitted: 1 },
+    content.actions.launch_campaign,
+    state,
+    content,
+    0,
+  );
+
+  assert.equal(phase.verb, 'Organizes');
+  assert.equal(tracks.globalGaze.max, 20);
+  assert.equal(tracks.northernWarMachine.max, 12);
+  assert.equal(preview.some((chip) => chip.tone === 'risk'), true);
+  assert.equal(preview.some((chip) => chip.tone === 'benefit'), true);
 });
 
 test('active coalition seat advances to the first seat that still has work', () => {
@@ -72,9 +102,10 @@ test('game screen source keeps a landmark-based operator layout', () => {
   assert.match(source, /<main/);
   assert.match(source, /<aside/);
   assert.match(source, /Resolve System Phase/);
-  assert.match(source, /Secret Mandate/);
-  assert.match(source, /Queued Moves/);
-  assert.match(source, /Action Tray/);
+  assert.match(source, /Solemn Charge/);
+  assert.match(source, /Prepared Moves/);
+  assert.match(source, /Play Move/);
+  assert.match(source, /Suggested next move/);
 });
 
 test('default game view state is simplified for the cutover shell', () => {

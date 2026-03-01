@@ -39,7 +39,7 @@ export function GuidelinesScreen({ locale, onLocaleChange, onBackHome, onOpenOff
             <span className="engraved-eyebrow">{t('ui.guide.victoryModes', 'Victory Modes')}</span>
             <p>{t('ui.mode.liberation', 'Liberation')}: {t('ui.mode.liberationSummary', 'End Resolution with every region at 1 Extraction or less.')}</p>
             <p>{t('ui.mode.symbolic', 'Symbolic')}: {t('ui.mode.symbolicSummary', 'Complete all three active Beacons.')}</p>
-            <p>{t('ui.guide.beacon2', 'Every faction carries a secret mandate. Reaching the public win condition without satisfying all mandates still ends in failure.')}</p>
+            <p>{t('ui.guide.beacon2', 'Every faction carries a solemn charge. Reaching the public win condition without satisfying all charges still ends in failure.')}</p>
           </PaperSheet>
 
           <PaperSheet tone="tray">

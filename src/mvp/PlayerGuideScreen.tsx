@@ -35,22 +35,22 @@ export function PlayerGuideScreen({ locale, onLocaleChange, onBackHome }: Player
             <span className="engraved-eyebrow">{t('ui.guide.roundLoop', 'Round Loop')}</span>
             <ol>
               <li>{t('ui.guide.loop1', 'System Phase: resolve system cards, backlash, and interventions.')}</li>
-              <li>{t('ui.guide.loop2', 'Coalition Phase: queue two actions for each seat, then mark every seat ready.')}</li>
-              <li>{t('ui.guide.loop3', 'Resolution Phase: resolve queued actions in priority order, then check victory and defeat.')}</li>
+              <li>{t('ui.guide.loop2', 'Coalition Phase: queue two moves for each seat, then mark every seat ready.')}</li>
+              <li>{t('ui.guide.loop3', 'Resolution Phase: resolve the prepared moves in priority order, then check victory and defeat.')}</li>
             </ol>
           </PaperSheet>
 
           <PaperSheet tone="tray">
             <span className="engraved-eyebrow">{t('ui.guide.economy', 'Economy')}</span>
-            <p>{t('ui.guide.economy1', 'Bodies live in regions and are spent from those regions.')}</p>
-            <p>{t('ui.guide.economy2', 'Evidence belongs to seats and powers campaigns, outreach, and support work.')}</p>
+            <p>{t('ui.guide.economy1', 'Comrades live in regions and are spent from those regions.')}</p>
+            <p>{t('ui.guide.economy2', 'Witness belongs to seats and powers campaigns, appeals, and support work.')}</p>
             <p>{t('ui.guide.economy3', 'Defense is temporary and only exists to blunt the next system strike.')}</p>
           </PaperSheet>
 
           <PaperSheet tone="tray">
-            <span className="engraved-eyebrow">{t('ui.guide.beaconsMandates', 'Beacons and Mandates')}</span>
+            <span className="engraved-eyebrow">{t('ui.guide.beaconsMandates', 'Beacons and Charges')}</span>
             <p>{t('ui.guide.beacon1', 'Symbolic mode activates three Beacons from a six-card deck.')}</p>
-            <p>{t('ui.guide.beacon2', 'Every faction carries a secret mandate. Reaching the public win condition without satisfying all mandates still ends in failure.')}</p>
+            <p>{t('ui.guide.beacon2', 'Every faction carries a solemn charge. Reaching the public win condition without satisfying all charges still ends in failure.')}</p>
           </PaperSheet>
 
           <PaperSheet tone="tray">

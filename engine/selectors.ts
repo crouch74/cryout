@@ -70,9 +70,9 @@ export function getPhaseSummary(phase: Phase) {
     case 'SYSTEM':
       return 'Resolve the system strike and military backlash.';
     case 'COALITION':
-      return 'Queue two actions per seat, then mark every seat ready.';
+      return 'Queue two moves per seat, then mark every seat ready.';
     case 'RESOLUTION':
-      return 'Resolve the queued actions, then check victory and defeat.';
+      return 'Resolve the prepared moves, then check victory and defeat.';
     case 'WIN':
       return 'The coalition achieved its win condition.';
     case 'LOSS':
@@ -85,5 +85,5 @@ export function buildEffectPreview(action: ActionDefinition): string {
 }
 
 export function getPlayerStatusSummary(player: PlayerState) {
-  return `${player.evidence} Evidence • ${player.actionsRemaining} actions left`;
+  return `${player.evidence} Witness • ${player.actionsRemaining} moves left`;
 }

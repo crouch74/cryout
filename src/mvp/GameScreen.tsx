@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useMemo, useState } from 'react';
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import {
   getAvailableDomains,
   getAvailableRegions,
@@ -30,7 +30,17 @@ import {
   type Locale,
 } from '../i18n/index.ts';
 import { DebugOverlay, type AutoPlaySpeedLevel } from './DebugOverlay.tsx';
-import { GAME_A11Y_LABELS, getActiveCoalitionSeat, getPhaseProgressSteps } from './gameUiHelpers.ts';
+import {
+  buildIntentPreview,
+  GAME_A11Y_LABELS,
+  getActiveCoalitionSeat,
+  getDomainPresentation,
+  getEventSourcePresentation,
+  getPhasePresentation,
+  getPhaseProgressSteps,
+  getSeatPresentation,
+  getTrackPresentation,
+} from './gameUiHelpers.ts';
 import { LocaleSwitcher, PaperSheet, TableSurface, ThemePlate } from './tabletop.tsx';
 import type { GameViewState } from './urlState.ts';
 import { WorldMapBoard } from './WorldMapBoard.tsx';
@@ -423,6 +433,15 @@ export function GameScreen({
   const [autoPlayRunning, setAutoPlayRunning] = useState(false);
   const [autoPlayStatus, setAutoPlayStatus] = useState<string | null>(null);
   const [autoPlayTargetRound, setAutoPlayTargetRound] = useState<number | null>(null);
+  const [pulsedStats, setPulsedStats] = useState<string[]>([]);
+  const previousFocusedSnapshotRef = useRef<{
+    seat: number;
+    comrades: number;
+    witness: number;
+    moves: number;
+    globalGaze: number;
+    northernWarMachine: number;
+  } | null>(null);
 
   const draftAction = content.actions[draft.actionId];
   const availableCards = focusedPlayer.resistanceHand
@@ -438,6 +457,7 @@ export function GameScreen({
   const visibleEvents = useMemo(() => state.eventLog.slice().reverse().slice(0, 8), [state.eventLog]);
   const selectedRegionId = viewState.regionId
     ?? REGION_IDS.slice().sort((left, right) => state.regions[right].extractionTokens - state.regions[left].extractionTokens)[0];
+  const comradesTotal = getPlayerBodyTotal(state, focusedPlayer.seat);
 
   const stopAutoPlay = useEffectEvent((message: string, tone: 'info' | 'success' | 'warning' | 'error' = 'info') => {
     setAutoPlayRunning(false);
@@ -554,13 +574,96 @@ export function GameScreen({
     description: localizeBeaconField(beaconId, 'description', content.beacons[beaconId].description),
     complete: state.beacons[beaconId]?.complete ?? false,
   }));
+  const phasePresentation = getPhasePresentation(state.phase);
+  const phaseSteps = getPhaseProgressSteps(state.phase);
+  const trackPresentation = getTrackPresentation(state);
+  const seatPresentation = getSeatPresentation(focusedPlayer, content, state);
+  const seatSummaries = state.players.map((player) => getSeatPresentation(player, content, state));
+  const domainFronts = DOMAIN_IDS.map((domainId) => ({
+    id: domainId,
+    name: localizeDomainField(domainId, 'name', content.domains[domainId].name),
+    presentation: getDomainPresentation(domainId, state, content),
+    progress: state.domains[domainId].progress,
+  }));
+  const preparedMovePreview = buildIntentPreview(draft, draftAction, state, content, focusedPlayer.seat);
+  const liberationThresholdCount = REGION_IDS.filter((regionId) => state.regions[regionId].extractionTokens <= 1).length;
+  const regionsAboveThreshold = REGION_IDS.length - liberationThresholdCount;
+  const criticalRegions = REGION_IDS.filter((regionId) => state.regions[regionId].extractionTokens >= 4).length;
+  const pressureCardSeverity = criticalRegions > 0 ? 'critical' : regionsAboveThreshold > 0 ? 'danger' : 'steady';
+  const symbolicOpenBeacons = activeBeacons.filter((beacon) => !beacon.complete).length;
+  const symbolicCompleteBeacons = activeBeacons.length - symbolicOpenBeacons;
+  const ledgerGroups = useMemo(() => {
+    const groups: Array<{
+      key: string;
+      round: number;
+      phase: EngineState['phase'];
+      events: typeof visibleEvents;
+    }> = [];
+
+    for (const event of visibleEvents) {
+      const key = `${event.round}-${event.phase}`;
+      const current = groups.at(-1);
+      if (current && current.key === key) {
+        current.events.push(event);
+      } else {
+        groups.push({
+          key,
+          round: event.round,
+          phase: event.phase,
+          events: [event],
+        });
+      }
+    }
+
+    return groups;
+  }, [visibleEvents]);
+
+  useEffect(() => {
+    const snapshot = {
+      seat: focusedPlayer.seat,
+      comrades: comradesTotal,
+      witness: focusedPlayer.evidence,
+      moves: focusedPlayer.actionsRemaining,
+      globalGaze: state.globalGaze,
+      northernWarMachine: state.northernWarMachine,
+    };
+    const previous = previousFocusedSnapshotRef.current;
+    previousFocusedSnapshotRef.current = snapshot;
+
+    if (!previous || previous.seat !== snapshot.seat) {
+      return;
+    }
+
+    const changed = [
+      previous.comrades !== snapshot.comrades ? 'comrades' : null,
+      previous.witness !== snapshot.witness ? 'witness' : null,
+      previous.moves !== snapshot.moves ? 'moves' : null,
+      previous.globalGaze !== snapshot.globalGaze ? 'globalGaze' : null,
+      previous.northernWarMachine !== snapshot.northernWarMachine ? 'northernWarMachine' : null,
+    ].filter((value): value is string => Boolean(value));
+
+    if (changed.length === 0) {
+      return;
+    }
+
+    setPulsedStats(changed);
+    const timeoutId = window.setTimeout(() => setPulsedStats([]), 900);
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    comradesTotal,
+    focusedPlayer.actionsRemaining,
+    focusedPlayer.evidence,
+    focusedPlayer.seat,
+    state.globalGaze,
+    state.northernWarMachine,
+  ]);
 
   return (
     <TableSurface className="game-table">
       <header className="game-header">
-        <PaperSheet tone="board">
+        <PaperSheet tone="board" className="command-folio">
           <div className="minutes-header">
-            <div>
+            <div className="minutes-masthead">
               <span className="engraved-eyebrow">
                 {localizeRulesetField(content.ruleset.id, 'name', content.ruleset.name)}
               </span>
@@ -571,61 +674,160 @@ export function GameScreen({
                   : t('ui.mode.symbolicSummary', getVictoryModeSummary(state.mode))}
               </p>
             </div>
-            <div className="header-action-plates">
-              <LocaleSwitcher locale={locale} onChange={onLocaleChange} />
-              <ThemePlate
-                label={surface === 'room' && roomId
-                  ? t('ui.game.room', 'Room {{roomId}}', { roomId })
-                  : t('ui.game.localTable', 'Local Table')}
-                onClick={() => {}}
-              />
-              {devMode ? (
+            <div className="minutes-utility-strip">
+              <div className="header-action-plates">
+                <LocaleSwitcher locale={locale} onChange={onLocaleChange} />
                 <ThemePlate
-                  label={showDebugPanel ? t('ui.game.hideDebug', 'Hide Debug') : t('ui.game.showDebug', 'Show Debug')}
-                  active={showDebugPanel}
-                  onClick={() => setShowDebugPanel((current) => !current)}
+                  label={surface === 'room' && roomId
+                    ? t('ui.game.room', 'Room {{roomId}}', { roomId })
+                    : t('ui.game.localTable', 'Local Table')}
+                  onClick={() => {}}
                 />
-              ) : null}
-              <ThemePlate
-                label={copied ? t('ui.game.saveCopied', 'Save Copied') : t('ui.game.exportSave', 'Export Save')}
-                onClick={() => {
-                  onExportSave(serializeGame(state));
-                  setCopied(true);
-                  window.setTimeout(() => setCopied(false), 1200);
-                }}
-              />
-              <ThemePlate label={t('ui.game.backHome', 'Back Home')} onClick={onBack} />
+                {devMode ? (
+                  <ThemePlate
+                    label={showDebugPanel ? t('ui.game.hideDebug', 'Hide Debug') : t('ui.game.showDebug', 'Show Debug')}
+                    active={showDebugPanel}
+                    onClick={() => setShowDebugPanel((current) => !current)}
+                  />
+                ) : null}
+                <ThemePlate
+                  label={copied ? t('ui.game.saveCopied', 'Save Copied') : t('ui.game.exportSave', 'Export Save')}
+                  onClick={() => {
+                    onExportSave(serializeGame(state));
+                    setCopied(true);
+                    window.setTimeout(() => setCopied(false), 1200);
+                  }}
+                />
+                <ThemePlate label={t('ui.game.backHome', 'Back Home')} onClick={onBack} />
+              </div>
             </div>
+          </div>
+          <div className="command-deck">
+            <section className="priority-column priority-now">
+              <span className="engraved-eyebrow">{t('ui.game.now', 'Now')}</span>
+              <article className="priority-card phase-command-card" data-urgency="active">
+                <div className="phase-command-head">
+                  <div className="phase-identity-mark">{phasePresentation.icon}</div>
+                  <div>
+                    <span className="priority-label">{t(`ui.phases.${state.phase}`, state.phase)}</span>
+                    <strong>{phasePresentation.verb}</strong>
+                    <p>{t(`ui.phaseSummary.${state.phase}`, getPhaseSummary(state.phase))}</p>
+                  </div>
+                  <span className="urgency-badge">{phasePresentation.urgency}</span>
+                </div>
+                <div className="phase-progress" aria-label={GAME_A11Y_LABELS.phaseProgress}>
+                  {phaseSteps.map((step) => (
+                    <div key={step.step} className={`phase-chip ${step.state}`} aria-current={step.current}>
+                      <span>{step.icon}</span>
+                      <div>
+                        <strong>{t(`ui.phases.${step.step}`, step.step)}</strong>
+                        <small>{step.verb}</small>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="phase-command-foot">
+                  <p>{phasePresentation.copy}</p>
+                  <ThemePlate label={getActionButtonLabel(state.phase)} disabled={phaseActionDisabled} onClick={runPhaseAction} />
+                </div>
+              </article>
+            </section>
+
+            <section className="priority-column priority-soon">
+              <span className="engraved-eyebrow">{t('ui.game.soon', 'Soon')}</span>
+              <article className="priority-card mission-card">
+                <span className="priority-label">{t('ui.game.currentObjective', 'Current Objective')}</span>
+                <strong>
+                  {state.mode === 'LIBERATION'
+                    ? t('ui.mode.liberationSummary', getVictoryModeSummary(state.mode))
+                    : t('ui.mode.symbolicSummary', getVictoryModeSummary(state.mode))}
+                </strong>
+                <p>
+                  {state.mode === 'LIBERATION'
+                    ? t('ui.mode.liberationProgress', '{{count}} regions already sit at the threshold.', {
+                        count: liberationThresholdCount,
+                      })
+                    : t('ui.mode.symbolicProgress', '{{count}} of {{total}} active Beacons are complete.', {
+                        count: symbolicCompleteBeacons,
+                        total: activeBeacons.length,
+                      })}
+                </p>
+              </article>
+              <article className="priority-card mission-card" data-severity={pressureCardSeverity}>
+                <div className="mission-card-head">
+                  <span className="priority-label">{t('ui.game.pressureWatch', 'Pressure Watch')}</span>
+                  <span className="urgency-badge">
+                    {state.mode === 'LIBERATION'
+                      ? criticalRegions > 0
+                        ? t('ui.game.breachNear', 'Breach Near')
+                        : t('ui.game.thresholdWatch', 'Threshold Watch')
+                      : symbolicOpenBeacons === 0
+                        ? t('ui.game.beaconsAligned', 'Beacons Aligned')
+                        : t('ui.game.openBeacons', 'Open Beacons')}
+                  </span>
+                </div>
+                <strong>
+                  {state.mode === 'LIBERATION'
+                    ? t('ui.mode.liberationStatus', 'Keep every theatre below the breach line while preserving all solemn charges.')
+                    : t('ui.game.beaconPressureSummary', '{{count}} beacon objectives still need to be completed.', {
+                        count: symbolicOpenBeacons,
+                      })}
+                </strong>
+                <p>
+                  {state.mode === 'LIBERATION'
+                    ? t('ui.game.regionsAboveThreshold', '{{count}} regions remain above the liberation threshold.', {
+                        count: regionsAboveThreshold,
+                      })
+                    : activeBeacons.map((beacon) => `${beacon.complete ? '✓' : '•'} ${beacon.title}`).join(' • ')}
+                </p>
+              </article>
+            </section>
+
+            <section className="priority-column priority-reference">
+              <span className="engraved-eyebrow">{t('ui.game.reference', 'Reference')}</span>
+              <div className="reference-grid" aria-label={GAME_A11Y_LABELS.sharedResources}>
+                <article className="reference-card">
+                  <span>{t('ui.game.round', 'Round')}</span>
+                  <strong>{formatNumber(state.round)}</strong>
+                </article>
+                <article className="reference-card">
+                  <span>{t('ui.game.extractionPool', 'Extraction Pool')}</span>
+                  <strong>{formatNumber(state.extractionPool)}</strong>
+                </article>
+                {Object.values(trackPresentation).map((track) => (
+                  <article
+                    key={track.id}
+                    className={`reference-card track-reference-card ${pulsedStats.includes(track.id) ? 'is-pulsed' : ''}`.trim()}
+                    data-severity={track.severity}
+                  >
+                    <div className="track-reference-head">
+                      <span>{track.id === 'globalGaze'
+                        ? t('ui.game.globalGaze', 'Global Gaze')
+                        : t('ui.game.northernWarMachine', 'Northern War Machine')}
+                      </span>
+                      <strong>{formatNumber(track.value)} / {formatNumber(track.max)}</strong>
+                    </div>
+                    <div className="track-meter" aria-hidden="true">
+                      <div className="track-meter-fill" style={{ width: `${track.percent}%` }} />
+                      {track.thresholds.map((threshold) => (
+                        <span
+                          key={threshold}
+                          className="track-threshold"
+                          style={{ left: `${(threshold / track.max) * 100}%` }}
+                        />
+                      ))}
+                    </div>
+                    <p>{track.status}</p>
+                  </article>
+                ))}
+              </div>
+            </section>
           </div>
         </PaperSheet>
       </header>
 
       <main className="game-main-grid">
         <section className="game-board-column">
-          <PaperSheet tone="board">
-            <div className="phase-progress" aria-label={GAME_A11Y_LABELS.phaseProgress}>
-              {getPhaseProgressSteps(state.phase).map((step) => (
-                <div key={step.step} className={`phase-chip ${step.state}`} aria-current={step.current}>
-                  <span>{step.number}</span>
-                  <strong>{t(`ui.phases.${step.step}`, step.step)}</strong>
-                </div>
-              ))}
-            </div>
-            <p>{t(`ui.phaseSummary.${state.phase}`, getPhaseSummary(state.phase))}</p>
-            <div className="header-action-plates">
-              <ThemePlate label={getActionButtonLabel(state.phase)} disabled={phaseActionDisabled} onClick={runPhaseAction} />
-            </div>
-          </PaperSheet>
-
-          <PaperSheet tone="board">
-            <div className="setup-stat-ribbon" aria-label={GAME_A11Y_LABELS.sharedResources}>
-              <div><span>{t('ui.game.round', 'Round')}</span><strong>{formatNumber(state.round)}</strong></div>
-              <div><span>{t('ui.game.extractionPool', 'Extraction Pool')}</span><strong>{formatNumber(state.extractionPool)}</strong></div>
-              <div><span>{t('ui.game.globalGaze', 'Global Gaze')}</span><strong>{formatNumber(state.globalGaze)} / 20</strong></div>
-              <div><span>{t('ui.game.northernWarMachine', 'Northern War Machine')}</span><strong>{formatNumber(state.northernWarMachine)} / 12</strong></div>
-            </div>
-          </PaperSheet>
-
           <PaperSheet tone="board" className="game-map-panel">
             <WorldMapBoard
               state={state}
@@ -635,72 +837,109 @@ export function GameScreen({
             />
           </PaperSheet>
 
-          <PaperSheet tone="board">
-            <span className="engraved-eyebrow">{t('ui.game.domains', 'Domains')}</span>
-            <div className="scenario-card-grid">
-              {DOMAIN_IDS.map((domainId) => (
-                <div key={domainId} className="scenario-dossier-card is-active">
-                  <strong>{localizeDomainField(domainId, 'name', content.domains[domainId].name)}</strong>
-                  <p>{localizeDomainField(domainId, 'description', content.domains[domainId].description)}</p>
-                  <p><strong>{t('ui.game.progress', 'Progress')}:</strong> {formatNumber(state.domains[domainId].progress)} / 12</p>
-                </div>
+          <PaperSheet tone="board" className="domain-fronts-panel">
+            <div className="panel-heading">
+              <span className="engraved-eyebrow">{t('ui.game.domains', 'Domains')}</span>
+              <strong>{t('ui.game.frontsUnderStrain', 'Fronts under strain')}</strong>
+            </div>
+            <div className="domain-front-grid">
+              {domainFronts.map((domain) => (
+                <article
+                  key={domain.id}
+                  className={`domain-front-card ${domain.presentation.accentClass}`.trim()}
+                  data-severity={domain.presentation.severity}
+                >
+                  <div className="domain-front-head">
+                    <span className="domain-front-icon">{domain.presentation.icon}</span>
+                    <div>
+                      <strong>{domain.name}</strong>
+                      <p>{domain.presentation.summary}</p>
+                    </div>
+                  </div>
+                  <div className="domain-front-meter" aria-hidden="true">
+                    <div className="domain-front-meter-fill" style={{ width: `${domain.presentation.percent}%` }} />
+                  </div>
+                  <div className="domain-front-pips" aria-hidden="true">
+                    {Array.from({ length: 12 }).map((_, index) => (
+                      <span key={`${domain.id}-${index}`} className={index < domain.progress ? 'is-filled' : ''} />
+                    ))}
+                  </div>
+                  <small>{t('ui.game.progress', 'Progress')}: {formatNumber(domain.progress)} / 12</small>
+                </article>
               ))}
             </div>
           </PaperSheet>
-
-          {state.mode === 'SYMBOLIC' ? (
-            <PaperSheet tone="board">
-              <span className="engraved-eyebrow">{t('ui.game.liveBeaconStatus', 'Beacon / threshold status')}</span>
-              <div className="scenario-card-grid">
-                {activeBeacons.map((beacon) => (
-                  <div key={beacon.id} className={`scenario-dossier-card ${beacon.complete ? 'is-active' : ''}`}>
-                    <strong>{beacon.title}</strong>
-                    <p>{beacon.description}</p>
-                    <p><strong>{beacon.complete ? '✓' : '•'}</strong> {beacon.complete ? t('ui.game.beaconComplete', 'Complete') : t('ui.game.beaconOpen', 'Open')}</p>
-                  </div>
-                ))}
-              </div>
-            </PaperSheet>
-          ) : null}
         </section>
 
         <aside className="game-side-column" aria-label={GAME_A11Y_LABELS.coalitionDesk}>
-          <PaperSheet tone="tray">
+          <PaperSheet tone="tray" className={`seat-mat ${seatPresentation.ribbonClass}`.trim()} data-urgency={seatPresentation.urgency}>
             <span className="engraved-eyebrow">{t('ui.game.focusedSeat', 'Focused Seat')}</span>
             {surface === 'local' ? (
-              <div className="plate-toggle-row">
-                {state.players.map((player) => (
-                  <ThemePlate
+              <div className="seat-crest-row">
+                {state.players.map((player, index) => (
+                  <button
                     key={player.seat}
-                    label={t('ui.game.focusSeat', 'Seat {{seat}}', { seat: player.seat + 1 })}
-                    active={focusedSeat === player.seat}
+                    type="button"
+                    className={`seat-crest-button ${focusedSeat === player.seat ? 'is-active' : ''} ${seatSummaries[index]?.ribbonClass ?? ''}`.trim()}
                     onClick={() => onViewStateChange({ focusedSeat: player.seat })}
-                  />
+                  >
+                    <span>{t('ui.game.seat', 'Seat {{seat}}', { seat: player.seat + 1 })}</span>
+                    <strong>{seatSummaries[index]?.crestLabel}</strong>
+                  </button>
                 ))}
               </div>
             ) : null}
-            <h2>{localizeFactionField(faction.id, 'name', faction.name)}</h2>
+            <div className="seat-mat-header">
+              <div>
+                <h2>{localizeFactionField(faction.id, 'name', faction.name)}</h2>
+                <p>{seatPresentation.crestSubline}</p>
+              </div>
+              <span className="seat-status-tag">{seatPresentation.readiness}</span>
+            </div>
             <p>{localizeFactionField(faction.id, 'passive', faction.passive)}</p>
             <p><strong>{t('ui.game.weakness', 'Weakness')}:</strong> {localizeFactionField(faction.id, 'weakness', faction.weakness)}</p>
-            <div className="setup-stat-ribbon">
-              <div><span>{t('ui.game.bodies', 'Bodies')}</span><strong>{formatNumber(getPlayerBodyTotal(state, focusedPlayer.seat))}</strong></div>
-              <div><span>{t('ui.game.evidence', 'Evidence')}</span><strong>{formatNumber(focusedPlayer.evidence)}</strong></div>
-              <div><span>{t('ui.game.actions', 'Actions')}</span><strong>{formatNumber(focusedPlayer.actionsRemaining)}</strong></div>
+            <div className="resource-piece-row">
+              <article className={`resource-piece ${pulsedStats.includes('comrades') ? 'is-pulsed' : ''}`.trim()}>
+                <span className="resource-piece-label">{t('ui.game.comrades', 'Comrades')}</span>
+                <strong>{formatNumber(comradesTotal)}</strong>
+              </article>
+              <article className={`resource-piece ${pulsedStats.includes('witness') ? 'is-pulsed' : ''}`.trim()}>
+                <span className="resource-piece-label">{t('ui.game.witness', 'Witness')}</span>
+                <strong>{formatNumber(focusedPlayer.evidence)}</strong>
+              </article>
+              <article className={`resource-piece ${pulsedStats.includes('moves') ? 'is-pulsed' : ''}`.trim()}>
+                <span className="resource-piece-label">{t('ui.game.moves', 'Moves')}</span>
+                <strong>{formatNumber(focusedPlayer.actionsRemaining)}</strong>
+              </article>
             </div>
-            <div className="paper-form-grid">
+            <div className="solemn-charge-card">
               <div>
-                <span>{t('ui.game.secretMandate', 'Secret Mandate')}</span>
+                <span>{t('ui.game.solemnCharge', 'Solemn Charge')}</span>
                 <strong>{localizeFactionField(faction.id, 'mandateTitle', mandate.title)}</strong>
                 <p>{localizeFactionField(faction.id, 'mandateDescription', mandate.description)}</p>
               </div>
             </div>
           </PaperSheet>
 
-          <PaperSheet tone="tray">
-            <span className="engraved-eyebrow">{t('ui.game.queuedMoves', 'Queued Moves')}</span>
-            {focusedPlayer.queuedIntents.length === 0 ? <p>{t('ui.game.noQueuedMoves', 'No queued moves.')}</p> : null}
+          <PaperSheet tone="tray" className="prepared-moves-panel">
+            <span className="engraved-eyebrow">{t('ui.game.preparedMoves', 'Prepared Moves')}</span>
+            {focusedPlayer.queuedIntents.length === 0 ? (
+              <div className="prepared-moves-empty">
+                <strong>{t('ui.game.noPreparedMoves', 'No prepared moves yet.')}</strong>
+                <p>{t('ui.game.suggestedNextMove', 'Suggested next move.')}</p>
+                <div className="ghost-slot-row" aria-hidden="true">
+                  <span className="ghost-slot" />
+                  <span className="ghost-slot" />
+                </div>
+                <div className="suggestion-list">
+                  <span>{t('ui.game.organizeHomeRegion', 'Organize in home region')}</span>
+                  <span>{t('ui.game.investigateForWitness', 'Investigate for witness')}</span>
+                </div>
+              </div>
+            ) : null}
             {focusedPlayer.queuedIntents.map((intent) => (
-              <article key={`${intent.actionId}-${intent.slot}`} className="seat-placard">
+              <article key={`${intent.actionId}-${intent.slot}`} className="prepared-move-card">
+                <span className="prepared-move-order">{formatNumber(intent.slot + 1)}</span>
                 <span>{localizeActionField(intent.actionId, 'name', content.actions[intent.actionId].name)}</span>
                 <strong>
                   {intent.regionId ? localizeRegionField(intent.regionId, 'name', content.regions[intent.regionId].name) : t('ui.game.noRegion', 'No region')}
@@ -725,10 +964,13 @@ export function GameScreen({
             ) : null}
           </PaperSheet>
 
-          <PaperSheet tone="tray">
-            <span className="engraved-eyebrow">{t('ui.game.actionTray', 'Action Tray')}</span>
+          <PaperSheet tone="tray" className="move-module">
+            <div className="panel-heading">
+              <span className="engraved-eyebrow">{t('ui.game.playMove', 'Play Move')}</span>
+              <strong>{localizeActionField(draftAction.id, 'name', draftAction.name)}</strong>
+            </div>
             <label>
-              <span>{t('ui.game.action', 'Action')}</span>
+              <span>{t('ui.game.move', 'Move')}</span>
               <select
                 value={draft.actionId}
                 onChange={(event) => setDraft(createDraft(event.target.value as DraftState['actionId']))}
@@ -781,7 +1023,7 @@ export function GameScreen({
             ) : null}
             {draftAction.needsBodies ? (
               <label>
-                <span>{t('ui.game.bodiesCommitted', 'Bodies Committed')}</span>
+                <span>{t('ui.game.comradesCommitted', 'Comrades Committed')}</span>
                 <input
                   type="number"
                   min={1}
@@ -792,7 +1034,7 @@ export function GameScreen({
             ) : null}
             {draftAction.needsEvidence ? (
               <label>
-                <span>{t('ui.game.evidenceCommitted', 'Evidence Committed')}</span>
+                <span>{t('ui.game.witnessCommitted', 'Witness Committed')}</span>
                 <input
                   type="number"
                   min={0}
@@ -818,21 +1060,47 @@ export function GameScreen({
               </label>
             ) : null}
             <p>{localizeActionField(draftAction.id, 'description', draftAction.description)}</p>
+            <div className="move-preview-strip">
+              {preparedMovePreview.map((chip) => (
+                <span key={chip.id} className={`preview-chip tone-${chip.tone}`.trim()}>
+                  <strong>{chip.label}:</strong> {chip.value}
+                </span>
+              ))}
+            </div>
+            {disabledReason.disabled && disabledReason.reason ? (
+              <p className="move-module-warning">{getLocalizedDisabledReason(disabledReason.reason)}</p>
+            ) : null}
             <ThemePlate
-              label={getLocalizedDisabledReason(disabledReason.reason) ?? t('ui.game.queueMove', 'Queue Move')}
+              label={getLocalizedDisabledReason(disabledReason.reason) ?? t('ui.game.prepareMove', 'Prepare Move')}
               disabled={disabledReason.disabled}
               onClick={queueIntent}
             />
           </PaperSheet>
 
-          <PaperSheet tone="tray" aria-label={GAME_A11Y_LABELS.liveUpdates}>
+          <PaperSheet tone="tray" className="ledger-book" aria-label={GAME_A11Y_LABELS.liveUpdates}>
             <span className="engraved-eyebrow">{t('ui.game.latestLedger', 'Latest Ledger')}</span>
-            {visibleEvents.map((event) => (
-              <article key={event.seq} className="seat-placard">
-                <span>{event.emoji} {event.message}</span>
-                <strong>{t('ui.game.round', 'Round')} {formatNumber(event.round)} • {t(`ui.phases.${event.phase}`, event.phase)}</strong>
-              </article>
-            ))}
+            <div className="ledger-spine">
+              {ledgerGroups.map((group) => (
+                <section key={group.key} className="ledger-group">
+                  <header className="ledger-group-header">
+                    <strong>{t('ui.game.round', 'Round')} {formatNumber(group.round)}</strong>
+                    <span>{t(`ui.phases.${group.phase}`, group.phase)}</span>
+                  </header>
+                  {group.events.map((event) => {
+                    const source = getEventSourcePresentation(event.sourceType);
+                    return (
+                      <article key={event.seq} className="ledger-entry-card">
+                        <span className="ledger-entry-source">{source.icon}</span>
+                        <div>
+                          <span>{event.emoji} {event.message}</span>
+                          <strong>{source.label} • {event.sourceId}</strong>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </section>
+              ))}
+            </div>
           </PaperSheet>
         </aside>
       </main>
