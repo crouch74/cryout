@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.1] - 2026-03-01
+
+### Fixed
+- 🛠 Fix `NameError: name 'string' is not defined` in `backend/engine/state.py` (CharterClause model).
+
 ## [0.2.0] - 2026-03-01
 
 ### Added
