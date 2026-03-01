@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.1] - 2026-03-01
+
+### Changed
+- 🌍 Made the Landing Page generic, focusing on the broader game mechanics rather than a specific scenario.
+
+### Added
+- 📖 Created a Booklet-style 'ScenariosBooklet' UI for navigating scenarios, complete with gameplay and mechanics details.
+
 ## [0.3.0] - 2026-03-01
 
 ### Added
@@ -54,3 +62,11 @@ All notable changes to this project will be documented in this file.
 - Dice rolling animations
 - Victory/Defeat end screens with debrief prompts
 - Design system matching the artistic style guide (color palette, typography)
+
+### Added
+- MVP rules engine backend (run_world_phase, run_coalition_phase_resolution, run_end_phase).
+- Content loader to load scenarios and base game data from YAML declarative configurations.
+- Data structures for: Cards, Decks, Fronts, Roles with Burnout, Capture Engine decks.
+- UI backend integration: GameDashboard now fetches initial state and sends intents to the FastAPI backend.
+- Seeded deterministic test run capability for testing entire MVP scenario loop.
+

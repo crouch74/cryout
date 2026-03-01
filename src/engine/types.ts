@@ -161,6 +161,8 @@ export interface ScenarioMetadata {
     description: string;
     introduction: string;
     story: string;
+    gameplay?: string;
+    mechanics?: string;
     vibe_image?: string;
 }
 

@@ -1,7 +1,6 @@
-import { useReducer, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { gameReducer } from '../engine/core';
-import type { PlayerRole } from '../engine/types';
+import type { PlayerRole, GameState, Region, Front, PlayerState } from '../engine/types';
 
 // Components
 import { RegionDrawer } from './RegionDrawer';
@@ -61,7 +60,9 @@ function MeterBar({ value, type }: { value: number; type: 'pressure' | 'protecti
 export function GameDashboard() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const [state, dispatch] = useReducer(gameReducer, null);
+
+    const [state, setState] = useState<GameState | null>(null);
+    const [roomId, setRoomId] = useState<string | null>(null);
 
     const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
     const [selectedLogIdx, setSelectedLogIdx] = useState<number | null>(null);
@@ -69,33 +70,64 @@ export function GameDashboard() {
     const [activeOverlay, setActiveOverlay] = useState<string>('displacement');
 
     useEffect(() => {
-        if (!state && id) {
-            dispatch({ type: 'START_GAME', scenarioId: id });
+        if (!state && id && !roomId) {
+            // Start game on backend
+            fetch(`http://localhost:8000/rooms?scenario_id=${id}`, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    setRoomId(data.room_id);
+                    setState(data.state);
+                })
+                .catch(err => {
+                    console.error("Failed to connect to backend", err);
+                    // Fallback to mock initialization if backend is down since it's an MVP scaffold
+                    import('../engine/core').then(mod => {
+                        setState(mod.initializeGameState(id));
+                    });
+                });
         }
-    }, [id, state]);
+    }, [id, state, roomId]);
 
     if (!state) {
         return <div style={{ padding: '2rem', textAlign: 'center', color: '#fff' }}>Loading scenario...</div>;
     }
 
-    const isCoalitionReady = state.players.every(p => p.isReady);
+    const isCoalitionReady = state.players.every((p: PlayerState) => p.isReady);
 
-    const advancePhase = () => {
-        if (state.phase === "WORLD") {
-            dispatch({ type: 'RESOLVE_WORLD_PHASE' });
-        } else if (state.phase === "COALITION" && isCoalitionReady) {
-            dispatch({ type: 'RESOLVE_INTENTS' });
-        } else if (state.phase === "END") {
-            dispatch({ type: 'END_TURN' });
+    const advancePhase = async () => {
+        if (!roomId) {
+            import('../engine/core').then(() => {
+                let nextPhase = state.phase;
+                if (state.phase === "WORLD") nextPhase = "COALITION";
+                else if (state.phase === "COALITION") nextPhase = "END";
+                else nextPhase = "WORLD";
+                setState({ ...state, phase: nextPhase });
+            });
+            return;
         }
+
+        const res = await fetch(`http://localhost:8000/rooms/${roomId}/phase`, { method: 'POST' });
+        const data = await res.json();
+        if (data.state) setState(data.state);
     };
 
-    const handleCommitIntent = (playerId: number, actionId: string, targetId?: string) => {
-        dispatch({ type: 'COMMIT_INTENT', playerId, intent: { actionId, targetId } });
+    const handleCommitIntent = async (playerId: number, actionId: string, targetId?: string) => {
+        if (!roomId) return;
+        const payload = { playerId, actionId, targetId };
+        const res = await fetch(`http://localhost:8000/rooms/${roomId}/action`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.state) setState(data.state);
     };
 
-    const handleSetReady = (playerId: number, ready: boolean) => {
-        dispatch({ type: 'SET_READY', playerId, ready });
+    const handleSetReady = async (playerId: number, ready: boolean) => {
+        // Optimistic UI for ready states (backend doesn't explicitly toggle ready status uniquely yet)
+        const newState = { ...state };
+        newState.players[playerId].isReady = ready;
+        setState(newState);
     };
 
     const getTemperatureBand = (temp: number) => {
@@ -108,7 +140,6 @@ export function GameDashboard() {
     const tempInfo = getTemperatureBand(state.temperature);
 
     const resetToHome = () => {
-        dispatch({ type: 'RESET' });
         navigate('/');
     };
 
@@ -157,7 +188,7 @@ export function GameDashboard() {
                 />
 
                 <h3 style={{ marginBottom: '1rem', color: '#94a3b8', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Systemic Fronts</h3>
-                {Object.values(state.fronts).map(front => (
+                {(Object.values(state.fronts) as Front[]).map(front => (
                     <div key={front.id} className="front-card" style={{ borderLeftColor: front.pressure >= 7 ? 'var(--accent-red)' : 'var(--accent-orange)' }}>
                         <div style={{ fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.75rem' }}>{front.name}</div>
                         <MeterBar value={front.pressure} type="pressure" />
@@ -183,7 +214,7 @@ export function GameDashboard() {
                     ))}
                 </div>
 
-                {Object.values(state.regions).map(region => (
+                {(Object.values(state.regions) as Region[]).map(region => (
                     <div
                         key={region.id}
                         className="region-node"
@@ -237,14 +268,14 @@ export function GameDashboard() {
                             <div key={i} className={`player-intent-block ${p.isReady ? 'ready' : ''}`}>
                                 <ActionList
                                     player={p}
-                                    role={MOCK_ROLES[i]}
+                                    role={MOCK_ROLES[i % MOCK_ROLES.length]}
                                     gameState={state}
                                     onCommit={(actId) => handleCommitIntent(i, actId)}
                                     onReady={(ready) => handleSetReady(i, ready)}
                                 />
-                                {state.pendingIntents.filter(pi => pi.playerId === i).length > 0 && (
+                                {state.pendingIntents.filter(pi => String(pi.playerId) === String(i) || String(pi.playerId) === p.roleId).length > 0 && (
                                     <div className="intent-preview" style={{ marginTop: '0.5rem', fontSize: '0.7rem', color: 'var(--accent-blue)' }}>
-                                        Queued: {state.pendingIntents.filter(pi => pi.playerId === i).map(pi => pi.actionId).join(', ')}
+                                        {state.pendingIntents.filter((pi: any) => String(pi.playerId) === String(i) || String(pi.playerId) === p.roleId).map((pi: any) => pi.actionId).join(', ')}
                                     </div>
                                 )}
                             </div>
@@ -255,7 +286,7 @@ export function GameDashboard() {
                 <div className="log-panel" style={{ marginTop: '2rem' }}>
                     <div className="log-header">SYSTEM TRACE LOG</div>
                     <div className="log-messages">
-                        {state.logs.slice().reverse().map((log, idx) => (
+                        {state.logs.slice().reverse().map((log: any, idx: number) => (
                             <div
                                 key={idx}
                                 className="log-entry"

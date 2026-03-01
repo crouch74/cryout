@@ -11,8 +11,8 @@ export const LandingPage: React.FC = () => {
                 <div className="hero-content">
                     <h1>The Stones Are<br />Crying Out</h1>
                     <p className="subtitle">
-                        Deep in the Global South, the earth refuses to be silent.
-                        Lead a coalition of resistance against extraction, militarism, and systemic collapse.
+                        The earth refuses to be silent.
+                        Lead a global coalition of resistance against exploitation, authoritarianism, and systemic collapse.
                         Your survival depends on the truth and the legacy you leave in the stone.
                     </p>
                     <button className="btn-cta" onClick={() => navigate('/scenarios')}>
