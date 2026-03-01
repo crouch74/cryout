@@ -50,9 +50,12 @@
   width: 100%;
   height: 100%;
   min-height: 320px;
-  overflow: hidden;
+  overflow: visible;
   z-index: 1;
   border-radius: inherit;
+  --map-pin-margin-x: 72px;
+  --map-pin-margin-top: 104px;
+  --map-pin-margin-bottom: 28px;
 }
 
 .game-screen-compressed .board-world-map {
@@ -62,6 +65,7 @@
   height: 100%;
   overflow: hidden;
   pointer-events: auto;
+  z-index: 1;
 }
 
 .game-screen-compressed .board-world-map > svg,
@@ -102,13 +106,19 @@
 
 .game-screen-compressed .region-token-marker {
   position: absolute;
-  left: var(--map-point-x);
-  top: var(--map-point-y);
+  left: clamp(var(--map-pin-margin-x), var(--map-point-x), calc(100% - var(--map-pin-margin-x)));
+  top: clamp(var(--map-pin-margin-top), var(--map-point-y), calc(100% - var(--map-pin-margin-bottom)));
   transform: translate(-50%, -50%);
+  width: 1px;
+  height: 1px;
+  overflow: visible;
   background: none;
   border: 0;
   padding: 0;
   color: inherit;
+  cursor: pointer;
+  z-index: 3;
+  pointer-events: auto;
 }
 
 .game-screen-compressed .region-token-ring {
@@ -195,7 +205,7 @@ html[data-motion='reduced'] .game-screen-compressed .region-token-marker[data-re
 
 .game-screen-compressed .selected-region-popup {
   position: absolute;
-  z-index: 6;
+  z-index: 12;
   width: min(260px, calc(100% - 24px));
   padding: 0;
   pointer-events: auto;
@@ -296,6 +306,7 @@ html[data-motion='reduced'] .game-screen-compressed .region-token-marker[data-re
   background:
     radial-gradient(circle at 50% 10%, rgba(255, 249, 236, 0.26), transparent 26%),
     linear-gradient(120deg, transparent 0 26%, rgba(92, 72, 48, 0.05) 26% 27%, transparent 27% 100%);
+  z-index: 0;
 }
 
 .game-screen-compressed .board-map-shell::after {
@@ -304,6 +315,7 @@ html[data-motion='reduced'] .game-screen-compressed .region-token-marker[data-re
   border-radius: 18px;
   background: none;
   transition: box-shadow var(--motion-mid), background var(--motion-mid);
+  z-index: 0;
 }
 
 .game-screen-compressed .board-map-shell[data-war-critical='true']::after {
@@ -348,7 +360,7 @@ html[data-motion='reduced'] .game-screen-compressed .region-token-marker[data-re
 
 .game-screen-compressed .region-token-marker:hover,
 .game-screen-compressed .region-token-marker:focus-visible {
-  transform: translate(-50%, calc(-50% - 1px));
+  filter: drop-shadow(0 8px 16px rgba(52, 37, 24, 0.22));
 }
 
 .game-screen-compressed .region-token-ring {
@@ -368,7 +380,9 @@ html[data-motion='reduced'] .game-screen-compressed .region-token-marker[data-re
 }
 
 .game-screen-compressed .region-token-stack {
-  position: relative;
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
   display: grid;
   gap: 6px;
   min-width: 92px;
@@ -379,6 +393,20 @@ html[data-motion='reduced'] .game-screen-compressed .region-token-marker[data-re
     linear-gradient(180deg, rgba(255, 250, 239, 0.97), rgba(212, 194, 164, 0.86)),
     var(--theme-parchment);
   box-shadow: var(--token-shadow), var(--tile-emboss);
+  transform: translateX(-50%);
+  transition: transform var(--motion-fast), box-shadow var(--motion-fast);
+}
+
+.game-screen-compressed .region-token-stack::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 2px;
+  height: 10px;
+  background: linear-gradient(180deg, rgba(87, 66, 42, 0.6), rgba(87, 66, 42, 0.12));
+  transform: translateX(-50%);
+  pointer-events: none;
 }
 
 .game-screen-compressed .region-token-stack::before {
@@ -404,6 +432,11 @@ html[data-motion='reduced'] .game-screen-compressed .region-token-marker[data-re
   text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.game-screen-compressed .region-token-marker:hover .region-token-stack,
+.game-screen-compressed .region-token-marker:focus-visible .region-token-stack {
+  transform: translateX(-50%) translateY(-1px);
 }
 
 .game-screen-compressed .region-token-row {
@@ -453,6 +486,7 @@ html[data-motion='reduced'] .game-screen-compressed .region-token-marker[data-re
 .game-screen-compressed .board-map-hover {
   left: 18px;
   top: 18px;
+  z-index: 4;
 }
 
 .game-screen-compressed .region-hover-card,
@@ -521,18 +555,21 @@ html[data-motion='reduced'] .game-screen-compressed .region-token-marker[data-re
 .game-screen-compressed .selected-region-popup-close {
   top: 10px;
   right: 10px;
-  min-height: 30px;
-  padding: 5px 10px;
-  border-radius: 9px;
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 8px;
   border: 1px solid var(--tile-rim-dark);
   background:
     linear-gradient(180deg, rgba(255, 248, 236, 0.96), rgba(214, 190, 146, 0.86)),
     rgba(233, 212, 181, 0.96);
   box-shadow: var(--tile-shadow), var(--tile-emboss);
   color: var(--theme-ink);
-  font-family: var(--font-body);
-  font-size: 0.74rem;
+  font-family: var(--font-display);
+  font-size: 1rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  line-height: 1;
 }

@@ -154,7 +154,7 @@
 }
 
 .game-compression-layout.is-context-open {
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 20vw);
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .board-core {
@@ -201,6 +201,29 @@
 
 .board-player-strip {
   grid-column: 1 / 2;
+}
+
+.board-context-slot {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(460px, 34vw, calc(100vw - 24px));
+  min-height: 0;
+  overflow: visible;
+  z-index: 60;
+  pointer-events: none;
+}
+
+.board-context-slot::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: rgba(36, 27, 20, 0.18);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-mid);
 }
 
 .player-strip {
@@ -324,20 +347,27 @@
 }
 
 .context-panel {
-  grid-column: 2 / 3;
-  grid-row: 1 / span 2;
+  grid-column: auto;
+  grid-row: auto;
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  max-height: 100%;
   min-width: 0;
   min-height: 0;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  transform: translateX(calc(100% + 16px));
+  transform: translateX(100%);
   opacity: 0;
   pointer-events: none;
-  transition: transform 180ms ease, opacity 180ms ease;
+  transition:
+    transform var(--motion-mid),
+    opacity var(--motion-mid),
+    box-shadow var(--motion-mid);
   background: var(--context-surface);
   border: 1px solid var(--line-soft);
-  border-radius: 20px;
-  box-shadow: var(--shadow-0);
+  border-radius: 18px 0 0 18px;
+  box-shadow: -18px 0 40px rgba(41, 29, 20, 0.22);
   overflow: hidden;
 }
 
@@ -345,6 +375,14 @@
   transform: translateX(0);
   opacity: 1;
   pointer-events: auto;
+}
+
+.game-compression-layout.is-context-open .board-context-slot {
+  pointer-events: auto;
+}
+
+.game-compression-layout.is-context-open .board-context-slot::before {
+  opacity: 1;
 }
 
 .context-panel-header {
@@ -518,7 +556,7 @@
 }
 
 .game-compression-layout.is-context-closed .board-context-slot {
-  display: none;
+  pointer-events: none;
 }
 
 @media (max-width: 1280px) {
@@ -536,14 +574,9 @@
   }
 
   .context-panel {
-    position: fixed;
-    top: 84px;
-    right: 20px;
-    bottom: 112px;
-    width: min(420px, calc(100vw - 40px));
-    grid-column: auto;
-    grid-row: auto;
-    z-index: 20;
+    position: absolute;
+    inset: 0;
+    z-index: auto;
   }
 
   .player-strip-focus,
@@ -592,6 +625,15 @@
 
   .action-dock-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .board-context-slot {
+    top: 0;
+    right: 0;
+    left: auto;
+    bottom: 0;
+    width: auto;
+    max-width: min(92vw, 420px);
   }
 }
 

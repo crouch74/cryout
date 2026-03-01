@@ -59,10 +59,10 @@ export const WORLD_MAP_SVG_METADATA: {
   assetPath: '/assets/world-map-board.svg',
   sourceViewBox: '30.767 241.591 784.077 458.627',
   viewport: {
-    canvasWidth: '132%',
-    canvasHeight: '116%',
-    canvasLeft: '-16%',
-    canvasTop: '-8%',
+    canvasWidth: '120%',
+    canvasHeight: '110%',
+    canvasLeft: '-10%',
+    canvasTop: '-5%',
   },
   idConvention: 'ISO 3166-1 alpha-2 country IDs, with some multi-part countries stored as <g> wrappers.',
 };

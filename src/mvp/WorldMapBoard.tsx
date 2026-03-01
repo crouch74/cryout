@@ -40,14 +40,7 @@ function getStrainLabel(extractionTokens: number) {
 }
 
 function getMarkerPosition(regionId: RegionId, computed: { x: string; y: string } | undefined) {
-  const base = computed ?? BOARD_REGION_MAP_MANIFEST[regionId].marker;
-  if (regionId === 'Amazon') {
-    return { x: '30.2%', y: '73.1%' };
-  }
-  if (regionId === 'Andes') {
-    return { x: '23.4%', y: '79.6%' };
-  }
-  return base;
+  return computed ?? BOARD_REGION_MAP_MANIFEST[regionId].marker;
 }
 
 export function WorldMapBoard({
@@ -315,7 +308,7 @@ export function WorldMapBoard({
             {selectedRegionPopup}
             {onClearSelection ? (
               <button type="button" className="selected-region-popup-close" onClick={onClearSelection} aria-label="Close region panel">
-                Close
+                <span aria-hidden="true">×</span>
               </button>
             ) : null}
           </article>
