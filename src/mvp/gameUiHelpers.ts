@@ -123,27 +123,6 @@ export interface ActionDockItem {
   quickQueue: boolean;
 }
 
-const PHASE_PRESENTATIONS: Record<NormalizedPhase, PhasePresentation> = {
-  SYSTEM: {
-    icon: 'I',
-    verb: 'Acts',
-    urgency: 'Immediate',
-    copy: 'The system presses first. Resolve escalation before the table can answer.',
-  },
-  COALITION: {
-    icon: 'II',
-    verb: 'Organizes',
-    urgency: 'Deliberate',
-    copy: 'Lay out two prepared moves for each seat, then mark the whole coalition ready.',
-  },
-  RESOLUTION: {
-    icon: 'III',
-    verb: 'Reckoning',
-    urgency: 'Consequences',
-    copy: 'Prepared moves resolve in order. Check the board, then reckon with victory or loss.',
-  },
-};
-
 const DOMAIN_ICONS: Record<DomainId, string> = {
   WarMachine: 'Barracks',
   DyingPlanet: 'Climate',
@@ -237,7 +216,29 @@ export const GAME_A11Y_LABELS = {
 } as const;
 
 export function getPhasePresentation(phase: Phase) {
-  return PHASE_PRESENTATIONS[normalizePhase(phase)];
+  switch (normalizePhase(phase)) {
+    case 'SYSTEM':
+      return {
+        icon: 'I',
+        verb: t('ui.phases.SYSTEM_VERB', 'Acts'),
+        urgency: t('ui.game.immediate', 'Immediate'),
+        copy: t('ui.phases.SYSTEM_COPY', 'The system presses first. Resolve escalation before the table can answer.'),
+      } satisfies PhasePresentation;
+    case 'COALITION':
+      return {
+        icon: 'II',
+        verb: t('ui.phases.COALITION_VERB', 'Organizes'),
+        urgency: t('ui.game.deliberate', 'Deliberate'),
+        copy: t('ui.phases.COALITION_COPY', 'Lay out two prepared moves for each seat, then mark the whole coalition ready.'),
+      } satisfies PhasePresentation;
+    case 'RESOLUTION':
+      return {
+        icon: 'III',
+        verb: t('ui.phases.RESOLUTION_VERB', 'Reckoning'),
+        urgency: t('ui.game.consequences', 'Consequences'),
+        copy: t('ui.phases.RESOLUTION_COPY', 'Prepared moves resolve in order. Check the board, then reckon with victory or loss.'),
+      } satisfies PhasePresentation;
+  }
 }
 
 export function getPhaseProgressSteps(phase: Phase) {
@@ -246,7 +247,7 @@ export function getPhaseProgressSteps(phase: Phase) {
   const activeIndex = sequence.indexOf(normalized);
 
   return sequence.map((step, index) => {
-    const presentation = PHASE_PRESENTATIONS[step];
+    const presentation = getPhasePresentation(step);
     return {
       step,
       number: index + 1,
@@ -297,6 +298,7 @@ export function getRegionDangerState(extractionTokens: number) {
       severity: 'critical' as const,
       color: '#8B1E1E',
       pulsing: false,
+      label: t('ui.game.breachNear', 'Breach Near'),
     };
   }
 
@@ -306,6 +308,7 @@ export function getRegionDangerState(extractionTokens: number) {
       severity: 'critical' as const,
       color: '#8B1E1E',
       pulsing: true,
+      label: t('ui.game.nearCollapse', 'Near Collapse'),
     };
   }
 
@@ -315,6 +318,7 @@ export function getRegionDangerState(extractionTokens: number) {
       severity: 'danger' as const,
       color: '#D8A400',
       pulsing: false,
+      label: t('ui.game.strained', 'Strained'),
     };
   }
 
@@ -323,6 +327,7 @@ export function getRegionDangerState(extractionTokens: number) {
     severity: 'steady' as const,
     color: '#5F8D6D',
     pulsing: false,
+    label: t('ui.game.holding', 'Holding'),
   };
 }
 
@@ -342,23 +347,23 @@ function getPassiveShorthand(factionId: FactionId) {
   switch (factionId) {
     case 'congo_basin_collective':
       return {
-        primary: 'Bodies +1 at home',
-        secondary: 'Campaign +1 at home',
+        primary: t('ui.game.passiveCongoPrimary', 'Comrades +1 at home'),
+        secondary: t('ui.game.passiveCongoSecondary', 'Campaign +1 at home'),
       };
     case 'levant_sumud':
       return {
-        primary: 'Defense +1 at home',
-        secondary: 'War campaigns +1 at home',
+        primary: t('ui.game.passiveLevantPrimary', 'Defense +1 at home'),
+        secondary: t('ui.game.passiveLevantSecondary', 'War campaigns +1 at home'),
       };
     case 'mekong_echo_network':
       return {
-        primary: 'Evidence +1 at home',
-        secondary: 'Truth support +1',
+        primary: t('ui.game.passiveMekongPrimary', 'Evidence +1 at home'),
+        secondary: t('ui.game.passiveMekongSecondary', 'Truth support +1'),
       };
     case 'amazon_guardians':
       return {
-        primary: 'Campaign +1 in Amazon',
-        secondary: 'Bodies +1 at home',
+        primary: t('ui.game.passiveAmazonPrimary', 'Campaign +1 in Amazon'),
+        secondary: t('ui.game.passiveAmazonSecondary', 'Comrades +1 at home'),
       };
   }
 }
@@ -366,13 +371,13 @@ function getPassiveShorthand(factionId: FactionId) {
 function getMandateLines(factionId: FactionId) {
   switch (factionId) {
     case 'congo_basin_collective':
-      return ['Congo extraction <= 2', 'Planet ahead of War'];
+      return [t('ui.game.mandateCongoLine1', 'Congo extraction <= 2'), t('ui.game.mandateCongoLine2', 'Planet ahead of War')];
     case 'levant_sumud':
-      return ['Levant extraction <= 1', 'War Machine <= 6'];
+      return [t('ui.game.mandateLevantLine1', 'Levant extraction <= 1'), t('ui.game.mandateLevantLine2', 'War Machine <= 6')];
     case 'mekong_echo_network':
-      return ['Mekong extraction <= 1', 'Truth >= 5'];
+      return [t('ui.game.mandateMekongLine1', 'Mekong extraction <= 1'), t('ui.game.mandateMekongLine2', 'Truth >= 5')];
     case 'amazon_guardians':
-      return ['Amazon extraction <= 1', 'Fossil Grip >= 5'];
+      return [t('ui.game.mandateAmazonLine1', 'Amazon extraction <= 1'), t('ui.game.mandateAmazonLine2', 'Fossil Grip >= 5')];
   }
 }
 
@@ -422,7 +427,7 @@ export function getStatusRibbonItems(state: EngineState, content: CompiledConten
   return [
     {
       id: 'mode',
-      label: 'Mode',
+      label: t('ui.game.modeLabel', 'Mode'),
       value: state.mode === 'LIBERATION' ? t('ui.mode.liberation', 'Liberation') : t('ui.mode.symbolic', 'Symbolic'),
       icon: 'modeLiberation',
       tone: 'liberation',
@@ -432,10 +437,13 @@ export function getStatusRibbonItems(state: EngineState, content: CompiledConten
     },
     {
       id: 'objective',
-      label: 'Objective',
+      label: t('ui.game.objectiveLabel', 'Objective'),
       value: state.mode === 'LIBERATION'
-        ? '1 Extraction/region'
-        : `${state.activeBeaconIds.filter((beaconId) => state.beacons[beaconId]?.complete).length}/${state.activeBeaconIds.length} Beacons`,
+        ? t('ui.game.objectiveLiberationValue', '1 Extraction/region')
+        : t('ui.game.objectiveBeaconValue', '{{complete}}/{{total}} Beacons', {
+          complete: state.activeBeaconIds.filter((beaconId) => state.beacons[beaconId]?.complete).length,
+          total: state.activeBeaconIds.length,
+        }),
       icon: 'objective',
       tone: 'objective',
       tooltip: state.mode === 'LIBERATION'
@@ -444,35 +452,35 @@ export function getStatusRibbonItems(state: EngineState, content: CompiledConten
     },
     {
       id: 'globalGaze',
-      label: 'Gaze',
-      value: `${formatNumber(state.globalGaze)}/20`,
+      label: t('ui.game.gazeLabel', 'Gaze'),
+      value: `${formatNumber(state.globalGaze)}/${formatNumber(20)}`,
       icon: 'globalGaze',
       tone: 'gaze',
       tooltip: getTrackPresentation(state).globalGaze.status,
     },
     {
       id: 'warMachine',
-      label: 'War',
-      value: `${formatNumber(state.northernWarMachine)}/12`,
+      label: t('ui.game.warLabel', 'War'),
+      value: `${formatNumber(state.northernWarMachine)}/${formatNumber(12)}`,
       icon: 'warMachine',
       tone: 'war',
       tooltip: getTrackPresentation(state).northernWarMachine.status,
     },
     {
       id: 'extractionPool',
-      label: 'Pool',
+      label: t('ui.game.poolLabel', 'Pool'),
       value: formatNumber(state.extractionPool),
       icon: 'pool',
       tone: 'pool',
-      tooltip: 'Shared system pressure still in the extraction pool.',
+      tooltip: t('ui.game.extractionPoolTooltip', 'Shared system pressure still in the extraction pool.'),
     },
     {
       id: 'round',
-      label: 'Round',
+      label: t('ui.game.round', 'Round'),
       value: formatNumber(state.round),
       icon: 'round',
       tone: 'round',
-      tooltip: `Round ${formatNumber(state.round)} of the current struggle.`,
+      tooltip: t('ui.game.roundTooltip', 'Round {{round}} of the current struggle.', { round: state.round }),
     },
   ];
 }
@@ -481,7 +489,7 @@ export function getFrontTrackRows(state: EngineState, content: CompiledContent):
   return (Object.keys(content.domains) as DomainId[]).map((domainId) => ({
     id: domainId,
     label: localizeDomainField(domainId, 'name', content.domains[domainId].name),
-    shortLabel: DOMAIN_SHORT_LABELS[domainId],
+    shortLabel: t(`ui.domains.short.${domainId}`, DOMAIN_SHORT_LABELS[domainId]),
     icon: DOMAIN_TRACK_ICONS[domainId],
     color: DOMAIN_TRACK_COLORS[domainId],
     value: state.domains[domainId].progress,
@@ -529,14 +537,14 @@ export function getActionDockItems(state: EngineState, content: CompiledContent,
     return {
       actionId: action.id,
       label: {
-        organize: 'Organize',
-        investigate: 'Investigate',
-        launch_campaign: 'Campaign',
-        build_solidarity: 'Solidarity',
-        smuggle_evidence: 'Smuggle',
-        international_outreach: 'Outreach',
-        defend: 'Defend',
-        play_card: 'Card',
+        organize: t('ui.game.moveOrganize', 'Organize'),
+        investigate: t('ui.game.moveInvestigate', 'Investigate'),
+        launch_campaign: t('ui.game.moveCampaign', 'Campaign'),
+        build_solidarity: t('ui.game.moveSolidarity', 'Solidarity'),
+        smuggle_evidence: t('ui.game.moveSmuggle', 'Smuggle'),
+        international_outreach: t('ui.game.moveOutreach', 'Outreach'),
+        defend: t('ui.game.moveDefend', 'Defend'),
+        play_card: t('ui.game.moveCard', 'Card'),
       }[action.id],
       icon: ACTION_ICONS[action.id],
       disabled: quickQueue.disabled.disabled,
@@ -549,21 +557,21 @@ export function getActionDockItems(state: EngineState, content: CompiledContent,
 function getActionBenefitLabel(actionId: ActionDefinition['id']) {
   switch (actionId) {
     case 'organize':
-      return 'Reinforce a region with fresh comrades.';
+      return t('ui.game.comradesReinforce', 'Reinforce a region with fresh comrades.');
     case 'investigate':
-      return 'Gather witness and draw new resistance cards.';
+      return t('ui.game.comradesGather', 'Gather witness and draw new resistance cards.');
     case 'launch_campaign':
-      return 'Press a vulnerable front with coordinated force.';
+      return t('ui.game.comradesCampaign', 'Press a vulnerable front with coordinated force.');
     case 'build_solidarity':
-      return 'Advance a front without rolling.';
+      return t('ui.game.comradesSolidarity', 'Advance a front without rolling.');
     case 'smuggle_evidence':
-      return 'Move witness across seats through a corridor.';
+      return t('ui.game.comradesSmuggle', 'Move witness across seats through a corridor.');
     case 'international_outreach':
-      return 'Raise global gaze.';
+      return t('ui.game.comradesOutreach', 'Raise global gaze.');
     case 'defend':
-      return 'Set a shield against the next strike.';
+      return t('ui.game.comradesShield', 'Set a shield against the next strike.');
     case 'play_card':
-      return 'Unleash a prepared card effect now.';
+      return t('ui.game.comradesUnleash', 'Unleash a prepared card effect now.');
   }
 }
 
@@ -581,7 +589,7 @@ export function buildIntentPreview(
     chips.push({
       id: 'region',
       tone: 'detail',
-      label: 'Region',
+      label: t('ui.game.region', 'Region'),
       value: localizeRegionField(draft.regionId, 'name', content.regions[draft.regionId].name),
     });
   }
@@ -590,7 +598,7 @@ export function buildIntentPreview(
     chips.push({
       id: 'domain',
       tone: 'detail',
-      label: 'Front',
+      label: t('ui.game.front', 'Front'),
       value: localizeDomainField(draft.domainId, 'name', content.domains[draft.domainId].name),
     });
   }
@@ -599,22 +607,22 @@ export function buildIntentPreview(
     chips.push({
       id: 'cost-bodies',
       tone: 'cost',
-      label: 'Cost',
-      value: `${formatNumber(draft.bodiesCommitted ?? 1)} comrades`,
+      label: t('ui.game.cost', 'Cost'),
+      value: t('ui.game.comradesCount', '{{count}} comrades', { count: formatNumber(draft.bodiesCommitted ?? 1) }),
     });
   } else if (draft.actionId === 'build_solidarity') {
     chips.push({
       id: 'cost-bodies-fixed',
       tone: 'cost',
-      label: 'Cost',
-      value: '3 comrades',
+      label: t('ui.game.cost', 'Cost'),
+      value: t('ui.game.comradesCount', '{{count}} comrades', { count: formatNumber(3) }),
     });
   } else if (draft.actionId === 'smuggle_evidence') {
     chips.push({
       id: 'cost-smuggle',
       tone: 'cost',
-      label: 'Cost',
-      value: '1 comrade in-region',
+      label: t('ui.game.cost', 'Cost'),
+      value: t('ui.game.oneComradeInRegion', '1 comrade in-region'),
     });
   }
 
@@ -622,16 +630,16 @@ export function buildIntentPreview(
     chips.push({
       id: 'cost-evidence',
       tone: 'cost',
-      label: 'Cost',
-      value: `${formatNumber(draft.evidenceCommitted ?? 0)} witness`,
+      label: t('ui.game.cost', 'Cost'),
+      value: t('ui.game.witnessCount', '{{count}} witness', { count: formatNumber(draft.evidenceCommitted ?? 0) }),
     });
   } else if (draft.actionId === 'international_outreach') {
     const penalty = content.factions[state.players[focusedSeat].factionId].outreachPenalty;
     chips.push({
       id: 'cost-outreach',
       tone: 'cost',
-      label: 'Cost',
-      value: `${formatNumber(2 + penalty)} witness`,
+      label: t('ui.game.cost', 'Cost'),
+      value: t('ui.game.witnessCount', '{{count}} witness', { count: formatNumber(2 + penalty) }),
     });
   }
 
@@ -639,22 +647,22 @@ export function buildIntentPreview(
     chips.push({
       id: 'risk-breach',
       tone: 'risk',
-      label: 'Risk',
-      value: 'This region is already near the breach line.',
+      label: t('ui.game.risk', 'Risk'),
+      value: t('ui.game.nearBreachRisk', 'This region is already near the breach line.'),
     });
   } else if (draft.actionId === 'launch_campaign') {
     chips.push({
       id: 'risk-campaign',
       tone: 'risk',
-      label: 'Risk',
-      value: 'Campaigns can consume resources without clearing the front.',
+      label: t('ui.game.risk', 'Risk'),
+      value: t('ui.game.campaignRisk', 'Campaigns can consume resources without clearing the front.'),
     });
   }
 
   chips.push({
     id: 'benefit',
     tone: 'benefit',
-    label: 'Outcome',
+    label: t('ui.game.outcome', 'Outcome'),
     value: getActionBenefitLabel(draft.actionId),
   });
 
@@ -662,7 +670,7 @@ export function buildIntentPreview(
     chips.push({
       id: 'card',
       tone: 'detail',
-      label: 'Card',
+      label: t('ui.game.card', 'Card'),
       value: content.cards[draft.cardId]?.name ?? t('ui.game.noCard', 'No card'),
     });
   }
@@ -673,17 +681,17 @@ export function buildIntentPreview(
 export function getEventSourcePresentation(sourceType: DomainEvent['sourceType']): EventSourcePresentation {
   switch (sourceType) {
     case 'system':
-      return { icon: 'Seal', label: 'System record' };
+      return { icon: 'Seal', label: t('ui.game.sourceSystem', 'System record') };
     case 'command':
-      return { icon: 'Clerk', label: 'Table order' };
+      return { icon: 'Clerk', label: t('ui.game.sourceCommand', 'Table order') };
     case 'action':
-      return { icon: 'Move', label: 'Prepared move' };
+      return { icon: 'Move', label: t('ui.game.sourceAction', 'Prepared move') };
     case 'card':
-      return { icon: 'Card', label: 'Resistance card' };
+      return { icon: 'Card', label: t('ui.game.sourceCard', 'Resistance card') };
     case 'mandate':
-      return { icon: 'Charge', label: 'Solemn charge' };
+      return { icon: 'Charge', label: t('ui.game.sourceMandate', 'Solemn charge') };
     case 'beacon':
-      return { icon: 'Beacon', label: 'Beacon record' };
+      return { icon: 'Beacon', label: t('ui.game.sourceBeacon', 'Beacon record') };
   }
 }
 

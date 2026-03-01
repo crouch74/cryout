@@ -1,5 +1,6 @@
 import { Icon } from './icons/Icon.tsx';
 import type { PlayerStripSummary } from './gameUiHelpers.ts';
+import { formatNumber, t } from '../i18n/index.ts';
 
 export function PlayerStrip({
   summaries,
@@ -13,7 +14,7 @@ export function PlayerStrip({
   const active = summaries.find((summary) => summary.seat === focusedSeat) ?? summaries[0];
 
   return (
-    <section className="player-strip" aria-label="Focused player strip">
+    <section className="player-strip" aria-label={t('ui.game.focusedPlayerStrip', 'Focused player strip')}>
       <div className="player-strip-seats">
         {summaries.map((summary) => (
           <button
@@ -22,8 +23,8 @@ export function PlayerStrip({
             className={`player-seat-chip ${summary.seat === focusedSeat ? 'is-active' : ''}`.trim()}
             onClick={() => onSelectSeat(summary.seat)}
           >
-            <Icon type="seat" size={16} title={`Seat ${summary.seat + 1}`} />
-            <span>S{summary.seat + 1}</span>
+            <Icon type="seat" size={16} title={t('ui.game.seat', 'Seat {{seat}}', { seat: summary.seat + 1 })} />
+            <span>{t('ui.game.focusSeatAbbrev', 'S{{seat}}', { seat: summary.seat + 1 })}</span>
             <strong>{summary.shortName}</strong>
           </button>
         ))}
@@ -35,9 +36,9 @@ export function PlayerStrip({
           <span>{active.homeRegion}</span>
         </div>
         <div className="player-strip-metrics">
-          <span><Icon type="bodies" size={16} title="Bodies" /> {active.bodies}</span>
-          <span><Icon type="evidence" size={16} title="Evidence" /> {active.evidence}</span>
-          <span><Icon type="objective" size={16} title="Moves" /> {active.moves}</span>
+          <span><Icon type="bodies" size={16} title={t('ui.game.bodies', 'Comrades')} /> {formatNumber(active.bodies)}</span>
+          <span><Icon type="evidence" size={16} title={t('ui.game.evidence', 'Evidence')} /> {formatNumber(active.evidence)}</span>
+          <span><Icon type="objective" size={16} title={t('ui.game.moves', 'Moves')} /> {formatNumber(active.moves)}</span>
         </div>
         <div className="player-strip-passive">
           <span>{active.passivePrimary}</span>

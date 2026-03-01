@@ -6,9 +6,9 @@
   --space-3: 24px;
   --space-4: 32px;
   --space-5: 40px;
-  --radius-sm: 12px;
-  --radius-md: 20px;
-  --radius-lg: 28px;
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
 
   /* Typography */
   --font-display: 'Space Grotesk', sans-serif;
@@ -30,8 +30,8 @@
   --surface-glass: rgba(248, 242, 231, 0.92);
 
   /* Lines */
-  --line-soft: rgba(73, 58, 40, 0.14);
-  --line-strong: rgba(62, 45, 25, 0.24);
+  --line-soft: rgba(56, 41, 24, 0.24);
+  --line-strong: rgba(48, 33, 18, 0.4);
 
   /* Elevation Tiers */
   --tier-a-bg: #141e2e;
@@ -42,9 +42,9 @@
   --tier-c-border: rgba(255, 255, 255, 0.04);
 
   /* Shadows */
-  --shadow-0: 0 24px 60px rgba(68, 46, 24, 0.18);
-  --shadow-1: 0 12px 30px rgba(68, 46, 24, 0.14);
-  --shadow-2: 0 0 0 1px rgba(73, 58, 40, 0.14), 0 18px 36px rgba(68, 46, 24, 0.12);
+  --shadow-0: 0 24px 60px rgba(55, 37, 18, 0.2);
+  --shadow-1: 0 12px 30px rgba(55, 37, 18, 0.16);
+  --shadow-2: 0 0 0 1px rgba(58, 41, 23, 0.2), 0 18px 36px rgba(55, 37, 18, 0.16);
 
   /* Type Scale */
   --type-0: 0.75rem;
@@ -57,12 +57,16 @@
   --line-height-copy: 1.6;
 
   /* Accents — higher saturation, tactical feel */
-  --accent-primary: #c6a75e;
-  --accent-primary-strong: #9b7d3d;
-  --accent-secondary: #2d3a64;
-  --accent-danger: #a32e2e;
-  --accent-warning: #e3a008;
-  --accent-success: #5f8d6d;
+  --accent-primary: #b38a2b;
+  --accent-primary-strong: #7f6117;
+  --accent-secondary: #264d84;
+  --accent-danger: #a12e2a;
+  --accent-warning: #cfa233;
+  --accent-success: #3f6f53;
+  --accent-red: #a12e2a;
+  --accent-blue: #264d84;
+  --accent-green: #3f6f53;
+  --accent-gold: #b38a2b;
 
   /* Heat System — pressure-dependent coloring */
   --heat-low: rgba(95, 141, 109, 0.15);
@@ -97,23 +101,34 @@
   --front-energy: #1f1f1f;
   --front-culture: #6e4a7e;
 
-  --board-sand: #e8dfc9;
-  --board-ivory: #f8f2e7;
+  --board-sand: #ddd0b8;
+  --board-ivory: #f1e8d6;
   --board-ink: #1f1912;
-  --board-grain-opacity: 0.03;
+  --board-grain-opacity: 0.045;
   --board-topography-opacity: 0.08;
   --board-war-vignette: rgba(163, 46, 46, 0.12);
   --board-gaze-halo: rgba(227, 160, 8, 0.18);
-  --status-liberation: #c6a75e;
-  --status-gaze: #e3a008;
-  --status-war: #a32e2e;
-  --status-pool: #2a2a2a;
-  --status-round: #d6c7a8;
-  --map-safe: #5f8d6d;
-  --map-strained: #d8a400;
-  --map-critical: #8b1e1e;
-  --context-surface: rgba(248, 242, 231, 0.97);
-  --dock-surface: rgba(244, 235, 217, 0.96);
+  --status-liberation: var(--accent-gold);
+  --status-gaze: var(--accent-blue);
+  --status-war: var(--accent-red);
+  --status-pool: #2b2520;
+  --status-round: var(--accent-green);
+  --map-safe: var(--accent-green);
+  --map-strained: var(--accent-gold);
+  --map-critical: var(--accent-red);
+  --context-surface: rgba(242, 233, 218, 0.98);
+  --dock-surface: rgba(236, 225, 206, 0.98);
+  --panel-rim: rgba(63, 45, 25, 0.48);
+  --panel-rim-strong: rgba(48, 33, 18, 0.62);
+  --tile-rim-dark: rgba(62, 44, 24, 0.56);
+  --theme-parchment: #efe3cf;
+  --theme-ink: #24180f;
+  --theme-brass: #9f7b2d;
+  --panel-shadow: 0 22px 40px rgba(54, 37, 19, 0.18);
+  --tile-shadow: 0 8px 0 rgba(84, 62, 38, 0.2), 0 12px 18px rgba(54, 37, 19, 0.14);
+  --tile-shadow-pressed: 0 4px 0 rgba(84, 62, 38, 0.2), 0 8px 12px rgba(54, 37, 19, 0.12);
+  --tile-emboss: inset 0 1px 0 rgba(255, 248, 236, 0.72), inset 0 -2px 0 rgba(88, 66, 42, 0.08);
+  --token-shadow: 0 6px 0 rgba(77, 56, 34, 0.18), 0 12px 18px rgba(50, 35, 23, 0.2);
 
   /* Region Colors */
   --region-north-america: #5ee9d5;

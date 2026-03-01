@@ -7,7 +7,7 @@
 
 .game-header-copy {
   display: grid;
-  gap: 12px;
+  gap: 14px;
 }
 
 .game-header-copy p {
@@ -88,7 +88,7 @@
   grid-column: 1 / -1;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-2);
+  gap: calc(var(--space-2) + 2px);
 }
 
 .game-kpi-chip {
@@ -210,8 +210,8 @@ html[dir='rtl'] .phase-progress-step:not(:last-child)::after {
 .now-bar {
   display: grid;
   gap: var(--space-2);
-  margin-top: calc(-1 * var(--space-1));
-  margin-bottom: var(--space-2);
+  margin-top: 0;
+  margin-bottom: calc(var(--space-2) + 2px);
   padding: 20px 24px;
   border-left: 4px solid var(--accent-primary);
   background:
@@ -234,7 +234,7 @@ html[dir='rtl'] .phase-progress-step:not(:last-child)::after {
 }
 
 .now-bar-phase strong {
-  font-size: var(--type-3);
+  font-size: calc(var(--type-3) + 0.25rem);
   font-family: var(--font-display);
   color: var(--accent-primary);
   text-transform: uppercase;

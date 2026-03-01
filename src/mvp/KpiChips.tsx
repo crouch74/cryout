@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { t } from '../i18n/index.ts';
 
 interface KpiChipItem {
   id: string;
@@ -17,7 +18,7 @@ export function KpiChips({ items }: KpiChipsProps) {
   const [openId, setOpenId] = useState<string | null>(null);
 
   return (
-    <div className="seal-strip" role="list" aria-label="Scenario metrics">
+    <div className="seal-strip" role="list" aria-label={t('ui.game.scenarioMetrics', 'Scenario metrics')}>
       {items.map((item) => {
         const isOpen = openId === item.id;
         return (

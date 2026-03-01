@@ -30,7 +30,13 @@ function interpolate(template: string, values?: Record<string, InterpolationValu
   if (!values) {
     return template;
   }
-  return template.replace(/\{\{(\w+)\}\}/g, (_, key: string) => String(values[key] ?? ''));
+  return template.replace(/\{\{(\w+)\}\}/g, (_, key: string) => {
+    const value = values[key];
+    if (typeof value === 'number') {
+      return formatNumber(value);
+    }
+    return String(value ?? '');
+  });
 }
 
 export function isLocale(value: string): value is Locale {

@@ -124,8 +124,8 @@ export function HomeScreen({
                     <label>
                       <span>{t('ui.home.mode', 'Mode')}</span>
                       <select value={config.mode} onChange={(event) => onConfigChange({ mode: event.target.value as VictoryMode })}>
-                        <option value="LIBERATION">Liberation</option>
-                        <option value="SYMBOLIC">Symbolic</option>
+                        <option value="LIBERATION">{t('ui.mode.liberation', 'Liberation')}</option>
+                        <option value="SYMBOLIC">{t('ui.mode.symbolic', 'Symbolic')}</option>
                       </select>
                     </label>
                     <label>

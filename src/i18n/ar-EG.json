@@ -30,7 +30,13 @@
       "COALITION": "التحالف",
       "RESOLUTION": "الحسم",
       "WIN": "كسب",
-      "LOSS": "خسارة"
+      "LOSS": "خسارة",
+      "SYSTEM_VERB": "يتحرك",
+      "SYSTEM_COPY": "النظام بيضغط الأول. حل التصعيد قبل ما الطاولة تقدر ترد.",
+      "COALITION_VERB": "ينظم",
+      "COALITION_COPY": "جهز تحركين لكل مقعد، وبعدها علّم التحالف كله إنه جاهز.",
+      "RESOLUTION_VERB": "الحساب",
+      "RESOLUTION_COPY": "التحركات المترتبة بتتحل بالترتيب. شوف البورد وحاسب على المكسب والخسارة."
     },
     "home": {
       "eyebrow": "النسخة المطابقة للتصميم",
@@ -61,10 +67,11 @@
       "pasteSave": "الصق هنا نص الحفظ.",
       "regions": "المناطق",
       "threat": "التهديد",
-      "sixTheatres": "6 ساحات أساسية",
-      "threatValue": "لو الاستخراج وصل 6 في منطقة فدي خسارة"
+      "sixTheatres": "٦ ساحات أساسية",
+      "threatValue": "لو الاستخراج وصل ٦ في منطقة فدي خسارة"
     },
     "app": {
+      "contextPanel": "لوحة سياق البورد",
       "roomCredentialMissing": "بيانات الغرفة ناقصة",
       "roomCredentialMissingBody": "مفيش بيانات مقعد متسجلة للغرفة دي على المتصفح ده. ابدأ من الرئيسية أو اعمل الغرفة من جديد.",
       "roomUnavailable": "الغرفة مش متاحة",
@@ -97,7 +104,7 @@
       "victoryModes": "طرق الكسب",
       "coreThreat": "التهديد الأساسي",
       "coreThreat1": "توكنات الاستخراج هي قلب البورد. النظام بيزودها من كروت النظام والتدخل.",
-      "coreThreat2": "أي منطقة توصل 6 توكنات استخراج تعتبر خسارة فورية.",
+      "coreThreat2": "أي منطقة توصل ٦ توكنات استخراج تعتبر خسارة فورية.",
       "coreThreat3": "نظرة العالم وآلة الحرب الشمالية بيحددوا الجولة قد إيه هتبقى خطيرة.",
       "universalActions": "الأفعال المشتركة",
       "canonicalRegions": "المناطق الست",
@@ -111,13 +118,13 @@
       "economy1": "الرفاق بيبقوا موجودين جوه المناطق وبيتصرفوا من نفس المنطقة.",
       "economy2": "الشهادات تبع كل مقعد وبتشغّل الحملات والنداء والدعم.",
       "economy3": "الدفاع مؤقت ووجوده بس عشان يصد الضربة الجاية من النظام.",
-      "beacon1": "الوضع الرمزي بيفتح 3 منارات من دستة فيها 6.",
+      "beacon1": "الوضع الرمزي بيفتح ٣ منارات من دستة فيها ٦.",
       "beacon2": "كل فصيل معاه عهد سري. لو الشرط العام اتحقق والعهود ما اكتملتش، التحالف برضه بيخسر."
     },
     "mode": {
       "liberation": "نصرة",
       "symbolic": "رمزي",
-      "liberationSummary": "اخلص مرحلة الحسم وكل منطقة فيها 1 استخراج أو أقل.",
+      "liberationSummary": "اخلص مرحلة الحسم وكل منطقة فيها ١ استخراج أو أقل.",
       "symbolicSummary": "كمّل المنارات التلاتة المفتوحين.",
       "liberationProgress": "{{count}} منطقة وصلت للحد المطلوب.",
       "symbolicProgress": "{{count}} من {{total}} منارة اتكملوا.",
@@ -127,10 +134,37 @@
       "developerTools": "أدوات المطور",
       "backHome": "ارجع للرئيسية",
       "exportSave": "صدّر الحفظ",
+      "save": "حفظ",
+      "saved": "اتحفظ",
       "saveCopied": "اتنسخ الحفظ",
+      "table": "الطاولة",
       "localTable": "طاولة محلية",
       "room": "غرفة {{roomId}}",
       "round": "الجولة",
+      "roundTooltip": "الجولة {{round}} من مسار المواجهة الحالي.",
+      "boardStatusRibbon": "شريط حالة البورد",
+      "focusedPlayerStrip": "شريط اللاعب الحالي",
+      "boardContext": "سياق البورد",
+      "modeLabel": "الوضع",
+      "objectiveLabel": "الهدف",
+      "objectiveLiberationValue": "١ استخراج/منطقة",
+      "objectiveBeaconValue": "{{complete}}/{{total}} منارات",
+      "gazeLabel": "النظرة",
+      "warLabel": "الحرب",
+      "poolLabel": "المخزون",
+      "extractionPoolTooltip": "لسه فيه ضغط نظامي مشترك جوه مخزون الاستخراج.",
+      "regionSummary": "المنطقة",
+      "configureAction": "جهّز التحرك",
+      "projectedEffect": "الأثر المتوقع",
+      "scenarioMetrics": "مؤشرات السيناريو",
+      "closeRegionPanel": "اقفل لوحة المنطقة",
+      "regionExtractionTooltip": "توكنات الاستخراج: {{count}}. لو وصلت ٦ فالمنطقة بتضيع. شيلها بإطلاق حملة، وبناء تضامن، وتأثيرات المقاومة.",
+      "regionDefenseTooltip": "الدفاع: {{count}}. الدفاع بيمتص الضربة الجاية من النظام هنا وبعدها بيتشال. زوّده بفعل الدفاع وتأثيرات المساندة قبل مرحلة النظام.",
+      "regionBodiesTooltip": "الرفاق: {{count}}. الرفاق هم الناس وقوة التنظيم في المنطقة. التزم بيهم في إطلاق حملة، وبناء تضامن، والدفاع.",
+      "preparedMovesLabel": "التحركات المُعدّة",
+      "queuedCount": "{{count}} متجهزين",
+      "focusSeatAbbrev": "م{{seat}}",
+      "extractionTokens": "توكنات الاستخراج",
       "extractionPool": "مخزون الاستخراج",
       "globalGaze": "نظرة العالم",
       "northernWarMachine": "آلة الحرب الشمالية",
@@ -159,12 +193,22 @@
       "move": "التحرك",
       "playMove": "لعب التحرك",
       "region": "المنطقة",
+      "front": "الجبهة",
+      "cost": "الكلفة",
+      "risk": "المخاطرة",
+      "outcome": "النتيجة",
+      "card": "الكارت",
       "domain": "المجال",
       "targetSeat": "المقعد المستهدف",
       "bodiesCommitted": "الرفاق الملتزم بيهم",
       "evidenceCommitted": "الشهادات الملتزم بيها",
       "comradesCommitted": "الرفاق الملتزم بيهم",
       "witnessCommitted": "الشهادات الملتزم بيها",
+      "comradesCount": "{{count}} رفاق",
+      "witnessCount": "{{count}} شهادات",
+      "oneComradeInRegion": "رفيق ١ جوه المنطقة",
+      "nearBreachRisk": "المنطقة دي قريبة أصلًا من خط الاختراق.",
+      "campaignRisk": "الحملات ممكن تستهلك موارد من غير ما تفتح الجبهة.",
       "supportCard": "كارت دعم",
       "actionCard": "كارت فعل",
       "noCard": "من غير كارت",
@@ -206,7 +250,7 @@
       "selectRegion": "اختار منطقة",
       "selectDomain": "اختار مجال",
       "selectAnotherSeat": "اختار مقعد تاني",
-      "needThreeBodies": "محتاج 3 رفاق في المنطقة",
+      "needThreeBodies": "محتاج ٣ رفاق في المنطقة",
       "notEnoughEvidence": "الشهادات مش كفاية",
       "noEvidenceToMove": "مفيش شهادات تتحرك",
       "needOneBody": "محتاج رفيق واحد في المنطقة",
@@ -223,14 +267,67 @@
       "defense": "دفاع",
       "vulnerability": "الهشاشة",
       "extractionShort": "ا",
-      "defenseShort": "د"
+      "defenseShort": "د",
+      "comradesReinforce": "دعم المنطقة برفاق جدد.",
+      "comradesGather": "جمع شهادات واسحب كروت مقاومة جديدة.",
+      "comradesCampaign": "اضغط على جبهة هشّة بقوة منسقة.",
+      "comradesSolidarity": "زوّد جبهة من غير رمية زهر.",
+      "comradesSmuggle": "انقل الشهادات بين المقاعد عبر ممر.",
+      "comradesOutreach": "زوّد نظرة العالم.",
+      "comradesShield": "اعمل درع ضد الضربة الجاية.",
+      "comradesUnleash": "فك تأثير كارت جاهز دلوقتي.",
+      "ledger": "السجل",
+      "immediate": "فوري",
+      "deliberate": "مدروس",
+      "consequences": "عواقب",
+      "holding": "صامد",
+      "strained": "مجهد",
+      "nearCollapse": "قريب من الانهيار",
+      "passiveCongoPrimary": "رفاق +١ في الوطن",
+      "passiveCongoSecondary": "حملات +١ في الوطن",
+      "passiveLevantPrimary": "دفاع +١ في الوطن",
+      "passiveLevantSecondary": "حملات حرب +١ في الوطن",
+      "passiveMekongPrimary": "شهادات +١ في الوطن",
+      "passiveMekongSecondary": "دعم للحقائق +١",
+      "passiveAmazonPrimary": "حملات +١ في الأمازون",
+      "passiveAmazonSecondary": "رفاق +١ في الوطن",
+      "moveOrganize": "نظم",
+      "moveInvestigate": "حقق",
+      "moveCampaign": "حملة",
+      "moveSolidarity": "تضامن",
+      "moveSmuggle": "هـرّب",
+      "moveOutreach": "تواصل",
+      "moveDefend": "دافع",
+      "moveCard": "كارت",
+      "mandateCongoLine1": "استخراج الكونغو <= ٢",
+      "mandateCongoLine2": "الكوكب سابق الحرب",
+      "mandateLevantLine1": "استخراج الشام <= ١",
+      "mandateLevantLine2": "آلة الحرب <= ٦",
+      "mandateMekongLine1": "استخراج الميكونغ <= ١",
+      "mandateMekongLine2": "الحقيقة >= ٥",
+      "mandateAmazonLine1": "استخراج الأمازون <= ١",
+      "mandateAmazonLine2": "قبضة الوقود >= ٥",
+      "sourceSystem": "سجل النظام",
+      "sourceCommand": "أمر الطاولة",
+      "sourceAction": "تحرك مُعد",
+      "sourceCard": "كارت مقاومة",
+      "sourceMandate": "عهد سري",
+      "sourceBeacon": "سجل المنارة",
+      "intentQueuedTitle": "تم تجهيز التحرك",
+      "intentQueuedMessage": "تم إضافة {{action}} للمقعد {{seat}}.",
+      "intentRemovedTitle": "تم حذف التحرك",
+      "intentRemovedMessage": "تم الحذف من المقعد {{seat}}."
     },
-    "phaseSummary": {
-      "SYSTEM": "حل ضربة النظام والرد العسكري العنيف.",
-      "COALITION": "رتّب فعلين لكل مقعد وبعدها علّم كل المقاعد جاهزة.",
-      "RESOLUTION": "حل الأفعال المترتبة وبعدها افحص الكسب والخسارة.",
-      "WIN": "التحالف حقق شرط الكسب.",
-      "LOSS": "التحالف خسر المعركة."
+    "domains": {
+      "short": {
+        "WarMachine": "حرب",
+        "DyingPlanet": "كوكب",
+        "GildedCage": "قفص",
+        "SilencedTruth": "حقيقة",
+        "EmptyStomach": "جوع",
+        "FossilGrip": "وقود",
+        "StolenVoice": "صوت"
+      }
     },
     "map": {
       "viewport": "الخريطة العالمية",
@@ -256,11 +353,11 @@
       "running": "شغّال",
       "autoplayRounds": "عدد الجولات",
       "autoplaySpeed": "سرعة التنفيذ",
-      "autoplaySpeed1": "1 - ببطء للمراجعة",
-      "autoplaySpeed2": "2 - على مهله",
-      "autoplaySpeed3": "3 - عادي",
-      "autoplaySpeed4": "4 - سريع",
-      "autoplaySpeed5": "5 - سريع جدًا",
+      "autoplaySpeed1": "١ - ببطء للمراجعة",
+      "autoplaySpeed2": "٢ - على مهله",
+      "autoplaySpeed3": "٣ - عادي",
+      "autoplaySpeed4": "٤ - سريع",
+      "autoplaySpeed5": "٥ - سريع جدًا",
       "startAutoplay": "ابدأ التشغيل",
       "stopAutoplay": "وقف",
       "autoplayIdle": "جاهز يشغّل جولات من خلال نفس مسار اللعب العادي.",
@@ -283,6 +380,7 @@
       "room": "الغرفة",
       "autoplayArmed": "التشغيل التلقائي اتجهز لـ {{count}} جولات.",
       "autoplayInvalid": "اكتب عدد جولات صحيح قبل ما تبدأ التشغيل.",
+      "autoplayLocalOnly": "التشغيل التلقائي متاح على الطاولات المحلية بس.",
       "autoplayStopped": "التشغيل التلقائي وقف.",
       "autoplayFinished": "التشغيل التلقائي خلص عند عدد الجولات المطلوب.",
       "autoplayWon": "التشغيل التلقائي وقف عشان التحالف كسب.",
@@ -368,40 +466,40 @@
       "congo_basin_collective": {
         "name": "تجمّع حوض الكونغو",
         "shortName": "تجمّع الكونغو",
-        "passive": "التنظيم في الكونغو بيكسب +1 رفيق، وإطلاق الحملة هناك بياخد +1.",
-        "weakness": "النداء العالمي بيكلف +1 شهادة.",
+        "passive": "التنظيم في الكونغو بيكسب +١ رفيق، وإطلاق الحملة هناك بياخد +١.",
+        "weakness": "النداء العالمي بيكلف +١ شهادة.",
         "mandateTitle": "خلّي الغابة بره التسعير",
-        "mandateDescription": "اخلص والكونغو فيها 2 استخراج أو أقل، والكوكب الميت سابق آلة الحرب."
+        "mandateDescription": "اخلص والكونغو فيها ٢ استخراج أو أقل، والكوكب الميت سابق آلة الحرب."
       },
       "levant_sumud": {
         "name": "جبهة الصمود الشامي",
         "shortName": "جبهة الصمود",
-        "passive": "الدفاع في الشام بياخد +1 دفاع، والحملات ضد آلة الحرب هناك بتاخد +1.",
-        "weakness": "التنظيم بره الشام بيطلع -1 رفيق.",
+        "passive": "الدفاع في الشام بياخد +١ دفاع، والحملات ضد آلة الحرب هناك بتاخد +١.",
+        "weakness": "التنظيم بره الشام بيطلع -١ رفيق.",
         "mandateTitle": "ارفض الحصار المُدار",
-        "mandateDescription": "اخلص والشام فيها 1 استخراج أو أقل، وآلة الحرب الشمالية 6 أو أقل."
+        "mandateDescription": "اخلص والشام فيها ١ استخراج أو أقل، وآلة الحرب الشمالية ٦ أو أقل."
       },
       "mekong_echo_network": {
         "name": "شبكة صدى الميكونغ",
         "shortName": "شبكة الصدى",
-        "passive": "التحقيق في الميكونغ بيدي +1 شهادة، وكروت الدعم بتاخد +1 في حملات الحقيقة المخنوقة.",
-        "weakness": "الدفاع بره الميكونغ بيحط 1 دفاع أقل.",
+        "passive": "التحقيق في الميكونغ بيدي +١ شهادة، وكروت الدعم بتاخد +١ في حملات الحقيقة المخنوقة.",
+        "weakness": "الدفاع بره الميكونغ بيحط ١ دفاع أقل.",
         "mandateTitle": "خلّي النهر يتكلم",
-        "mandateDescription": "اخلص والميكونغ فيها 1 استخراج أو أقل، والحقيقة المخنوقة 5 أو أكتر."
+        "mandateDescription": "اخلص والميكونغ فيها ١ استخراج أو أقل، والحقيقة المخنوقة ٥ أو أكتر."
       },
       "amazon_guardians": {
         "name": "حماة الأمازون",
         "shortName": "الحماة",
-        "passive": "الحملات في الأمازون أو على الكوكب الميت بتاخد +1، والتنظيم في الأمازون بيكسب +1 رفيق.",
+        "passive": "الحملات في الأمازون أو على الكوكب الميت بتاخد +١، والتنظيم في الأمازون بيكسب +١ رفيق.",
         "weakness": "تهريب الشهادات ينقل شهادة واحدة بس كل مرة.",
         "mandateTitle": "مفيش منطقة تضحية خضرا",
-        "mandateDescription": "اخلص والأمازون فيها 1 استخراج أو أقل، وقبضة الوقود 5 تقدّم أو أكتر."
+        "mandateDescription": "اخلص والأمازون فيها ١ استخراج أو أقل، وقبضة الوقود ٥ تقدّم أو أكتر."
       }
     },
     "actions": {
       "organize": {
         "name": "تنظيم",
-        "description": "نزّل 1d6 رفاق في منطقة، ومعاها بونص لو الاستخراج متجذر فيها."
+        "description": "نزّل ١d٦ رفاق في منطقة، ومعاها بونص لو الاستخراج متجذر فيها."
       },
       "investigate": {
         "name": "تحقيق",
@@ -409,11 +507,11 @@
       },
       "launch_campaign": {
         "name": "إطلاق حملة",
-        "description": "التزم برفاق وشهادات في حملة 2d6 ضد مجال جوه منطقة."
+        "description": "التزم برفاق وشهادات في حملة ٢d٦ ضد مجال جوه منطقة."
       },
       "build_solidarity": {
         "name": "بناء تضامن",
-        "description": "اصرف 3 رفاق من نفس المنطقة عشان تزود مجال من غير رمية."
+        "description": "اصرف ٣ رفاق من نفس المنطقة عشان تزود مجال من غير رمية."
       },
       "smuggle_evidence": {
         "name": "تهريب الشهادات",
@@ -435,77 +533,77 @@
     "beacons": {
       "beacon_levant_corridor": {
         "title": "ممر الرجوع",
-        "description": "الشام فيها 1 استخراج أو أقل ونظرة العالم 10 أو أكتر."
+        "description": "الشام فيها ١ استخراج أو أقل ونظرة العالم ١٠ أو أكتر."
       },
       "beacon_mekong_testimony": {
         "title": "شهادة النهر",
-        "description": "الميكونغ فيها 1 استخراج أو أقل والحقيقة المخنوقة 5 أو أكتر."
+        "description": "الميكونغ فيها ١ استخراج أو أقل والحقيقة المخنوقة ٥ أو أكتر."
       },
       "beacon_amazon_sovereignty": {
         "title": "سيادة الغابة",
-        "description": "الأمازون فيها 1 استخراج أو أقل والكوكب الميت 6 أو أكتر."
+        "description": "الأمازون فيها ١ استخراج أو أقل والكوكب الميت ٦ أو أكتر."
       },
       "beacon_congo_commons": {
         "title": "مشاع النحاس",
-        "description": "الكونغو فيها 1 استخراج أو أقل وقبضة الوقود 5 أو أكتر."
+        "description": "الكونغو فيها ١ استخراج أو أقل وقبضة الوقود ٥ أو أكتر."
       },
       "beacon_sahel_bread_pact": {
         "title": "عهد العيش",
-        "description": "الساحل فيه 1 استخراج أو أقل والبطن الفاضية 5 أو أكتر."
+        "description": "الساحل فيه ١ استخراج أو أقل والبطن الفاضية ٥ أو أكتر."
       },
       "beacon_andes_charter": {
         "title": "ميثاق الجبل",
-        "description": "الأنديز فيها 1 استخراج أو أقل والقفص المدهب 5 أو أكتر."
+        "description": "الأنديز فيها ١ استخراج أو أقل والقفص المدهب ٥ أو أكتر."
       }
     },
     "cards": {
       "res_archive_leak": {
         "name": "تسريب أرشيف",
-        "text": "زوّد نظرة العالم 1 وخد 1 شهادة."
+        "text": "زوّد نظرة العالم ١ وخد ١ شهادة."
       },
       "res_mutual_aid_convoy": {
         "name": "قافلة سند متبادل",
-        "text": "شيل 1 توكن استخراج من المنطقة المستهدفة."
+        "text": "شيل ١ توكن استخراج من المنطقة المستهدفة."
       },
       "res_radio_uprising": {
         "name": "انتفاضة الراديو",
-        "text": "زوّد الحقيقة المخنوقة 1 وضيف 1 رفيق للمنطقة المستهدفة."
+        "text": "زوّد الحقيقة المخنوقة ١ وضيف ١ رفيق للمنطقة المستهدفة."
       },
       "res_strike_fund": {
         "name": "صندوق إضراب",
-        "text": "ضيف 3 رفاق للمنطقة المستهدفة."
+        "text": "ضيف ٣ رفاق للمنطقة المستهدفة."
       },
       "res_lawyers_brief": {
         "name": "مذكرة المحامين",
-        "text": "زوّد القفص المدهب 1 وقلّل آلة الحرب الشمالية 1."
+        "text": "زوّد القفص المدهب ١ وقلّل آلة الحرب الشمالية ١."
       },
       "sup_arms_manifest": {
         "name": "كشف شحنة سلاح",
-        "text": "+2 على حملة آلة الحرب."
+        "text": "+٢ على حملة آلة الحرب."
       },
       "sup_watershed_maps": {
         "name": "خرائط مجرى الميه",
-        "text": "+2 على حملة الكوكب الميت."
+        "text": "+٢ على حملة الكوكب الميت."
       },
       "sup_prison_letters": {
         "name": "جوابات السجن",
-        "text": "+2 على حملة القفص المدهب."
+        "text": "+٢ على حملة القفص المدهب."
       },
       "sup_press_cables": {
         "name": "أسلاك الصحافة",
-        "text": "+2 على حملة الحقيقة المخنوقة."
+        "text": "+٢ على حملة الحقيقة المخنوقة."
       },
       "sup_debt_ledger": {
         "name": "دفتر الدين",
-        "text": "+2 على حملة البطن الفاضية."
+        "text": "+٢ على حملة البطن الفاضية."
       },
       "sup_pipeline_routes": {
         "name": "مسارات المواسير",
-        "text": "+2 على حملة قبضة الوقود."
+        "text": "+٢ على حملة قبضة الوقود."
       },
       "sup_songbook": {
         "name": "دفتر الأغاني",
-        "text": "+2 على حملة الصوت المسروق."
+        "text": "+٢ على حملة الصوت المسروق."
       }
     }
   }

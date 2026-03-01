@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   getAvailableDomains,
   getAvailableRegions,
@@ -28,6 +28,7 @@ import {
 } from '../i18n/index.ts';
 import { ActionDock } from './ActionDock.tsx';
 import { ContextPanel } from './ContextPanel.tsx';
+import { DebugOverlay, type AutoPlaySpeedLevel } from './DebugOverlay.tsx';
 import { FrontTrackBar } from './FrontTrackBar.tsx';
 import { PlayerStrip } from './PlayerStrip.tsx';
 import { StatusRibbon } from './StatusRibbon.tsx';
@@ -64,6 +65,14 @@ interface GameScreenProps {
 
 const DOMAIN_IDS = getAvailableDomains();
 const REGION_IDS = getAvailableRegions();
+const AUTOPLAY_SPEED_DELAYS: Record<AutoPlaySpeedLevel, number> = {
+  1: 1800,
+  2: 1300,
+  3: 900,
+  4: 600,
+  5: 320,
+};
+const TERMINAL_PHASES: EngineState['phase'][] = ['WIN', 'LOSS'];
 
 type DraftState = Omit<QueuedIntent, 'slot'>;
 
@@ -92,9 +101,104 @@ function getActionButtonLabel(phase: EngineState['phase']) {
   }
 }
 
+function createAutoPlayIntent(
+  state: EngineState,
+  content: CompiledContent,
+  seat: number,
+  actionId: ActionId,
+): Omit<QueuedIntent, 'slot'> | null {
+  const action = content.actions[actionId];
+  const player = state.players[seat];
+  if (!action || !player) {
+    return null;
+  }
+
+  const compatibleCardId = player.resistanceHand.find((cardId) => {
+    const card = content.cards[cardId];
+    return card?.deck === 'resistance' && (!action.cardType || card.type === action.cardType);
+  });
+  const regionCandidates = action.needsRegion ? REGION_IDS : [undefined];
+  const domainCandidates = action.needsDomain ? [...DOMAIN_IDS] : [undefined];
+  const targetSeatCandidates = action.needsTargetSeat
+    ? state.players.filter((candidate) => candidate.seat !== seat).map((candidate) => candidate.seat)
+    : [undefined];
+
+  for (const regionId of regionCandidates) {
+    const bodiesInRegion = regionId ? state.regions[regionId].bodiesPresent[seat] ?? 0 : 0;
+    const maxBodies = action.needsBodies ? Math.max(1, bodiesInRegion) : 1;
+    const bodyCandidates = action.needsBodies
+      ? Array.from({ length: maxBodies }, (_, index) => index + 1)
+      : [undefined];
+    const evidenceCandidates = action.needsEvidence
+      ? Array.from({ length: Math.max(player.evidence, 0) + 1 }, (_, index) => index)
+      : [undefined];
+
+    for (const domainId of domainCandidates) {
+      for (const targetSeat of targetSeatCandidates) {
+        for (const bodiesCommitted of bodyCandidates) {
+          for (const evidenceCommitted of evidenceCandidates) {
+            const intent: Omit<QueuedIntent, 'slot'> = {
+              actionId,
+              regionId,
+              domainId,
+              targetSeat,
+              bodiesCommitted,
+              evidenceCommitted,
+              cardId: action.needsCard ? compatibleCardId : undefined,
+            };
+            const disabledReason = getSeatDisabledReason(state, content, seat, intent);
+            if (!disabledReason.disabled) {
+              return intent;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+function getNextAutoPlayCommand(state: EngineState, content: CompiledContent): EngineCommand | null {
+  if (state.phase === 'SYSTEM') {
+    return { type: 'ResolveSystemPhase' };
+  }
+
+  if (state.phase === 'COALITION') {
+    for (const player of state.players) {
+      if (player.actionsRemaining > 0) {
+        for (const action of getSeatActions(content)) {
+          const intent = createAutoPlayIntent(state, content, player.seat, action.id);
+          if (intent) {
+            return {
+              type: 'QueueIntent',
+              seat: player.seat,
+              action: intent,
+            };
+          }
+        }
+        return null;
+      }
+
+      if (!player.ready) {
+        return { type: 'SetReady', seat: player.seat, ready: true };
+      }
+    }
+
+    return { type: 'CommitCoalitionIntent' };
+  }
+
+  if (state.phase === 'RESOLUTION') {
+    return { type: 'ResolveResolutionPhase' };
+  }
+
+  return null;
+}
+
 export function GameScreen({
   locale,
   onLocaleChange,
+  devMode,
   surface,
   roomId,
   state,
@@ -114,6 +218,14 @@ export function GameScreen({
   const [contextOpen, setContextOpen] = useState(false);
   const [contextMode, setContextMode] = useState<ContextPanelMode>('ledger');
   const [draft, setDraft] = useState<DraftState>(() => createDraft('organize'));
+  const [showDevPanel, setShowDevPanel] = useState(false);
+  const [showDebugSnapshot, setShowDebugSnapshot] = useState(false);
+  const [autoPlayRounds, setAutoPlayRounds] = useState('1');
+  const [autoPlaySpeed, setAutoPlaySpeed] = useState<AutoPlaySpeedLevel>(3);
+  const [autoPlayTargetRound, setAutoPlayTargetRound] = useState<number | null>(null);
+  const [autoPlayRunning, setAutoPlayRunning] = useState(false);
+  const [autoPlayStatus, setAutoPlayStatus] = useState<string | null>(null);
+  const autoPlayTimerRef = useRef<number | null>(null);
   const selectedRegionId = viewState.regionId;
 
   const draftAction = content.actions[draft.actionId];
@@ -131,7 +243,6 @@ export function GameScreen({
   const actionItems = getActionDockItems(state, content, focusedPlayer.seat);
   const phasePresentation = getPhasePresentation(state.phase);
   const preparedMovePreview = buildIntentPreview(draft, draftAction, state, content, focusedPlayer.seat);
-  const selectedRegion = selectedRegionId ? state.regions[selectedRegionId] : null;
 
   const ledgerGroups = useMemo(() => {
     const groups: Array<{ key: string; title: string; events: typeof state.eventLog }> = [];
@@ -210,61 +321,12 @@ export function GameScreen({
     ? !state.players.every((player) => player.ready)
     : state.phase === 'WIN' || state.phase === 'LOSS';
 
-  const regionBodies = selectedRegion
-    ? state.players.reduce((sum, player) => sum + (selectedRegion.bodiesPresent[player.seat] ?? 0), 0)
-    : 0;
-  const roleActions = getSeatActions(content).filter((action) => action.needsRegion);
-
   const regionContent = null;
-
-  const selectedRegionPopup = selectedRegionId && selectedRegion ? (
-    <div className="selected-region-popup-sheet">
-      <span className="context-eyebrow">Region</span>
-      <strong>{localizeRegionField(selectedRegionId, 'name', content.regions[selectedRegionId].name)}</strong>
-      <p>{localizeRegionField(selectedRegionId, 'strapline', content.regions[selectedRegionId].strapline)}</p>
-      <div className="selected-region-popup-metrics">
-        <span>Extraction {selectedRegion.extractionTokens}</span>
-        <span>Defense {selectedRegion.defenseRating}</span>
-        <span>Bodies {regionBodies}</span>
-      </div>
-      <div className="selected-region-popup-fronts">
-        {Object.entries(selectedRegion.vulnerability)
-          .sort((left, right) => right[1] - left[1])
-          .slice(0, 3)
-          .map(([domainId, value]) => (
-            <span key={domainId}>
-              {localizeDomainField(domainId as DomainId, 'name', content.domains[domainId as DomainId].name)} {value}
-            </span>
-          ))}
-      </div>
-      <div className="selected-region-popup-actions">
-        {roleActions.map((action) => (
-          <button
-            key={action.id}
-            type="button"
-            className="context-action-chip"
-            onClick={() => {
-              setDraft((current) => ({
-                ...createDraft(action.id),
-                ...current,
-                actionId: action.id,
-                regionId: selectedRegionId,
-              }));
-              setContextMode('action');
-              setContextOpen(true);
-            }}
-          >
-            {localizeActionField(action.id, 'name', action.name)}
-          </button>
-        ))}
-      </div>
-    </div>
-  ) : null;
 
   const actionContent = (
     <div className="context-stack">
       <section className="context-card">
-        <span className="context-eyebrow">Configure action</span>
+        <span className="context-eyebrow">{t('ui.game.configureAction', 'Configure action')}</span>
         <strong>{localizeActionField(draftAction.id, 'name', draftAction.name)}</strong>
         <p>{localizeActionField(draftAction.id, 'description', draftAction.description)}</p>
       </section>
@@ -325,7 +387,7 @@ export function GameScreen({
 
         {draftAction.needsBodies ? (
           <label>
-            <span>{t('ui.game.bodiesCommitted', 'Bodies Committed')}</span>
+            <span>{t('ui.game.bodiesCommitted', 'Comrades Committed')}</span>
             <input
               type="number"
               min={1}
@@ -366,7 +428,7 @@ export function GameScreen({
       </section>
 
       <section className="context-card">
-        <span className="context-eyebrow">Projected effect</span>
+        <span className="context-eyebrow">{t('ui.game.projectedEffect', 'Projected effect')}</span>
         <div className="preview-chip-row">
           {preparedMovePreview.map((chip) => (
             <span key={chip.id} className={`preview-chip tone-${chip.tone}`.trim()}>
@@ -402,6 +464,114 @@ export function GameScreen({
     </div>
   );
 
+  useEffect(() => () => {
+    if (autoPlayTimerRef.current !== null) {
+      window.clearTimeout(autoPlayTimerRef.current);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (surface !== 'local' && autoPlayRunning) {
+      console.log('🧪 [GameScreen] Autoplay halted because the table is no longer local.');
+      setAutoPlayRunning(false);
+      setAutoPlayTargetRound(null);
+      setAutoPlayStatus(t('ui.debug.autoplayLocalOnly', 'Autoplay is only available on local tables.'));
+    }
+  }, [autoPlayRunning, surface]);
+
+  useEffect(() => {
+    if (!autoPlayRunning) {
+      if (autoPlayTimerRef.current !== null) {
+        window.clearTimeout(autoPlayTimerRef.current);
+        autoPlayTimerRef.current = null;
+      }
+      return;
+    }
+
+    const stopAutoPlay = (message: string) => {
+      console.log(`🧪 [GameScreen] ${message}`);
+      setAutoPlayRunning(false);
+      setAutoPlayTargetRound(null);
+      setAutoPlayStatus(message);
+    };
+
+    if (TERMINAL_PHASES.includes(state.phase)) {
+      stopAutoPlay(
+        state.phase === 'WIN'
+          ? t('ui.debug.autoplayWon', 'Autoplay stopped because the coalition won.')
+          : t('ui.debug.autoplayLost', 'Autoplay stopped because the coalition lost.'),
+      );
+      return;
+    }
+
+    // Stop only after the requested number of full rounds has returned to the system step.
+    if (autoPlayTargetRound !== null && state.round >= autoPlayTargetRound && state.phase === 'SYSTEM') {
+      stopAutoPlay(t('ui.debug.autoplayFinished', 'Autoplay finished at the requested round mark.'));
+      return;
+    }
+
+    const command = getNextAutoPlayCommand(state, content);
+    if (!command) {
+      stopAutoPlay(t('ui.debug.autoplayNoCommand', 'Autoplay found no legal command and stopped.'));
+      return;
+    }
+
+    autoPlayTimerRef.current = window.setTimeout(() => {
+      console.log(`🎲 [GameScreen] Autoplay dispatching ${command.type} during ${state.phase}.`);
+      void Promise.resolve(onCommand(command)).catch((error) => {
+        console.error('🧪 [GameScreen] Autoplay command failed.', error);
+        setAutoPlayRunning(false);
+        setAutoPlayTargetRound(null);
+        setAutoPlayStatus(t('ui.debug.autoplayCommandError', 'Autoplay stopped after a command error.'));
+      });
+    }, AUTOPLAY_SPEED_DELAYS[autoPlaySpeed]);
+
+    return () => {
+      if (autoPlayTimerRef.current !== null) {
+        window.clearTimeout(autoPlayTimerRef.current);
+        autoPlayTimerRef.current = null;
+      }
+    };
+  }, [autoPlayRunning, autoPlaySpeed, autoPlayTargetRound, content, onCommand, state]);
+
+  const handleAutoPlayStart = () => {
+    if (surface !== 'local') {
+      setAutoPlayStatus(t('ui.debug.autoplayLocalOnly', 'Autoplay is only available on local tables.'));
+      return;
+    }
+
+    const parsedRounds = Number.parseInt(autoPlayRounds, 10);
+    if (!Number.isFinite(parsedRounds) || parsedRounds <= 0) {
+      setAutoPlayStatus(t('ui.debug.autoplayInvalid', 'Enter a valid round count before starting autoplay.'));
+      return;
+    }
+
+    const roundsToPlay = Math.min(parsedRounds, 24);
+    setAutoPlayRounds(String(roundsToPlay));
+    setAutoPlayTargetRound(state.round + roundsToPlay);
+    setAutoPlayRunning(true);
+    setAutoPlayStatus(t('ui.debug.autoplayArmed', 'Autoplay armed for {{count}} rounds.', { count: roundsToPlay }));
+    console.log(`🧪 [GameScreen] Autoplay armed for ${roundsToPlay} rounds at speed ${autoPlaySpeed}.`);
+  };
+
+  const handleAutoPlayStop = () => {
+    if (autoPlayTimerRef.current !== null) {
+      window.clearTimeout(autoPlayTimerRef.current);
+      autoPlayTimerRef.current = null;
+    }
+    console.log('🧪 [GameScreen] Autoplay stopped by user.');
+    setAutoPlayRunning(false);
+    setAutoPlayTargetRound(null);
+    setAutoPlayStatus(t('ui.debug.autoplayStopped', 'Autoplay stopped.'));
+  };
+
+  const autoPlayStatusText = autoPlayRunning
+    ? t('ui.debug.autoplayTick', 'Autoplay: round {{round}}, phase {{phase}}.', {
+      round: state.round,
+      phase: t(`ui.phases.${state.phase}`, state.phase),
+    })
+    : autoPlayStatus;
+
   return (
     <TableSurface className="game-screen game-screen-compressed">
       <header className="game-header-shell">
@@ -410,18 +580,18 @@ export function GameScreen({
           <ThemePlate
             label={surface === 'room' && roomId
               ? t('ui.game.room', 'Room {{roomId}}', { roomId })
-              : 'Table'}
+              : t('ui.game.table', 'Table')}
             onClick={() => {}}
           />
           <ThemePlate
-            label={copied ? 'Saved' : 'Save'}
+            label={copied ? t('ui.game.saved', 'Saved') : t('ui.game.save', 'Save')}
             onClick={() => {
               onExportSave(serializeGame(state));
               setCopied(true);
               window.setTimeout(() => setCopied(false), 1200);
             }}
           />
-          <ThemePlate label="Home" onClick={onBack} />
+          <ThemePlate label={t('ui.game.backHome', 'Back Home')} onClick={onBack} />
         </div>
       </header>
 
@@ -436,7 +606,7 @@ export function GameScreen({
               <p>{phasePresentation.copy}</p>
             </div>
             <button type="button" className="ledger-toggle" onClick={() => { setContextMode('ledger'); setContextOpen(true); }}>
-              Ledger
+              {t('ui.game.ledger', 'Ledger')}
             </button>
           </div>
 
@@ -450,8 +620,6 @@ export function GameScreen({
               onSelectRegion={(regionId) => {
                 onViewStateChange({ regionId });
               }}
-              onClearSelection={() => onViewStateChange({ regionId: null })}
-              selectedRegionPopup={selectedRegionPopup}
             />
           </div>
 
@@ -466,7 +634,7 @@ export function GameScreen({
           />
         </section>
 
-        <aside className="board-context-slot" aria-label="Board context">
+        <aside className="board-context-slot" aria-label={t('ui.game.boardContext', 'Board context')}>
           <ContextPanel
             mode={contextMode}
             open={contextOpen}
@@ -491,11 +659,11 @@ export function GameScreen({
             <>
               <div className="dock-queue-summary">
                 <strong>{localizeFactionField(faction.id, 'shortName', faction.shortName)}</strong>
-                <span>{getPlayerBodyTotal(state, focusedPlayer.seat)} Bodies</span>
-                <span>{focusedPlayer.evidence} Evidence</span>
-                <span>{focusedPlayer.queuedIntents.length} queued</span>
+                <span>{formatNumber(getPlayerBodyTotal(state, focusedPlayer.seat))} {t('ui.game.bodies', 'Comrades')}</span>
+                <span>{formatNumber(focusedPlayer.evidence)} {t('ui.game.evidence', 'Evidence')}</span>
+                <span>{t('ui.game.queuedCount', '{{count}} queued', { count: focusedPlayer.queuedIntents.length })}</span>
               </div>
-              <div className="dock-queue-list" aria-label="Prepared moves">
+              <div className="dock-queue-list" aria-label={t('ui.game.preparedMovesLabel', 'Prepared moves')}>
                 {focusedPlayer.queuedIntents.length === 0 ? (
                   <span className="dock-empty">{t('ui.game.noPreparedMoves', 'No prepared moves yet.')}</span>
                 ) : (
@@ -532,6 +700,36 @@ export function GameScreen({
           )}
         />
       </footer>
+
+      {devMode ? (
+        <button
+          type="button"
+          className={`dev-panel-toggle ${showDevPanel ? 'is-active' : ''}`.trim()}
+          onClick={() => setShowDevPanel((current) => !current)}
+          aria-expanded={showDevPanel}
+          aria-controls="debug-panel-title"
+        >
+          {showDevPanel ? t('ui.debug.hidePanel', 'Hide Dev Panel') : t('ui.debug.showPanel', 'Dev Panel')}
+        </button>
+      ) : null}
+
+      {devMode && showDevPanel ? (
+        <DebugOverlay
+          state={state}
+          roomId={roomId}
+          showDebugSnapshot={showDebugSnapshot}
+          autoPlayRounds={autoPlayRounds}
+          autoPlaySpeed={autoPlaySpeed}
+          autoPlayRunning={autoPlayRunning}
+          autoPlayStatus={autoPlayStatusText}
+          onToggleDebugSnapshot={() => setShowDebugSnapshot((current) => !current)}
+          onAutoPlayRoundsChange={setAutoPlayRounds}
+          onAutoPlaySpeedChange={setAutoPlaySpeed}
+          onAutoPlayStart={handleAutoPlayStart}
+          onAutoPlayStop={handleAutoPlayStop}
+          onClose={() => setShowDevPanel(false)}
+        />
+      ) : null}
     </TableSurface>
   );
 }
