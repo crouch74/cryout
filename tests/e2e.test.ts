@@ -1,0 +1,49 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createRoomController } from '../room-service/server.ts';
+import { compileContent, dispatchCommand, initializeGame, type EngineCommand, type EngineState } from '../engine/index.ts';
+
+const startCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
+  type: 'StartGame',
+  scenarioId: 'witness_dignity',
+  mode: 'CORE',
+  playerCount: 2,
+  roleIds: ['organizer', 'investigative_journalist'],
+  seed: 7070,
+  expansionIds: [],
+};
+
+function runLocalSequence() {
+  const content = compileContent(startCommand.scenarioId);
+  let state = initializeGame(startCommand);
+  const commands: EngineCommand[] = [
+    { type: 'ResolveWorldPhase' },
+    { type: 'QueueIntent', seat: 0, actionId: 'community_mobilization', target: { kind: 'NONE' } },
+    { type: 'QueueIntent', seat: 0, actionId: 'safe_passage', target: { kind: 'REGION', regionId: 'MENA' } },
+    { type: 'SetReady', seat: 0, ready: true },
+    { type: 'QueueIntent', seat: 1, actionId: 'field_investigation', target: { kind: 'REGION', regionId: 'MENA' } },
+    { type: 'QueueIntent', seat: 1, actionId: 'counter_disinfo', target: { kind: 'REGION', regionId: 'MENA' } },
+    { type: 'SetReady', seat: 1, ready: true },
+    { type: 'CommitCoalitionIntent' },
+    { type: 'ResolveEndPhase' },
+  ];
+
+  for (const command of commands) {
+    state = dispatchCommand(state, command, content);
+  }
+
+  return { commands, state };
+}
+
+test('room service stays in sync with the local table reducer', async () => {
+  const controller = createRoomController();
+  const created = controller.createRoom(startCommand) as { roomId: string; state: EngineState };
+  const local = runLocalSequence();
+  const payload = controller.applyCommands(created.roomId, local.commands) as { state: EngineState };
+
+  assert.equal(payload.state.phase, local.state.phase);
+  assert.equal(payload.state.round, local.state.round);
+  assert.deepEqual(payload.state.resources, local.state.resources);
+  assert.deepEqual(payload.state.fronts, local.state.fronts);
+  assert.deepEqual(payload.state.regions, local.state.regions);
+});

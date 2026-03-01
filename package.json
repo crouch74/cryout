@@ -5,9 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "dev:ui": "vite",
+    "dev:rooms": "node --experimental-transform-types room-service/server.ts",
+    "build": "tsc -p tsconfig.app.json && tsc -p tsconfig.room-service.json && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --experimental-transform-types --test tests/*.test.ts",
+    "test:engine": "node --experimental-transform-types --test tests/engine.test.ts tests/replay.test.ts",
+    "test:ui": "node --experimental-transform-types --test tests/ui.test.ts",
+    "test:e2e": "node --experimental-transform-types --test tests/e2e.test.ts"
   },
   "dependencies": {
     "react": "^19.2.0",

@@ -24,5 +24,18 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"]
+  "include": [
+    "src/main.tsx",
+    "src/App.tsx",
+    "src/mvp/**/*.ts",
+    "src/mvp/**/*.tsx",
+    "engine/**/*.ts",
+    "content/**/*.ts"
+  ],
+  "exclude": [
+    "src/old_legacy/**/*",
+    "src/components/**/*",
+    "src/engine/**/*",
+    "backend/**/*"
+  ]
 }
