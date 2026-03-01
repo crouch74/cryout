@@ -14,6 +14,7 @@ import {
   type EngineState,
   type Phase,
   type PlayerState,
+  type RegionId,
   type ResourceType,
 } from '../../engine/index.ts';
 import { LanguageSwitcher } from '../components/LanguageSwitcher.tsx';
@@ -23,6 +24,7 @@ import { ActionBoard } from './ActionBoard.tsx';
 import { BOARD_FRONT_RAIL, BOARD_PHASE_RAIL, BOARD_REGION_BLUEPRINT } from './boardBlueprint.ts';
 import { DebugOverlay, type AutoPlaySpeedLevel } from './DebugOverlay.tsx';
 import { DealModal } from './DealModal.tsx';
+import { getActiveCoalitionSeat } from './gameUiHelpers.ts';
 import { RegionDrawer } from './RegionDrawer.tsx';
 import { TraceDrawer } from './TraceDrawer.tsx';
 import type { ToastMessage } from './ToastStack.tsx';
@@ -78,6 +80,44 @@ const TERMINAL_PHASES: Phase[] = ['WIN', 'LOSS'];
 
 function seatTone(seat: number) {
   return `seat-${seat + 1}`;
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function renderRegionStack(count: number, className: string, keyPrefix: string) {
+  if (count <= 0) {
+    return null;
+  }
+
+  return <span key={keyPrefix} className={className} data-depth={Math.min(count, 3)} />;
+}
+
+function getScenarioMapFocus(regionIds: RegionId[]) {
+  const focusRegions = regionIds.length > 0 ? regionIds : (Object.keys(BOARD_REGION_BLUEPRINT) as RegionId[]);
+  const points = focusRegions.map((regionId) => BOARD_REGION_BLUEPRINT[regionId].mapPoint);
+  const xs = points.map((point) => Number.parseFloat(point.x));
+  const ys = points.map((point) => Number.parseFloat(point.y));
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const paddedSpan = Math.max(maxX - minX + 24, maxY - minY + 24, 36);
+  const visibleSpan = clamp(paddedSpan, 36, 68);
+  const halfSpan = visibleSpan / 2;
+  const centerX = clamp((minX + maxX) / 2, halfSpan, 100 - halfSpan);
+  const centerY = clamp((minY + maxY) / 2, halfSpan, 100 - halfSpan);
+  const left = centerX - halfSpan;
+  const top = centerY - halfSpan;
+  const scale = 100 / visibleSpan;
+
+  return {
+    width: `${scale * 100}%`,
+    height: `${scale * 100}%`,
+    left: `${left * -scale}%`,
+    top: `${top * -scale}%`,
+  };
 }
 
 function getBoardActionLabel(state: EngineState) {
@@ -233,7 +273,10 @@ export function GameScreen({
 }: GameScreenProps) {
   const band = getTemperatureBand(state.temperature);
   const ending = getEndingTierSummary(state);
-  const focusedPlayer = state.players[viewState.focusedSeat] ?? state.players[0];
+  const useOfflineSeatOrder = surface === 'local' && state.phase === 'COALITION';
+  const activeCoalitionSeat = getActiveCoalitionSeat(state.players);
+  const effectiveFocusedSeat = useOfflineSeatOrder ? activeCoalitionSeat : viewState.focusedSeat;
+  const focusedPlayer = state.players[effectiveFocusedSeat] ?? state.players[0];
   const selectedEvent = state.eventLog.find((event) => event.seq === viewState.eventSeq) ?? null;
   const visibleEvents = state.eventLog.slice().reverse().slice(0, 6);
   const archivedEventCount = Math.max(0, state.eventLog.length - visibleEvents.length);
@@ -246,6 +289,7 @@ export function GameScreen({
   const [autoPlayTargetRound, setAutoPlayTargetRound] = useState<number | null>(null);
   const [autoPlayRunning, setAutoPlayRunning] = useState(false);
   const [autoPlayStatus, setAutoPlayStatus] = useState<string | null>(null);
+  const [inspectedRegionId, setInspectedRegionId] = useState<RegionId | null>(null);
   const pulseTimerRef = useRef<number | null>(null);
   const activeSeatTone = seatTone(focusedPlayer.seat);
   const activeCrisis = state.stagedWorldPhase.activeCrisisId ? content.cards[state.stagedWorldPhase.activeCrisisId] : null;
@@ -404,6 +448,16 @@ export function GameScreen({
       plural: autoPlayTargetRound !== null && Math.max(autoPlayTargetRound - state.round, 0) === 1 ? '' : 's',
     })
     : autoPlayStatus;
+  const inspectedRegion = inspectedRegionId ? state.regions[inspectedRegionId] : null;
+  const inspectedRegionDefinition = inspectedRegionId ? content.regions[inspectedRegionId] : null;
+  const inspectedRegionBlueprint = inspectedRegionId ? BOARD_REGION_BLUEPRINT[inspectedRegionId] : null;
+  const inspectedVulnerabilities = inspectedRegion
+    ? Object.entries(inspectedRegion.vulnerability)
+      .sort(([, left], [, right]) => right - left)
+      .slice(0, 3)
+    : [];
+  const scenarioRegionIds = Object.keys(content.scenario.setup.regionOverrides) as RegionId[];
+  const mapFocus = getScenarioMapFocus(scenarioRegionIds);
 
   return (
     <TableSurface className="tabletop-game board-first-table" data-seat={activeSeatTone} data-open-tray={viewState.openTray}>
@@ -517,51 +571,133 @@ export function GameScreen({
             </div>
 
             <div className="tabletop-map-grid board-replica-grid">
-              {Object.values(state.regions).map((region) => {
-                const blueprint = BOARD_REGION_BLUEPRINT[region.id];
-                const totalPressure = region.tokens.displacement + region.tokens.disinfo + region.locks.length;
-                const severity = totalPressure <= 1 ? 'low' : totalPressure <= 3 ? 'medium' : totalPressure <= 5 ? 'high' : 'critical';
-                return (
+              <div
+                className="board-map-canvas"
+                style={
+                  {
+                    '--map-canvas-width': mapFocus.width,
+                    '--map-canvas-height': mapFocus.height,
+                    '--map-canvas-left': mapFocus.left,
+                    '--map-canvas-top': mapFocus.top,
+                  } as CSSProperties
+                }
+              >
+                <img
+                  src="/assets/world-map-board.svg"
+                  alt={t('ui.game.worldMapBackground', 'Illustrated world map background')}
+                  className="board-world-map"
+                  aria-hidden="true"
+                />
+                {Object.values(state.regions).map((region) => {
+                  const blueprint = BOARD_REGION_BLUEPRINT[region.id];
+                  const totalPressure = region.tokens.displacement + region.tokens.disinfo + region.locks.length;
+                  const severity = totalPressure <= 1 ? 'low' : totalPressure <= 3 ? 'medium' : totalPressure <= 5 ? 'high' : 'critical';
+                  return (
+                    <button
+                      key={region.id}
+                      type="button"
+                      className={`tabletop-region-card region-map-marker ${viewState.regionId === region.id ? 'is-active' : ''} ${blueprint.themeClass}`}
+                      style={
+                        {
+                          '--territory-accent': blueprint.accent,
+                          '--territory-tilt': `${blueprint.tilt}deg`,
+                          '--map-point-x': blueprint.mapPoint.x,
+                          '--map-point-y': blueprint.mapPoint.y,
+                          '--label-offset-x': blueprint.desktopCallout.labelX,
+                          '--label-offset-y': blueprint.desktopCallout.labelY,
+                          '--tooltip-offset-x': blueprint.desktopCallout.tooltipX,
+                          '--tooltip-offset-y': blueprint.desktopCallout.tooltipY,
+                          '--label-offset-x-compact': blueprint.compactCallout.labelX,
+                          '--label-offset-y-compact': blueprint.compactCallout.labelY,
+                          '--tooltip-offset-x-compact': blueprint.compactCallout.tooltipX,
+                          '--tooltip-offset-y-compact': blueprint.compactCallout.tooltipY,
+                        } as CSSProperties
+                      }
+                      data-pressure={severity}
+                      onMouseEnter={() => setInspectedRegionId(region.id)}
+                      onMouseLeave={() => setInspectedRegionId((current) => (current === region.id ? null : current))}
+                      onFocus={() => setInspectedRegionId(region.id)}
+                      onBlur={() => setInspectedRegionId((current) => (current === region.id ? null : current))}
+                      onClick={() => onViewStateChange({ regionId: region.id })}
+                      aria-label={t(
+                        'ui.game.regionTokenLabel',
+                        '{{region}}. {{displacement}} displacement, {{disinfo}} disinfo, {{locks}} locks, {{institutions}} institutions.',
+                        {
+                          region: content.regions[region.id].name,
+                          displacement: region.tokens.displacement,
+                          disinfo: region.tokens.disinfo,
+                          locks: region.locks.length,
+                          institutions: region.institutions.length,
+                        },
+                      )}
+                    >
+                      <span className="region-map-anchor" aria-hidden="true" />
+                      <span className="region-map-label">{blueprint.shortLabel}</span>
+                      <span className="region-map-piece-cluster" aria-hidden="true">
+                        {renderRegionStack(region.tokens.displacement, 'region-state-stack region-state-stack-disc', `${region.id}-displacement`)}
+                        {renderRegionStack(region.tokens.disinfo, 'region-state-stack region-state-stack-cube', `${region.id}-disinfo`)}
+                        {renderRegionStack(region.locks.length, 'region-state-stack region-state-stack-lock', `${region.id}-locks`)}
+                        {renderRegionStack(region.institutions.length, 'region-state-stack region-state-stack-mat', `${region.id}-institutions`)}
+                      </span>
+                    </button>
+                  );
+                })}
+                {inspectedRegion && inspectedRegionDefinition && inspectedRegionBlueprint ? (
                   <article
-                    key={region.id}
-                    className={`tabletop-region-card printed-territory ${viewState.regionId === region.id ? 'is-active' : ''} ${blueprint.themeClass}`}
+                    className="printed-territory region-state-tooltip"
                     style={
                       {
-                        gridArea: blueprint.area,
-                        '--territory-accent': blueprint.accent,
-                        '--territory-tilt': `${blueprint.tilt}deg`,
+                        '--territory-accent': inspectedRegionBlueprint.accent,
+                        '--territory-tilt': `${inspectedRegionBlueprint.tilt}deg`,
+                        '--map-point-x': inspectedRegionBlueprint.mapPoint.x,
+                        '--map-point-y': inspectedRegionBlueprint.mapPoint.y,
+                        '--tooltip-offset-x': inspectedRegionBlueprint.desktopCallout.tooltipX,
+                        '--tooltip-offset-y': inspectedRegionBlueprint.desktopCallout.tooltipY,
+                        '--tooltip-offset-x-compact': inspectedRegionBlueprint.compactCallout.tooltipX,
+                        '--tooltip-offset-y-compact': inspectedRegionBlueprint.compactCallout.tooltipY,
                       } as CSSProperties
                     }
-                    data-pressure={severity}
                   >
-                    <button
-                      type="button"
-                      className="tabletop-region-trigger printed-territory-button"
-                      onClick={() => onViewStateChange({ regionId: region.id })}
-                    >
-                      <span className="printed-territory-caption">{blueprint.shortLabel}</span>
-                      <strong>{content.regions[region.id].name}</strong>
+                    <div className="printed-territory-button">
+                      <span className="printed-territory-caption">{inspectedRegionBlueprint.shortLabel}</span>
+                      <strong>{inspectedRegionDefinition.name}</strong>
+                      <p>{inspectedRegionBlueprint.strapline}</p>
                       <div className="territory-token-cluster" aria-hidden="true">
-                        <span className="token-glyph token-glyph-disc">{formatNumber(region.tokens.displacement)}</span>
-                        <span className="token-glyph token-glyph-cube">{formatNumber(region.tokens.disinfo)}</span>
-                        <span className="token-glyph token-glyph-bar">{formatNumber(region.locks.length)}</span>
-                        <span className="token-glyph token-glyph-mat">{formatNumber(region.institutions.length)}</span>
+                        <span className="token-glyph token-glyph-disc">{formatNumber(inspectedRegion.tokens.displacement)}</span>
+                        <span className="token-glyph token-glyph-cube">{formatNumber(inspectedRegion.tokens.disinfo)}</span>
+                        <span className="token-glyph token-glyph-bar">{formatNumber(inspectedRegion.locks.length)}</span>
+                        <span className="token-glyph token-glyph-mat">{formatNumber(inspectedRegion.institutions.length)}</span>
                       </div>
-                    </button>
+                      <div className="region-tooltip-ledger">
+                        <span>{t('ui.regionTooltip.locks', 'Locks')}: {inspectedRegion.locks.length === 0 ? t('ui.status.none', 'None') : inspectedRegion.locks.join(', ')}</span>
+                        <span>
+                          {t('ui.regionTooltip.vulnerability', 'Highest vulnerability')}: {inspectedVulnerabilities.length === 0
+                            ? t('ui.status.none', 'None')
+                            : inspectedVulnerabilities
+                              .map(([front, value]) => `${content.fronts[front as keyof CompiledContent['fronts']].name} ${value}`)
+                              .join(' • ')}
+                        </span>
+                        <span>{t('ui.regionTooltip.openDetails', 'Click to open full regional dossier.')}</span>
+                      </div>
+                    </div>
                   </article>
-                );
-              })}
+                ) : null}
+              </div>
             </div>
 
-            <div className="board-bottom-cards">
-              {state.players.map((player) => (
+            <div className={`board-bottom-cards ${useOfflineSeatOrder ? 'is-offline-turn-order' : ''}`.trim()}>
+              {(useOfflineSeatOrder ? [focusedPlayer] : state.players).map((player) => (
                 <button
                   key={player.seat}
                   type="button"
                   className={`program-rail-card ${player.seat === focusedPlayer.seat ? 'is-active' : ''}`}
-                  onClick={() => onViewStateChange({ focusedSeat: player.seat, openTray: 'player' })}
+                  onClick={() => onViewStateChange({ openTray: 'player' })}
                 >
-                  <span className="engraved-eyebrow">{t('ui.home.seatLabel', 'Seat {{seat}}', { seat: player.seat + 1 })}</span>
+                  <span className="engraved-eyebrow">
+                    {useOfflineSeatOrder
+                      ? t('ui.game.activeSeat', 'Active seat')
+                      : t('ui.home.seatLabel', 'Seat {{seat}}', { seat: player.seat + 1 })}
+                  </span>
                   <strong>{getRoleName(player.roleId)}</strong>
                   <small>{t('ui.actionBoard.queued', 'Planned {{count}}', { count: player.queuedIntents.length })}</small>
                 </button>
@@ -740,21 +876,31 @@ export function GameScreen({
             <PaperSheet tone="mat" className="player-mat-sheet board-player-mat" aria-describedby="player-mat-passive">
               <div className="player-mat-header">
                 <div>
-                  <span className="engraved-eyebrow">{t('ui.game.playerMat', 'Player Mat')}</span>
+                  <span className="engraved-eyebrow">
+                    {useOfflineSeatOrder ? t('ui.game.activeSeat', 'Active seat') : t('ui.game.playerMat', 'Player Mat')}
+                  </span>
                   <h3>{getRoleName(focusedPlayer.roleId)}</h3>
                 </div>
-                <div className="seat-selector-row" aria-label={t('ui.game.activeSeat', 'Active seat')}>
-                  {state.players.map((player) => (
-                    <button
-                      key={player.seat}
-                      type="button"
-                      className={`seat-selector ${player.seat === focusedPlayer.seat ? 'is-active' : ''} ${player.ready ? 'is-ready' : ''}`}
-                      onClick={() => onViewStateChange({ focusedSeat: player.seat, openTray: 'player' })}
-                    >
-                      {formatNumber(player.seat + 1)}
-                    </button>
-                  ))}
-                </div>
+                {useOfflineSeatOrder ? (
+                  <div className="seat-selector-row" aria-label={t('ui.game.activeSeat', 'Active seat')}>
+                    <span className={`seat-selector is-active ${focusedPlayer.ready ? 'is-ready' : ''}`.trim()}>
+                      {formatNumber(focusedPlayer.seat + 1)}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="seat-selector-row" aria-label={t('ui.game.activeSeat', 'Active seat')}>
+                    {state.players.map((player) => (
+                      <button
+                        key={player.seat}
+                        type="button"
+                        className={`seat-selector ${player.seat === focusedPlayer.seat ? 'is-active' : ''} ${player.ready ? 'is-ready' : ''}`}
+                        onClick={() => onViewStateChange({ focusedSeat: player.seat, openTray: 'player' })}
+                      >
+                        {formatNumber(player.seat + 1)}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <p id="player-mat-passive" className="player-mat-passive">{content.roles[focusedPlayer.roleId].passive}</p>
@@ -853,7 +999,7 @@ export function GameScreen({
 
       <RegionDrawer
         regionId={viewState.regionId}
-        focusedSeat={viewState.focusedSeat}
+        focusedSeat={effectiveFocusedSeat}
         state={state}
         content={content}
         onClose={() => onViewStateChange({ regionId: null })}

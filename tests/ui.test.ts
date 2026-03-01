@@ -10,7 +10,7 @@ import {
   initializeGame,
   type EngineCommand,
 } from '../engine/index.ts';
-import { GAME_A11Y_LABELS, getPhaseProgressSteps, getToastRole } from '../src/mvp/gameUiHelpers.ts';
+import { GAME_A11Y_LABELS, getActiveCoalitionSeat, getPhaseProgressSteps, getToastRole } from '../src/mvp/gameUiHelpers.ts';
 import { DEFAULT_GAME_VIEW_STATE } from '../src/mvp/urlState.ts';
 
 const startCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
@@ -70,6 +70,18 @@ test('phase progress helper marks the active step and exposes step semantics', (
   assert.equal(steps[2]?.state, 'upcoming');
 });
 
+test('offline coalition seat order advances to the first unready seat', () => {
+  const state = initializeGame(startCommand);
+
+  assert.equal(getActiveCoalitionSeat(state.players), 0);
+
+  state.players[0].ready = true;
+  assert.equal(getActiveCoalitionSeat(state.players), 1);
+
+  state.players[1].ready = true;
+  assert.equal(getActiveCoalitionSeat(state.players), 1);
+});
+
 test('game screen source includes landmark and labelled tray markup', () => {
   const source = readFileSync(new URL('../src/mvp/GameScreen.tsx', import.meta.url), 'utf8');
 
@@ -81,6 +93,8 @@ test('game screen source includes landmark and labelled tray markup', () => {
   assert.match(source, /aria-describedby=/);
   assert.match(source, /dev-panel-toggle/);
   assert.match(source, /devMode && viewState\.showDebug/);
+  assert.match(source, /useOfflineSeatOrder/);
+  assert.match(source, /getActiveCoalitionSeat/);
 });
 
 test('default game view state uses the tray-driven model', () => {

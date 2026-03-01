@@ -1,4 +1,4 @@
-import type { Phase } from '../../engine/index.ts';
+import type { Phase, PlayerState } from '../../engine/index.ts';
 
 export const GAME_A11Y_LABELS = {
   phaseProgress: 'Turn progress',
@@ -23,4 +23,8 @@ export function getPhaseProgressSteps(phase: Phase) {
 
 export function getToastRole(tone: 'info' | 'success' | 'warning' | 'error') {
   return tone === 'error' ? 'alert' : 'status';
+}
+
+export function getActiveCoalitionSeat(players: PlayerState[]) {
+  return players.find((player) => !player.ready)?.seat ?? players.at(-1)?.seat ?? 0;
 }
