@@ -127,44 +127,84 @@ const fronts: FrontDefinition[] = [
 
 const regions: RegionDefinition[] = [
   {
-    id: 'MENA',
-    name: 'MENA',
-    vulnerability: { WAR: 3, RIGHTS: 3, CLIMATE: 1, SPEECH_INFO: 1 },
+    id: 'Palestine',
+    name: 'Palestine',
+    cities: ['Gaza', 'Jerusalem', 'Jenin', 'Hebron'],
+    resources: ['aquifers', 'olive groves', 'farmland', 'coastal gas access'],
+    exploitedZones: ['Gaza coast', 'Jordan Valley water basin', 'West Bank quarries', 'checkpoint corridors'],
+    globalPowers: ['United States', 'United Kingdom', 'Germany', 'EU arms and finance blocs'],
+    regionalPlayers: ['Israel', 'Egyptian border authorities', 'Jordanian corridor politics', 'Palestinian civic networks'],
+    vulnerability: { WAR: 3, RIGHTS: 3, SPEECH_INFO: 2, POVERTY: 1 },
   },
   {
-    id: 'SubSaharanAfrica',
-    name: 'Sub-Saharan Africa',
-    vulnerability: { CLIMATE: 2, POVERTY: 3, ENERGY: 2 },
+    id: 'Lebanon',
+    name: 'Lebanon',
+    cities: ['Beirut', 'Tyre', 'Tripoli', 'Sidon'],
+    resources: ['ports', 'offshore gas blocks', 'remittance networks', 'coastal trade'],
+    exploitedZones: ['south border villages', 'Beirut port logistics', 'offshore drilling blocks'],
+    globalPowers: ['France', 'United States', 'Iran', 'Gulf finance networks'],
+    regionalPlayers: ['Israel', 'Hezbollah', 'Lebanese unions', 'municipal relief networks'],
+    vulnerability: { WAR: 2, RIGHTS: 2, SPEECH_INFO: 2, POVERTY: 2 },
   },
   {
-    id: 'SouthAsia',
-    name: 'South Asia',
-    vulnerability: { CLIMATE: 3, POVERTY: 2, ENERGY: 2 },
+    id: 'Egypt',
+    name: 'Egypt',
+    cities: ['Cairo', 'Alexandria', 'Suez', 'Aswan'],
+    resources: ['Suez transit rents', 'Mediterranean gas', 'Nile water', 'cement and fertilizer'],
+    exploitedZones: ['Suez corridor', 'Sinai crossings', 'Delta farmland', 'Mediterranean gas terminals'],
+    globalPowers: ['IMF and lenders', 'European Union', 'United States', 'Gulf sovereign funds'],
+    regionalPlayers: ['Egyptian military state', 'Israel gas deals', 'Sudan-Nile negotiations', 'dock and labor unions'],
+    vulnerability: { POVERTY: 3, RIGHTS: 2, ENERGY: 2, CLIMATE: 2 },
   },
   {
-    id: 'SoutheastAsia',
-    name: 'Southeast Asia',
-    vulnerability: { CLIMATE: 2, SPEECH_INFO: 2, POVERTY: 1 },
+    id: 'Sudan',
+    name: 'Sudan',
+    cities: ['Khartoum', 'Omdurman', 'Port Sudan', 'El Fasher'],
+    resources: ['gold', 'farmland', 'gum arabic', 'Red Sea port access'],
+    exploitedZones: ['Darfur', 'Gezira scheme', 'Port Sudan corridor', 'gold concessions'],
+    globalPowers: ['United Arab Emirates', 'Saudi Arabia', 'Egypt', 'Russian security contractors'],
+    regionalPlayers: ['SAF', 'RSF', 'neighborhood resistance committees', 'cross-border traders'],
+    vulnerability: { WAR: 3, POVERTY: 3, RIGHTS: 2, CLIMATE: 2 },
   },
   {
-    id: 'LatinAmerica',
-    name: 'Latin America',
-    vulnerability: { POVERTY: 2, SPEECH_INFO: 2, CULTURE: 1 },
+    id: 'Congo',
+    name: 'Congo',
+    cities: ['Kinshasa', 'Goma', 'Kolwezi', 'Lubumbashi'],
+    resources: ['cobalt', 'coltan', 'copper', 'rainforest'],
+    exploitedZones: ['Kivu mines', 'Kolwezi cobalt belt', 'Inga corridor', 'eastern transit roads'],
+    globalPowers: ['China battery supply chains', 'US-EU critical minerals buyers', 'multinational mining firms'],
+    regionalPlayers: ['Rwandan and Ugandan border influence', 'FARDC', 'local mining cooperatives', 'community land defenders'],
+    vulnerability: { ENERGY: 3, RIGHTS: 2, POVERTY: 2, CLIMATE: 2, CULTURE: 1 },
   },
   {
-    id: 'Europe',
-    name: 'Europe',
-    vulnerability: { SPEECH_INFO: 1, RIGHTS: 1 },
+    id: 'Yemen',
+    name: 'Yemen',
+    cities: ['Sanaa', 'Aden', 'Hodeidah', 'Taiz'],
+    resources: ['ports', 'fisheries', 'remittance routes', 'Marib energy fields'],
+    exploitedZones: ['Hodeidah port', 'Red Sea shipping lane', 'Marib oil and gas zone', 'siege corridors'],
+    globalPowers: ['United States', 'United Kingdom', 'Saudi-led coalition support', 'Red Sea shipping insurers'],
+    regionalPlayers: ['Houthis', 'Southern forces', 'Saudi Arabia', 'United Arab Emirates'],
+    vulnerability: { WAR: 3, POVERTY: 3, RIGHTS: 2, CLIMATE: 1 },
   },
   {
-    id: 'NorthAmerica',
-    name: 'North America',
-    vulnerability: { SPEECH_INFO: 1, RIGHTS: 1 },
+    id: 'Sahel',
+    name: 'Sahel',
+    cities: ['Niamey', 'Agadez', 'Gao', "N'Djamena"],
+    resources: ['uranium', 'pasture', 'solar corridors', 'migration routes'],
+    exploitedZones: ['Agadez uranium corridor', 'cross-Sahel military basing', 'grazing lands', 'desert logistics routes'],
+    globalPowers: ['France', 'United States', 'European border regime', 'Russian security firms'],
+    regionalPlayers: ['Niger-Mali-Burkina juntas', 'ECOWAS pressure', 'Tuareg communities', 'pastoralist networks'],
+    vulnerability: { CLIMATE: 3, POVERTY: 3, ENERGY: 1, WAR: 1 },
   },
   {
-    id: 'PacificIslands',
-    name: 'Pacific Islands',
-    vulnerability: { CLIMATE: 3, ENERGY: 1 },
+    id: 'GulfStates',
+    name: 'Gulf States',
+    cities: ['Riyadh', 'Doha', 'Dubai', 'Abu Dhabi'],
+    resources: ['oil', 'gas', 'ports', 'sovereign wealth'],
+    exploitedZones: ['offshore fields', 'shipping chokepoints', 'free zones', 'migrant labor corridors'],
+    globalPowers: ['United States basing', 'United Kingdom military ties', 'China energy demand', 'global finance houses'],
+    regionalPlayers: ['Saudi Arabia', 'United Arab Emirates', 'Qatar', 'Oman'],
+    vulnerability: { ENERGY: 3, SPEECH_INFO: 2, RIGHTS: 1, WAR: 1 },
   },
 ];
 
@@ -521,7 +561,7 @@ const charter: CharterClauseDefinition[] = [
       { kind: 'compare', left: { type: 'front_stat', front: 'RIGHTS', stat: 'protection' }, op: '>=', right: 5 },
     ],
     ratifyEffects: [
-      { type: 'remove_lock', region: 'MENA', lock: 'AidAccess' },
+      { type: 'remove_lock', region: 'Palestine', lock: 'AidAccess' },
       { type: 'modify_front_stat', front: 'RIGHTS', stat: 'protection', delta: 1, clamp: { min: 0, max: 10 } },
     ],
   },
@@ -621,9 +661,9 @@ const hooks: RuleDefinition[] = [
     emoji: '🛰️',
     message: 'Poverty pressure amplifies disinformation.',
     effects: [
-      { type: 'add_token', region: 'MENA', token: 'disinfo', count: 1 },
-      { type: 'add_token', region: 'SoutheastAsia', token: 'disinfo', count: 1 },
-      { type: 'add_token', region: 'LatinAmerica', token: 'disinfo', count: 1 },
+      { type: 'add_token', region: 'Palestine', token: 'disinfo', count: 1 },
+      { type: 'add_token', region: 'Lebanon', token: 'disinfo', count: 1 },
+      { type: 'add_token', region: 'Egypt', token: 'disinfo', count: 1 },
     ],
   },
   {
@@ -633,7 +673,7 @@ const hooks: RuleDefinition[] = [
     emoji: '🕊️',
     message: 'War pressure drives new displacement and rights harm.',
     effects: [
-      { type: 'add_token', region: 'MENA', token: 'displacement', count: 1 },
+      { type: 'add_token', region: 'Palestine', token: 'displacement', count: 1 },
       { type: 'modify_front_stat', front: 'RIGHTS', stat: 'impact', delta: 1, clamp: { min: 0, max: 10 } },
     ],
   },
@@ -642,8 +682,8 @@ const hooks: RuleDefinition[] = [
     hook: 'on_end_phase',
     when: { kind: 'compare', left: { type: 'front_stat', front: 'WAR', stat: 'pressure' }, op: '>=', right: 8 },
     emoji: '❌',
-    message: 'War pressure threatens local institutions in MENA.',
-    effects: [{ type: 'damage_institution', region: 'MENA' }],
+    message: 'War pressure threatens local institutions in Palestine.',
+    effects: [{ type: 'damage_institution', region: 'Palestine' }],
   },
 ];
 
@@ -686,7 +726,7 @@ const captureCards: CardDefinition[] = [
     emoji: '📦',
     pillar: 'EXTRACTION',
     effects: [
-      { type: 'add_lock', region: 'MENA', lock: 'AidAccess' },
+      { type: 'add_lock', region: 'Palestine', lock: 'AidAccess' },
       {
         type: 'choice',
         choiceType: 'compromise',
@@ -744,7 +784,7 @@ const captureCards: CardDefinition[] = [
     emoji: '🚧',
     pillar: 'MILITARIZATION',
     effects: [
-      { type: 'add_token', region: 'MENA', token: 'displacement', count: 1 },
+      { type: 'add_token', region: 'Palestine', token: 'displacement', count: 1 },
       { type: 'modify_front_stat', front: 'WAR', stat: 'pressure', delta: 1, clamp: { min: 0, max: 10 } },
     ],
   },
@@ -758,7 +798,7 @@ const captureCards: CardDefinition[] = [
     emoji: '🎖️',
     pillar: 'MILITARIZATION',
     effects: [
-      { type: 'add_lock', region: 'MENA', lock: 'Surveillance' },
+      { type: 'add_lock', region: 'Palestine', lock: 'Surveillance' },
       { type: 'modify_front_stat', front: 'RIGHTS', stat: 'impact', delta: 1, clamp: { min: 0, max: 10 } },
     ],
   },
@@ -773,7 +813,7 @@ const captureCards: CardDefinition[] = [
     pillar: 'CONTROL',
     effects: [
       { type: 'modify_track', target: { type: 'civic_space_index' }, delta: 1, clamp: { min: 0, max: 4 } },
-      { type: 'add_lock', region: 'MENA', lock: 'Censorship' },
+      { type: 'add_lock', region: 'Egypt', lock: 'Censorship' },
     ],
   },
   {
@@ -787,7 +827,7 @@ const captureCards: CardDefinition[] = [
     pillar: 'CONTROL',
     effects: [
       { type: 'modify_front_stat', front: 'RIGHTS', stat: 'pressure', delta: 1, clamp: { min: 0, max: 10 } },
-      { type: 'add_lock', region: 'NorthAmerica', lock: 'Surveillance' },
+      { type: 'add_lock', region: 'GulfStates', lock: 'Surveillance' },
     ],
   },
   {
@@ -800,8 +840,8 @@ const captureCards: CardDefinition[] = [
     emoji: '🛰️',
     pillar: 'CONTROL',
     effects: [
-      { type: 'add_lock', region: 'Europe', lock: 'Surveillance' },
-      { type: 'add_lock', region: 'MENA', lock: 'Surveillance' },
+      { type: 'add_lock', region: 'Egypt', lock: 'Surveillance' },
+      { type: 'add_lock', region: 'Palestine', lock: 'Surveillance' },
     ],
   },
   {
@@ -815,8 +855,8 @@ const captureCards: CardDefinition[] = [
     pillar: 'MANUFACTURED_CONSENT',
     effects: [
       { type: 'modify_front_stat', front: 'SPEECH_INFO', stat: 'pressure', delta: 2, clamp: { min: 0, max: 10 } },
-      { type: 'add_token', region: 'MENA', token: 'disinfo', count: 1 },
-      { type: 'add_token', region: 'LatinAmerica', token: 'disinfo', count: 1 },
+      { type: 'add_token', region: 'Palestine', token: 'disinfo', count: 1 },
+      { type: 'add_token', region: 'Lebanon', token: 'disinfo', count: 1 },
     ],
   },
   {
@@ -830,7 +870,7 @@ const captureCards: CardDefinition[] = [
     pillar: 'MANUFACTURED_CONSENT',
     effects: [
       { type: 'modify_front_stat', front: 'CULTURE', stat: 'pressure', delta: 1, clamp: { min: 0, max: 10 } },
-      { type: 'add_token', region: 'SoutheastAsia', token: 'disinfo', count: 1 },
+      { type: 'add_token', region: 'Egypt', token: 'disinfo', count: 1 },
     ],
   },
   {
@@ -875,7 +915,7 @@ const crisisCards: CardDefinition[] = [
     effects: [
       { type: 'modify_track', target: { type: 'temperature' }, delta: 1, clamp: { min: 0, max: 10 } },
       { type: 'modify_front_stat', front: 'CLIMATE', stat: 'impact', delta: 2, clamp: { min: 0, max: 10 } },
-      { type: 'add_token', region: 'SouthAsia', token: 'displacement', count: 1 },
+      { type: 'add_token', region: 'Sudan', token: 'displacement', count: 1 },
     ],
   },
   {
@@ -888,7 +928,7 @@ const crisisCards: CardDefinition[] = [
     emoji: '🌪️',
     effects: [
       { type: 'modify_front_stat', front: 'CLIMATE', stat: 'impact', delta: 1, clamp: { min: 0, max: 10 } },
-      { type: 'add_token', region: 'PacificIslands', token: 'displacement', count: 1 },
+      { type: 'add_token', region: 'Yemen', token: 'displacement', count: 1 },
     ],
   },
   {
@@ -911,7 +951,7 @@ const crisisCards: CardDefinition[] = [
     emoji: '🌑',
     effects: [
       { type: 'modify_front_stat', front: 'ENERGY', stat: 'pressure', delta: 1, clamp: { min: 0, max: 10 } },
-      { type: 'add_lock', region: 'MENA', lock: 'AidAccess' },
+      { type: 'add_lock', region: 'Palestine', lock: 'AidAccess' },
     ],
   },
   {
@@ -923,7 +963,7 @@ const crisisCards: CardDefinition[] = [
     tags: ['WAR'],
     emoji: '🚷',
     effects: [
-      { type: 'add_lock', region: 'MENA', lock: 'AidAccess' },
+      { type: 'add_lock', region: 'Palestine', lock: 'AidAccess' },
       { type: 'modify_front_stat', front: 'WAR', stat: 'impact', delta: 1, clamp: { min: 0, max: 10 } },
     ],
   },
@@ -937,7 +977,7 @@ const crisisCards: CardDefinition[] = [
     emoji: '🏥',
     effects: [
       { type: 'modify_front_stat', front: 'RIGHTS', stat: 'impact', delta: 2, clamp: { min: 0, max: 10 } },
-      { type: 'add_token', region: 'MENA', token: 'displacement', count: 1 },
+      { type: 'add_token', region: 'Palestine', token: 'displacement', count: 1 },
     ],
   },
   {
@@ -962,7 +1002,7 @@ const crisisCards: CardDefinition[] = [
     tags: ['SPEECH_INFO'],
     emoji: '🔇',
     effects: [
-      { type: 'add_lock', region: 'SoutheastAsia', lock: 'Censorship' },
+      { type: 'add_lock', region: 'Egypt', lock: 'Censorship' },
       { type: 'modify_front_stat', front: 'SPEECH_INFO', stat: 'pressure', delta: 1, clamp: { min: 0, max: 10 } },
     ],
   },
@@ -985,8 +1025,8 @@ const crisisCards: CardDefinition[] = [
     tags: ['WAR', 'CLIMATE'],
     emoji: '🧍',
     effects: [
-      { type: 'add_token', region: 'MENA', token: 'displacement', count: 1 },
-      { type: 'add_token', region: 'PacificIslands', token: 'displacement', count: 1 },
+      { type: 'add_token', region: 'Palestine', token: 'displacement', count: 1 },
+      { type: 'add_token', region: 'Sudan', token: 'displacement', count: 1 },
     ],
   },
   {
@@ -1012,7 +1052,7 @@ const crisisCards: CardDefinition[] = [
     emoji: '🎨',
     effects: [
       { type: 'modify_front_stat', front: 'CULTURE', stat: 'pressure', delta: 1, clamp: { min: 0, max: 10 } },
-      { type: 'add_lock', region: 'LatinAmerica', lock: 'Censorship' },
+      { type: 'add_lock', region: 'Lebanon', lock: 'Censorship' },
     ],
   },
 ];

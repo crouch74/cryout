@@ -30,7 +30,8 @@ export function RegionDrawer({ regionId, focusedSeat, state, content, onClose, o
   }
 
   const region = state.regions[regionId];
-  const regionName = content.regions[regionId].name;
+  const regionDefinition = content.regions[regionId];
+  const regionName = regionDefinition.name;
   const roleActions = getSeatActions(state, content, focusedSeat).standard.filter((action) => action.targetKind === 'REGION');
 
   return (
@@ -88,6 +89,53 @@ export function RegionDrawer({ regionId, focusedSeat, state, content, onClose, o
             ))}
           </div>
         </PaperSheet>
+
+        <div className="drawer-grid">
+          <PaperSheet tone="plain">
+            <span className="engraved-eyebrow">{t('ui.regionDrawer.cities', 'Cities')}</span>
+            <div className="lock-ribbon">
+              {regionDefinition.cities.map((city) => (
+                <span key={city} className="rule-slip">{city}</span>
+              ))}
+            </div>
+          </PaperSheet>
+
+          <PaperSheet tone="plain">
+            <span className="engraved-eyebrow">{t('ui.regionDrawer.resources', 'Resources')}</span>
+            <div className="lock-ribbon">
+              {regionDefinition.resources.map((resource) => (
+                <span key={resource} className="rule-slip">{resource}</span>
+              ))}
+            </div>
+          </PaperSheet>
+        </div>
+
+        <div className="drawer-grid">
+          <PaperSheet tone="plain">
+            <span className="engraved-eyebrow">{t('ui.regionDrawer.exploitedZones', 'Exploited Zones')}</span>
+            <div className="ledger-list">
+              {regionDefinition.exploitedZones.map((zone) => (
+                <div key={zone} className="ledger-row">
+                  <span>{zone}</span>
+                </div>
+              ))}
+            </div>
+          </PaperSheet>
+
+          <PaperSheet tone="plain">
+            <span className="engraved-eyebrow">{t('ui.regionDrawer.powerActors', 'Power Actors')}</span>
+            <div className="ledger-list">
+              <div className="ledger-row">
+                <span>{t('ui.regionDrawer.globalPowers', 'Global powers')}</span>
+                <strong>{regionDefinition.globalPowers.join(', ')}</strong>
+              </div>
+              <div className="ledger-row">
+                <span>{t('ui.regionDrawer.regionalPlayers', 'Regional players')}</span>
+                <strong>{regionDefinition.regionalPlayers.join(', ')}</strong>
+              </div>
+            </div>
+          </PaperSheet>
+        </div>
 
         <PaperSheet tone="plain">
           <span className="engraved-eyebrow">{t('ui.regionDrawer.actionsTargeting', 'Actions Targeting {{region}}', { region: regionName })}</span>

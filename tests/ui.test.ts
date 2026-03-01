@@ -38,8 +38,8 @@ test('disabled reason explains phase gating and target gating', () => {
   assert.equal(worldReason.reason, 'Phase locked');
 
   state.phase = 'COALITION';
-  state.regions.MENA.locks.push('Censorship');
-  const censorshipReason = getSeatDisabledReason(state, content, 1, 'counter_disinfo', { kind: 'REGION', regionId: 'MENA' });
+  state.regions.Palestine.locks.push('Censorship');
+  const censorshipReason = getSeatDisabledReason(state, content, 1, 'counter_disinfo', { kind: 'REGION', regionId: 'Palestine' });
   assert.equal(censorshipReason.disabled, true);
   assert.equal(censorshipReason.reason, 'Censorship active');
 });
@@ -51,9 +51,9 @@ test('scenario chip selectors and effect previews expose useful UI text', () => 
   const witnessStatus = getScenarioRuleStatus(state, 'witness_window');
   assert.equal(witnessStatus.value, 'Spent / inactive');
 
-  state.regions.MENA.locks.push('AidAccess');
+  state.regions.Palestine.locks.push('AidAccess');
   const aidCorridorStatus = getScenarioRuleStatus(state, 'aid_corridor');
-  assert.equal(aidCorridorStatus.value, 'Locked in West Asia & North Africa');
+  assert.equal(aidCorridorStatus.value, 'Locked in Palestine');
 
   const preview = buildEffectPreview(content.actions.community_mobilization);
   assert.match(preview, /solidarity/i);

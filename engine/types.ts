@@ -13,14 +13,14 @@ export type FrontId =
   | 'CULTURE';
 
 export type RegionId =
-  | 'MENA'
-  | 'SubSaharanAfrica'
-  | 'SouthAsia'
-  | 'SoutheastAsia'
-  | 'LatinAmerica'
-  | 'Europe'
-  | 'NorthAmerica'
-  | 'PacificIslands';
+  | 'Palestine'
+  | 'Lebanon'
+  | 'Egypt'
+  | 'Sudan'
+  | 'Congo'
+  | 'Yemen'
+  | 'Sahel'
+  | 'GulfStates';
 
 export type RoleId =
   | 'organizer'
@@ -176,6 +176,11 @@ export interface FrontDefinition {
 export interface RegionDefinition {
   id: RegionId;
   name: string;
+  cities: string[];
+  resources: string[];
+  exploitedZones: string[];
+  globalPowers: string[];
+  regionalPlayers: string[];
   vulnerability: Partial<Record<FrontId, number>>;
 }
 

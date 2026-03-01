@@ -12,14 +12,14 @@ import type {
 import { getDisabledActionReason, getTemperatureBand } from './runtime.ts';
 
 const DEFAULT_REGION_STATUS_LABELS: Record<RegionId, string> = {
-  MENA: 'West Asia & North Africa',
-  SubSaharanAfrica: 'Africa South of the Sahara',
-  SouthAsia: 'South Asia',
-  SoutheastAsia: 'Southeast Asia',
-  LatinAmerica: 'Abya Yala / Latin America',
-  Europe: 'Europe',
-  NorthAmerica: 'Turtle Island / North America',
-  PacificIslands: 'Moana / Pacific Islands',
+  Palestine: 'Palestine',
+  Lebanon: 'Lebanon',
+  Egypt: 'Egypt',
+  Sudan: 'Sudan',
+  Congo: 'Congo',
+  Yemen: 'Yemen',
+  Sahel: 'Sahel',
+  GulfStates: 'Gulf States',
 };
 
 export function getRole(state: EngineState, content: CompiledContent, seat: number): RoleDefinition {
@@ -99,10 +99,10 @@ export function getScenarioRuleStatus(
   }
 
   if (ruleId === 'aid_corridor') {
-    const active = state.regions.MENA.locks.includes('AidAccess');
+    const active = state.regions.Palestine.locks.includes('AidAccess');
     return {
       active,
-      value: active ? `Locked in ${regionStatusLabels.MENA ?? DEFAULT_REGION_STATUS_LABELS.MENA}` : 'Open',
+      value: active ? `Locked in ${regionStatusLabels.Palestine ?? DEFAULT_REGION_STATUS_LABELS.Palestine}` : 'Open',
     };
   }
 
@@ -132,14 +132,14 @@ export function getEndingTierSummary(state: EngineState): EndingSummary {
 
 export function getAvailableRegions(): RegionId[] {
   return [
-    'MENA',
-    'SubSaharanAfrica',
-    'SouthAsia',
-    'SoutheastAsia',
-    'LatinAmerica',
-    'Europe',
-    'NorthAmerica',
-    'PacificIslands',
+    'Palestine',
+    'Lebanon',
+    'Egypt',
+    'Sudan',
+    'Congo',
+    'Yemen',
+    'Sahel',
+    'GulfStates',
   ];
 }
 

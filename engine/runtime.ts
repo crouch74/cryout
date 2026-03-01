@@ -37,14 +37,14 @@ import type {
 
 const FRONT_IDS: FrontId[] = ['WAR', 'CLIMATE', 'RIGHTS', 'SPEECH_INFO', 'POVERTY', 'ENERGY', 'CULTURE'];
 const REGION_IDS: RegionId[] = [
-  'MENA',
-  'SubSaharanAfrica',
-  'SouthAsia',
-  'SoutheastAsia',
-  'LatinAmerica',
-  'Europe',
-  'NorthAmerica',
-  'PacificIslands',
+  'Palestine',
+  'Lebanon',
+  'Egypt',
+  'Sudan',
+  'Congo',
+  'Yemen',
+  'Sahel',
+  'GulfStates',
 ];
 
 function cloneState<T>(value: T): T {
@@ -345,7 +345,7 @@ function evaluateCondition(state: EngineState, condition: Condition, context: Ef
 function getDefaultTargetForAction(action: ActionDefinition): ActionTarget {
   switch (action.targetKind) {
     case 'REGION':
-      return { kind: 'REGION', regionId: 'MENA' };
+      return { kind: 'REGION', regionId: 'Palestine' };
     case 'FRONT':
       return { kind: 'FRONT', frontId: 'WAR' };
     case 'NONE':

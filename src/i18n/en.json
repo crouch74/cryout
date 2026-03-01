@@ -24,29 +24,69 @@
       }
     },
     "regions": {
-      "MENA": {
-        "name": "West Asia & North Africa"
+      "Palestine": {
+        "name": "Palestine",
+        "cities": ["Gaza", "Jerusalem", "Jenin", "Hebron"],
+        "resources": ["aquifers", "olive groves", "farmland", "coastal gas access"],
+        "exploitedZones": ["Gaza coast", "Jordan Valley water basin", "West Bank quarries", "checkpoint corridors"],
+        "globalPowers": ["United States", "United Kingdom", "Germany", "EU arms and finance blocs"],
+        "regionalPlayers": ["Israel", "Egyptian border authorities", "Jordanian corridor politics", "Palestinian civic networks"]
       },
-      "SubSaharanAfrica": {
-        "name": "Africa South of the Sahara"
+      "Lebanon": {
+        "name": "Lebanon",
+        "cities": ["Beirut", "Tyre", "Tripoli", "Sidon"],
+        "resources": ["ports", "offshore gas blocks", "remittance networks", "coastal trade"],
+        "exploitedZones": ["south border villages", "Beirut port logistics", "offshore drilling blocks"],
+        "globalPowers": ["France", "United States", "Iran", "Gulf finance networks"],
+        "regionalPlayers": ["Israel", "Hezbollah", "Lebanese unions", "municipal relief networks"]
       },
-      "SouthAsia": {
-        "name": "South Asia"
+      "Egypt": {
+        "name": "Egypt",
+        "cities": ["Cairo", "Alexandria", "Suez", "Aswan"],
+        "resources": ["Suez transit rents", "Mediterranean gas", "Nile water", "cement and fertilizer"],
+        "exploitedZones": ["Suez corridor", "Sinai crossings", "Delta farmland", "Mediterranean gas terminals"],
+        "globalPowers": ["IMF and lenders", "European Union", "United States", "Gulf sovereign funds"],
+        "regionalPlayers": ["Egyptian military state", "Israel gas deals", "Sudan-Nile negotiations", "dock and labor unions"]
       },
-      "SoutheastAsia": {
-        "name": "Southeast Asia"
+      "Sudan": {
+        "name": "Sudan",
+        "cities": ["Khartoum", "Omdurman", "Port Sudan", "El Fasher"],
+        "resources": ["gold", "farmland", "gum arabic", "Red Sea port access"],
+        "exploitedZones": ["Darfur", "Gezira scheme", "Port Sudan corridor", "gold concessions"],
+        "globalPowers": ["United Arab Emirates", "Saudi Arabia", "Egypt", "Russian security contractors"],
+        "regionalPlayers": ["SAF", "RSF", "neighborhood resistance committees", "cross-border traders"]
       },
-      "LatinAmerica": {
-        "name": "Abya Yala / Latin America"
+      "Congo": {
+        "name": "Congo",
+        "cities": ["Kinshasa", "Goma", "Kolwezi", "Lubumbashi"],
+        "resources": ["cobalt", "coltan", "copper", "rainforest"],
+        "exploitedZones": ["Kivu mines", "Kolwezi cobalt belt", "Inga corridor", "eastern transit roads"],
+        "globalPowers": ["China battery supply chains", "US-EU critical minerals buyers", "multinational mining firms"],
+        "regionalPlayers": ["Rwandan and Ugandan border influence", "FARDC", "local mining cooperatives", "community land defenders"]
       },
-      "Europe": {
-        "name": "Europe"
+      "Yemen": {
+        "name": "Yemen",
+        "cities": ["Sanaa", "Aden", "Hodeidah", "Taiz"],
+        "resources": ["ports", "fisheries", "remittance routes", "Marib energy fields"],
+        "exploitedZones": ["Hodeidah port", "Red Sea shipping lane", "Marib oil and gas zone", "siege corridors"],
+        "globalPowers": ["United States", "United Kingdom", "Saudi-led coalition support", "Red Sea shipping insurers"],
+        "regionalPlayers": ["Houthis", "Southern forces", "Saudi Arabia", "United Arab Emirates"]
       },
-      "NorthAmerica": {
-        "name": "Turtle Island / North America"
+      "Sahel": {
+        "name": "Sahel",
+        "cities": ["Niamey", "Agadez", "Gao", "N'Djamena"],
+        "resources": ["uranium", "pasture", "solar corridors", "migration routes"],
+        "exploitedZones": ["Agadez uranium corridor", "cross-Sahel military basing", "grazing lands", "desert logistics routes"],
+        "globalPowers": ["France", "United States", "European border regime", "Russian security firms"],
+        "regionalPlayers": ["Niger-Mali-Burkina juntas", "ECOWAS pressure", "Tuareg communities", "pastoralist networks"]
       },
-      "PacificIslands": {
-        "name": "Moana / Pacific Islands"
+      "GulfStates": {
+        "name": "Gulf States",
+        "cities": ["Riyadh", "Doha", "Dubai", "Abu Dhabi"],
+        "resources": ["oil", "gas", "ports", "sovereign wealth"],
+        "exploitedZones": ["offshore fields", "shipping chokepoints", "free zones", "migrant labor corridors"],
+        "globalPowers": ["United States basing", "United Kingdom military ties", "China energy demand", "global finance houses"],
+        "regionalPlayers": ["Saudi Arabia", "United Arab Emirates", "Qatar", "Oman"]
       }
     },
     "roles": {
@@ -192,12 +232,12 @@
     "scenarios": {
       "witness_dignity": {
         "name": "Witness & Dignity",
-        "description": "West Asia & North Africa is under stacked war and rights pressure while climate accelerates the broader crisis.",
+        "description": "Palestine, Lebanon, and Egypt sit under stacked war, rights, and border pressure while climate accelerates the broader crisis.",
         "introduction": "A coalition of organizers, journalists, lawyers, and planners works across a narrowing civic landscape to protect civilians, keep truth moving, and build institutions that can outlast the Capture Engine.",
-        "story": "Witness & Dignity keeps Palestine as the moral center of the scenario framing without reducing the region to spectacle. The coalition acts under severe pressure, trying to hold open corridors of care, remedy, and testimony while climate stress compounds every front.",
+        "story": "Witness & Dignity keeps Palestine as the moral center of the scenario framing without reducing it to spectacle. The coalition acts under severe pressure, trying to hold open corridors of care, remedy, and testimony across Palestine, Lebanon, and Egypt while climate stress compounds every front.",
         "dramatization": "The table should feel like an emergency newsroom, a legal triage room, and a mutual-aid corridor all at once. Every gain is fragile. Every delay has a civilian cost. The scenario is written to keep witness, care, and political clarity in the foreground rather than spectacle.",
-        "gameplay": "Witness & Dignity opens under immediate pressure. War, rights, and poverty all threaten to outrun the coalition before long-term institutions can stabilize the map. The strongest line of play is coordinated pacing: protect West Asia & North Africa from spiraling displacement while building enough evidence and solidarity to unlock charter progress.",
-        "mechanics": "The scenario rewards public testimony and careful timing. Witness Window cancels the first disinformation placement in a round when the coalition keeps evidence high, while Aid Corridor punishes unchecked war pressure by locking access in West Asia & North Africa. Expect a tighter, more tactical game with fewer safe turns and heavier emphasis on media, legal, and relief sequencing.",
+        "gameplay": "Witness & Dignity opens under immediate pressure. War, rights, and poverty all threaten to outrun the coalition before long-term institutions can stabilize the map. The strongest line of play is coordinated pacing: protect Palestine from spiraling displacement while building enough evidence and solidarity to unlock charter progress across nearby corridors.",
+        "mechanics": "The scenario rewards public testimony and careful timing. Witness Window cancels the first disinformation placement in a round when the coalition keeps evidence high, while Aid Corridor punishes unchecked war pressure by locking access in Palestine. Expect a tighter, more tactical game with fewer safe turns and heavier emphasis on media, legal, and relief sequencing.",
         "moralCenter": "Palestine is framed as the moral center: rights-focused, unsensational, and grounded in civilian protection.",
         "specialRuleChips": {
           "witness_window": {
@@ -206,18 +246,18 @@
           },
           "aid_corridor": {
             "label": "Aid Corridor",
-            "description": "When WAR pressure reaches 8, West Asia & North Africa gains an AidAccess lock until Organizer or Lawyer clears it."
+            "description": "When WAR pressure reaches 8, Palestine gains an AidAccess lock until Organizer or Lawyer clears it."
           }
         }
       },
       "green_resistance": {
         "name": "Green Resistance",
         "description": "Forest communities face a coordinated extraction surge where climate, energy, and rights pressure reinforce each other.",
-        "introduction": "The coalition shifts toward land defenders, river communities, and movement journalists trying to hold the line across Abya Yala / Latin America, Africa South of the Sahara, and the wider climate frontier.",
+        "introduction": "The coalition shifts toward land defenders, river communities, and movement journalists trying to hold the line across Congo, Sudan, the Sahel, and the wider climate frontier.",
         "story": "Green Resistance frames frontline environmental defense as a struggle over memory, sovereignty, and survival. Concessions, private security, and disinformation campaigns clear the way for extraction while local communities fight to keep forests, rivers, and energy futures from becoming sacrifice zones.",
         "dramatization": "This scenario should feel slower, wetter, and more territorial than Witness & Dignity. One turn is a blockade on a logging road, the next a testimony circuit, the next a jury-rigged microgrid keeping a village clinic alive while the smoke closes in.",
         "gameplay": "Green Resistance begins with more grassroots capacity than Witness & Dignity, but the coalition is spread across more regions and starts with tighter civic space. The challenge is preventing climate and energy escalation from creating a rolling displacement crisis while still investing in culture, legal protection, and long-term infrastructure.",
-        "mechanics": "Root Solidarity turns cultural protection into momentum by generating solidarity at the start of a round once Art & Culture is stabilized. Extraction Spiral punishes ignored climate pressure by pushing fresh displacement into Abya Yala / Latin America and Africa South of the Sahara before the world phase resolves. The scenario rewards distributed institution-building and punishes leaving ecological fronts to drift.",
+        "mechanics": "Root Solidarity turns cultural protection into momentum by generating solidarity at the start of a round once Art & Culture is stabilized. Extraction Spiral punishes ignored climate pressure by pushing fresh displacement into Congo and Sudan before the world phase resolves. The scenario rewards distributed institution-building and punishes leaving ecological fronts to drift.",
         "moralCenter": "Indigenous land defenders and forest communities are treated as protagonists with agency, not background scenery for a climate disaster story.",
         "specialRuleChips": {
           "root_solidarity": {
@@ -226,7 +266,7 @@
           },
           "extraction_spiral": {
             "label": "Extraction Spiral",
-            "description": "When Climate pressure reaches 7 or more, Abya Yala / Latin America and Africa South of the Sahara each gain 1 displacement during the world phase."
+            "description": "When Climate pressure reaches 7 or more, Congo and Sudan each gain 1 displacement during the world phase."
           }
         }
       }
@@ -234,14 +274,14 @@
   },
   "worldMap": {
     "straplines": {
-      "NorthAmerica": "Media power, rights drift, imperial upstream pressure.",
-      "LatinAmerica": "Land defense, memory, and solidarity networks.",
-      "Europe": "Diplomatic leverage, border regime, legal spillover.",
-      "MENA": "War pressure, aid corridors, testimony under siege.",
-      "SubSaharanAfrica": "Climate, extraction, and infrastructure fragility.",
-      "SouthAsia": "Heat stress, energy transitions, mass exposure.",
-      "SoutheastAsia": "Disinfo corridors across dense coastal systems.",
-      "PacificIslands": "Oceanic front line and climate alarms."
+      "Palestine": "Occupation, siege, witness, and civilian survival.",
+      "Lebanon": "Border spillover, debt shock, ports, and media pressure.",
+      "Egypt": "Canal rents, debt governance, gas, and border control.",
+      "Sudan": "War economy, displacement, gold, and corridor struggle.",
+      "Congo": "Critical minerals, forests, militias, and extraction.",
+      "Yemen": "Blockade, ports, famine pressure, and Red Sea routes.",
+      "Sahel": "Uranium, drought, basing, and fractured sovereignty.",
+      "GulfStates": "Oil, gas, logistics finance, and regional leverage."
     }
   },
   "ui": {
@@ -410,7 +450,7 @@
         "title": "Setting Up the Table",
         "subtitle": "How to prepare a game of Dignity Rising.",
         "step1Title": "Step 1 · Choose a Scenario",
-        "step1Body1": "Each scenario frames the crisis differently. <strong>Witness & Dignity</strong> places intense pressure on the MENA region with war and displacement, while <strong>Green Resistance</strong> focuses on climate extraction in the Amazon and Sub-Saharan Africa.",
+        "step1Body1": "Each scenario frames the crisis differently. <strong>Witness & Dignity</strong> places intense pressure on Palestine and its surrounding corridors with war and displacement, while <strong>Green Resistance</strong> focuses on extraction and ecological collapse across Congo, Sudan, and the Sahel.",
         "step1Body2": "Each scenario defines the starting temperature, civic space, resource pool, regional vulnerabilities, and special rules that alter how the game flows.",
         "step2Title": "Step 2 · Choose Your Mode",
         "modeCoreTitle": "Core Mode",
@@ -443,7 +483,7 @@
         "p1Subtitle": "The System Acts",
         "p1Body1": "The Capture Engine advances its agenda. A card is drawn from the <strong>Capture Engine deck</strong> that raises pressure, adds locks, and may offer a <em>compromise deal</em> the coalition must vote on.",
         "p1Body2": "Then a <strong>Crisis card</strong> is drawn, bringing climate disasters, displacement, or escalation. Deterioration hooks also fire — active locks continue to inflict damage automatically.",
-        "p1Tip": "<strong>⚠️ Tip:</strong> Pay attention to coupling rules. When War pressure is ≥7, displacement tokens appear and MENA access locks may trigger. When Poverty ≥7, disinformation floods the map.",
+        "p1Tip": "<strong>⚠️ Tip:</strong> Pay attention to coupling rules. When War pressure is ≥7, displacement tokens appear and Palestine access locks may trigger. When Poverty ≥7, disinformation floods the map through Palestine, Lebanon, and Egypt.",
         "p2Title": "Coalition Phase",
         "p2Subtitle": "Players Act",
         "p2Body1": "Each player takes their turn in seat order. On your turn, you have <strong>2 actions</strong> (Core) or <strong>3 actions</strong> (Full). Spend them to:",
@@ -566,7 +606,7 @@
           "corridors": {
             "title": "Protected Humanitarian Corridors",
             "prereq": "War Pressure ≤6, Rights Protection ≥5",
-            "effect": "Remove Aid Access locks in MENA, +1 Rights Protection"
+            "effect": "Remove Aid Access locks in Palestine, +1 Rights Protection"
           },
           "info": {
             "title": "Right To Information",
@@ -840,7 +880,13 @@
       "close": "Close",
       "tokensLocks": "Tokens & Locks",
       "vulnerabilities": "Vulnerabilities",
-      "actionsTargeting": "Actions Targeting {{region}}"
+      "actionsTargeting": "Actions Targeting {{region}}",
+      "cities": "Cities",
+      "resources": "Resources",
+      "exploitedZones": "Exploited Zones",
+      "powerActors": "Power Actors",
+      "globalPowers": "Global powers",
+      "regionalPlayers": "Regional players"
     },
     "dealModal": {
       "title": "Compromise Offer",

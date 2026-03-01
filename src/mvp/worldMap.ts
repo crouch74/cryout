@@ -8,44 +8,44 @@ export const REGION_THEMES: Record<
     themeClass: string;
   }
 > = {
-  NorthAmerica: {
+  Palestine: {
     area: 'north-america',
-    strapline: 'Media power, rights drift, upstream pressure.',
+    strapline: 'Occupation, siege, witness, and civilian survival.',
     themeClass: 'region-theme-north-america',
   },
-  LatinAmerica: {
+  Lebanon: {
     area: 'latin-america',
-    strapline: 'Culture, poverty, and solidarity networks.',
+    strapline: 'Border spillover, debt shock, ports, and media pressure.',
     themeClass: 'region-theme-latin-america',
   },
-  Europe: {
+  Egypt: {
     area: 'europe',
-    strapline: 'Diplomatic leverage, speech pressure, legal spillover.',
+    strapline: 'Canal rents, debt governance, gas, and border control.',
     themeClass: 'region-theme-europe',
   },
-  MENA: {
+  Sudan: {
     area: 'mena',
-    strapline: 'War pressure, aid corridors, witness focus.',
+    strapline: 'War economy, displacement, gold, and corridor struggle.',
     themeClass: 'region-theme-mena',
   },
-  SubSaharanAfrica: {
+  Congo: {
     area: 'sub-saharan-africa',
-    strapline: 'Climate, poverty, and infrastructure fragility.',
+    strapline: 'Critical minerals, forests, militias, and extraction.',
     themeClass: 'region-theme-sub-saharan-africa',
   },
-  SouthAsia: {
+  Yemen: {
     area: 'south-asia',
-    strapline: 'Heat stress, energy transitions, mass exposure.',
+    strapline: 'Blockade, ports, famine pressure, and Red Sea routes.',
     themeClass: 'region-theme-south-asia',
   },
-  SoutheastAsia: {
+  Sahel: {
     area: 'southeast-asia',
-    strapline: 'Disinfo corridors across dense coastal systems.',
+    strapline: 'Uranium, drought, basing, and fractured sovereignty.',
     themeClass: 'region-theme-southeast-asia',
   },
-  PacificIslands: {
+  GulfStates: {
     area: 'pacific-islands',
-    strapline: 'Sea-level front line and climate alarms.',
+    strapline: 'Oil, gas, logistics finance, and regional leverage.',
     themeClass: 'region-theme-pacific-islands',
   },
 };

@@ -186,7 +186,7 @@ function SetupSection() {
 
             <article className="guide-prose shell-card">
                 <h3>{t('ui.playerGuide.setup.step1Title', 'Step 1 · Choose a Scenario')}</h3>
-                <p dangerouslySetInnerHTML={{ __html: t('ui.playerGuide.setup.step1Body1', 'Each scenario frames the crisis differently. <strong>Witness &amp; Dignity</strong> places intense pressure on the MENA region with war and displacement, while <strong>Green Resistance</strong> focuses on climate extraction in the Amazon and Sub-Saharan Africa.') }} />
+                <p dangerouslySetInnerHTML={{ __html: t('ui.playerGuide.setup.step1Body1', 'Each scenario frames the crisis differently. <strong>Witness &amp; Dignity</strong> places intense pressure on Palestine and its surrounding corridors with war and displacement, while <strong>Green Resistance</strong> focuses on extraction and ecological collapse across Congo, Sudan, and the Sahel.') }} />
                 <p>{t('ui.playerGuide.setup.step1Body2', 'Each scenario defines the starting temperature, civic space, resource pool, regional vulnerabilities, and special rules that alter how the game flows.')}</p>
             </article>
 
@@ -244,7 +244,7 @@ function PhasesSection() {
                         <h4>{t('ui.playerGuide.phases.p1Title', 'World Phase')} <small>{t('ui.playerGuide.phases.p1Subtitle', 'The System Acts')}</small></h4>
                         <p>{t('ui.playerGuide.phases.p1Body1', 'The Capture Engine advances its agenda. A card is drawn from the <strong>Capture Engine deck</strong> that raises pressure, adds locks, and may offer a <em>compromise deal</em> the coalition must vote on.')}</p>
                         <p>{t('ui.playerGuide.phases.p1Body2', 'Then a <strong>Crisis card</strong> is drawn, bringing climate disasters, displacement, or escalation. Deterioration hooks also fire — active locks continue to inflict damage automatically.')}</p>
-                        <div className="guide-tip witness" dangerouslySetInnerHTML={{ __html: t('ui.playerGuide.phases.p1Tip', '<strong>⚠️ Tip:</strong> Pay attention to coupling rules. When War pressure is ≥7, displacement tokens appear and MENA access locks may trigger. When Poverty ≥7, disinformation floods the map.') }} />
+                        <div className="guide-tip witness" dangerouslySetInnerHTML={{ __html: t('ui.playerGuide.phases.p1Tip', '<strong>⚠️ Tip:</strong> Pay attention to coupling rules. When War pressure is ≥7, displacement tokens appear and Palestine access locks may trigger. When Poverty ≥7, disinformation floods the map through Palestine, Lebanon, and Egypt.') }} />
                     </div>
                 </article>
 

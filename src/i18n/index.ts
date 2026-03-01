@@ -82,9 +82,9 @@ function interpolate(template: string, values?: Record<string, InterpolationValu
   });
 }
 
-function translateObject(path: string): Record<string, string> | undefined {
+function translateObject(path: string): Record<string, unknown> | undefined {
   const value = lookup(path);
-  return value && typeof value === 'object' ? (value as Record<string, string>) : undefined;
+  return value && typeof value === 'object' ? (value as Record<string, unknown>) : undefined;
 }
 
 function localizeNamedMap<T extends { id: string }>(

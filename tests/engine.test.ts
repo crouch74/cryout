@@ -68,7 +68,7 @@ test('reordering queued intents preserves actions and renumbers slots', () => {
   let state = initializeGame(startCommand);
   state = dispatchCommand(state, { type: 'ResolveWorldPhase' }, content);
   state = dispatchCommand(state, { type: 'QueueIntent', seat: 0, actionId: 'community_mobilization', target: { kind: 'NONE' } }, content);
-  state = dispatchCommand(state, { type: 'QueueIntent', seat: 0, actionId: 'safe_passage', target: { kind: 'REGION', regionId: 'MENA' } }, content);
+  state = dispatchCommand(state, { type: 'QueueIntent', seat: 0, actionId: 'safe_passage', target: { kind: 'REGION', regionId: 'Palestine' } }, content);
 
   const next = dispatchCommand(state, { type: 'ReorderQueuedIntent', seat: 0, fromSlot: 1, toSlot: 0 }, content);
 
@@ -88,9 +88,9 @@ test('witness window cancels the first disinfo placement each round', () => {
   const next = dispatchCommand(state, { type: 'ResolveEndPhase' }, content);
 
   assert.equal(next.roundFlags.witness_window_available, false);
-  assert.equal(next.regions.MENA.tokens.disinfo, 0);
-  assert.equal(next.regions.SoutheastAsia.tokens.disinfo, 1);
-  assert.equal(next.regions.LatinAmerica.tokens.disinfo, 1);
+  assert.equal(next.regions.Palestine.tokens.disinfo, 0);
+  assert.equal(next.regions.Lebanon.tokens.disinfo, 1);
+  assert.equal(next.regions.Egypt.tokens.disinfo, 1);
 });
 
 test('aid corridor appears when war pressure crosses the trigger', () => {
@@ -100,7 +100,7 @@ test('aid corridor appears when war pressure crosses the trigger', () => {
 
   const next = dispatchCommand(state, { type: 'ResolveWorldPhase' }, content);
 
-  assert.equal(next.regions.MENA.locks.includes('AidAccess'), true);
+  assert.equal(next.regions.Palestine.locks.includes('AidAccess'), true);
 });
 
 test('scenario registry exposes the booklet metadata and alternate scenario pack', () => {
