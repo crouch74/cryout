@@ -163,6 +163,32 @@ h5 {
   letter-spacing: 0.05em;
 }
 
+/* SIDE PANELS (SCROLLABLE) */
+.systems-dashboard,
+.right-sidebar {
+  overflow-y: auto;
+  height: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-blue) rgba(0, 0, 0, 0.2);
+}
+
+.systems-dashboard::-webkit-scrollbar,
+.right-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.systems-dashboard::-webkit-scrollbar-track,
+.right-sidebar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+}
+
+.systems-dashboard::-webkit-scrollbar-thumb,
+.right-sidebar::-webkit-scrollbar-thumb {
+  background: var(--accent-blue);
+  border-radius: 10px;
+}
+
 /* MAIN MAP AREA */
 .world-map {
   grid-column: 2;

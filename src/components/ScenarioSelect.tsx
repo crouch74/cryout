@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { ScenarioMetadata } from '../engine/types';
 
 interface ScenarioSelectProps {
     scenarios: ScenarioMetadata[];
-    onStartGame: (scenarioId: string) => void;
-    onBack?: () => void;
 }
 
-export const ScenarioSelect: React.FC<ScenarioSelectProps> = ({ scenarios, onStartGame, onBack }) => {
+export const ScenarioSelect: React.FC<ScenarioSelectProps> = ({ scenarios }) => {
     const [selectedScenario, setSelectedScenario] = useState<ScenarioMetadata | null>(null);
+    const navigate = useNavigate();
 
     return (
         <div className="scenario-selector-page">
-            <button className="btn-skip" style={{ position: 'absolute', top: '2rem', left: '2rem' }} onClick={onBack}>
+            <button className="btn-skip" style={{ position: 'absolute', top: '2rem', left: '2rem' }} onClick={() => navigate('/')}>
                 ← Return to Landing Page
             </button>
 
@@ -59,7 +59,7 @@ export const ScenarioSelect: React.FC<ScenarioSelectProps> = ({ scenarios, onSta
 
                         <button
                             className="btn-cta btn-start"
-                            onClick={() => onStartGame(selectedScenario.id)}
+                            onClick={() => navigate(`/game/${selectedScenario.id}`)}
                             style={{ width: '100%', padding: '1.5rem', borderRadius: '50px' }}
                         >
                             Begin the Struggle

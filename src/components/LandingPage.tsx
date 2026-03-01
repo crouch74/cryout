@@ -1,10 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
-interface LandingPageProps {
-    onStart: () => void;
-}
+export const LandingPage: React.FC = () => {
+    const navigate = useNavigate();
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
     return (
         <div className="landing-page">
             {/* HERO SECTION */}
@@ -16,7 +15,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                         Lead a coalition of resistance against extraction, militarism, and systemic collapse.
                         Your survival depends on the truth and the legacy you leave in the stone.
                     </p>
-                    <button className="btn-cta" onClick={onStart}>
+                    <button className="btn-cta" onClick={() => navigate('/scenarios')}>
                         Begin the Struggle
                     </button>
                     <br />
@@ -87,7 +86,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                     <div className="how-to-win">
                         <h3>Victory: Liberation</h3>
                         <p>Establish a critical mass of evidence and solidarity to force a systemic shift and ratify the Global Charter of Dignity.</p>
-                        <button className="btn-cta" onClick={onStart} style={{ padding: '1rem 2.5rem', fontSize: '1rem' }}>
+                        <button className="btn-cta" onClick={() => navigate('/scenarios')} style={{ padding: '1rem 2.5rem', fontSize: '1rem' }}>
                             Choose Your Scenario
                         </button>
                     </div>
@@ -97,6 +96,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
             {/* FOOTER */}
             <footer style={{ padding: '4rem', textAlign: 'center', opacity: 0.5, fontSize: '0.8rem' }}>
                 <p>© 2026 The Stones Are Crying Out. A game of resistance and rebirth.</p>
+                <div style={{ marginTop: '1rem' }}>
+                    <button className="btn-skip" onClick={() => navigate('/about')} style={{ fontSize: '0.8rem', opacity: 0.8 }}>Read About the Game & Mechanics</button>
+                </div>
             </footer>
         </div>
     );
