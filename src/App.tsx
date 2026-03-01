@@ -105,6 +105,10 @@ export default function App() {
     const stored = globalThis.localStorage?.getItem(LOCALE_KEY);
     return stored && isLocale(stored) ? stored : 'en';
   });
+
+  // 🌐 Synchronize i18n module state with React state during render to ensure children get updated translations
+  setLocale(locale);
+
   const [initialRoute] = useState(() =>
     parseRuntimeRoute(window.location.pathname, window.location.hash, DEFAULT_RULESET_ID, RUNTIME),
   );
@@ -155,7 +159,7 @@ export default function App() {
   });
 
   useEffect(() => {
-    setLocale(locale);
+    console.log(`🌍 [App] Applying locale: ${locale}`);
     localStorage.setItem(LOCALE_KEY, locale);
     document.documentElement.lang = locale;
     document.documentElement.dir = getLocaleDirection(locale);
@@ -292,10 +296,10 @@ export default function App() {
         setSession((current) =>
           current && current.surface === 'room'
             ? {
-                ...current,
-                authorizedSeat: payload.seat,
-                state: payload.state,
-              }
+              ...current,
+              authorizedSeat: payload.seat,
+              state: payload.state,
+            }
             : current,
         );
       } catch {

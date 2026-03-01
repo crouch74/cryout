@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.1] - 2026-03-01
+
+### Fixed
+- 🌍 **i18n Text Replacement** — fixed a race condition where the UI would update direction (RTL/LTR) but not replace translated text strings by synchronizing the i18n singleton during the React render pass.
+
 ## [0.7.0] - 2026-03-01
 
 ### Added

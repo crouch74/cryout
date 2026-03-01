@@ -39,6 +39,7 @@ export function isLocale(value: string): value is Locale {
 
 export function setLocale(locale: Locale) {
   activeLocale = locale;
+  console.log(`🌍 [i18n] Locale changed to: ${locale}`);
 }
 
 export function getLocaleDirection(locale: Locale = activeLocale): 'ltr' | 'rtl' {
