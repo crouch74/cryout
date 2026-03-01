@@ -287,9 +287,12 @@ export function WorldMapBoard({
               <span className="sr-only">{localizeRegionField(regionId, 'name', content.regions[regionId].name)}</span>
               <span className="region-token-ring" />
               <span className="region-token-stack">
-                <span className="region-token-count extraction-count">{region.extractionTokens}</span>
-                <span className="region-token-count defense-count">{region.defenseRating}</span>
-                <span className="region-token-count bodies-count">{totalBodies}</span>
+                <span className="region-token-title">{localizeRegionField(regionId, 'name', content.regions[regionId].name)}</span>
+                <span className="region-token-row">
+                  <span className="region-token-count extraction-count">{region.extractionTokens}</span>
+                  <span className="region-token-count defense-count">{region.defenseRating}</span>
+                  <span className="region-token-count bodies-count">{totalBodies}</span>
+                </span>
               </span>
             </button>
           );

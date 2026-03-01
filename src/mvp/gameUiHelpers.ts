@@ -462,7 +462,7 @@ export function getStatusRibbonItems(state: EngineState, content: CompiledConten
       id: 'extractionPool',
       label: 'Pool',
       value: formatNumber(state.extractionPool),
-      icon: 'extraction',
+      icon: 'pool',
       tone: 'pool',
       tooltip: 'Shared system pressure still in the extraction pool.',
     },

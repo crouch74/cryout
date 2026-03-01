@@ -277,3 +277,262 @@ html[data-motion='reduced'] .game-screen-compressed .region-token-marker[data-re
     box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.95), 0 0 24px rgba(139, 30, 30, 0.3);
   }
 }
+
+.game-screen-compressed .board-map-shell {
+  border-radius: 26px;
+  border: 1px solid var(--panel-rim);
+  background:
+    radial-gradient(circle at 14% 12%, rgba(255, 249, 238, 0.34), transparent 18%),
+    radial-gradient(circle at 78% 16%, rgba(139, 106, 61, 0.12), transparent 20%),
+    linear-gradient(180deg, rgba(255, 248, 236, 0.75), rgba(216, 198, 167, 0.6)),
+    var(--board-ivory);
+  box-shadow:
+    var(--panel-shadow),
+    inset 0 0 0 1px rgba(255, 248, 233, 0.45),
+    inset 0 0 0 12px rgba(88, 66, 42, 0.06);
+}
+
+.game-screen-compressed .board-map-shell::before {
+  background:
+    radial-gradient(circle at 50% 10%, rgba(255, 249, 236, 0.26), transparent 26%),
+    linear-gradient(120deg, transparent 0 26%, rgba(92, 72, 48, 0.05) 26% 27%, transparent 27% 100%);
+}
+
+.game-screen-compressed .board-map-shell::after {
+  inset: 10px;
+  border: 1px solid rgba(255, 246, 226, 0.44);
+  border-radius: 18px;
+  background: none;
+  transition: box-shadow var(--motion-mid), background var(--motion-mid);
+}
+
+.game-screen-compressed .board-map-shell[data-war-critical='true']::after {
+  box-shadow: inset 0 0 0 1px rgba(140, 47, 43, 0.16), inset 0 0 42px rgba(140, 47, 43, 0.1);
+}
+
+.game-screen-compressed .board-map-shell[data-gaze-elevated='true']::before {
+  background:
+    radial-gradient(circle at 48% 42%, rgba(154, 122, 59, 0.18), transparent 30%),
+    linear-gradient(120deg, transparent 0 26%, rgba(92, 72, 48, 0.05) 26% 27%, transparent 27% 100%);
+}
+
+.game-screen-compressed .board-world-map-svg {
+  filter: sepia(0.58) saturate(0.62) contrast(1.06) brightness(0.97);
+}
+
+.game-screen-compressed .board-world-map-svg [id] {
+  fill: rgba(119, 102, 81, 0.22);
+  stroke: rgba(67, 51, 33, 0.28);
+  stroke-width: 0.9px;
+}
+
+.game-screen-compressed .board-world-map-svg .map-region-fill-active,
+.game-screen-compressed .board-world-map-svg .map-region-fill-active path {
+  fill: rgba(154, 122, 59, 0.22);
+  stroke: rgba(255, 245, 222, 0.54);
+  filter: drop-shadow(0 0 8px rgba(154, 122, 59, 0.18));
+}
+
+.game-screen-compressed .board-world-map-svg .map-region-fill-hover,
+.game-screen-compressed .board-world-map-svg .map-region-fill-hover path {
+  fill: rgba(46, 90, 74, 0.22);
+  stroke: rgba(255, 245, 222, 0.48);
+  filter: drop-shadow(0 0 9px rgba(46, 90, 74, 0.16));
+}
+
+.game-screen-compressed .region-token-marker {
+  min-width: 0;
+  transition: transform var(--motion-fast), filter var(--motion-fast);
+  filter: drop-shadow(0 6px 12px rgba(52, 37, 24, 0.18));
+}
+
+.game-screen-compressed .region-token-marker:hover,
+.game-screen-compressed .region-token-marker:focus-visible {
+  transform: translate(-50%, calc(-50% - 1px));
+}
+
+.game-screen-compressed .region-token-ring {
+  inset: -6px;
+  border-radius: 16px;
+  border: 1.5px solid color-mix(in srgb, var(--region-tone) 50%, var(--theme-brass));
+  box-shadow:
+    0 0 0 1px rgba(255, 248, 236, 0.9),
+    0 0 14px color-mix(in srgb, var(--region-tone) 24%, transparent);
+}
+
+.game-screen-compressed .region-token-marker.is-selected .region-token-ring {
+  box-shadow:
+    0 0 0 1px rgba(255, 248, 236, 0.96),
+    0 0 0 4px rgba(154, 122, 59, 0.16),
+    0 0 18px color-mix(in srgb, var(--region-tone) 32%, transparent);
+}
+
+.game-screen-compressed .region-token-stack {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  min-width: 92px;
+  padding: 8px 9px 9px;
+  border-radius: 14px;
+  border: 1px solid var(--tile-rim-dark);
+  background:
+    linear-gradient(180deg, rgba(255, 250, 239, 0.97), rgba(212, 194, 164, 0.86)),
+    var(--theme-parchment);
+  box-shadow: var(--token-shadow), var(--tile-emboss);
+}
+
+.game-screen-compressed .region-token-stack::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1px solid rgba(255, 248, 233, 0.52);
+  border-radius: 11px;
+  pointer-events: none;
+}
+
+.game-screen-compressed .region-token-title {
+  position: relative;
+  z-index: 1;
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--theme-ink);
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.game-screen-compressed .region-token-row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+}
+
+.game-screen-compressed .region-token-count {
+  min-width: 22px;
+  min-height: 22px;
+  font-family: var(--font-data);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 4px 8px rgba(50, 35, 23, 0.22);
+}
+
+.game-screen-compressed .extraction-count {
+  color: #f9f2e2;
+  border: 1px solid rgba(139, 106, 61, 0.92);
+  background: linear-gradient(180deg, #3b3028, #1f1a17);
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+  border-radius: 0;
+}
+
+.game-screen-compressed .defense-count {
+  color: #f6eee0;
+  border: 1px solid rgba(87, 91, 100, 0.9);
+  background: linear-gradient(180deg, #8a909b, #535964);
+  clip-path: polygon(50% 0, 92% 18%, 84% 84%, 50% 100%, 16% 84%, 8% 18%);
+  border-radius: 0;
+}
+
+.game-screen-compressed .bodies-count {
+  color: #fff4ee;
+  border: 1px solid rgba(88, 28, 26, 0.92);
+  background: linear-gradient(180deg, #a84741, #8c2f2b);
+}
+
+.game-screen-compressed .region-token-marker[data-region-pulsing='true'] .region-token-ring {
+  animation: map-critical-pulse 2s ease-in-out infinite;
+}
+
+.game-screen-compressed .board-map-hover {
+  left: 18px;
+  top: 18px;
+}
+
+.game-screen-compressed .region-hover-card,
+.game-screen-compressed .selected-region-popup-sheet {
+  position: relative;
+  border-radius: 16px;
+  border: 1px solid var(--panel-rim);
+  background:
+    linear-gradient(180deg, rgba(255, 249, 238, 0.96), rgba(221, 204, 175, 0.88)),
+    var(--theme-parchment);
+  box-shadow: var(--panel-shadow), inset 0 1px 0 rgba(255, 248, 236, 0.75);
+}
+
+.game-screen-compressed .region-hover-card::before,
+.game-screen-compressed .selected-region-popup-sheet::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 1px solid rgba(255, 248, 233, 0.5);
+  border-radius: 11px;
+  pointer-events: none;
+}
+
+.game-screen-compressed .region-hover-card {
+  gap: 9px;
+  padding: 13px 15px;
+}
+
+.game-screen-compressed .region-hover-card strong {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--theme-ink);
+}
+
+.game-screen-compressed .region-hover-row span,
+.game-screen-compressed .selected-region-popup-metrics span,
+.game-screen-compressed .selected-region-popup-fronts span {
+  padding: 5px 8px;
+  border-radius: 9px;
+  border: 1px solid rgba(64, 48, 31, 0.12);
+  background: rgba(76, 58, 38, 0.06);
+  font-family: var(--font-data);
+  font-size: 0.74rem;
+  color: var(--theme-ink);
+}
+
+.game-screen-compressed .selected-region-popup {
+  width: min(280px, calc(100% - 24px));
+}
+
+.game-screen-compressed .selected-region-popup-sheet {
+  gap: 10px;
+  padding: 14px 16px 12px;
+}
+
+.game-screen-compressed .selected-region-popup-sheet strong {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--theme-ink);
+}
+
+.game-screen-compressed .selected-region-popup-sheet p {
+  color: var(--text-2);
+}
+
+.game-screen-compressed .selected-region-popup-close {
+  top: 10px;
+  right: 10px;
+  min-height: 30px;
+  padding: 5px 10px;
+  border-radius: 9px;
+  border: 1px solid var(--tile-rim-dark);
+  background:
+    linear-gradient(180deg, rgba(255, 248, 236, 0.96), rgba(214, 190, 146, 0.86)),
+    rgba(233, 212, 181, 0.96);
+  box-shadow: var(--tile-shadow), var(--tile-emboss);
+  color: var(--theme-ink);
+  font-family: var(--font-body);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}

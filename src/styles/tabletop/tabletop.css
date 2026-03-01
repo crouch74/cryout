@@ -1,3 +1,8 @@
+/* Theme Notes
+Palette: ink black, parchment, aged paper, oxide red, evidence blue, fossil near-black, muted green, muted gold.
+Elevation tiers: Tier 1 board surface, Tier 2 mounted tiles and frames, Tier 3 tokens, buttons, and chips.
+*/
+
 :root {
   --table-wood-dark: #4a3426;
   --table-wood-mid: #75543f;
@@ -3189,4 +3194,173 @@ html[data-contrast='high'] .mission-slip {
   .move-preview-strip {
     flex-direction: column;
   }
+}
+
+:root {
+  --theme-ink: #1B1B1B;
+  --theme-parchment: #E8DDC7;
+  --theme-aged-paper: #D7C7A8;
+  --theme-oxide-red: #8C2F2B;
+  --theme-evidence-blue: #2F5D8C;
+  --theme-fossil-core: #2A2420;
+  --theme-brass: #8B6A3D;
+  --theme-planet-green: #2E5A4A;
+  --theme-gaze-gold: #9A7A3B;
+  --board-sand: #e8ddc7;
+  --board-ivory: #f2ead8;
+  --board-ink: var(--theme-ink);
+  --context-surface: rgba(239, 230, 210, 0.98);
+  --dock-surface: rgba(224, 210, 184, 0.94);
+  --tile-rim: rgba(74, 57, 35, 0.34);
+  --tile-rim-dark: rgba(42, 32, 24, 0.72);
+  --tile-highlight: rgba(255, 249, 238, 0.72);
+  --tile-emboss: inset 0 1px 0 rgba(255, 249, 238, 0.88), inset 0 -1px 0 rgba(88, 68, 44, 0.14);
+  --panel-rim: rgba(64, 48, 31, 0.48);
+  --panel-inner-line: rgba(255, 244, 222, 0.5);
+  --token-shadow: 0 7px 14px rgba(59, 40, 24, 0.24);
+  --tile-shadow: 0 8px 18px rgba(59, 40, 24, 0.18);
+  --panel-shadow: 0 18px 34px rgba(59, 40, 24, 0.24);
+  --track-slot-bg: rgba(65, 49, 31, 0.16);
+  --track-slot-line: rgba(36, 28, 20, 0.48);
+  --track-danger-slot: rgba(140, 47, 43, 0.22);
+  --track-knob-rim: rgba(54, 39, 25, 0.84);
+  --motion-fast: 140ms ease-out;
+  --motion-mid: 170ms ease-out;
+  --focus-ring: color-mix(in srgb, var(--theme-gaze-gold) 78%, white 22%);
+  --font-display: 'Crimson Pro', Georgia, serif;
+  --font-body: 'Manrope', sans-serif;
+  --font-data: 'JetBrains Mono', 'Courier New', monospace;
+  --text-1: var(--theme-ink);
+  --text-2: #372c23;
+  --text-3: #67584a;
+  --text-disabled: rgba(55, 44, 35, 0.5);
+  --line-soft: rgba(62, 45, 28, 0.18);
+  --line-strong: rgba(43, 31, 21, 0.32);
+  --shadow-0: var(--panel-shadow);
+  --shadow-1: var(--tile-shadow);
+  --shadow-2: 0 12px 24px rgba(59, 40, 24, 0.16);
+  --accent-primary: var(--theme-gaze-gold);
+  --accent-primary-strong: var(--theme-brass);
+  --accent-secondary: var(--theme-evidence-blue);
+  --accent-danger: var(--theme-oxide-red);
+  --accent-warning: var(--theme-gaze-gold);
+  --accent-success: var(--theme-planet-green);
+  --status-liberation: var(--theme-brass);
+  --status-gaze: var(--theme-gaze-gold);
+  --status-war: var(--theme-oxide-red);
+  --status-pool: var(--theme-brass);
+  --status-round: #b08a55;
+  --map-safe: var(--theme-planet-green);
+  --map-strained: var(--theme-gaze-gold);
+  --map-critical: var(--theme-oxide-red);
+}
+
+body {
+  color: var(--text-1);
+  background:
+    radial-gradient(circle at 18% 10%, rgba(255, 244, 220, 0.18), transparent 22%),
+    radial-gradient(circle at 82% 18%, rgba(139, 106, 61, 0.08), transparent 18%),
+    linear-gradient(135deg, #5b3f29 0%, #6d4a2e 22%, #4b3323 100%);
+}
+
+.game-screen.game-screen-compressed {
+  background:
+    linear-gradient(rgba(89, 69, 46, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(89, 69, 46, 0.04) 1px, transparent 1px),
+    radial-gradient(circle at 50% 0%, rgba(255, 250, 240, 0.16), transparent 45%),
+    linear-gradient(180deg, rgba(246, 238, 221, 0.92), rgba(227, 214, 189, 0.98));
+  background-size: 140px 140px, 140px 140px, auto, auto;
+}
+
+.game-screen.game-screen-compressed::before {
+  opacity: 0.028;
+}
+
+.ui-icon {
+  color: var(--icon-color, currentColor);
+  filter: drop-shadow(0 1px 0 rgba(255, 250, 240, 0.55));
+  transition: color var(--motion-fast), filter var(--motion-fast), transform var(--motion-fast), opacity var(--motion-fast);
+}
+
+.ui-icon.is-disabled,
+[disabled] .ui-icon,
+button:disabled .ui-icon {
+  opacity: 0.56;
+  filter: grayscale(0.35);
+}
+
+button,
+input,
+select,
+textarea {
+  font-variant-numeric: tabular-nums;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.engraved-plate,
+.theme-plate,
+.mini-plate,
+.board-edge-action,
+.play-area-nav button,
+.mobile-tray-dock button,
+.guide-nav-item,
+.secondary-button,
+.primary-button {
+  position: relative;
+  border-radius: 10px;
+  border: 1px solid var(--tile-rim-dark);
+  background:
+    linear-gradient(180deg, rgba(255, 250, 239, 0.95), rgba(220, 201, 167, 0.8)),
+    var(--theme-parchment);
+  box-shadow: var(--tile-shadow), var(--tile-emboss);
+}
+
+.engraved-plate::before,
+.theme-plate::before,
+.mini-plate::before,
+.board-edge-action::before,
+.play-area-nav button::before,
+.mobile-tray-dock button::before,
+.guide-nav-item::before,
+.secondary-button::before,
+.primary-button::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border: 1px solid var(--tile-highlight);
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+.engraved-plate:hover,
+.theme-plate:hover,
+.mini-plate:hover,
+.board-edge-action:hover,
+.play-area-nav button:hover,
+.mobile-tray-dock button:hover,
+.guide-nav-item:hover,
+.secondary-button:hover,
+.primary-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 11px 22px rgba(59, 40, 24, 0.2), var(--tile-emboss);
+}
+
+.engraved-plate:active,
+.theme-plate:active,
+.mini-plate:active,
+.board-edge-action:active,
+.play-area-nav button:active,
+.mobile-tray-dock button:active,
+.guide-nav-item:active,
+.secondary-button:active,
+.primary-button:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 5px rgba(76, 57, 38, 0.16), inset 0 1px 0 rgba(255, 250, 239, 0.52);
 }

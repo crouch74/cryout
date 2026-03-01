@@ -3,6 +3,7 @@ export type IconType =
   | 'evidence'
   | 'defense'
   | 'extraction'
+  | 'pool'
   | 'globalGaze'
   | 'warMachine'
   | 'round'
