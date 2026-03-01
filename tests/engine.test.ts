@@ -35,6 +35,48 @@ test('phase gating rejects coalition actions during world phase', () => {
   assert.equal(next.eventLog.at(-1)?.emoji, '❌');
 });
 
+test('draw world cards stages the crisis stack without resolving it immediately', () => {
+  const content = compileContent(startCommand.scenarioId);
+  const state = initializeGame(startCommand);
+  const next = dispatchCommand(state, { type: 'DrawWorldCards' }, content);
+
+  assert.equal(next.phase, 'WORLD');
+  assert.equal(next.stagedWorldPhase.status, 'drawn');
+  assert.equal(next.stagedWorldPhase.captureCardId !== null, true);
+  assert.equal(next.stagedWorldPhase.crisisCardIds.length, next.debug.lastCrisisCount);
+  assert.equal(next.decks.capture.discardPile.length, 0);
+  assert.equal(next.decks.crisis.discardPile.length, 0);
+});
+
+test('adopt resolution clears staged world cards and opens coalition planning', () => {
+  const content = compileContent(startCommand.scenarioId);
+  let state = initializeGame(startCommand);
+  state = dispatchCommand(state, { type: 'DrawWorldCards' }, content);
+  const stagedCapture = state.stagedWorldPhase.captureCardId;
+  const stagedCrises = [...state.stagedWorldPhase.crisisCardIds];
+
+  const next = dispatchCommand(state, { type: 'AdoptResolution' }, content);
+
+  assert.equal(next.phase, 'COALITION');
+  assert.equal(next.stagedWorldPhase.status, 'idle');
+  assert.equal(stagedCapture ? next.decks.capture.discardPile.includes(stagedCapture) : true, true);
+  assert.deepEqual(next.decks.crisis.discardPile.slice(-stagedCrises.length), stagedCrises);
+});
+
+test('reordering queued intents preserves actions and renumbers slots', () => {
+  const content = compileContent(startCommand.scenarioId);
+  let state = initializeGame(startCommand);
+  state = dispatchCommand(state, { type: 'ResolveWorldPhase' }, content);
+  state = dispatchCommand(state, { type: 'QueueIntent', seat: 0, actionId: 'community_mobilization', target: { kind: 'NONE' } }, content);
+  state = dispatchCommand(state, { type: 'QueueIntent', seat: 0, actionId: 'safe_passage', target: { kind: 'REGION', regionId: 'MENA' } }, content);
+
+  const next = dispatchCommand(state, { type: 'ReorderQueuedIntent', seat: 0, fromSlot: 1, toSlot: 0 }, content);
+
+  assert.deepEqual(next.players[0].queuedIntents.map((intent) => intent.actionId), ['safe_passage', 'community_mobilization']);
+  assert.deepEqual(next.players[0].queuedIntents.map((intent) => intent.slot), [0, 1]);
+  assert.equal(next.players[0].actionsRemaining, 0);
+});
+
 test('witness window cancels the first disinfo placement each round', () => {
   const content = compileContent(startCommand.scenarioId);
   let state = initializeGame(startCommand);

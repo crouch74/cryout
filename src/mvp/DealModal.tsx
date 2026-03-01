@@ -1,5 +1,6 @@
 import type { CompiledContent, EngineCommand, EngineState } from '../../engine/index.ts';
 import { t } from '../i18n/index.ts';
+import { ActionCard, PaperSheet } from './tabletop.tsx';
 
 interface DealModalProps {
   state: EngineState;
@@ -13,46 +14,47 @@ export function DealModal({ state, content, onCommand }: DealModalProps) {
   }
 
   return (
-    <div className="modal-shell" role="presentation">
-      <div className="modal-card" role="dialog" aria-modal="true" aria-labelledby="compromise-title">
-        <h2 id="compromise-title">{t('ui.dealModal.title', 'Compromise Offer')}</h2>
-        <p>{state.activeCompromise.prompt}</p>
+    <div className="paper-modal-shell" role="presentation">
+      <PaperSheet tone="folio" className="paper-modal-card" role="dialog" aria-modal="true" aria-labelledby="compromise-title">
+        <span className="engraved-eyebrow">{t('ui.dealModal.title', 'Compromise Offer')}</span>
+        <h2 id="compromise-title">{state.activeCompromise.prompt}</h2>
 
-        <div className="modal-option-grid">
+        <div className="paper-modal-options">
           {state.activeCompromise.options.map((option) => (
-            <article key={option.id} className="shell-card modal-option-card">
+            <PaperSheet key={option.id} tone="plain">
               <strong>{option.label}</strong>
               <p>{option.description}</p>
-            </article>
+            </PaperSheet>
           ))}
         </div>
 
-        <div className="modal-vote-grid">
+        <div className="paper-vote-grid">
           {state.players.map((player) => {
             const role = content.roles[player.roleId];
             const vote = state.activeCompromise?.votes[player.seat];
             return (
-              <div key={player.seat} className="modal-vote-row">
-                <span>
-                  Seat {player.seat + 1}: {role.shortName}
-                </span>
+              <PaperSheet key={player.seat} tone="note" className="paper-vote-row">
+                <div>
+                  <span className="engraved-eyebrow">{t('ui.game.seat', 'Seat {{seat}}', { seat: player.seat + 1 })}</span>
+                  <strong>{role.shortName}</strong>
+                </div>
                 {vote === undefined ? (
-                  <div className="modal-vote-actions">
-                    <button className="primary-button compact-button" onClick={() => onCommand({ type: 'VoteCompromise', seat: player.seat, accept: true })}>
-                      {t('ui.dealModal.yes', 'YES')}
-                    </button>
-                    <button className="secondary-button compact-button" onClick={() => onCommand({ type: 'VoteCompromise', seat: player.seat, accept: false })}>
-                      {t('ui.dealModal.no', 'NO')}
-                    </button>
+                  <div className="paper-vote-actions">
+                    <ActionCard onClick={() => onCommand({ type: 'VoteCompromise', seat: player.seat, accept: true })}>
+                      <strong>{t('ui.dealModal.yes', 'YES')}</strong>
+                    </ActionCard>
+                    <ActionCard onClick={() => onCommand({ type: 'VoteCompromise', seat: player.seat, accept: false })}>
+                      <strong>{t('ui.dealModal.no', 'NO')}</strong>
+                    </ActionCard>
                   </div>
                 ) : (
-                  <span className="status-pill neutral">{vote ? t('ui.dealModal.yes', 'YES') : t('ui.dealModal.no', 'NO')}</span>
+                  <span className="engraved-eyebrow">{vote ? t('ui.dealModal.yes', 'YES') : t('ui.dealModal.no', 'NO')}</span>
                 )}
-              </div>
+              </PaperSheet>
             );
           })}
         </div>
-      </div>
+      </PaperSheet>
     </div>
   );
 }

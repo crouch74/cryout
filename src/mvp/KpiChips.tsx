@@ -17,37 +17,31 @@ export function KpiChips({ items }: KpiChipsProps) {
   const [openId, setOpenId] = useState<string | null>(null);
 
   return (
-    <div className="game-header-kpis" role="list" aria-label="Scenario metrics">
+    <div className="seal-strip" role="list" aria-label="Scenario metrics">
       {items.map((item) => {
         const isOpen = openId === item.id;
-
         return (
           <div
             key={item.id}
-            className={`game-kpi-chip ${isOpen ? 'is-open' : ''}`}
+            className={`seal-plaque ${isOpen ? 'is-open' : ''}`}
             role="listitem"
             data-severity={item.severity ?? 'normal'}
-            onMouseEnter={() => setOpenId(item.id)}
-            onMouseLeave={() => setOpenId((current) => (current === item.id ? null : current))}
           >
             <button
               type="button"
-              className="game-kpi-trigger"
+              className="seal-plaque-button"
               aria-expanded={isOpen}
               onClick={() => setOpenId((current) => (current === item.id ? null : item.id))}
             >
-              <span className="eyebrow">{item.label}</span>
+              <span className="engraved-eyebrow">{item.label}</span>
               <strong>{item.value}</strong>
             </button>
-            {item.gaugePercent !== undefined && (
-              <div className="kpi-gauge-track">
-                <div
-                  className="kpi-gauge-fill"
-                  style={{ width: `${Math.min(100, Math.max(0, item.gaugePercent))}%` }}
-                />
+            {item.gaugePercent !== undefined ? (
+              <div className="seal-gauge" aria-hidden="true">
+                <div className="seal-gauge-fill" style={{ width: `${item.gaugePercent}%` }} />
               </div>
-            )}
-            <p className="game-kpi-detail">{item.detail}</p>
+            ) : null}
+            <p>{item.detail}</p>
           </div>
         );
       })}

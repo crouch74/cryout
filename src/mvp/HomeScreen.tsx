@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { listScenarios, type GameMode, type RoleId } from '../../engine/index.ts';
-import { getCivicSpaceLabel, getRoleName, localizeScenarioDefinition, t, type Locale } from '../i18n/index.ts';
 import { LanguageSwitcher } from '../components/LanguageSwitcher.tsx';
+import { getCivicSpaceLabel, getRoleName, localizeScenarioDefinition, t, type Locale } from '../i18n/index.ts';
 import type { SetupConfig } from './urlState.ts';
+import { EngravedHeader, PaperSheet, TableSurface, TabletopControls, ThemePlate } from './tabletop.tsx';
 
 interface HomeScreenProps {
   locale: Locale;
@@ -63,288 +64,183 @@ export function HomeScreen({
   };
 
   if (!selectedScenario) {
-    return (
-      <div className="home-screen">
-        <section className="shell-panel home-empty-state">
-          <h2>{t('ui.home.noScenariosTitle', 'No scenarios found')}</h2>
-          <p>{t('ui.home.noScenariosBody', 'The content registry did not return any playable scenarios.')}</p>
-        </section>
-      </div>
-    );
+    return null;
   }
 
   return (
-    <div className="home-screen">
-      <section className="shell-panel home-hero">
-        <div className="home-hero-copy">
-          <LanguageSwitcher locale={locale} onChange={onLocaleChange} />
-          <span className="eyebrow">{t('ui.home.eyebrow', 'Playable MVP')}</span>
-          <h1>{t('ui.home.title', 'Dignity Rising')}</h1>
-          <p>
-            {t(
+    <TableSurface className="home-table">
+      <div className="home-paper-layout">
+        <PaperSheet tone="folio" className="home-title-sheet">
+          <EngravedHeader
+            eyebrow={t('ui.home.eyebrow', 'Playable MVP')}
+            title={t('ui.home.title', 'Dignity Rising')}
+            detail={t(
               'ui.home.subtitle',
-              'A cooperative strategy game about protecting civilians, defending truth, and building institutions under the pressure of a systemic antagonist.',
+              'A cooperative civic strategy game about protecting civilians, defending truth, and building institutions under pressure.',
             )}
-          </p>
-          <div className="home-stat-grid">
-            <article className="shell-card">
-              <span className="eyebrow">{t('ui.home.scenario', 'Scenario')}</span>
-              <strong>{localizedScenarios.length}</strong>
-              <p>{t('ui.home.distinctCrisisFrames', 'Distinct crisis frames.')}</p>
-            </article>
-            <article className="shell-card">
-              <span className="eyebrow">{t('ui.home.playerCount', 'Player Count')}</span>
-              <strong>{config.playerCount}</strong>
-              <p>{t('ui.home.seatsConfigured', 'Seats configured for this table.')}</p>
-            </article>
-            <article className="shell-card">
-              <span className="eyebrow">{t('ui.home.mode', 'Mode')}</span>
-              <strong>{config.mode}</strong>
-              <p>{config.surface === 'local' ? t('ui.home.sameScreenTable', 'Same-screen table.') : t('ui.home.syncedRoomSession', 'Synced room session.')}</p>
-            </article>
+            actions={
+              <div className="header-control-stack">
+                <LanguageSwitcher locale={locale} onChange={onLocaleChange} />
+                <TabletopControls />
+              </div>
+            }
+          />
+
+          <div className="home-title-grid">
+            <PaperSheet tone="plain">
+              <span className="engraved-eyebrow">{t('ui.home.selectedChapter', 'Selected Chapter')}</span>
+              <h2>{selectedScenario.name}</h2>
+              <p>{excerpt(selectedScenario.description, 220)}</p>
+              <div className="ledger-list">
+                <div className="ledger-row"><span>{t('ui.home.playerCount', 'Player Count')}</span><strong>{config.playerCount}</strong></div>
+                <div className="ledger-row"><span>{t('ui.home.mode', 'Mode')}</span><strong>{config.mode}</strong></div>
+                <div className="ledger-row"><span>{t('ui.scenarioBooklet.civicSpace', 'Civic space')}</span><strong>{getCivicSpaceLabel(selectedScenario.setup.civicSpace)}</strong></div>
+                <div className="ledger-row"><span>{t('ui.scenarioBooklet.startingHeat', 'Starting heat')}</span><strong>+{selectedScenario.setup.temperature}°C</strong></div>
+              </div>
+            </PaperSheet>
+
+            <PaperSheet tone="plain">
+              <span className="engraved-eyebrow">{t('ui.home.whatChanges', 'What Changes')}</span>
+              <ul className="guide-list">
+                {selectedScenario.specialRuleChips.slice(0, 4).map((chip) => (
+                  <li key={chip.id}>{chip.label}</li>
+                ))}
+              </ul>
+              <p>{selectedScenario.moralCenter}</p>
+            </PaperSheet>
           </div>
-          <div className="home-action-row">
-            <button
-              className="primary-button"
-              disabled={hasDuplicateRoles}
+
+          <div className="home-launch-row">
+            <ThemePlate
+              label={config.surface === 'local' ? t('ui.home.startLocal', 'Start Local Table') : t('ui.home.createRoom', 'Create Room')}
               onClick={() => {
                 if (hasDuplicateRoles) {
                   setError(t('ui.home.rolesMustBeUnique', 'Roles must be unique.'));
                   return;
                 }
-
                 setError(null);
                 onStart({ ...config, scenarioId: selectedScenario.id, roleIds: selectedRoles });
               }}
-            >
-              {config.surface === 'local'
-                ? t('ui.home.startLocal', 'Start Local Table')
-                : t('ui.home.createRoom', 'Create Room')}
-            </button>
-            {hasAutosave && (
-              <button className="secondary-button" onClick={onLoadAutosave}>
-                {t('ui.home.loadAutosave', 'Load Autosave')}
-              </button>
-            )}
-            <button className="secondary-button" onClick={() => onOpenGuidelines(selectedScenario.id)}>
-              {mode === 'offline'
-                ? t('ui.home.scenarioGuidelines', 'Scenario Guidelines')
-                : t('ui.home.openGuidelines', 'Open Guidelines')}
-            </button>
-            <button className="secondary-button" onClick={onOpenPlayerGuide}>
-              📜 {t('ui.home.playerGuide', 'Player Guide')}
-            </button>
+            />
+            {hasAutosave ? <ThemePlate label={t('ui.home.loadAutosave', 'Load Autosave')} onClick={onLoadAutosave} /> : null}
+            <ThemePlate label={mode === 'offline' ? t('ui.home.scenarioGuidelines', 'Scenario Guidelines') : t('ui.home.openGuidelines', 'Open Guidelines')} onClick={() => onOpenGuidelines(selectedScenario.id)} />
+            <ThemePlate label={t('ui.home.playerGuide', 'Player Guide')} onClick={onOpenPlayerGuide} />
           </div>
-        </div>
+        </PaperSheet>
 
-        <aside className="home-hero-aside tier-a-panel">
-          <div className="home-aside-header">
-            <span className="eyebrow">{t('ui.home.selectedChapter', 'Selected Chapter')}</span>
-            <div className="scenario-teach-trigger">
-              <details>
-                <summary>{t('ui.home.teachIn60', 'Teach in 60s')}</summary>
-                <div className="teach-content tier-c-panel">
-                  <p>{selectedScenario.story}</p>
-                  <strong>How to win:</strong>
-                  <p>{t('ui.home.winCondition', 'Ratify clauses in the Charter while keeping Fronts from collapsing.')}</p>
-                </div>
-              </details>
-            </div>
-          </div>
-
-          <h2>{selectedScenario.name}</h2>
-
-          <div className="scenario-decision-grid">
-            {/* Part 1: Fantasy Line */}
-            <div className="decision-section fantasy">
-              <p className="fantasy-line">"{selectedScenario.introduction.split('.')[0]}."</p>
-            </div>
-
-            {/* Part 2: Difficulty Knobs */}
-            <div className="decision-section knobs">
-              <div className="knob-item">
-                <span>🌡️</span>
-                <strong>{selectedScenario.setup.temperature}°C</strong>
-              </div>
-              <div className="knob-item">
-                <span>⚖️</span>
-                <strong>{getCivicSpaceLabel(selectedScenario.setup.civicSpace)}</strong>
-              </div>
-              <div className="knob-item">
-                <span>⏳</span>
-                <strong>{selectedScenario.roundLimit.CORE} Rounds</strong>
-              </div>
-            </div>
-
-            {/* Part 3: What Changes */}
-            <div className="decision-section changes">
-              <span className="eyebrow">{t('ui.home.whatChanges', 'What Changes')}</span>
-              <ul className="changes-list">
-                {selectedScenario.specialRuleChips.slice(0, 3).map(chip => (
-                  <li key={chip.id}>{chip.label}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          <div className="home-story-grid">
-            <article>
-              <span className="eyebrow">{t('ui.home.premise', 'Premise')}</span>
-              <p>{excerpt(selectedScenario.description, 130)}</p>
-            </article>
-            <article>
-              <span className="eyebrow">{t('ui.home.playPressure', 'Play pressure')}</span>
-              <p>{excerpt(selectedScenario.gameplay ?? '', 170)}</p>
-            </article>
-          </div>
-        </aside>
-      </section>
-
-      <section className="home-dashboard">
-        <div className="shell-panel home-panel">
-          <div className="section-heading">
-            <div>
-              <span className="eyebrow">{t('ui.home.scenarioMenu', 'Scenario Menu')}</span>
-              <h3>{t('ui.home.scenario', 'Scenario')}</h3>
-            </div>
-          </div>
-          <div className="home-scenario-grid">
-            {localizedScenarios.map((scenario) => {
-              const active = scenario.id === selectedScenario.id;
-
-              return (
-                <article key={scenario.id} className={`home-scenario-card shell-card ${active ? 'is-active' : ''}`}>
-                  <button type="button" className="home-scenario-trigger" onClick={() => onConfigChange({ scenarioId: scenario.id })}>
-                    <div className="row-split">
-                      <strong>{scenario.name}</strong>
-                      <span className="status-pill neutral">{active ? t('ui.home.selected', 'Selected') : t('ui.home.available', 'Available')}</span>
-                    </div>
-                    <p>{excerpt(scenario.description, 120)}</p>
-                    <div className="chip-row">
-                      <span className="rule-chip">{getCivicSpaceLabel(scenario.setup.civicSpace)}</span>
-                      <span className="rule-chip">+{scenario.setup.temperature}°C</span>
-                      <span className="rule-chip">{scenario.roundLimit.CORE}-{scenario.roundLimit.FULL} rounds</span>
+        <div className="home-dossier-grid">
+          <PaperSheet tone="folio">
+            <span className="engraved-eyebrow">{t('ui.home.scenarioMenu', 'Scenario Menu')}</span>
+            <h2>{t('ui.home.scenario', 'Scenario')}</h2>
+            <div className="scenario-card-grid">
+              {localizedScenarios.map((scenario) => {
+                const active = scenario.id === selectedScenario.id;
+                return (
+                  <button
+                    key={scenario.id}
+                    type="button"
+                    className={`scenario-dossier-card ${active ? 'is-active' : ''}`}
+                    onClick={() => onConfigChange({ scenarioId: scenario.id })}
+                  >
+                    <span className="engraved-eyebrow">{active ? t('ui.home.selected', 'Selected') : t('ui.home.available', 'Available')}</span>
+                    <strong>{scenario.name}</strong>
+                    <p>{excerpt(scenario.description, 130)}</p>
+                    <div className="ledger-list">
+                      <div className="ledger-row"><span>{t('ui.scenarioBooklet.civicSpace', 'Civic space')}</span><strong>{getCivicSpaceLabel(scenario.setup.civicSpace)}</strong></div>
+                      <div className="ledger-row"><span>{t('ui.scenarioBooklet.startingHeat', 'Starting heat')}</span><strong>+{scenario.setup.temperature}°C</strong></div>
                     </div>
                   </button>
-                </article>
-              );
-            })}
+                );
+              })}
+            </div>
+          </PaperSheet>
+
+          <div className="home-right-column">
+            <PaperSheet tone="folio">
+              <span className="engraved-eyebrow">{t('ui.home.launch', 'Launch')}</span>
+              <h2>{t('ui.home.tableConfiguration', 'Table Configuration')}</h2>
+              <div className="plate-toggle-row">
+                <ThemePlate label={t('ui.home.localTable', 'Local Table')} active={config.surface === 'local'} onClick={() => onConfigChange({ surface: 'local' })} />
+                <ThemePlate label={t('ui.home.roomPlay', 'Room Play')} active={config.surface === 'room'} onClick={() => onConfigChange({ surface: 'room' })} />
+              </div>
+              <div className="paper-form-grid">
+                <label>
+                  <span>{t('ui.home.mode', 'Mode')}</span>
+                  <select value={config.mode} onChange={(event) => onConfigChange({ mode: event.target.value as GameMode })}>
+                    <option value="CORE">{t('ui.home.modeCore', 'Core')}</option>
+                    <option value="FULL">{t('ui.home.modeFull', 'Full')}</option>
+                  </select>
+                </label>
+                <label>
+                  <span>{t('ui.home.playerCount', 'Player Count')}</span>
+                  <select value={config.playerCount} onChange={(event) => onConfigChange({ playerCount: Number(event.target.value) as 2 | 3 | 4 })}>
+                    <option value={2}>2</option>
+                    <option value={3}>3</option>
+                    <option value={4}>4</option>
+                  </select>
+                </label>
+              </div>
+              {config.surface === 'room' ? (
+                <label>
+                  <span>{t('ui.home.roomUrl', 'Room Service URL')}</span>
+                  <input
+                    type="text"
+                    value={config.roomUrl}
+                    onChange={(event) => onConfigChange({ roomUrl: event.target.value })}
+                    placeholder="http://localhost:3010"
+                  />
+                </label>
+              ) : null}
+            </PaperSheet>
+
+            <PaperSheet tone="folio">
+              <span className="engraved-eyebrow">{t('ui.home.coalitionSeats', 'Coalition Seats')}</span>
+              <h2>{t('ui.home.seatAssignments', 'Seat Assignments')}</h2>
+              <div className="seat-placard-grid">
+                {Array.from({ length: config.playerCount }).map((_, seat) => (
+                  <PaperSheet key={seat} tone="plain">
+                    <label>
+                      <span>{t('ui.home.seatLabel', 'Seat {{seat}}', { seat: seat + 1 })}</span>
+                      <select value={selectedRoles[seat]} onChange={(event) => updateRole(seat, event.target.value as RoleId)}>
+                        {ROLE_OPTIONS.map((role) => (
+                          <option key={role.id} value={role.id}>
+                            {getRoleName(role.id)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <p>{getRoleName(selectedRoles[seat])}</p>
+                  </PaperSheet>
+                ))}
+              </div>
+              {hasDuplicateRoles ? <p className="inline-error">{t('ui.home.rolesMustBeUnique', 'Roles must be unique.')}</p> : null}
+              {error ? <p className="inline-error">{error}</p> : null}
+            </PaperSheet>
+
+            <PaperSheet tone="folio">
+              <span className="engraved-eyebrow">{t('ui.home.loadSave', 'Load Save')}</span>
+              <h2>{t('ui.home.utilities', 'Utilities')}</h2>
+              <textarea
+                value={saveText}
+                onChange={(event) => setSaveText(event.target.value)}
+                placeholder={t('ui.home.savePlaceholder', 'Paste a serialized save payload here.')}
+              />
+              <ThemePlate
+                label={t('ui.home.loadSaveButton', 'Load Save Into Local Table')}
+                onClick={() => {
+                  if (!saveText.trim()) {
+                    setError(t('ui.home.pasteSaveFirst', 'Paste a save payload first.'));
+                    return;
+                  }
+                  setError(null);
+                  onLoadSave(saveText);
+                }}
+              />
+              <p>{t('ui.home.routesStayStable', 'Routes stay stable while the selected scenario and active table state change underneath.')}</p>
+            </PaperSheet>
           </div>
         </div>
-
-        <div className="home-dashboard-side">
-          <div className="shell-panel home-panel">
-            <div className="section-heading">
-              <div>
-                <span className="eyebrow">{t('ui.home.launch', 'Launch')}</span>
-                <h3>{t('ui.home.tableConfiguration', 'Table Configuration')}</h3>
-              </div>
-            </div>
-            <div className="segmented">
-              <button className={config.surface === 'local' ? 'active' : ''} onClick={() => onConfigChange({ surface: 'local' })}>
-                {t('ui.home.localTable', 'Local Table')}
-              </button>
-              <button className={config.surface === 'room' ? 'active' : ''} onClick={() => onConfigChange({ surface: 'room' })}>
-                {t('ui.home.roomPlay', 'Room Play')}
-              </button>
-            </div>
-
-            <div className="home-form-grid">
-              <label>
-                {t('ui.home.mode', 'Mode')}
-                <select value={config.mode} onChange={(event) => onConfigChange({ mode: event.target.value as GameMode })}>
-                  <option value="CORE">{t('ui.home.modeCore', 'Core')}</option>
-                  <option value="FULL">{t('ui.home.modeFull', 'Full')}</option>
-                </select>
-              </label>
-
-              <label>
-                {t('ui.home.playerCount', 'Player Count')}
-                <select
-                  value={config.playerCount}
-                  onChange={(event) => onConfigChange({ playerCount: Number(event.target.value) as 2 | 3 | 4 })}
-                >
-                  <option value={2}>2</option>
-                  <option value={3}>3</option>
-                  <option value={4}>4</option>
-                </select>
-              </label>
-            </div>
-
-            {config.surface === 'room' && (
-              <label>
-                {t('ui.home.roomUrl', 'Room Service URL')}
-                <input
-                  type="text"
-                  value={config.roomUrl}
-                  onChange={(event) => onConfigChange({ roomUrl: event.target.value })}
-                  placeholder="http://localhost:3010"
-                />
-              </label>
-            )}
-
-            {error && <p className="inline-error">{error}</p>}
-          </div>
-
-          <div className="shell-panel home-panel">
-            <div className="section-heading">
-              <div>
-                <span className="eyebrow">{t('ui.home.coalitionSeats', 'Coalition Seats')}</span>
-                <h3>{t('ui.home.seatAssignments', 'Seat Assignments')}</h3>
-              </div>
-            </div>
-            <div className="home-seat-grid">
-              {Array.from({ length: config.playerCount }).map((_, seat) => (
-                <article key={seat} className="shell-card home-seat-card">
-                  <label>
-                    {t('ui.home.seatLabel', 'Seat {{seat}}', { seat: seat + 1 })}
-                    <select value={selectedRoles[seat]} onChange={(event) => updateRole(seat, event.target.value as RoleId)}>
-                      {ROLE_OPTIONS.map((role) => (
-                        <option key={role.id} value={role.id}>
-                          {getRoleName(role.id)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <p>{selectedRoles[seat] ? getRoleName(selectedRoles[seat]) : ''}</p>
-                </article>
-              ))}
-            </div>
-            {hasDuplicateRoles && <p className="inline-error">{t('ui.home.rolesMustBeUnique', 'Roles must be unique.')}</p>}
-          </div>
-
-          <div className="shell-panel home-panel">
-            <div className="section-heading">
-              <div>
-                <span className="eyebrow">{t('ui.home.loadSave', 'Load Save')}</span>
-                <h3>{t('ui.home.utilities', 'Utilities')}</h3>
-              </div>
-            </div>
-            <textarea
-              value={saveText}
-              onChange={(event) => setSaveText(event.target.value)}
-              placeholder={t('ui.home.savePlaceholder', 'Paste a serialized save payload here.')}
-            />
-            <button
-              className="secondary-button"
-              onClick={() => {
-                if (!saveText.trim()) {
-                  setError(t('ui.home.pasteSaveFirst', 'Paste a save payload first.'));
-                  return;
-                }
-
-                setError(null);
-                onLoadSave(saveText);
-              }}
-            >
-              {t('ui.home.loadSaveButton', 'Load Save Into Local Table')}
-            </button>
-            <p className="panel-footnote">
-              {t('ui.home.routesStayStable', 'Routes stay stable while the selected scenario and active table state change underneath.')}
-            </p>
-          </div>
-        </div>
-      </section>
-    </div>
+      </div>
+    </TableSurface>
   );
 }

@@ -1,5 +1,6 @@
 import type { DomainEvent } from '../../engine/index.ts';
 import { t } from '../i18n/index.ts';
+import { PaperSheet } from './tabletop.tsx';
 
 interface TraceDrawerProps {
   event: DomainEvent | null;
@@ -12,45 +13,44 @@ export function TraceDrawer({ event, onClose }: TraceDrawerProps) {
   }
 
   return (
-    <aside className="overlay-drawer overlay-trace-drawer" role="dialog" aria-modal="false" aria-labelledby="trace-drawer-title">
-      <div className="overlay-header">
-        <div>
-          <h3 id="trace-drawer-title">
-            {event.emoji} {event.message}
-          </h3>
-          <p>{event.causedBy.join(' -> ')}</p>
-        </div>
-        <div className="overlay-actions">
-          <button className="secondary-button compact-button" onClick={onClose}>
+    <aside className="evidence-drawer evidence-trace-drawer" role="dialog" aria-modal="false" aria-labelledby="trace-drawer-title">
+      <PaperSheet tone="folio" className="evidence-drawer-sheet">
+        <div className="drawer-header">
+          <div>
+            <span className="engraved-eyebrow">{t('ui.game.meetingNotes', 'Meeting Notes')}</span>
+            <h3 id="trace-drawer-title">
+              {event.emoji} {event.message}
+            </h3>
+            <p>{event.causedBy.join(' → ')}</p>
+          </div>
+          <button type="button" className="mini-plate" onClick={onClose}>
             {t('ui.traceDrawer.close', 'Close')}
           </button>
         </div>
-      </div>
 
-      <div className="overlay-stack">
-        {event.trace.length === 0 && <p className="muted">{t('ui.status.noTraceRecorded', 'No trace recorded for this entry.')}</p>}
-        {event.trace.map((trace, index) => (
-          <article key={`${trace.effectType}-${index}`} className={`shell-card trace-card status-${trace.status}`}>
-            <div className="row-split">
-              <strong>{trace.effectType}</strong>
-              <span className="status-pill neutral">{trace.status}</span>
-            </div>
-            <p>{trace.message}</p>
-            {trace.causedBy.length > 0 && <div className="trace-caused-by">{trace.causedBy.join(' -> ')}</div>}
-            <div className="overlay-stack">
-              {trace.deltas.length === 0 && <span className="muted">{t('ui.status.noStateDeltas', 'No state deltas')}</span>}
-              {trace.deltas.map((delta) => (
-                <div key={`${delta.label}-${String(delta.before)}-${String(delta.after)}`} className="overlay-row">
-                  <span>{delta.label}</span>
-                  <span>
-                    {String(delta.before)} → {String(delta.after)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </article>
-        ))}
-      </div>
+        <div className="trace-slip-list">
+          {event.trace.length === 0 ? <p>{t('ui.status.noTraceRecorded', 'No trace recorded for this entry.')}</p> : null}
+          {event.trace.map((trace, index) => (
+            <PaperSheet key={`${trace.effectType}-${index}`} tone="note" className={`trace-slip trace-${trace.status}`}>
+              <div className="drawer-header">
+                <strong>{trace.effectType}</strong>
+                <span className="engraved-eyebrow">{trace.status}</span>
+              </div>
+              <p>{trace.message}</p>
+              {trace.causedBy.length > 0 ? <p>{trace.causedBy.join(' → ')}</p> : null}
+              <div className="ledger-list">
+                {trace.deltas.length === 0 ? <span>{t('ui.status.noStateDeltas', 'No state deltas')}</span> : null}
+                {trace.deltas.map((delta) => (
+                  <div key={`${delta.label}-${String(delta.before)}-${String(delta.after)}`} className="ledger-row">
+                    <span>{delta.label}</span>
+                    <strong>{String(delta.before)} → {String(delta.after)}</strong>
+                  </div>
+                ))}
+              </div>
+            </PaperSheet>
+          ))}
+        </div>
+      </PaperSheet>
     </aside>
   );
 }

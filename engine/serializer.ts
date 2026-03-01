@@ -1,4 +1,4 @@
-import { replayCommands } from './runtime.ts';
+import { normalizeEngineState, replayCommands } from './runtime.ts';
 import type { EngineState, SerializedGame } from './types.ts';
 
 export function serializeGame(state: EngineState): string {
@@ -17,6 +17,7 @@ export function serializeGame(state: EngineState): string {
 
 export function deserializeGame(serialized: string): SerializedGame {
   const payload = JSON.parse(serialized) as SerializedGame;
+  payload.snapshot = normalizeEngineState(payload.snapshot);
   return payload;
 }
 

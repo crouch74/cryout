@@ -345,6 +345,14 @@ export interface DeckState {
   discardPile: string[];
 }
 
+export interface StagedWorldPhase {
+  captureCardId: string | null;
+  crisisCardIds: string[];
+  activeCrisisId: string | null;
+  band: number;
+  status: 'idle' | 'drawn';
+}
+
 export interface CharterClauseState {
   id: string;
   status: 'locked' | 'unlocked' | 'ratified';
@@ -434,6 +442,7 @@ export interface EngineState {
   regions: Record<RegionId, RegionState>;
   players: PlayerState[];
   decks: Record<DeckId, DeckState>;
+  stagedWorldPhase: StagedWorldPhase;
   charter: Record<string, CharterClauseState>;
   charterProgress: number;
   scenarioFlags: Record<string, FlagValue>;
@@ -464,7 +473,10 @@ export type EngineCommand =
       target: ActionTarget;
     }
   | { type: 'RemoveQueuedIntent'; seat: number; slot: number }
+  | { type: 'ReorderQueuedIntent'; seat: number; fromSlot: number; toSlot: number }
   | { type: 'SetReady'; seat: number; ready: boolean }
+  | { type: 'DrawWorldCards' }
+  | { type: 'AdoptResolution' }
   | { type: 'ResolveWorldPhase' }
   | { type: 'CommitCoalitionIntent' }
   | { type: 'VoteCompromise'; seat: number; accept: boolean }

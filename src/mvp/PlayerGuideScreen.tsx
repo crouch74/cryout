@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { t, type Locale } from '../i18n/index.ts';
 import { LanguageSwitcher } from '../components/LanguageSwitcher.tsx';
+import { TableSurface, TabletopControls } from './tabletop.tsx';
 
 interface PlayerGuideScreenProps {
     locale: Locale;
@@ -43,11 +44,13 @@ export function PlayerGuideScreen({
     const [activeSection, setActiveSection] = useState<GuideSection>('overview');
 
     return (
+        <TableSurface className="player-guide-table">
         <div className="player-guide-screen">
             {/* ── Navigation Sidebar ── */}
             <nav className="guide-nav shell-panel" aria-label={t('ui.playerGuide.navTitle', 'Rulebook')}>
                 <div className="guide-nav-header">
                     <LanguageSwitcher locale={locale} onChange={onLocaleChange} />
+                    <TabletopControls />
                     <span className="eyebrow">📜 {t('ui.playerGuide.navEyebrow', 'Player Guide')}</span>
                     <h2>{t('ui.playerGuide.navTitle', 'Rulebook')}</h2>
                 </div>
@@ -85,6 +88,7 @@ export function PlayerGuideScreen({
                 {activeSection === 'glossary' && <GlossarySection />}
             </main>
         </div>
+        </TableSurface>
     );
 }
 

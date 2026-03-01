@@ -1,135 +1,134 @@
 import { type EngineCommand, type EngineState, getTemperatureBand } from '../../engine/index.ts';
 import { t } from '../i18n/index.ts';
+import { ActionCard, PaperSheet, PaperTooltip, WaxSealLock } from './tabletop.tsx';
 
 interface NowBarProps {
-    state: EngineState;
-    onCommand: (command: EngineCommand) => void;
-    worldPhaseSelected: boolean;
-    setWorldPhaseSelected: (selected: boolean) => void;
+  state: EngineState;
+  onCommand: (command: EngineCommand) => void;
+  worldPhaseSelected: boolean;
+  setWorldPhaseSelected: (selected: boolean) => void;
+}
+
+function getPhaseDetails(state: EngineState) {
+  switch (state.phase) {
+    case 'WORLD': {
+      const band = getTemperatureBand(state.temperature);
+      const staged = state.stagedWorldPhase.status === 'drawn';
+      return {
+        title: t('ui.game.chairsDocket', "Chair's Docket"),
+        lead: staged
+          ? t('ui.game.adoptResolutionLead', 'Cards are on the table. Review the crisis slot, then adopt the resolution.')
+          : t('ui.game.drawResolutionLead', 'Open the crisis deck, reveal the current draw, and place the active card on the board.'),
+        support: t(
+          'ui.game.temperatureDetail',
+          'Band {{band}}. {{count}} crisis card{{plural}} on the next world resolution.',
+          {
+            band: band.band,
+            count: band.crisisCount,
+            plural: band.crisisCount === 1 ? '' : 's',
+          },
+        ),
+        blockers: staged
+          ? null
+          : t('ui.now.worldBlockers', 'Adoption remains sealed until the deck has been drawn.'),
+      };
+    }
+    case 'COALITION': {
+      const unreadySeats = state.players.filter((player) => !player.ready).map((player) => `Seat ${player.seat + 1}`);
+      return {
+        title: t('ui.game.chairsDocket', "Chair's Docket"),
+        lead: t('ui.now.coalitionAction', 'Lay out planned moves on the player mats, then place every commit marker.'),
+        support:
+          unreadySeats.length > 0
+            ? t('ui.now.coalitionChoices', 'Still arranging: {{seats}}.', { seats: unreadySeats.join(', ') })
+            : t('ui.now.coalitionReady', 'The table is ready to resolve the planned moves.'),
+        blockers:
+          unreadySeats.length > 0
+            ? t('ui.now.coalitionBlockers', 'Commit remains sealed until every seat has placed its marker.')
+            : null,
+      };
+    }
+    case 'COMPROMISE':
+      return {
+        title: t('ui.game.chairsDocket', "Chair's Docket"),
+        lead: t('ui.now.compromiseAction', 'A compromise slip is on the table. Record each vote to proceed.'),
+        support: t('ui.now.compromiseChoices', 'Open the offer and resolve the ballot.'),
+        blockers: t('ui.now.compromiseBlockers', 'The round cannot advance while the compromise is unsettled.'),
+      };
+    case 'END':
+      return {
+        title: t('ui.game.chairsDocket', "Chair's Docket"),
+        lead: t('ui.now.endAction', 'Close the minute book, advance delayed effects, and begin the next round.'),
+        support: t('ui.now.endChoices', 'The table is ready for the end-of-round resolution.'),
+        blockers: null,
+      };
+    case 'WIN':
+    case 'LOSS':
+      return {
+        title: t('ui.game.chairsDocket', "Chair's Docket"),
+        lead: t('ui.now.gameOverAction', 'Review the record, the charter outcome, and the surviving institutions.'),
+        support: t('ui.now.gameOverChoices', 'Export the table state if you want to keep this sitting.'),
+        blockers: null,
+      };
+  }
 }
 
 export function NowBar({ state, onCommand, worldPhaseSelected, setWorldPhaseSelected }: NowBarProps) {
-    const getPhaseDetails = () => {
-        switch (state.phase) {
-            case 'WORLD': {
-                const band = getTemperatureBand(state.temperature);
-                return {
-                    step: '1/4',
-                    name: t('ui.phases.WORLD', 'World Phase'),
-                    actionable: t('ui.now.worldAction', 'Draw {{count}} crisis card{{plural}} at Band {{band}}', { count: band.crisisCount, plural: band.crisisCount === 1 ? '' : 's', band: band.band }),
-                    blockers: t('ui.now.worldBlockers', 'Phase locked until crisis is selected'),
-                    choices: t('ui.now.worldChoices', 'Select crisis to enable phase resolution.'),
-                };
-            }
-            case 'COALITION': {
-                const unreadySeats = state.players.filter(p => !p.ready).map(p => `Seat ${p.seat + 1}`);
-                return {
-                    step: '2/4',
-                    name: t('ui.phases.COALITION', 'Coalition Phase'),
-                    actionable: t('ui.now.coalitionAction', 'Plan and queue intent actions in the Coalition Desk.'),
-                    blockers: unreadySeats.length > 0 ? t('ui.now.coalitionBlockers', 'Waiting for: {{seats}} (Planning)', { seats: unreadySeats.join(', ') }) : null,
-                    choices: unreadySeats.length > 0 ? t('ui.now.coalitionChoices', 'Players selecting intents') : t('ui.now.coalitionReady', 'Commit coalition intent'),
-                };
-            }
-            case 'COMPROMISE': {
-                return {
-                    step: '3/4',
-                    name: t('ui.phases.COMPROMISE', 'Compromise Phase'),
-                    actionable: t('ui.now.compromiseAction', 'Vote on the current compromise modal.'),
-                    blockers: t('ui.now.compromiseBlockers', 'Compromise vote is live blocking the board.'),
-                    choices: t('ui.now.compromiseChoices', 'Resolve the modal to continue.'),
-                };
-            }
-            case 'END': {
-                return {
-                    step: '4/4',
-                    name: t('ui.phases.END', 'End Phase'),
-                    actionable: t('ui.now.endAction', 'Resolve end phase to advance round.'),
-                    blockers: null,
-                    choices: t('ui.now.endChoices', 'Ready to advance round.'),
-                };
-            }
-            case 'WIN':
-            case 'LOSS': {
-                return {
-                    step: '-',
-                    name: t('ui.phases.GAMEOVER', 'Game Over'),
-                    actionable: t('ui.now.gameOverAction', 'Review the charter outcome.'),
-                    blockers: null,
-                    choices: t('ui.now.gameOverChoices', 'Export a shareable state if desired.'),
-                };
-            }
-            default:
-                return {
-                    step: '-',
-                    name: state.phase,
-                    actionable: '-',
-                    blockers: null,
-                    choices: '-',
-                };
-        }
-    };
+  const details = getPhaseDetails(state);
+  const worldCardsDrawn = state.stagedWorldPhase.status === 'drawn';
+  const everyoneReady = state.players.every((player) => player.ready);
 
-    const details = getPhaseDetails();
+  return (
+    <PaperSheet tone="note" className="chairs-docket" aria-labelledby="chairs-docket-title">
+      <div className="chairs-docket-copy">
+        <span className="engraved-eyebrow">{t('ui.now.phase', 'Phase')}</span>
+        <h2 id="chairs-docket-title">{details.title}</h2>
+        <p>{details.lead}</p>
+        <p>{details.support}</p>
+        {details.blockers ? <PaperTooltip label={details.blockers} /> : null}
+      </div>
 
-    return (
-        <div className="now-bar shell-card">
-            <div className="now-bar-content">
-                <div className="now-bar-phase">
-                    <span className="eyebrow">{t('ui.now.phase', 'Phase')}</span>
-                    <strong>{details.name} ({t('ui.now.step', 'Step {{step}}', { step: details.step })})</strong>
-                </div>
+      <div className="chairs-docket-actions">
+        {state.phase === 'WORLD' ? (
+          <>
+            <ActionCard
+              className={worldCardsDrawn ? 'is-selected' : ''}
+              onClick={() => {
+                setWorldPhaseSelected(true);
+                onCommand({ type: 'DrawWorldCards' });
+              }}
+              disabled={worldCardsDrawn}
+            >
+              <span className="engraved-eyebrow">Step 1</span>
+              <strong>{t('ui.game.drawWorldCards', 'Draw World Cards')}</strong>
+              <span>{t('ui.game.crisisDeck', 'Reveal capture and crisis cards')}</span>
+            </ActionCard>
+            <ActionCard
+              onClick={() => onCommand({ type: 'AdoptResolution' })}
+              disabled={!worldCardsDrawn}
+            >
+              <span className="engraved-eyebrow">Step 2</span>
+              <strong>{t('ui.game.adoptResolution', 'Adopt Resolution')}</strong>
+              {!worldCardsDrawn || !worldPhaseSelected ? <WaxSealLock label={t('ui.game.sealed', 'Sealed')} /> : null}
+            </ActionCard>
+          </>
+        ) : null}
 
-                <div className="now-bar-details">
-                    <div className="now-detail-row">
-                        <span className="eyebrow">{t('ui.now.youCan', 'You can')}</span>
-                        <p>{details.actionable}</p>
-                    </div>
-                    <div className="now-detail-row">
-                        <span className="eyebrow">{t('ui.now.choices', 'Your choices')}</span>
-                        <p>{details.choices}</p>
-                    </div>
-                    {details.blockers && (
-                        <div className="now-detail-row blocker">
-                            <span className="eyebrow">{t('ui.now.blockedBy', 'Blocked by')}</span>
-                            <p>{details.blockers}</p>
-                        </div>
-                    )}
-                </div>
-            </div>
+        {state.phase === 'COALITION' ? (
+          <ActionCard disabled={!everyoneReady} onClick={() => onCommand({ type: 'CommitCoalitionIntent' })}>
+            <span className="engraved-eyebrow">{t('ui.game.plannedMoves', 'Planned Moves')}</span>
+            <strong>{t('ui.game.commitCoalitionIntent', 'Commit Coalition Intent')}</strong>
+            {!everyoneReady ? <WaxSealLock label={t('ui.game.sealed', 'Sealed')} /> : null}
+          </ActionCard>
+        ) : null}
 
-            <div className="now-bar-actions">
-                {state.phase === 'WORLD' && (
-                    <div className="two-step-resolve">
-                        <button
-                            className={`secondary-button ${worldPhaseSelected ? 'active' : ''}`}
-                            onClick={() => setWorldPhaseSelected(!worldPhaseSelected)}>
-                            {t('ui.now.selectCrisis', '1. Select Crisis')}
-                        </button>
-                        <button
-                            className="primary-button"
-                            disabled={!worldPhaseSelected}
-                            onClick={() => onCommand({ type: 'ResolveWorldPhase' })}>
-                            {t('ui.game.resolveWorldPhase', '2. Resolve World Phase')}
-                        </button>
-                    </div>
-                )}
-                {state.phase === 'COALITION' && (
-                    <button
-                        className="primary-button map-primary-action"
-                        disabled={state.players.filter(p => !p.ready).length > 0}
-                        onClick={() => onCommand({ type: 'CommitCoalitionIntent' })}>
-                        {t('ui.game.commitCoalitionIntent', 'Commit Coalition Intent')}
-                    </button>
-                )}
-                {state.phase === 'END' && (
-                    <button
-                        className="primary-button map-primary-action"
-                        onClick={() => onCommand({ type: 'ResolveEndPhase' })}>
-                        {t('ui.game.resolveEndPhase', 'Resolve End Phase')}
-                    </button>
-                )}
-            </div>
-        </div>
-    );
+        {state.phase === 'END' ? (
+          <ActionCard onClick={() => onCommand({ type: 'ResolveEndPhase' })}>
+            <span className="engraved-eyebrow">{t('ui.phases.END', 'End')}</span>
+            <strong>{t('ui.game.closeRound', 'Close Round')}</strong>
+          </ActionCard>
+        ) : null}
+      </div>
+    </PaperSheet>
+  );
 }

@@ -17,12 +17,14 @@ import {
 } from '../../engine/index.ts';
 import type { ToastMessage } from './ToastStack.tsx';
 import { t } from '../i18n/index.ts';
+import { ActionCard, PaperSheet, WaxSealLock } from './tabletop.tsx';
 
 interface ActionBoardProps {
   seat: number;
   state: EngineState;
   content: CompiledContent;
   player: PlayerState;
+  onCommand: (command: EngineCommand) => void;
   onQueueAction: (
     command: EngineCommand,
     resources: ResourceType[],
@@ -30,16 +32,29 @@ interface ActionBoardProps {
   ) => void;
 }
 
+function renderTargetLabel(content: CompiledContent, target: ActionTarget) {
+  if (target.kind === 'REGION' && target.regionId) {
+    return content.regions[target.regionId].name;
+  }
+
+  if (target.kind === 'FRONT' && target.frontId) {
+    return content.fronts[target.frontId].name;
+  }
+
+  return t('ui.actionBoard.tableWide', 'Table-wide');
+}
+
 export function ActionBoard({
   seat,
   state,
   content,
   player,
+  onCommand,
   onQueueAction,
 }: ActionBoardProps) {
   const [targets, setTargets] = useState<Record<string, string>>({});
-  const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
   const [readingActionId, setReadingActionId] = useState<string | null>(null);
+  const [dragSlot, setDragSlot] = useState<number | null>(null);
   const actions = getSeatActions(state, content, seat);
   const allActions = [...actions.standard, ...actions.breakthroughs];
 
@@ -59,13 +74,15 @@ export function ActionBoard({
     return { kind: 'NONE' };
   };
 
-  const readingAction = allActions.find((a) => a.id === readingActionId) ?? null;
+  const readingAction = allActions.find((action) => action.id === readingActionId) ?? null;
   const readingTarget = readingAction ? resolveTarget(readingAction.id, readingAction.targetKind) : { kind: 'NONE' as const };
   const readingDisabled = readingAction ? getSeatDisabledReason(state, content, seat, readingAction.id, readingTarget) : null;
 
   const queueActionInternal = (action: ActionDefinition, target: ActionTarget) => {
     const disabled = getSeatDisabledReason(state, content, seat, action.id, target);
-    if (disabled.disabled) return;
+    if (disabled.disabled) {
+      return;
+    }
 
     onQueueAction(
       { type: 'QueueIntent', seat, actionId: action.id, target },
@@ -84,131 +101,167 @@ export function ActionBoard({
   };
 
   return (
-    <div className="coalition-board" data-seat={`seat-${seat + 1}`}>
-      <div className="section-heading compact">
-        <span className="eyebrow">{t('ui.actionBoard.queued', 'Resolution Queue')}</span>
-      </div>
-
-      <div className="coalition-queue-list compact">
-        {player.queuedIntents.length === 0 && (
-          <div className="empty-queue-placeholder">
-            <span>{t('ui.status.noActionsQueued', 'Wait for resolve')}</span>
+    <div className="planned-moves-board" data-seat={`seat-${seat + 1}`}>
+      <PaperSheet tone="plain" className="planned-moves-sheet">
+        <div className="planned-moves-header">
+          <div>
+            <span className="engraved-eyebrow">{t('ui.game.plannedMoves', 'Planned Moves')}</span>
+            <h3>{t('ui.actionBoard.plannedMovesTitle', 'Arrange the action cards')}</h3>
           </div>
-        )}
-        {player.queuedIntents.map((intent) => {
-          const action = content.actions[intent.actionId];
-          return (
-            <div key={`${intent.slot}-${intent.actionId}`} className="coalition-queue-item shell-card compact">
-              <span>{action.name}</span>
-              <button
-                type="button"
-                className="secondary-button compact-button"
-                onClick={() => {
-                  onQueueAction(
-                    { type: 'RemoveQueuedIntent', seat, slot: intent.slot },
-                    Object.keys(action.resourceCosts ?? {}) as ResourceType[],
-                    {
-                      tone: 'info',
-                      title: t('ui.toast.intentRemovedTitle', 'Intent removed'),
-                      message: t('ui.toast.intentRemovedMessage', 'Removed from Seat {{seat}}.', { seat: seat + 1 }),
-                      dismissAfterMs: 2200,
-                    },
-                  );
+          <span className="engraved-eyebrow">
+            {t('ui.actionBoard.slotsLeft', 'Slots left {{count}}', { count: player.actionsRemaining })}
+          </span>
+        </div>
+
+        <div className="planned-moves-row" role="list" aria-label={t('ui.game.coalitionDeskSections', 'Coalition desk sections')}>
+          {player.queuedIntents.length === 0 ? (
+            <div className="planned-moves-empty">{t('ui.status.noActionsQueued', 'No actions queued yet.')}</div>
+          ) : null}
+
+          {player.queuedIntents.map((intent) => {
+            const action = content.actions[intent.actionId];
+            return (
+              <article
+                key={`${intent.slot}-${intent.actionId}`}
+                className="planned-move-card"
+                role="listitem"
+                draggable
+                onDragStart={() => setDragSlot(intent.slot)}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={() => {
+                  if (dragSlot === null || dragSlot === intent.slot) {
+                    return;
+                  }
+                  onCommand({ type: 'ReorderQueuedIntent', seat, fromSlot: dragSlot, toSlot: intent.slot });
+                  setDragSlot(null);
                 }}
               >
-                ✕
-              </button>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="section-divider" />
-
-      <div className="section-heading compact">
-        <span className="eyebrow">{t('ui.actionBoard.toolkit', 'Action Toolkit')}</span>
-      </div>
-
-      <div className="coalition-hand-container">
-        {allActions.map((action) => {
-          const isBreakthrough = actions.breakthroughs.some((b) => b.id === action.id);
-          return (
-            <article
-              key={action.id}
-              className={`action-card ${selectedActionId === action.id ? 'selected' : ''} ${isBreakthrough ? 'is-breakthrough' : ''}`}
-              onClick={() => {
-                setSelectedActionId(action.id);
-                setReadingActionId(action.id);
-              }}
-            >
-              <div className="action-card-name">{action.name}</div>
-              <div className="action-card-cost">
-                {Object.entries(action.resourceCosts ?? {}).map(([res, amt]) => (
-                  <span key={res} className="mini-cost">
-                    {res === 'solidarity' ? '🤝' : res === 'evidence' ? '🛰️' : res === 'capacity' ? '🧱' : '🩹'} {amt}
+                <div className="planned-move-card-copy">
+                  <span className="engraved-eyebrow">
+                    {t('ui.actionBoard.priority', 'Priority {{priority}}', { priority: action.resolvePriority })}
                   </span>
-                ))}
-              </div>
-              <div className="action-card-footer">
-                <span>P{action.resolvePriority}</span>
-                {isBreakthrough && <span>✨</span>}
-              </div>
-            </article>
-          );
-        })}
-      </div>
+                  <strong>{action.name}</strong>
+                  <span>{renderTargetLabel(content, intent.target)}</span>
+                </div>
+                <div className="planned-move-card-actions">
+                  <button
+                    type="button"
+                    className="mini-plate"
+                    disabled={intent.slot === 0}
+                    onClick={() => onCommand({ type: 'ReorderQueuedIntent', seat, fromSlot: intent.slot, toSlot: intent.slot - 1 })}
+                  >
+                    {t('ui.actionBoard.moveLeft', 'Move Left')}
+                  </button>
+                  <button
+                    type="button"
+                    className="mini-plate"
+                    disabled={intent.slot === player.queuedIntents.length - 1}
+                    onClick={() => onCommand({ type: 'ReorderQueuedIntent', seat, fromSlot: intent.slot, toSlot: intent.slot + 1 })}
+                  >
+                    {t('ui.actionBoard.moveRight', 'Move Right')}
+                  </button>
+                  <button
+                    type="button"
+                    className="mini-plate mini-plate-danger"
+                    onClick={() =>
+                      onQueueAction(
+                        { type: 'RemoveQueuedIntent', seat, slot: intent.slot },
+                        Object.keys(action.resourceCosts ?? {}) as ResourceType[],
+                        {
+                          tone: 'info',
+                          title: t('ui.toast.intentRemovedTitle', 'Intent removed'),
+                          message: t('ui.toast.intentRemovedMessage', 'Removed from Seat {{seat}}.', { seat: seat + 1 }),
+                          dismissAfterMs: 2200,
+                        },
+                      )
+                    }
+                  >
+                    {t('ui.actionBoard.pullTab', 'Pull Tab')}
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </PaperSheet>
 
-      {readingAction && (
-        <div className="action-reading-pane" onClick={() => setReadingActionId(null)}>
-          <div className="reading-card-content" onClick={(e) => e.stopPropagation()}>
-            <div className="row-split">
-              <h2>{readingAction.name}</h2>
-              <span className="status-pill neutral">P{readingAction.resolvePriority}</span>
-            </div>
-            <p className="reading-description">{readingAction.description}</p>
-
-            <div className="section-divider" />
-
-            {readingAction.targetKind !== 'NONE' && (
-              <label className="action-target">
-                <span>{readingAction.targetLabel ?? t('ui.actionBoard.target', 'Select Target')}</span>
-                <select
-                  value={targets[readingAction.id] ?? ''}
-                  onChange={(event) => setTargets({ ...targets, [readingAction.id]: event.target.value })}
-                >
-                  {(readingAction.targetKind === 'REGION' ? getAvailableRegions() : getAvailableFronts()).map((option) => (
-                    <option key={option} value={option}>
-                      {readingAction.targetKind === 'REGION'
-                        ? content.regions[option as RegionId].name
-                        : content.fronts[option as FrontId].name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-
-            <div className="coalition-effect-preview">
-              <span className="eyebrow">{t('ui.actionBoard.projectedEffect', 'Projected effect')}</span>
-              <p>{buildEffectPreview(readingAction)}</p>
-            </div>
-
-            <div className="row-split margin-top-lg">
-              <button className="secondary-button" onClick={() => setReadingActionId(null)}>
-                {t('ui.game.back', 'Back')}
-              </button>
-              <button
-                className="primary-button"
-                disabled={readingDisabled?.disabled}
-                onClick={() => queueActionInternal(readingAction, readingTarget)}
-              >
-                {readingDisabled?.disabled
-                  ? readingDisabled.reason
-                  : t('ui.actionBoard.queueAction', 'Queue Action')}
-              </button>
-            </div>
+      <PaperSheet tone="plain" className="action-library-sheet">
+        <div className="planned-moves-header">
+          <div>
+            <span className="engraved-eyebrow">{t('ui.actionBoard.toolkit', 'Action Toolkit')}</span>
+            <h3>{t('ui.actionBoard.libraryTitle', 'Action cards in hand')}</h3>
           </div>
         </div>
-      )}
+
+        <div className="action-library-grid">
+          {allActions.map((action) => {
+            const isBreakthrough = actions.breakthroughs.some((breakthrough) => breakthrough.id === action.id);
+            return (
+              <ActionCard key={action.id} onClick={() => setReadingActionId(action.id)}>
+                <span className="engraved-eyebrow">
+                  P{action.resolvePriority}
+                  {isBreakthrough ? ` · ${t('ui.actionBoard.breakthrough', 'Breakthrough')}` : ''}
+                </span>
+                <strong>{action.name}</strong>
+                <span>{buildEffectPreview(action)}</span>
+              </ActionCard>
+            );
+          })}
+        </div>
+      </PaperSheet>
+
+      {readingAction ? (
+        <PaperSheet tone="note" className="action-reading-sheet">
+          <div className="planned-moves-header">
+            <div>
+              <span className="engraved-eyebrow">{t('ui.actionBoard.selectedAction', 'Selected Action')}</span>
+              <h3>{readingAction.name}</h3>
+            </div>
+            <button type="button" className="mini-plate" onClick={() => setReadingActionId(null)}>
+              {t('ui.game.back', 'Back')}
+            </button>
+          </div>
+
+          <p>{readingAction.description}</p>
+
+          {readingAction.targetKind !== 'NONE' ? (
+            <label className="action-target-picker">
+              <span>{readingAction.targetLabel ?? t('ui.actionBoard.target', 'Target')}</span>
+              <select
+                value={targets[readingAction.id] ?? ''}
+                onChange={(event) => setTargets({ ...targets, [readingAction.id]: event.target.value })}
+              >
+                {(readingAction.targetKind === 'REGION' ? getAvailableRegions() : getAvailableFronts()).map((option) => (
+                  <option key={option} value={option}>
+                    {readingAction.targetKind === 'REGION'
+                      ? content.regions[option as RegionId].name
+                      : content.fronts[option as FrontId].name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+
+          <div className="projected-effect-sheet">
+            <span className="engraved-eyebrow">{t('ui.actionBoard.projectedEffect', 'Projected effect')}</span>
+            <p>{buildEffectPreview(readingAction)}</p>
+          </div>
+
+          <div className="action-reading-footer">
+            <button type="button" className="mini-plate" onClick={() => setReadingActionId(null)}>
+              {t('ui.actionBoard.hide', 'Hide')}
+            </button>
+            <ActionCard
+              onClick={() => queueActionInternal(readingAction, readingTarget)}
+              disabled={readingDisabled?.disabled}
+            >
+              <span className="engraved-eyebrow">{t('ui.actionBoard.queueAction', 'Queue Action')}</span>
+              <strong>{readingDisabled?.disabled ? readingDisabled.reason : t('ui.actionBoard.queueAction', 'Queue Action')}</strong>
+              {readingDisabled?.disabled ? <WaxSealLock label={t('ui.game.sealed', 'Sealed')} /> : null}
+            </ActionCard>
+          </div>
+        </PaperSheet>
+      ) : null}
     </div>
   );
 }

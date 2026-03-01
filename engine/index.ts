@@ -5,6 +5,7 @@ export {
   getDisabledActionReason,
   getTemperatureBand,
   initializeGame,
+  normalizeEngineState,
   replayCommands,
   serializeForReplay,
 } from './runtime.ts';

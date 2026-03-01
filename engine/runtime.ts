@@ -51,6 +51,25 @@ function cloneState<T>(value: T): T {
   return structuredClone(value);
 }
 
+function createEmptyStagedWorldPhase(): EngineState['stagedWorldPhase'] {
+  return {
+    captureCardId: null,
+    crisisCardIds: [],
+    activeCrisisId: null,
+    band: 0,
+    status: 'idle',
+  };
+}
+
+export function normalizeEngineState(state: EngineState): EngineState {
+  const next = cloneState(state);
+  next.stagedWorldPhase = {
+    ...createEmptyStagedWorldPhase(),
+    ...(state.stagedWorldPhase ?? {}),
+  };
+  return next;
+}
+
 function assertExists<T>(value: T | undefined | null, message: string): T {
   if (value === undefined || value === null) {
     throw new Error(message);
@@ -579,6 +598,7 @@ function createInitialState(command: Extract<EngineCommand, { type: 'StartGame' 
     regions,
     players,
     decks,
+    stagedWorldPhase: createEmptyStagedWorldPhase(),
     charter,
     charterProgress: 0,
     scenarioFlags: {
@@ -735,6 +755,82 @@ function resolveCard(state: EngineState, content: CompiledContent, cardId: strin
     },
   );
   state.decks[card.deck].discardPile.push(card.id);
+}
+
+function stageWorldPhase(state: EngineState, content: CompiledContent, sourceId: 'DrawWorldCards' | 'ResolveWorldPhase'): void {
+  nextWorldPhaseSetup(state, content, sourceId);
+
+  const captureCardId = resolveCardDraw(state, 'capture');
+  const band = getTemperatureBand(state.temperature);
+  const crisisCardIds: string[] = [];
+
+  if (captureCardId) {
+    state.debug.lastCaptureCards = [captureCardId];
+  }
+  state.debug.lastCrisisCount = band.crisisCount;
+
+  for (let drawIndex = 0; drawIndex < band.crisisCount; drawIndex += 1) {
+    const crisisCardId = resolveCardDraw(state, 'crisis');
+    if (crisisCardId) {
+      crisisCardIds.push(crisisCardId);
+    }
+  }
+
+  state.debug.lastCrisisCards = crisisCardIds;
+  state.stagedWorldPhase = {
+    captureCardId,
+    crisisCardIds,
+    activeCrisisId: crisisCardIds[0] ?? null,
+    band: band.band,
+    status: 'drawn',
+  };
+
+  addSimpleEvent(
+    state,
+    'command',
+    sourceId,
+    '🃏',
+    crisisCardIds.length > 0 ? 'World cards drawn and set on the table.' : 'World cards drawn. No crisis cards remained in the deck.',
+    [sourceId],
+  );
+}
+
+function nextWorldPhaseSetup(state: EngineState, content: CompiledContent, sourceId: 'DrawWorldCards' | 'ResolveWorldPhase'): void {
+  state.roundFlags = {};
+  state.debug = {
+    climateRoll: null,
+    lastCaptureCards: [],
+    lastCrisisCards: [],
+    lastCrisisCount: 0,
+    firedRuleIds: [],
+  };
+  state.stagedWorldPhase = createEmptyStagedWorldPhase();
+  for (const region of Object.values(state.regions)) {
+    markInstitutionReset(region);
+  }
+
+  resolveHook(state, content, 'on_round_start', { causedBy: [sourceId] });
+  applyClimateUpdate(state, content);
+}
+
+function adoptWorldPhase(state: EngineState, content: CompiledContent, sourceId: 'AdoptResolution' | 'ResolveWorldPhase'): void {
+  const staged = cloneState(state.stagedWorldPhase);
+  const baseCausedBy = [sourceId];
+
+  if (staged.captureCardId) {
+    resolveCard(state, content, staged.captureCardId, baseCausedBy, { causedBy: baseCausedBy });
+    resolveHook(state, content, 'on_capture_card_resolve', { causedBy: [...baseCausedBy, staged.captureCardId] });
+  }
+
+  for (const crisisCardId of staged.crisisCardIds) {
+    state.stagedWorldPhase.activeCrisisId = crisisCardId;
+    resolveCard(state, content, crisisCardId, baseCausedBy, { causedBy: baseCausedBy });
+    resolveHook(state, content, 'on_crisis_resolve', { causedBy: [...baseCausedBy, crisisCardId] });
+  }
+
+  resolveHook(state, content, 'on_world_phase_pre', { causedBy: baseCausedBy });
+  applyDelayedEffects(state, content);
+  state.stagedWorldPhase = createEmptyStagedWorldPhase();
 }
 
 function resolveHook(state: EngineState, content: CompiledContent, hookName: keyof CompiledContent['hooks'], context: EffectContext): void {
@@ -1264,6 +1360,10 @@ function sortCoalitionIntents(intents: Array<{ seat: number; intent: QueuedInten
       return left.seat - right.seat;
     }
 
+    if (left.intent.slot !== right.intent.slot) {
+      return left.intent.slot - right.intent.slot;
+    }
+
     return left.intent.actionId.localeCompare(right.intent.actionId);
   });
 }
@@ -1275,7 +1375,7 @@ export function initializeGame(command: Extract<EngineCommand, { type: 'StartGam
 
 export function dispatchCommand(state: EngineState, command: EngineCommand, content: CompiledContent): EngineState {
   if (command.type === 'LoadSnapshot') {
-    return cloneState(command.payload.snapshot);
+    return normalizeEngineState(command.payload.snapshot);
   }
 
   if (command.type === 'SaveSnapshot') {
@@ -1285,7 +1385,7 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
     return next;
   }
 
-  const next = cloneState(state);
+  const next = normalizeEngineState(state);
   next.commandLog.push(cloneState(command));
 
   switch (command.type) {
@@ -1348,6 +1448,43 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
       ]);
       return next;
     }
+    case 'ReorderQueuedIntent': {
+      if (next.phase !== 'COALITION') {
+        addRejectedCommandEvent(next, command, 'Cannot reorder planned moves outside Coalition.');
+        return next;
+      }
+
+      const player = next.players[command.seat];
+      if (!player) {
+        addRejectedCommandEvent(next, command, 'Unknown player.');
+        return next;
+      }
+
+      const queue = player.queuedIntents.slice();
+      if (
+        command.fromSlot < 0
+        || command.fromSlot >= queue.length
+        || command.toSlot < 0
+        || command.toSlot >= queue.length
+      ) {
+        addRejectedCommandEvent(next, command, 'Planned move not found.');
+        return next;
+      }
+
+      const [moved] = queue.splice(command.fromSlot, 1);
+      queue.splice(command.toSlot, 0, moved);
+      player.queuedIntents = queue.map((intent, slot) => ({ ...intent, slot }));
+      player.ready = false;
+      addSimpleEvent(
+        next,
+        'command',
+        'ReorderQueuedIntent',
+        '🪵',
+        `Planned moves reordered for seat ${command.seat + 1}.`,
+        ['ReorderQueuedIntent'],
+      );
+      return next;
+    }
     case 'SetReady': {
       if (next.phase !== 'COALITION') {
         addRejectedCommandEvent(next, command, 'Ready state only matters in Coalition.');
@@ -1369,49 +1506,54 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
       addSimpleEvent(next, 'command', 'SetReady', command.ready ? '✅' : '⚪', `Seat ${command.seat + 1} is ${command.ready ? 'ready' : 'not ready'}.`, ['SetReady']);
       return next;
     }
+    case 'DrawWorldCards': {
+      if (next.phase !== 'WORLD') {
+        addRejectedCommandEvent(next, command, 'World phase is not active.');
+        return next;
+      }
+
+      if (next.stagedWorldPhase.status === 'drawn') {
+        addRejectedCommandEvent(next, command, 'World cards are already drawn.');
+        return next;
+      }
+
+      stageWorldPhase(next, content, 'DrawWorldCards');
+      return next;
+    }
+    case 'AdoptResolution': {
+      if (next.phase !== 'WORLD') {
+        addRejectedCommandEvent(next, command, 'World phase is not active.');
+        return next;
+      }
+
+      if (next.stagedWorldPhase.status !== 'drawn') {
+        addRejectedCommandEvent(next, command, 'Draw the world cards before adopting the resolution.');
+        return next;
+      }
+
+      adoptWorldPhase(next, content, 'AdoptResolution');
+
+      if (updateCollapseState(next, content)) {
+        return next;
+      }
+
+      next.phase = 'COALITION';
+      addSimpleEvent(next, 'command', 'AdoptResolution', '🧭', 'Resolution adopted. Coalition planning opens.', [
+        'AdoptResolution',
+      ]);
+      return next;
+    }
     case 'ResolveWorldPhase': {
       if (next.phase !== 'WORLD') {
         addRejectedCommandEvent(next, command, 'World phase is not active.');
         return next;
       }
 
-      next.roundFlags = {};
-      next.debug = {
-        climateRoll: null,
-        lastCaptureCards: [],
-        lastCrisisCards: [],
-        lastCrisisCount: 0,
-        firedRuleIds: [],
-      };
-      for (const region of Object.values(next.regions)) {
-        markInstitutionReset(region);
+      if (next.stagedWorldPhase.status !== 'drawn') {
+        stageWorldPhase(next, content, 'ResolveWorldPhase');
       }
 
-      resolveHook(next, content, 'on_round_start', { causedBy: ['ResolveWorldPhase'] });
-      applyClimateUpdate(next, content);
-
-      const captureCardId = resolveCardDraw(next, 'capture');
-      if (captureCardId) {
-        next.debug.lastCaptureCards = [captureCardId];
-        resolveCard(next, content, captureCardId, ['ResolveWorldPhase'], { causedBy: ['ResolveWorldPhase'] });
-        resolveHook(next, content, 'on_capture_card_resolve', { causedBy: ['ResolveWorldPhase', captureCardId] });
-      }
-
-      const band = getTemperatureBand(next.temperature);
-      next.debug.lastCrisisCount = band.crisisCount;
-
-      for (let drawIndex = 0; drawIndex < band.crisisCount; drawIndex += 1) {
-        const crisisCardId = resolveCardDraw(next, 'crisis');
-        if (!crisisCardId) {
-          continue;
-        }
-        next.debug.lastCrisisCards.push(crisisCardId);
-        resolveCard(next, content, crisisCardId, ['ResolveWorldPhase'], { causedBy: ['ResolveWorldPhase'] });
-        resolveHook(next, content, 'on_crisis_resolve', { causedBy: ['ResolveWorldPhase', crisisCardId] });
-      }
-
-      resolveHook(next, content, 'on_world_phase_pre', { causedBy: ['ResolveWorldPhase'] });
-      applyDelayedEffects(next, content);
+      adoptWorldPhase(next, content, 'ResolveWorldPhase');
 
       if (updateCollapseState(next, content)) {
         return next;

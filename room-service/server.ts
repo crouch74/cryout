@@ -5,6 +5,7 @@ import {
   deserializeGame,
   dispatchCommand,
   initializeGame,
+  normalizeEngineState,
   serializeGame,
 } from '../engine/index.ts';
 import type { CompiledContent, EngineCommand, EngineState, SerializedGame } from '../engine/index.ts';
@@ -94,7 +95,7 @@ export function createRoomController() {
         return null;
       }
       room.content = compileContent(snapshot.scenarioId);
-      room.state = snapshot.snapshot;
+      room.state = normalizeEngineState(snapshot.snapshot);
       return buildRoomSnapshot(roomId, room);
     },
     replay(roomId: string) {

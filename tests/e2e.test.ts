@@ -17,9 +17,11 @@ function runLocalSequence() {
   const content = compileContent(startCommand.scenarioId);
   let state = initializeGame(startCommand);
   const commands: EngineCommand[] = [
-    { type: 'ResolveWorldPhase' },
+    { type: 'DrawWorldCards' },
+    { type: 'AdoptResolution' },
     { type: 'QueueIntent', seat: 0, actionId: 'community_mobilization', target: { kind: 'NONE' } },
     { type: 'QueueIntent', seat: 0, actionId: 'safe_passage', target: { kind: 'REGION', regionId: 'MENA' } },
+    { type: 'ReorderQueuedIntent', seat: 0, fromSlot: 1, toSlot: 0 },
     { type: 'SetReady', seat: 0, ready: true },
     { type: 'QueueIntent', seat: 1, actionId: 'field_investigation', target: { kind: 'REGION', regionId: 'MENA' } },
     { type: 'QueueIntent', seat: 1, actionId: 'counter_disinfo', target: { kind: 'REGION', regionId: 'MENA' } },

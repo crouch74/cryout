@@ -1,6 +1,7 @@
 import type { Phase } from '../../engine/index.ts';
 import { t } from '../i18n/index.ts';
 import { getPhaseProgressSteps } from './gameUiHelpers.ts';
+import { PrintedTrack } from './tabletop.tsx';
 
 interface PhaseProgressProps {
   phase: Phase;
@@ -8,24 +9,15 @@ interface PhaseProgressProps {
 
 export function PhaseProgress({ phase }: PhaseProgressProps) {
   const steps = getPhaseProgressSteps(phase);
+  const activeIndex = Math.max(0, steps.findIndex((step) => step.state === 'active'));
 
   return (
     <nav className="phase-progress-nav" aria-label={t('ui.game.turnProgress', 'Turn progress')}>
-      <ol className="phase-progress-list">
-        {steps.map(({ step, number, state, current }) => {
-          const isActive = state === 'active';
-          return (
-            <li key={step} className={`phase-progress-step phase-progress-step-${state}`}>
-              <span className="phase-progress-link" aria-current={current}>
-                <span className="phase-progress-index">{number}</span>
-                <span className="phase-progress-label">
-                  {isActive ? `${number} ${t(`ui.phases.${step}`, step).toUpperCase()} — ${t(`ui.now.${step}ActionShort`, 'Resolve')}` : t(`ui.phases.${step}`, step)}
-                </span>
-              </span>
-            </li>
-          );
-        })}
-      </ol>
+      <PrintedTrack
+        title={t('ui.game.turnProgress', 'Turn progress')}
+        steps={steps.map(({ step, number }) => `${number}. ${t(`ui.phases.${step}`, step)}`)}
+        activeIndex={activeIndex}
+      />
     </nav>
   );
 }

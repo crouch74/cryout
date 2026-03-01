@@ -1,6 +1,7 @@
 import { listScenarios } from '../../engine/index.ts';
-import { getCivicSpaceLabel, localizeScenarioDefinition, t, type Locale } from '../i18n/index.ts';
 import { LanguageSwitcher } from '../components/LanguageSwitcher.tsx';
+import { getCivicSpaceLabel, localizeScenarioDefinition, t, type Locale } from '../i18n/index.ts';
+import { EngravedHeader, PaperSheet, TableSurface, TabletopControls, ThemePlate } from './tabletop.tsx';
 
 interface GuidelinesScreenProps {
   locale: Locale;
@@ -37,108 +38,96 @@ export function GuidelinesScreen({
   }
 
   return (
-    <div className="guidelines-screen">
-      <section className="shell-panel guidelines-hero">
-        <div className="guidelines-hero-copy">
-          <LanguageSwitcher locale={locale} onChange={onLocaleChange} />
-          <span className="eyebrow">{t('ui.guidelines.eyebrow', 'Guidelines')}</span>
-          <h1>{selectedScenario.name}</h1>
-          <p>{selectedScenario.description}</p>
-          <div className="guidelines-action-row">
-            <button className="primary-button" onClick={onOpenOffline}>
-              {t('ui.guidelines.openOfflineMode', 'Open Offline Mode')}
-            </button>
-            <button className="secondary-button" onClick={onBackHome}>
-              {t('ui.guidelines.home', 'Home')}
-            </button>
-          </div>
-        </div>
+    <TableSurface className="guidelines-table">
+      <div className="guidelines-paper-layout">
+        <PaperSheet tone="folio">
+          <EngravedHeader
+            eyebrow={t('ui.guidelines.eyebrow', 'Guidelines')}
+            title={selectedScenario.name}
+            detail={selectedScenario.description}
+            actions={
+              <div className="header-control-stack">
+                <LanguageSwitcher locale={locale} onChange={onLocaleChange} />
+                <TabletopControls />
+                <div className="header-action-plates">
+                  <ThemePlate label={t('ui.guidelines.openOfflineMode', 'Open Offline Mode')} onClick={onOpenOffline} />
+                  <ThemePlate label={t('ui.guidelines.home', 'Home')} onClick={onBackHome} />
+                </div>
+              </div>
+            }
+          />
 
-        <aside className="shell-card guidelines-hero-aside">
-          <span className="eyebrow">{t('ui.guidelines.scenarioPulse', 'Scenario pulse')}</span>
-          <div className="guidelines-stat-grid">
-            <div>
-              <span className="eyebrow">{t('ui.scenarioBooklet.civicSpace', 'Civic space')}</span>
-              <strong>{getCivicSpaceLabel(selectedScenario.setup.civicSpace)}</strong>
-            </div>
-            <div>
-              <span className="eyebrow">{t('ui.scenarioBooklet.startingHeat', 'Starting heat')}</span>
-              <strong>+{selectedScenario.setup.temperature}°C</strong>
-            </div>
-            <div>
-              <span className="eyebrow">{t('ui.scenarioBooklet.roundWindow', 'Round window')}</span>
-              <strong>
-                {t('ui.guidelines.roundWindowValue', '{{core}}-{{full}} rounds', {
-                  core: selectedScenario.roundLimit.CORE,
-                  full: selectedScenario.roundLimit.FULL,
-                })}
-              </strong>
-            </div>
+          <div className="guideline-summary-grid">
+            <PaperSheet tone="plain">
+              <span className="engraved-eyebrow">{t('ui.guidelines.scenarioPulse', 'Scenario pulse')}</span>
+              <div className="ledger-list">
+                <div className="ledger-row"><span>{t('ui.scenarioBooklet.civicSpace', 'Civic space')}</span><strong>{getCivicSpaceLabel(selectedScenario.setup.civicSpace)}</strong></div>
+                <div className="ledger-row"><span>{t('ui.scenarioBooklet.startingHeat', 'Starting heat')}</span><strong>+{selectedScenario.setup.temperature}°C</strong></div>
+                <div className="ledger-row"><span>{t('ui.scenarioBooklet.roundWindow', 'Round window')}</span><strong>{t('ui.guidelines.roundWindowValue', '{{core}}-{{full}} rounds', { core: selectedScenario.roundLimit.CORE, full: selectedScenario.roundLimit.FULL })}</strong></div>
+              </div>
+            </PaperSheet>
+            <PaperSheet tone="plain">
+              <span className="engraved-eyebrow">{t('ui.guidelines.howItShouldFeel', 'How This Scenario Should Feel')}</span>
+              <p>{selectedScenario.moralCenter}</p>
+              <p>{selectedScenario.dramatization}</p>
+            </PaperSheet>
           </div>
-          <p>{selectedScenario.moralCenter}</p>
-        </aside>
-      </section>
+        </PaperSheet>
 
-      <section className="shell-panel guidelines-panel">
-        <div className="section-heading">
-          <div>
-            <span className="eyebrow">{t('ui.guidelines.guidebook', 'Guidebook')}</span>
+        <div className="guideline-dossier-grid">
+          <PaperSheet tone="folio">
+            <span className="engraved-eyebrow">{t('ui.guidelines.guidebook', 'Guidebook')}</span>
             <h2>{t('ui.guidelines.howItShouldFeel', 'How This Scenario Should Feel')}</h2>
-          </div>
-        </div>
+            <div className="guideline-card-grid">
+              <PaperSheet tone="plain">
+                <h3>{t('ui.game.situation', 'Situation')}</h3>
+                <p>{excerpt(selectedScenario.introduction, 240)}</p>
+              </PaperSheet>
+              <PaperSheet tone="plain">
+                <h3>{t('ui.guidelines.playPattern', 'Play Pattern')}</h3>
+                <p>{excerpt(selectedScenario.gameplay, 240)}</p>
+              </PaperSheet>
+              <PaperSheet tone="plain">
+                <h3>{t('ui.guidelines.tableFeel', 'Table Feel')}</h3>
+                <p>{excerpt(selectedScenario.dramatization, 240)}</p>
+              </PaperSheet>
+              <PaperSheet tone="plain">
+                <h3>{t('ui.guidelines.mechanicalPressure', 'Mechanical Pressure')}</h3>
+                <p>{excerpt(selectedScenario.mechanics, 240)}</p>
+              </PaperSheet>
+            </div>
+            <div className="rule-slip-list">
+              {selectedScenario.specialRuleChips.map((rule) => (
+                <article key={rule.id} className="rule-slip">
+                  <strong>{rule.label}</strong>
+                  <p>{rule.description}</p>
+                </article>
+              ))}
+            </div>
+          </PaperSheet>
 
-        <div className="guidelines-story-grid">
-          <article className="shell-card">
-            <h3>{t('ui.game.situation', 'Situation')}</h3>
-            <p>{excerpt(selectedScenario.introduction, 240)}</p>
-          </article>
-          <article className="shell-card">
-            <h3>{t('ui.guidelines.playPattern', 'Play Pattern')}</h3>
-            <p>{excerpt(selectedScenario.gameplay, 240)}</p>
-          </article>
-          <article className="shell-card">
-            <h3>{t('ui.guidelines.tableFeel', 'Table Feel')}</h3>
-            <p>{excerpt(selectedScenario.dramatization, 240)}</p>
-          </article>
-          <article className="shell-card">
-            <h3>{t('ui.guidelines.mechanicalPressure', 'Mechanical Pressure')}</h3>
-            <p>{excerpt(selectedScenario.mechanics, 240)}</p>
-          </article>
-        </div>
-
-        <div className="guidelines-rule-grid">
-          {selectedScenario.specialRuleChips.map((rule) => (
-            <article key={rule.id} className="shell-card guidelines-rule-card">
-              <strong>{rule.label}</strong>
-              <p>{rule.description}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="shell-panel guidelines-panel">
-        <div className="section-heading">
-          <div>
-            <span className="eyebrow">{t('ui.guidelines.scenarios', 'Scenarios')}</span>
+          <PaperSheet tone="folio">
+            <span className="engraved-eyebrow">{t('ui.guidelines.scenarios', 'Scenarios')}</span>
             <h2>{t('ui.guidelines.switchGuide', 'Switch Guide')}</h2>
-          </div>
-        </div>
-        <div className="guidelines-switch-grid">
-          {localizedScenarios.map((scenario) => (
-            <article key={scenario.id} className={`shell-card guidelines-switch-card ${scenario.id === selectedScenario.id ? 'is-active' : ''}`}>
-              <button type="button" className="guidelines-switch-trigger" onClick={() => onSelectScenario(scenario.id)}>
-                <div className="row-split">
-                  <strong>{scenario.name}</strong>
-                  <span className="status-pill neutral">
+            <div className="scenario-card-grid">
+              {localizedScenarios.map((scenario) => (
+                <button
+                  key={scenario.id}
+                  type="button"
+                  className={`scenario-dossier-card ${scenario.id === selectedScenario.id ? 'is-active' : ''}`}
+                  onClick={() => onSelectScenario(scenario.id)}
+                >
+                  <span className="engraved-eyebrow">
                     {scenario.id === selectedScenario.id ? t('ui.status.open', 'Open') : t('ui.guidelines.view', 'View')}
                   </span>
-                </div>
-                <p>{excerpt(scenario.description, 120)}</p>
-              </button>
-            </article>
-          ))}
+                  <strong>{scenario.name}</strong>
+                  <p>{excerpt(scenario.description, 140)}</p>
+                </button>
+              ))}
+            </div>
+          </PaperSheet>
         </div>
-      </section>
-    </div>
+      </div>
+    </TableSurface>
   );
 }

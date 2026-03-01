@@ -16,8 +16,9 @@ export interface GameViewState {
   regionId: RegionId | null;
   eventSeq: number | null;
   showDebug: boolean;
-  leftTab: 'scenario' | 'fronts' | 'charter';
-  rightTab: 'actions' | 'log';
+  folioSection: 'brief' | 'fronts' | 'charter';
+  playAreaSection: 'moves' | 'notes';
+  mobileTray: 'none' | 'folio' | 'moves' | 'playerMat' | 'deck';
   spotlight: string | null;
 }
 
@@ -32,8 +33,9 @@ export const DEFAULT_GAME_VIEW_STATE: GameViewState = {
   regionId: null,
   eventSeq: null,
   showDebug: false,
-  leftTab: 'fronts',
-  rightTab: 'actions',
+  folioSection: 'fronts',
+  playAreaSection: 'moves',
+  mobileTray: 'none',
   spotlight: null,
 };
 

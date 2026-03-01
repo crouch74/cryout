@@ -33,20 +33,16 @@ export function ToastStack({ toasts, onDismiss }: ToastStackProps) {
   }
 
   return (
-    <div className="toast-stack" aria-live="polite" aria-label={t('ui.toast.liveGameUpdates', 'Live game updates')}>
+    <div className="minutes-toast-stack" aria-live="polite" aria-label={t('ui.toast.liveGameUpdates', 'Live game updates')}>
       {toasts.map((toast) => (
-        <article
-          key={toast.id}
-          className={`toast toast-${toast.tone}`}
-          role={getToastRole(toast.tone)}
-        >
-          <div className="toast-copy">
-            {toast.title && <strong>{toast.title}</strong>}
+        <article key={toast.id} className={`minutes-toast minutes-toast-${toast.tone}`} role={getToastRole(toast.tone)}>
+          <div className="minutes-toast-copy">
+            {toast.title ? <strong>{toast.title}</strong> : null}
             <p>{toast.message}</p>
           </div>
           <button
             type="button"
-            className="toast-dismiss"
+            className="mini-plate"
             onClick={() => onDismiss(toast.id)}
             aria-label={t('ui.toast.dismissNotification', 'Dismiss notification')}
           >
