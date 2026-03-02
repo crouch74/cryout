@@ -33,6 +33,7 @@ import { ContextPanel } from './ContextPanel.tsx';
 import { playDeckCue, primeDeckAudio } from './deckSound.ts';
 import { DebugOverlay, type AutoPlaySpeedLevel } from './DebugOverlay.tsx';
 import { FrontTrackBar } from './FrontTrackBar.tsx';
+import { GameIntroModal } from './GameIntroModal.tsx';
 import { Icon } from './icons/Icon.tsx';
 import type { IconType } from './icons/iconTypes.ts';
 import { PlayerStrip } from './PlayerStrip.tsx';
@@ -1797,6 +1798,8 @@ export function GameScreen({
           </div>
         ) : null
       }
+
+      <GameIntroModal state={state} content={content} />
     </TableSurface >
   );
 }
