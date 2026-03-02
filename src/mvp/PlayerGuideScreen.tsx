@@ -2,19 +2,16 @@ import { compileContent } from '../../engine/index.ts';
 import {
   localizeFactionField,
   t,
-  type Locale,
 } from '../i18n/index.ts';
 import { EngravedHeader, LocaleSwitcher, PaperSheet, TableSurface, ThemePlate } from './tabletop.tsx';
 
 interface PlayerGuideScreenProps {
-  locale: Locale;
-  onLocaleChange: (locale: Locale) => void;
   onBackHome: () => void;
 }
 
 const content = compileContent('base_design');
 
-export function PlayerGuideScreen({ locale, onLocaleChange, onBackHome }: PlayerGuideScreenProps) {
+export function PlayerGuideScreen({ onBackHome }: PlayerGuideScreenProps) {
   return (
     <TableSurface className="guide-table">
       <PaperSheet tone="board" className="guide-tab-rail">
@@ -24,7 +21,7 @@ export function PlayerGuideScreen({ locale, onLocaleChange, onBackHome }: Player
           detail={t('ui.guide.playerGuideDetail', 'Use this as the fast onboard for the cutover ruleset.')}
           actions={
             <div className="header-action-plates">
-              <LocaleSwitcher locale={locale} onChange={onLocaleChange} />
+              <LocaleSwitcher />
               <ThemePlate label={t('ui.guide.backHome', 'Back Home')} onClick={onBackHome} />
             </div>
           }

@@ -1,5 +1,6 @@
 import { compileContent } from './content.ts';
 import { createRng, nextInt, shuffle } from './rng.ts';
+import { getRegionLabel, t } from '../src/i18n/index.ts';
 import type {
   ActionDefinition,
   ActionId,
@@ -155,37 +156,37 @@ function addRejectedCommandEvent(state: EngineState, command: EngineCommand, rea
 function toLegacyDisabledReason(detail: DisabledReasonDetail): string {
   switch (detail.code) {
     case 'unknown_seat':
-      return 'Unknown seat';
+      return t('ui.game.unknownSeat', 'Unknown seat');
     case 'phase_locked':
-      return 'Phase locked';
+      return t('ui.game.phaseLocked', 'Phase locked');
     case 'seat_already_ready':
-      return 'Seat already ready';
+      return t('ui.game.seatAlreadyReady', 'Seat already ready');
     case 'no_actions_remaining':
-      return 'No actions remaining';
+      return t('ui.game.noActionsRemaining', 'No actions remaining');
     case 'select_region':
-      return 'Select a region';
+      return t('ui.game.selectRegion', 'Select a region');
     case 'select_domain':
-      return 'Select a domain';
+      return t('ui.game.selectDomain', 'Select a domain');
     case 'select_another_seat':
-      return 'Select another seat';
+      return t('ui.game.selectAnotherSeat', 'Select another seat');
     case 'need_three_bodies':
-      return 'Need 3 Bodies in region';
+      return t('ui.game.needThreeBodies', 'Need 3 Comrades in region');
     case 'not_enough_evidence':
-      return 'Not enough Evidence';
+      return t('ui.game.notEnoughEvidence', 'Not enough Evidence');
     case 'no_evidence_to_move':
-      return 'No Evidence to move';
+      return t('ui.game.noEvidenceToMove', 'No Evidence to move');
     case 'need_one_body':
-      return 'Need 1 Body in region';
+      return t('ui.game.needOneBody', 'Need 1 Comrade in region');
     case 'commit_one_body':
-      return 'Commit at least 1 Body';
+      return t('ui.game.commitOneBody', 'Commit at least 1 Comrade');
     case 'not_enough_bodies':
-      return 'Not enough Bodies in region';
+      return t('ui.game.notEnoughBodies', 'Not enough Comrades in region');
     case 'support_card_unavailable':
-      return 'Support card unavailable';
+      return t('ui.game.supportCardUnavailable', 'Support card unavailable');
     case 'action_card_unavailable':
-      return 'Action card unavailable';
+      return t('ui.game.actionCardUnavailable', 'Action card unavailable');
     case 'select_card':
-      return 'Select a card';
+      return t('ui.game.selectCard', 'Select a card');
   }
 }
 
@@ -413,15 +414,15 @@ function updateBeaconCompletion(state: EngineState, content: CompiledContent) {
 function getSystemEscalationTriggerMessage(triggerId: SystemEscalationTriggerId) {
   switch (triggerId) {
     case 'extraction_threshold':
-      return 'Extraction has spread across the board. A structural escalation enters play.';
+      return t('ui.runtime.escalationExtraction', 'Extraction has spread across the board. A structural escalation enters play.');
     case 'war_machine_threshold':
-      return 'War Machine pressure crossed its escalation line. A structural escalation enters play.';
+      return t('ui.runtime.escalationWarMachine', 'War Machine pressure crossed its escalation line. A structural escalation enters play.');
     case 'gaze_threshold':
-      return 'Global Gaze collapsed beneath the pressure line. A structural escalation enters play.';
+      return t('ui.runtime.escalationGlobalGaze', 'Global Gaze collapsed beneath the pressure line. A structural escalation enters play.');
     case 'failed_campaigns':
-      return 'Repeated failed campaigns hardened the system. A structural escalation enters play.';
+      return t('ui.runtime.escalationFailedCampaigns', 'Repeated failed campaigns hardened the system. A structural escalation enters play.');
     case 'symbolic_round_six':
-      return 'The symbolic window narrowed. A structural escalation enters play.';
+      return t('ui.runtime.escalationSymbolicRound', 'The symbolic window narrowed. A structural escalation enters play.');
   }
 }
 
@@ -470,7 +471,10 @@ function checkExtractionLoss(state: EngineState) {
   }
 
   state.phase = 'LOSS';
-  state.lossReason = `${breachedRegion} reached ${EXTRACTION_DEFEAT_THRESHOLD} Extraction Tokens.`;
+  state.lossReason = t('ui.runtime.lossExtractionBreach', '{{region}} reached {{count}} Extraction Tokens.', {
+    region: getRegionLabel(breachedRegion),
+    count: EXTRACTION_DEFEAT_THRESHOLD,
+  });
   revealMandates(state);
   addSimpleEvent(state, 'system', 'extraction_breach', '☠️', state.lossReason, ['extraction_breach']);
   return true;
@@ -494,13 +498,17 @@ function checkPositiveVictory(state: EngineState, content: CompiledContent): boo
   revealMandates(state);
   if (failedMandates.length > 0) {
     state.phase = 'LOSS';
-    state.lossReason = `Public victory was reached, but ${failedMandates.length} Secret Mandate(s) failed.`;
+    state.lossReason = t('ui.runtime.lossMandateFailure', 'Public victory was reached, but {{count}} Secret Mandate(s) failed.', {
+      count: failedMandates.length,
+    });
     addSimpleEvent(state, 'mandate', 'mandate_failure', '🕳️', state.lossReason, ['mandate_failure']);
     return true;
   }
 
   state.phase = 'WIN';
-  state.winner = liberationComplete ? 'Liberation achieved.' : 'Symbolic beacons aligned.';
+  state.winner = liberationComplete
+    ? t('ui.runtime.winnerLiberation', 'Liberation achieved.')
+    : t('ui.runtime.winnerSymbolic', 'Symbolic beacons aligned.');
   addSimpleEvent(state, 'beacon', 'victory', '✨', state.winner, ['victory']);
   return true;
 }
@@ -532,7 +540,9 @@ function resolveCardDraws(
       },
       'card',
       'draw_resistance',
-      `🃏 Seat ${seat + 1} revealed a resistance card.`,
+      t('ui.runtime.revealResistanceCard', '🃏 Seat {{seat}} revealed a resistance card.', {
+        seat: seat + 1,
+      }),
       ['draw_resistance'],
     );
   }
@@ -540,7 +550,10 @@ function resolveCardDraws(
   return {
     effectType: 'draw_resistance',
     status: 'executed',
-    message: `Seat ${seat + 1} revealed ${cardsDrawn} resistance card(s) and moved them to discard.`,
+    message: t('ui.runtime.drawResistanceSummary', 'Seat {{seat}} revealed {{count}} resistance card(s) and moved them to discard.', {
+      seat: seat + 1,
+      count: cardsDrawn,
+    }),
     causedBy: [`seat:${seat}`],
     deltas: cardsDrawn > 0
       ? [createDelta('card', `resistance:discard`, state.decks.resistance.discardPile.length - cardsDrawn, state.decks.resistance.discardPile.length)]
@@ -570,7 +583,10 @@ function applyEffects(state: EngineState, content: CompiledContent, effects: Eff
       case 'modify_gaze': {
         const before = state.globalGaze;
         state.globalGaze = clamp(state.globalGaze + effect.delta, effect.clamp ?? { min: 0, max: 20 });
-        trace.message = `Global Gaze ${before} -> ${state.globalGaze}.`;
+        trace.message = t('ui.runtime.traceGlobalGaze', 'Global Gaze {{before}} -> {{after}}.', {
+          before,
+          after: state.globalGaze,
+        });
         trace.deltas.push(createDelta('track', 'globalGaze', before, state.globalGaze));
         break;
       }
@@ -580,7 +596,10 @@ function applyEffects(state: EngineState, content: CompiledContent, effects: Eff
           state.northernWarMachine + effect.delta,
           effect.clamp ?? { min: 0, max: 12 },
         );
-        trace.message = `War Machine ${before} -> ${state.northernWarMachine}.`;
+        trace.message = t('ui.runtime.traceWarMachine', 'War Machine {{before}} -> {{after}}.', {
+          before,
+          after: state.northernWarMachine,
+        });
         trace.deltas.push(createDelta('track', 'northernWarMachine', before, state.northernWarMachine));
         break;
       }
@@ -756,7 +775,10 @@ function resolveMilitaryIntervention(state: EngineState, content: CompiledConten
       {
         effectType: 'system_phase',
         status: 'executed',
-        message: `Bodies ${before} -> ${region.bodiesPresent[targetSeat]}.`,
+        message: t('ui.runtime.traceComrades', 'Comrades {{before}} -> {{after}}.', {
+          before,
+          after: region.bodiesPresent[targetSeat],
+        }),
         causedBy: ['intervention'],
         deltas: [createDelta('bodies', `${targetRegionId}.seat:${targetSeat}`, before, region.bodiesPresent[targetSeat])],
       },
@@ -1739,7 +1761,9 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
       }
       if (next.round >= content.ruleset.suddenDeathRound) {
         next.phase = 'LOSS';
-        next.lossReason = `Round ${content.ruleset.suddenDeathRound} ended without a decisive victory.`;
+        next.lossReason = t('ui.runtime.lossSuddenDeath', 'Round {{round}} ended without a decisive victory.', {
+          round: content.ruleset.suddenDeathRound,
+        });
         revealMandates(next);
         addSimpleEvent(next, 'system', 'sudden_death', '⌛', next.lossReason, ['sudden_death']);
         return next;
@@ -1747,7 +1771,14 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
 
       next.round += 1;
       next.phase = 'SYSTEM';
-      addSimpleEvent(next, 'command', 'ResolveResolutionPhase', '🔁', `Round ${next.round} begins.`, ['ResolveResolutionPhase']);
+      addSimpleEvent(
+        next,
+        'command',
+        'ResolveResolutionPhase',
+        '🔁',
+        t('ui.runtime.roundBegins', 'Round {{round}} begins.', { round: next.round }),
+        ['ResolveResolutionPhase'],
+      );
       return next;
     }
     default:

@@ -4,14 +4,11 @@ import {
   localizeFactionField,
   localizeRulesetField,
   t,
-  type Locale,
 } from '../i18n/index.ts';
 import type { SetupConfig } from './urlState.ts';
 import { EngravedHeader, LocaleSwitcher, PaperSheet, TableSurface, TabletopControls, ThemePlate } from './tabletop.tsx';
 
 interface HomeScreenProps {
-  locale: Locale;
-  onLocaleChange: (locale: Locale) => void;
   config: SetupConfig;
   hasAutosave: boolean;
   roomPlayAvailable?: boolean;
@@ -53,8 +50,6 @@ function getModeLabel(mode: VictoryMode) {
 }
 
 export function HomeScreen({
-  locale,
-  onLocaleChange,
   config,
   hasAutosave,
   roomPlayAvailable = true,
@@ -91,7 +86,7 @@ export function HomeScreen({
             )}
             actions={
               <div className="header-action-plates">
-                <LocaleSwitcher locale={locale} onChange={onLocaleChange} />
+                <LocaleSwitcher />
                 <TabletopControls />
               </div>
             }

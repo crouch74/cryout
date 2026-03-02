@@ -30,9 +30,7 @@ They must never repair broken base systems.
 
 If a request contradicts these pillars, the agent must ask for clarification or reframe the request.
 
-CANONICAL TERMINOLOGY (DO NOT SUBSTITUTE but allow for translations and localisation)
-
-The following terms are fixed and must not be renamed:
+CANONICAL TERMINOLOGY (Allow for translations and localisation)
 
 Extraction Tokens — Black hexes placed in regions (0–6).
 Global Gaze — Global attention/media track (0–20).
@@ -41,8 +39,6 @@ Comrades — Red cubes representing people and cost.
 Evidence — Blue cubes representing documentation/proof.
 Domains — System pressures (War Machine, Dying Planet, etc.).
 Secret Mandates — Hidden player objectives with hard failure risk.
-
-Agents must not introduce alternative names unless explicitly instructed.
 
 MECHANICAL TRUTH REQUIREMENTS
 

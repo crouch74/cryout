@@ -1,19 +1,16 @@
-import { getLocaleOptions, type Locale, t } from '../i18n/index.ts';
+import { t, useAppLocale } from '../i18n/index.ts';
 
-interface LanguageSwitcherProps {
-  locale: Locale;
-  onChange: (locale: Locale) => void;
-}
-
-export function LanguageSwitcher({ locale, onChange }: LanguageSwitcherProps) {
-  const localeOptions = getLocaleOptions();
+export function LanguageSwitcher() {
+  const { changeLocale, locale, localeOptions } = useAppLocale();
 
   return (
     <label className="locale-switcher">
       <span className="eyebrow">{t('ui.language.label', 'Language')}</span>
       <select
         value={locale}
-        onChange={(event) => onChange(event.target.value as Locale)}
+        onChange={(event) => {
+          void changeLocale(event.target.value as typeof locale);
+        }}
         aria-label={t('ui.language.label', 'Language')}
       >
         {localeOptions.map((option) => (

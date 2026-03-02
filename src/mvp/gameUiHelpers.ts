@@ -366,7 +366,7 @@ function getPassiveShorthand(factionId: FactionId) {
   switch (factionId) {
     case 'congo_basin_collective':
       return {
-        primary: t('ui.game.passiveCongoPrimary', 'Bodies +1 at home'),
+        primary: t('ui.game.passiveCongoPrimary', 'Comrades +1 at home'),
         secondary: t('ui.game.passiveCongoSecondary', 'Campaign +1 at home'),
       };
     case 'levant_sumud':
@@ -382,7 +382,7 @@ function getPassiveShorthand(factionId: FactionId) {
     case 'amazon_guardians':
       return {
         primary: t('ui.game.passiveAmazonPrimary', 'Campaign +1 in Amazon'),
-        secondary: t('ui.game.passiveAmazonSecondary', 'Bodies +1 at home'),
+        secondary: t('ui.game.passiveAmazonSecondary', 'Comrades +1 at home'),
       };
   }
 }

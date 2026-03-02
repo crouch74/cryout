@@ -10,7 +10,14 @@ import {
   initializeGame,
   type EngineCommand,
 } from '../engine/index.ts';
-import { formatTrackFraction, setLocale } from '../src/i18n/index.ts';
+import {
+  changeLocale,
+  formatNumber,
+  formatTrackFraction,
+  getLocaleDirection,
+  getLocaleOptions,
+  t,
+} from '../src/i18n/index.ts';
 import { localizeDisabledReason, presentHistoryEvent } from '../src/mvp/historyPresentation.ts';
 import type { DomainEvent } from '../engine/index.ts';
 import {
@@ -54,10 +61,10 @@ test('disabled reason explains phase gating and body requirements', () => {
   const solidarityReason = getSeatDisabledReason(state, content, 0, { actionId: 'build_solidarity', regionId: 'Congo', domainId: 'DyingPlanet' });
   assert.equal(solidarityReason.disabled, true);
   assert.equal(solidarityReason.reasonCode, 'need_three_bodies');
-  assert.equal(solidarityReason.reason, 'Need 3 Bodies in region');
+  assert.equal(solidarityReason.reason, 'Need 3 Comrades in region');
 });
 
-test('history presenter localizes reveal details and disabled reasons', () => {
+test('history presenter localizes reveal details and disabled reasons', async () => {
   const content = compileContent(startCommand.rulesetId);
   const revealEvent: DomainEvent = {
     seq: 1,
@@ -86,27 +93,27 @@ test('history presenter localizes reveal details and disabled reasons', () => {
     },
   };
 
-  setLocale('en');
+  await changeLocale('en');
   const english = presentHistoryEvent(revealEvent, content);
   assert.equal(english.title, '🃏 Seat 1 drew a resistance card.');
   assert.equal(english.cardReveals[0]?.title, 'Archive Leak');
   assert.match(english.cardReveals[0]?.body ?? '', /Global Gaze/);
-  assert.equal(localizeDisabledReason({ reasonCode: 'need_three_bodies' }), 'Need 3 Bodies in region');
+  assert.equal(localizeDisabledReason({ reasonCode: 'need_three_bodies' }), 'Need 3 Comrades in region');
 
-  setLocale('ar-EG');
+  await changeLocale('ar-EG');
   const arabic = presentHistoryEvent(revealEvent, content);
   assert.match(arabic.title, /المقعد/);
-  assert.match(arabic.cardReveals[0]?.body ?? '', /Global Gaze/);
-  assert.match(localizeDisabledReason({ reasonCode: 'need_three_bodies' }) ?? '', /Bodies/);
+  assert.match(arabic.cardReveals[0]?.body ?? '', /النظرة العالمية/);
+  assert.match(localizeDisabledReason({ reasonCode: 'need_three_bodies' }) ?? '', /الرفاق/);
 
-  setLocale('en');
+  await changeLocale('en');
 });
 
 test('selectors expose useful copy for the new ruleset', () => {
   const content = compileContent(startCommand.rulesetId);
   const state = initializeGame(startCommand);
 
-  assert.match(getVictoryModeSummary('LIBERATION'), /Extraction Token/i);
+  assert.match(getVictoryModeSummary('LIBERATION'), /Extraction Token|Extraction/i);
   assert.equal(getPlayerBodyTotal(state, 0) > 0, true);
   assert.match(buildEffectPreview(content.actions.launch_campaign), /2d6 campaign/i);
 });
@@ -272,20 +279,20 @@ function flattenCatalogKeys(value: unknown, path = ''): string[] {
   });
 }
 
-test('Arabic catalog stays key-complete and preserves canonical mechanic names', () => {
+test('Arabic catalog stays key-complete and localizes canonical mechanic names', () => {
   const enCatalog = JSON.parse(readFileSync(new URL('../src/i18n/en.json', import.meta.url), 'utf8')) as Record<string, unknown>;
   const arCatalog = JSON.parse(readFileSync(new URL('../src/i18n/ar-EG.json', import.meta.url), 'utf8')) as Record<string, unknown>;
 
   assert.deepEqual(flattenCatalogKeys(arCatalog).sort(), flattenCatalogKeys(enCatalog).sort());
 
   const arUi = arCatalog.ui as Record<string, Record<string, string>>;
-  assert.equal(arUi.game.bodies, 'Bodies');
-  assert.equal(arUi.game.evidence, 'Evidence');
-  assert.equal(arUi.game.extractionTokens, 'Extraction Tokens');
-  assert.equal(arUi.game.globalGaze, 'Global Gaze');
-  assert.equal(arUi.game.northernWarMachine, 'War Machine');
-  assert.equal(arUi.game.domains, 'Domains');
-  assert.equal(arUi.game.secretMandate, 'Secret Mandate');
+  assert.equal(arUi.game.bodies, 'الرفاق');
+  assert.equal(arUi.game.evidence, 'الأدلة');
+  assert.equal(arUi.game.extractionTokens, 'رموز الاستخراج');
+  assert.equal(arUi.game.globalGaze, 'النظرة العالمية');
+  assert.equal(arUi.game.northernWarMachine, 'آلة الحرب');
+  assert.equal(arUi.game.domains, 'المجالات');
+  assert.equal(arUi.game.secretMandate, 'التكليف السري');
 });
 
 test('all shipped base-design cards have localization entries in both catalogs', () => {
@@ -301,13 +308,46 @@ test('all shipped base-design cards have localization entries in both catalogs',
   }
 });
 
-test('track fractions invert order in RTL while keeping Arabic-Indic numerals', () => {
-  setLocale('en');
+test('track fractions invert order in RTL while keeping Arabic-Indic numerals', async () => {
+  await changeLocale('en');
   assert.equal(formatTrackFraction(5, 20), '5/20');
 
-  setLocale('ar-EG');
+  await changeLocale('ar-EG');
   assert.equal(formatTrackFraction(5, 20), '٢٠/٥');
   assert.equal(formatTrackFraction(7, 12), '١٢/٧');
 
-  setLocale('en');
+  await changeLocale('en');
+});
+
+test('locale direction stays aligned with the supported locales', () => {
+  assert.equal(getLocaleDirection('en'), 'ltr');
+  assert.equal(getLocaleDirection('ar-EG'), 'rtl');
+});
+
+test('locale options localize their labels under each active locale', async () => {
+  await changeLocale('en');
+  assert.deepEqual(getLocaleOptions(), [
+    { value: 'en', label: 'English' },
+    { value: 'ar-EG', label: 'Egyptian Arabic' },
+  ]);
+
+  await changeLocale('ar-EG');
+  assert.deepEqual(getLocaleOptions(), [
+    { value: 'en', label: 'الإنجليزية' },
+    { value: 'ar-EG', label: 'العربية المصرية' },
+  ]);
+
+  await changeLocale('en');
+});
+
+test('changing locale updates translated text and number formatting in one flow', async () => {
+  await changeLocale('en');
+  assert.equal(t('ui.language.label', 'Language'), 'Language');
+  assert.equal(formatNumber(12), '12');
+
+  await changeLocale('ar-EG');
+  assert.equal(t('ui.language.label', 'Language'), 'اللغة');
+  assert.equal(formatNumber(12), '١٢');
+
+  await changeLocale('en');
 });

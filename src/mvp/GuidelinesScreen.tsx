@@ -4,20 +4,17 @@ import {
   localizeRegionField,
   localizeRulesetField,
   t,
-  type Locale,
 } from '../i18n/index.ts';
 import { EngravedHeader, LocaleSwitcher, PaperSheet, TableSurface, ThemePlate } from './tabletop.tsx';
 
 interface GuidelinesScreenProps {
-  locale: Locale;
-  onLocaleChange: (locale: Locale) => void;
   onBackHome: () => void;
   onOpenOffline: () => void;
 }
 
 const content = compileContent('base_design');
 
-export function GuidelinesScreen({ locale, onLocaleChange, onBackHome, onOpenOffline }: GuidelinesScreenProps) {
+export function GuidelinesScreen({ onBackHome, onOpenOffline }: GuidelinesScreenProps) {
   return (
     <TableSurface className="guidelines-table">
       <PaperSheet tone="board" className="dossier-spread">
@@ -27,7 +24,7 @@ export function GuidelinesScreen({ locale, onLocaleChange, onBackHome, onOpenOff
           detail={localizeRulesetField(content.ruleset.id, 'description', content.ruleset.description)}
           actions={
             <div className="header-action-plates">
-              <LocaleSwitcher locale={locale} onChange={onLocaleChange} />
+              <LocaleSwitcher />
               <ThemePlate label={t('ui.guide.backHome', 'Back Home')} onClick={onBackHome} />
               <ThemePlate label={t('ui.guide.openTable', 'Open Table')} onClick={onOpenOffline} />
             </div>

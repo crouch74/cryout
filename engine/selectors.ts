@@ -10,6 +10,7 @@ import type {
   VictoryMode,
 } from './types.ts';
 import { getDisabledActionReason } from './runtime.ts';
+import { t } from '../src/i18n/index.ts';
 
 export function getAvailableRegions(): RegionId[] {
   return ['Congo', 'Levant', 'Amazon', 'Sahel', 'Mekong', 'Andes'];
@@ -61,8 +62,8 @@ export function getMandateStatus(state: EngineState, content: CompiledContent, s
 
 export function getVictoryModeSummary(mode: VictoryMode) {
   return mode === 'LIBERATION'
-    ? 'Win by holding every region at one Extraction Token or less.'
-    : 'Win by completing all three active Beacon objectives.';
+    ? t('ui.mode.liberationSummary', 'End Resolution with every region at 1 Extraction Token or less.')
+    : t('ui.mode.symbolicSummary', 'Complete all three active Beacons.');
 }
 
 export function getPhaseSummary(phase: Phase) {
@@ -85,5 +86,5 @@ export function buildEffectPreview(action: ActionDefinition): string {
 }
 
 export function getPlayerStatusSummary(player: PlayerState) {
-  return `${player.evidence} Evidence • ${player.actionsRemaining} moves left`;
+  return `${player.evidence} ${t('ui.game.evidence', 'Evidence')} • ${player.actionsRemaining} ${t('ui.game.moves', 'Moves')}`;
 }

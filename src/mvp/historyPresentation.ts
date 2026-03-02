@@ -479,17 +479,17 @@ export function localizeDisabledReason(reason: Pick<DisabledActionReason, 'reaso
     case 'select_another_seat':
       return t('ui.game.selectAnotherSeat', 'Select another seat');
     case 'need_three_bodies':
-      return t('ui.game.needThreeBodies', 'Need 3 bodies in region');
+      return t('ui.game.needThreeBodies', 'Need 3 Comrades in region');
     case 'not_enough_evidence':
       return t('ui.game.notEnoughEvidence', 'Not enough Evidence');
     case 'no_evidence_to_move':
       return t('ui.game.noEvidenceToMove', 'No Evidence to move');
     case 'need_one_body':
-      return t('ui.game.needOneBody', 'Need 1 body in region');
+      return t('ui.game.needOneBody', 'Need 1 Comrade in region');
     case 'commit_one_body':
       return t('ui.game.commitOneBody', 'Commit at least 1 body');
     case 'not_enough_bodies':
-      return t('ui.game.notEnoughBodies', 'Not enough Bodies in region');
+      return t('ui.game.notEnoughBodies', 'Not enough Comrades in region');
     case 'support_card_unavailable':
       return t('ui.game.supportCardUnavailable', 'Support card unavailable');
     case 'action_card_unavailable':

@@ -11,7 +11,7 @@ import {
   type EngineState,
   type FactionId,
 } from '../engine/index.ts';
-import { getLocaleDirection, isLocale, setLocale, t, type Locale } from './i18n/index.ts';
+import { LOCALE_STORAGE_KEY, t, useAppLocale } from './i18n/index.ts';
 import { GameScreen } from './mvp/GameScreen.tsx';
 import { GuidelinesScreen } from './mvp/GuidelinesScreen.tsx';
 import { HomeScreen } from './mvp/HomeScreen.tsx';
@@ -36,7 +36,6 @@ interface ActiveSession {
 }
 
 const AUTOSAVE_KEY = 'stones-cutover-autosave';
-const LOCALE_KEY = 'stones-cutover-locale';
 const ROOM_KEY_PREFIX = 'stones-cutover-room:';
 const DEFAULT_RULESET_ID = listRulesets()[0]?.id ?? 'base_design';
 const ROOM_HEALTH_TIMEOUT_MS = 1_500;
@@ -101,13 +100,7 @@ function createConfigFromState(state: EngineState, previous: SetupConfig, surfac
 }
 
 export default function App() {
-  const [locale, setSelectedLocale] = useState<Locale>(() => {
-    const stored = globalThis.localStorage?.getItem(LOCALE_KEY);
-    return stored && isLocale(stored) ? stored : 'en';
-  });
-
-  // 🌐 Synchronize i18n module state with React state during render to ensure children get updated translations
-  setLocale(locale);
+  const { locale, dir } = useAppLocale();
 
   const [initialRoute] = useState(() =>
     parseRuntimeRoute(window.location.pathname, window.location.hash, DEFAULT_RULESET_ID, RUNTIME),
@@ -160,10 +153,10 @@ export default function App() {
 
   useEffect(() => {
     console.log(`🌍 [App] Applying locale: ${locale}`);
-    localStorage.setItem(LOCALE_KEY, locale);
+    localStorage.setItem(LOCALE_STORAGE_KEY, locale);
     document.documentElement.lang = locale;
-    document.documentElement.dir = getLocaleDirection(locale);
-  }, [locale]);
+    document.documentElement.dir = dir;
+  }, [dir, locale]);
 
   useEffect(() => {
     if (!session || session.surface !== 'local') {
@@ -493,7 +486,7 @@ export default function App() {
   };
 
   return (
-    <div className="app-root" dir={getLocaleDirection(locale)} lang={locale}>
+    <div className="app-root" dir={dir} lang={locale}>
       <ToastStack toasts={toasts} onDismiss={(id) => setToasts((current) => current.filter((toast) => toast.id !== id))} />
       {hydrating ? (
         <div className="loading-shell">
@@ -505,8 +498,6 @@ export default function App() {
         </div>
       ) : session ? (
         <GameScreen
-          locale={locale}
-          onLocaleChange={setSelectedLocale}
           devMode={RUNTIME.devMode}
           surface={session.surface}
           roomId={session.roomId}
@@ -526,21 +517,15 @@ export default function App() {
         />
       ) : route.page === 'guidelines' ? (
         <GuidelinesScreen
-          locale={locale}
-          onLocaleChange={setSelectedLocale}
           onBackHome={() => setRoute({ page: 'home', rulesetId: setupConfig.rulesetId, roomId: null })}
           onOpenOffline={() => setRoute({ page: 'offline', rulesetId: setupConfig.rulesetId, roomId: null })}
         />
       ) : route.page === 'player-guide' ? (
         <PlayerGuideScreen
-          locale={locale}
-          onLocaleChange={setSelectedLocale}
           onBackHome={() => setRoute({ page: 'home', rulesetId: setupConfig.rulesetId, roomId: null })}
         />
       ) : (
         <HomeScreen
-          locale={locale}
-          onLocaleChange={setSelectedLocale}
           config={setupConfig}
           hasAutosave={Boolean(localStorage.getItem(AUTOSAVE_KEY))}
           roomPlayAvailable={roomServiceReachable}

@@ -1,58 +1,119 @@
+import i18n, { type Resource } from 'i18next';
+import LanguageDetector from 'i18next-browser-languagedetector';
+import { initReactI18next, useTranslation } from 'react-i18next';
 import enCatalog from './en.json' with { type: 'json' };
 import arEGCatalog from './ar-EG.json' with { type: 'json' };
-import { buildEffectPreview, type ActionDefinition } from '../../engine/index.ts';
+import type { ActionDefinition } from '../../engine/types.ts';
 
-type Catalog = typeof enCatalog;
 type InterpolationValue = string | number;
 export type Locale = 'en' | 'ar-EG';
 
-const catalogs: Record<Locale, Catalog> = {
-  en: enCatalog,
-  'ar-EG': arEGCatalog,
+export const LOCALE_STORAGE_KEY = 'stones-cutover-locale';
+
+const resources = {
+  en: { translation: enCatalog },
+  'ar-EG': { translation: arEGCatalog },
+} satisfies Resource;
+
+const LOCALE_META: Record<Locale, { dir: 'ltr' | 'rtl'; intlLocale: string; zero: string }> = {
+  en: { dir: 'ltr', intlLocale: 'en', zero: '0' },
+  'ar-EG': { dir: 'rtl', intlLocale: 'ar-EG-u-nu-arab', zero: '٠' },
 };
 
-let activeLocale: Locale = 'en';
+const numberFormatters = new Map<Locale, Intl.NumberFormat>();
 
-function lookup(path: string): unknown {
-  return path.split('.').reduce<unknown>((value, segment) => {
-    if (value && typeof value === 'object' && segment in value) {
-      return (value as Record<string, unknown>)[segment];
-    }
-    return undefined;
-  }, catalogs[activeLocale]);
-}
-
-function interpolate(template: string, values?: Record<string, InterpolationValue>) {
-  if (!values) {
-    return template;
+function getNumberFormatter(locale: Locale) {
+  const cached = numberFormatters.get(locale);
+  if (cached) {
+    return cached;
   }
-  return template.replace(/\{\{(\w+)\}\}/g, (_, key: string) => {
-    const value = values[key];
-    if (typeof value === 'number') {
-      return formatNumber(value);
-    }
-    return String(value ?? '');
-  });
+
+  const formatter = new Intl.NumberFormat(LOCALE_META[locale].intlLocale);
+  numberFormatters.set(locale, formatter);
+  return formatter;
 }
 
 export function isLocale(value: string): value is Locale {
   return value === 'en' || value === 'ar-EG';
 }
 
-export function setLocale(locale: Locale) {
-  activeLocale = locale;
-  console.log(`🌍 [i18n] Locale changed to: ${locale}`);
+function normalizeLocale(value?: string | null): Locale {
+  if (!value) {
+    return 'en';
+  }
+  if (isLocale(value)) {
+    return value;
+  }
+  if (value.startsWith('ar')) {
+    return 'ar-EG';
+  }
+  return 'en';
 }
 
-export function getLocaleDirection(locale: Locale = activeLocale): 'ltr' | 'rtl' {
-  return locale === 'ar-EG' ? 'rtl' : 'ltr';
+function getActiveLocale() {
+  return normalizeLocale(i18n.resolvedLanguage ?? i18n.language);
 }
 
-export function isRtlLocale(locale: Locale = activeLocale) {
+function normalizeInterpolationValues(values: Record<string, InterpolationValue> | undefined, locale: Locale) {
+  if (!values) {
+    return undefined;
+  }
+
+  return Object.fromEntries(
+    Object.entries(values).map(([key, value]) => [
+      key,
+      typeof value === 'number' ? formatNumber(value, locale) : value,
+    ]),
+  );
+}
+
+await i18n
+  .use(LanguageDetector)
+  .use(initReactI18next)
+  .init({
+    resources,
+    fallbackLng: 'en',
+    supportedLngs: ['en', 'ar-EG'],
+    defaultNS: 'translation',
+    ns: ['translation'],
+    interpolation: {
+      escapeValue: false,
+    },
+    detection: {
+      order: ['localStorage', 'navigator'],
+      caches: ['localStorage'],
+      lookupLocalStorage: LOCALE_STORAGE_KEY,
+    },
+  });
+
+console.log(`🌍 [i18n] Runtime initialized for locale: ${getActiveLocale()}`);
+
+export async function changeLocale(locale: Locale) {
+  console.log(`🌍 [i18n] Changing locale to: ${locale}`);
+  await i18n.changeLanguage(locale);
+}
+
+export function getLocaleDirection(locale: Locale = getActiveLocale()): 'ltr' | 'rtl' {
+  return LOCALE_META[locale].dir;
+}
+
+export function isRtlLocale(locale: Locale = getActiveLocale()) {
   return getLocaleDirection(locale) === 'rtl';
 }
 
-export function formatTrackFraction(current: number, max: number, locale: Locale = activeLocale) {
+export function t(path: string, fallback: string, values?: Record<string, InterpolationValue>) {
+  const locale = getActiveLocale();
+  return String(i18n.t(path, {
+    defaultValue: fallback,
+    ...normalizeInterpolationValues(values, locale),
+  }));
+}
+
+export function formatNumber(value: number, locale: Locale = getActiveLocale()) {
+  return getNumberFormatter(locale).format(value);
+}
+
+export function formatTrackFraction(current: number, max: number, locale: Locale = getActiveLocale()) {
   const currentText = formatNumber(current, locale);
   const maxText = formatNumber(max, locale);
   return getLocaleDirection(locale) === 'rtl'
@@ -60,19 +121,9 @@ export function formatTrackFraction(current: number, max: number, locale: Locale
     : `${currentText}/${maxText}`;
 }
 
-export function t(path: string, fallback: string, values?: Record<string, InterpolationValue>) {
-  const value = lookup(path);
-  return interpolate(typeof value === 'string' ? value : fallback, values);
-}
-
-export function formatNumber(value: number, locale: Locale = activeLocale) {
-  return new Intl.NumberFormat(locale === 'ar-EG' ? 'ar-EG-u-nu-arab' : 'en').format(value);
-}
-
-export function formatChapterNumber(value: number, locale: Locale = activeLocale) {
-  const zero = locale === 'ar-EG' ? '٠' : '0';
+export function formatChapterNumber(value: number, locale: Locale = getActiveLocale()) {
   const digits = formatNumber(value, locale);
-  return value < 10 ? `${zero}${digits}` : digits;
+  return value < 10 ? `${LOCALE_META[locale].zero}${digits}` : digits;
 }
 
 function localizeContent(section: string, id: string, field: string, fallback: string) {
@@ -168,12 +219,8 @@ export function getFrontLabel(frontId: string) {
 }
 
 export function getRegionLabel(regionId: string) {
-  const direct = lookup(`content.regions.${regionId}.name`);
-  if (typeof direct === 'string') {
-    return direct;
-  }
-
-  return t(`content.regionLabels.${regionId}.name`, regionId);
+  const key = `content.regions.${regionId}.name`;
+  return i18n.exists(key) ? t(key, regionId) : t(`content.regionLabels.${regionId}.name`, regionId);
 }
 
 export function getCivicSpaceLabel(civicSpace: string) {
@@ -181,7 +228,7 @@ export function getCivicSpaceLabel(civicSpace: string) {
 }
 
 export function formatEffectPreview(action: ActionDefinition) {
-  return localizeActionField(action.id, 'description', buildEffectPreview(action));
+  return localizeActionField(action.id, 'description', action.description);
 }
 
 export function getLocaleOptions(): Array<{ value: Locale; label: string }> {
@@ -190,3 +237,21 @@ export function getLocaleOptions(): Array<{ value: Locale; label: string }> {
     { value: 'ar-EG', label: t('ui.language.locales.ar-EG', 'العربية المصرية') },
   ];
 }
+
+export function useAppLocale() {
+  const { i18n: runtime } = useTranslation();
+  const locale = normalizeLocale(runtime.resolvedLanguage ?? runtime.language);
+  const dir = getLocaleDirection(locale);
+
+  return {
+    locale,
+    dir,
+    changeLocale,
+    formatNumber: (value: number) => formatNumber(value, locale),
+    formatTrackFraction: (current: number, max: number) => formatTrackFraction(current, max, locale),
+    formatChapterNumber: (value: number) => formatChapterNumber(value, locale),
+    localeOptions: getLocaleOptions(),
+  };
+}
+
+export { i18n };

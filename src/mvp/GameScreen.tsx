@@ -27,7 +27,6 @@ import {
   localizeRegionField,
   localizeRulesetField,
   t,
-  type Locale,
 } from '../i18n/index.ts';
 import { ActionDock } from './ActionDock.tsx';
 import { ContextPanel } from './ContextPanel.tsx';
@@ -58,8 +57,6 @@ import type { GameViewState } from './urlState.ts';
 import { WorldMapBoard } from './WorldMapBoard.tsx';
 
 interface GameScreenProps {
-  locale: Locale;
-  onLocaleChange: (locale: Locale) => void;
   devMode: boolean;
   surface: 'local' | 'room';
   roomId?: string | null;
@@ -437,7 +434,7 @@ function getPhaseInsights(state: EngineState, focusedSeat: number): PhaseInsight
     {
       id: 'resolution-resolve',
       label: t('ui.game.phaseInsightResolve', 'Resolve consequences'),
-      detail: t('ui.game.phaseInsightResolutionResolve', 'Prepared moves now change Domains, regions, Bodies, Evidence, and cards in priority order.'),
+      detail: t('ui.game.phaseInsightResolutionResolve', 'Prepared moves now change Domains, regions, Comrades, Evidence, and cards in priority order.'),
     },
     {
       id: 'resolution-check',
@@ -716,8 +713,6 @@ function getNextAutoPlayCommand(state: EngineState, content: CompiledContent): E
 }
 
 export function GameScreen({
-  locale,
-  onLocaleChange,
   devMode,
   surface,
   roomId,
@@ -991,7 +986,7 @@ export function GameScreen({
 
         {draftAction.needsBodies ? (
           <label>
-            <span>{t('ui.game.bodiesCommitted', 'Bodies Committed')}</span>
+            <span>{t('ui.game.bodiesCommitted', 'Comrades Committed')}</span>
             <input
               type="number"
               min={1}
@@ -1456,7 +1451,7 @@ export function GameScreen({
     <TableSurface className={`game-screen game-screen-compressed ${activeCardReveal ? 'is-reveal-active' : ''}`.trim()}>
       <header className="game-header-shell">
         <div className="table-utility-bar">
-          <LocaleSwitcher locale={locale} onChange={onLocaleChange} />
+          <LocaleSwitcher />
           <ThemePlate
             label={surface === 'room' && roomId
               ? t('ui.game.room', 'Room {{roomId}}', { roomId })

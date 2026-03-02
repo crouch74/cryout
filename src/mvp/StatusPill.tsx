@@ -1,5 +1,5 @@
 import { Icon } from './icons/Icon.tsx';
-import { getLocaleDirection } from '../i18n/index.ts';
+import { useAppLocale } from '../i18n/index.ts';
 import type { StatusRibbonItem } from './gameUiHelpers.ts';
 
 function shouldLockMetricDirection(value: string) {
@@ -13,9 +13,10 @@ export function StatusPill({
   item: StatusRibbonItem;
   isChanging?: boolean;
 }) {
+  const { dir } = useAppLocale();
   const lockMetricDirection = shouldLockMetricDirection(item.value);
   const metricDirection = lockMetricDirection
-    ? (getLocaleDirection() === 'rtl' ? 'rtl' : 'ltr')
+    ? dir
     : undefined;
 
   return (
