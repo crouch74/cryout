@@ -273,12 +273,19 @@
 }
 
 .phase-brief-item {
+  position: relative;
   display: grid;
   gap: 4px;
   padding: 8px 10px;
   border-radius: 10px;
   background: rgba(73, 58, 40, 0.06);
   border: 1px solid rgba(66, 50, 32, 0.1);
+  overflow: hidden;
+  transition:
+    transform var(--motion-fast),
+    box-shadow var(--motion-mid),
+    border-color var(--motion-mid),
+    background var(--motion-mid);
 }
 
 .phase-brief-item strong {
@@ -290,6 +297,26 @@
   font-size: 0.8rem;
   line-height: 1.35;
   color: var(--text-2);
+}
+
+.phase-brief-item.is-live {
+  border-color: color-mix(in srgb, var(--theme-brass) 42%, rgba(66, 50, 32, 0.1));
+  background:
+    linear-gradient(180deg, rgba(255, 249, 238, 0.9), rgba(226, 208, 180, 0.78)),
+    rgba(73, 58, 40, 0.06);
+  box-shadow:
+    0 0 0 1px rgba(255, 247, 232, 0.56),
+    0 10px 18px rgba(52, 37, 24, 0.12);
+  animation: phase-brief-live 760ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.phase-brief-item.is-live::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 0 22%, rgba(255, 248, 233, 0.5) 48%, transparent 74%);
+  animation: phase-brief-sheen 980ms ease-out;
+  pointer-events: none;
 }
 
 .board-context-slot {
@@ -970,6 +997,13 @@
   font-variant-numeric: tabular-nums;
 }
 
+.status-pill-copy strong[dir='ltr'],
+.front-track-row strong[dir='ltr'] {
+  direction: ltr;
+  unicode-bidi: isolate;
+  display: inline-block;
+}
+
 .tone-liberation { --status-chip-accent: var(--theme-brass); }
 .tone-objective { --status-chip-accent: #876a45; }
 .tone-gaze { --status-chip-accent: var(--theme-gaze-gold); }
@@ -1199,6 +1233,64 @@
   font-variant-numeric: tabular-nums;
 }
 
+.status-pill,
+.front-track-row {
+  transition:
+    transform var(--motion-fast),
+    box-shadow var(--motion-mid),
+    border-color var(--motion-mid),
+    background var(--motion-mid);
+}
+
+.status-pill.is-changing {
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 0 1px rgba(255, 247, 232, 0.7),
+    0 0 0 4px color-mix(in srgb, var(--status-chip-accent, var(--theme-brass)) 16%, transparent),
+    var(--tile-shadow),
+    var(--tile-emboss);
+  animation: board-value-highlight 780ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.status-pill.is-changing .status-pill-copy strong {
+  color: var(--status-chip-accent, var(--theme-brass));
+  animation: board-value-pop 780ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.front-track-row.is-changing {
+  border-radius: 12px;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--track-color) 10%, transparent), transparent 75%);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--track-color) 18%, transparent),
+    0 8px 16px rgba(52, 37, 24, 0.08);
+  animation: board-value-highlight 820ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.front-track-pips span {
+  transition:
+    background var(--motion-fast),
+    border-color var(--motion-fast),
+    box-shadow var(--motion-fast),
+    transform var(--motion-fast);
+}
+
+.front-track-marker {
+  transition:
+    left var(--motion-mid),
+    box-shadow var(--motion-mid),
+    transform var(--motion-mid);
+}
+
+.front-track-row.is-changing .front-track-marker {
+  animation: front-track-advance 780ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.front-track-row.is-changing strong {
+  color: var(--track-color);
+  animation: board-value-pop 780ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
 .action-dock {
   position: relative;
   gap: 12px;
@@ -1389,18 +1481,44 @@
     rgba(235, 217, 186, 0.96);
 }
 
-.dock-phase-hint {
-  flex: 1 1 220px;
-  font-size: 0.78rem;
-  line-height: 1.35;
-  color: rgba(59, 42, 24, 0.76);
+.phase-progress-controls {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
 }
 
-.phase-progress-controls {
-  display: grid;
-  gap: 6px;
-  align-items: start;
-  justify-items: start;
+.phase-progress-nav {
+  position: relative;
+  z-index: 4;
+}
+
+.phase-progress-nav .printed-track,
+.phase-progress-nav .printed-track-list {
+  position: relative;
+  z-index: 4;
+}
+
+.phase-progress-nav .printed-track-step.is-active {
+  z-index: 6;
+}
+
+.phase-progress-nav .printed-track-step-controls {
+  overflow: visible;
+}
+
+.phase-progress-nav .printed-track-step-title {
+  min-width: 0;
+}
+
+.phase-progress-nav .printed-track-step-label-row {
+  min-width: 0;
+}
+
+.phase-progress-nav .printed-track-step-label {
+  min-width: 0;
+  text-wrap: balance;
 }
 
 .phase-progress-nav .dock-control-button {
@@ -1423,10 +1541,167 @@
   display: block;
 }
 
-.phase-progress-nav .dock-phase-hint {
-  max-width: 18ch;
-  font-size: 0.8rem;
-  line-height: 1.2;
+html[dir='rtl'] .phase-progress-nav .dock-control-button.is-play-button .ui-icon-advancePhase {
+  transform: scaleX(-1);
+}
+
+.phase-progress-nav .printed-track-step-controls .is-play-button {
+  order: 1;
+}
+
+.phase-progress-help-tooltip {
+  position: absolute;
+  inset-inline-start: 0;
+  top: calc(100% + 10px);
+  z-index: 12;
+  display: grid;
+  gap: 4px;
+  width: min(240px, calc(100vw - 56px));
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(73, 58, 40, 0.16);
+  background:
+    linear-gradient(180deg, rgba(255, 249, 238, 0.97), rgba(224, 208, 181, 0.92)),
+    var(--theme-parchment);
+  box-shadow: 0 12px 22px rgba(52, 37, 24, 0.14);
+  color: var(--theme-ink);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px) scale(0.98);
+  transition:
+    opacity var(--motion-fast),
+    transform var(--motion-fast),
+    box-shadow var(--motion-mid);
+}
+
+.phase-progress-nav .printed-track-step-title.has-tooltip:hover .phase-progress-help-tooltip,
+.phase-progress-nav .printed-track-step-title.has-tooltip:focus-visible .phase-progress-help-tooltip,
+.phase-progress-nav .printed-track-step-title.has-tooltip:focus-within .phase-progress-help-tooltip {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  box-shadow: 0 16px 28px rgba(52, 37, 24, 0.18);
+}
+
+.phase-progress-help-tooltip::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 10px;
+  top: -6px;
+  width: 12px;
+  height: 12px;
+  border-top: 1px solid rgba(73, 58, 40, 0.16);
+  border-left: 1px solid rgba(73, 58, 40, 0.16);
+  background: rgba(255, 247, 232, 0.96);
+  transform: rotate(45deg);
+}
+
+.phase-progress-help-tooltip strong {
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  line-height: 1.1;
+}
+
+.phase-progress-help-tooltip span {
+  font-size: 0.76rem;
+  line-height: 1.35;
+  color: var(--text-2);
+}
+
+.phase-progress-nav.is-advancing .phase-progress-controls {
+  animation: phase-progress-detail-pop 760ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.phase-progress-nav.is-advancing .dock-control-button.is-play-button {
+  animation: board-value-pop 760ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes phase-brief-live {
+  0% {
+    transform: translateY(8px);
+    opacity: 0.72;
+  }
+
+  55% {
+    transform: translateY(-2px);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes phase-brief-sheen {
+  from {
+    transform: translateX(-130%);
+  }
+
+  to {
+    transform: translateX(130%);
+  }
+}
+
+@keyframes board-value-highlight {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  45% {
+    transform: translateY(-1px);
+  }
+}
+
+@keyframes board-value-pop {
+  0% {
+    transform: scale(0.96);
+  }
+
+  45% {
+    transform: scale(1.08);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes front-track-advance {
+  0% {
+    transform: translate(-50%, -50%) scale(0.94);
+    box-shadow: 0 2px 0 rgba(70, 50, 30, 0.2), 0 4px 10px rgba(52, 36, 18, 0.18);
+  }
+
+  50% {
+    transform: translate(-50%, -50%) scale(1.14);
+    box-shadow:
+      0 2px 0 rgba(70, 50, 30, 0.2),
+      0 0 0 8px color-mix(in srgb, var(--track-color) 18%, transparent),
+      0 8px 16px rgba(52, 36, 18, 0.18);
+  }
+
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    box-shadow: 0 2px 0 rgba(70, 50, 30, 0.2), 0 4px 10px rgba(52, 36, 18, 0.18);
+  }
+}
+
+@keyframes phase-progress-detail-pop {
+  0% {
+    transform: translateY(6px);
+    opacity: 0.88;
+  }
+
+  55% {
+    transform: translateY(-1px);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .dock-empty {

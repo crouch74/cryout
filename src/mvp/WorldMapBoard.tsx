@@ -15,6 +15,7 @@ import {
   parsePathToPolygons,
   type Point,
 } from './svgPathCentroid.ts';
+import { useTransientHighlightKeys } from './useTransientHighlights.ts';
 import { buildRegionCountSummary, buildRegionLayouts } from './worldMapTokenLayout.ts';
 import { buildFocusedMapViewport, getUnionBounds } from './worldMapViewport.ts';
 
@@ -226,6 +227,21 @@ export function WorldMapBoard({
       return [regionId, buildRegionCountSummary(region.extractionTokens, region.defenseRating, totalBodies)];
     }),
   ) as Record<RegionId, ReturnType<typeof buildRegionCountSummary>>, [regionIds, state.players, state.regions]);
+  const regionChangeSignatures = useMemo(
+    () => Object.fromEntries(
+      regionIds.flatMap((regionId) => {
+        const counts = regionCounts[regionId];
+        return [
+          [`region:${regionId}`, `${counts.extraction}-${counts.defense}-${counts.bodies}`],
+          [`region:${regionId}:extraction`, counts.extraction],
+          [`region:${regionId}:defense`, counts.defense],
+          [`region:${regionId}:bodies`, counts.bodies],
+        ];
+      }),
+    ),
+    [regionCounts, regionIds],
+  );
+  const highlightedRegionKeys = useTransientHighlightKeys(regionChangeSignatures, 1800);
 
   const regionLayouts = useMemo(() => {
     if (canvasSize.width === 0 || canvasSize.height === 0 || !mapCamera) {
@@ -425,14 +441,16 @@ export function WorldMapBoard({
               const danger = getRegionDangerState(region.extractionTokens);
               const layout = regionLayouts[regionId];
               const label = localizeRegionField(regionId, 'name', content.regions[regionId].name);
+              const regionChanging = highlightedRegionKeys.has(`region:${regionId}`);
 
               return (
                 <button
                   key={regionId}
                   type="button"
-                  className={`board-region-cluster ${selectedRegionId === regionId ? 'is-selected' : ''}`.trim()}
+                  className={`board-region-cluster ${selectedRegionId === regionId ? 'is-selected' : ''} ${regionChanging ? 'is-changing' : ''}`.trim()}
                   data-region-tone={danger.tone}
                   data-region-pulsing={danger.pulsing}
+                  data-region-changing={regionChanging}
                   aria-label={getRegionSummaryLabel(regionId, state, content)}
                   onClick={() => onSelectRegion(regionId)}
                   onMouseEnter={() => setHoveredRegionId(regionId)}
@@ -465,7 +483,8 @@ export function WorldMapBoard({
                     {layout.cluster.items.map((item) => (
                       <span
                         key={`${regionId}-${item.type}`}
-                        className={`board-region-token-group board-region-token-group-${item.type}`}
+                        className={`board-region-token-group board-region-token-group-${item.type} ${highlightedRegionKeys.has(`region:${regionId}:${item.type}`) ? 'is-changing' : ''}`.trim()}
+                        data-token-changing={highlightedRegionKeys.has(`region:${regionId}:${item.type}`)}
                         style={{
                           left: `${item.x}px`,
                           top: `${item.y}px`,
@@ -473,7 +492,7 @@ export function WorldMapBoard({
                           height: `${item.height}px`,
                         }}
                       >
-                        {item.units.map((unit) => (
+                        {item.units.map((unit, unitIndex) => (
                           <span
                             key={unit.key}
                             className={`board-region-token board-region-token-${unit.type}`}
@@ -482,6 +501,7 @@ export function WorldMapBoard({
                               top: `${item.height / 2 + unit.y}px`,
                               width: `${layout.cluster.tokenSize}px`,
                               height: `${layout.cluster.tokenSize}px`,
+                              ['--token-index' as string]: String(unitIndex),
                             }}
                           />
                         ))}

@@ -1,15 +1,22 @@
-import type { CSSProperties } from 'react';
+import { useMemo, type CSSProperties } from 'react';
 import { Icon } from './icons/Icon.tsx';
 import type { FrontTrackRow } from './gameUiHelpers.ts';
 import { formatNumber, t } from '../i18n/index.ts';
+import { useTransientHighlightKeys } from './useTransientHighlights.ts';
 
 export function FrontTrackBar({ rows }: { rows: FrontTrackRow[] }) {
+  const rowSignatures = useMemo(
+    () => Object.fromEntries(rows.map((row) => [row.id, row.value])),
+    [rows],
+  );
+  const highlightedRows = useTransientHighlightKeys(rowSignatures, 1800);
+
   return (
     <section className="front-track-bar" aria-label={t('ui.game.domains', 'Domains')}>
       {rows.map((row) => (
         <article
           key={row.id}
-          className={`front-track-row is-${row.severity}`.trim()}
+          className={`front-track-row is-${row.severity} ${highlightedRows.has(row.id) ? 'is-changing' : ''}`.trim()}
           title={row.tooltip}
           style={{ ['--track-color' as string]: row.color } as CSSProperties}
         >
@@ -25,7 +32,7 @@ export function FrontTrackBar({ rows }: { rows: FrontTrackRow[] }) {
             </div>
             <span className="front-track-marker" style={{ ['--track-progress' as string]: `${(row.value / row.max) * 100}%` }} />
           </div>
-          <strong>{formatNumber(row.value)}/{formatNumber(row.max)}</strong>
+          <strong dir="ltr">{formatNumber(row.value)}/{formatNumber(row.max)}</strong>
         </article>
       ))}
     </section>

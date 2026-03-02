@@ -134,6 +134,16 @@ test('game screen source keeps the compressed board layout contract', () => {
   assert.doesNotMatch(source, /<footer/);
 });
 
+test('phase progress source keeps help affordances on every step', () => {
+  const source = readFileSync(new URL('../src/mvp/PhaseProgress.tsx', import.meta.url), 'utf8');
+  const trackSource = readFileSync(new URL('../src/mvp/tabletop.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /activeHint/);
+  assert.match(source, /tooltipContent/);
+  assert.match(source, /tooltipId/);
+  assert.match(trackSource, /phase-progress-help-tooltip/);
+});
+
 test('world map source renders the launch campaign dice overlay on the active board', () => {
   const source = readFileSync(new URL('../src/mvp/WorldMapBoard.tsx', import.meta.url), 'utf8');
 
@@ -142,6 +152,8 @@ test('world map source renders the launch campaign dice overlay on the active bo
   assert.match(source, /campaignRoll/);
   assert.match(source, /board-region-clusters/);
   assert.match(source, /board-region-token-container/);
+  assert.match(source, /data-region-changing/);
+  assert.match(source, /data-token-changing/);
   assert.doesNotMatch(source, /createRandom/);
 });
 

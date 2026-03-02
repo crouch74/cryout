@@ -34,6 +34,7 @@ import { Icon } from './icons/Icon.tsx';
 import { PlayerStrip } from './PlayerStrip.tsx';
 import { PhaseProgress } from './PhaseProgress.tsx';
 import { StatusRibbon } from './StatusRibbon.tsx';
+import { useTransientHighlightKeys } from './useTransientHighlights.ts';
 import {
   buildIntentPreview,
   getActionDockItems,
@@ -496,10 +497,14 @@ export function GameScreen({
     : state.phase === 'WIN' || state.phase === 'LOSS';
   const phaseInsights = getPhaseInsights(state, focusedPlayer.seat);
   const recentChangeSnapshots = useMemo(() => getRecentChangeSnapshots(state), [state]);
+  const recentChangeSignatures = useMemo(
+    () => Object.fromEntries(recentChangeSnapshots.map((item) => [`change:${item.id}`, item.id])),
+    [recentChangeSnapshots],
+  );
+  const liveRecentChanges = useTransientHighlightKeys(recentChangeSignatures, 1900);
   const phaseActionLabel = state.phase === 'SYSTEM'
     ? t('ui.game.playSystemPhase', 'Play System')
     : getActionButtonLabel(state.phase);
-  const phaseActionTooltip = `${phaseActionLabel} • ${phaseControlHint}`;
 
   const phaseProgressControls = (
     <div className="phase-progress-controls">
@@ -509,13 +514,10 @@ export function GameScreen({
         disabled={phaseActionDisabled}
         onClick={runPhaseAction}
         aria-label={phaseActionLabel}
-        title={phaseActionTooltip}
+        title={phaseActionLabel}
       >
         <Icon type="advancePhase" size={18} title={phaseActionLabel} />
       </button>
-      <span className="dock-phase-hint" title={phaseActionTooltip}>
-        {phaseActionLabel}
-      </span>
     </div>
   );
 
@@ -808,7 +810,7 @@ export function GameScreen({
             </button>
           </div>
 
-          <PhaseProgress phase={state.phase} activeContent={phaseProgressControls} />
+          <PhaseProgress phase={state.phase} activeContent={phaseProgressControls} activeHint={phaseControlHint} />
 
           {state.phase === 'COALITION' ? (
             <>
@@ -888,7 +890,10 @@ export function GameScreen({
                   </div>
                 ) : (
                   recentChangeSnapshots.map((item) => (
-                    <div key={item.id} className="phase-brief-item">
+                    <div
+                      key={item.id}
+                      className={`phase-brief-item ${liveRecentChanges.has(`change:${item.id}`) ? 'is-live' : ''}`.trim()}
+                    >
                       <strong>{item.emoji} {item.title}</strong>
                       <span>{item.reason}</span>
                       {item.changes.length > 0 ? <span>{item.changes.join(' • ')}</span> : null}
