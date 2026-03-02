@@ -1712,7 +1712,8 @@ export function GameScreen({
             aria-expanded={showDevPanel}
             aria-controls="debug-panel-title"
           >
-            {showDevPanel ? t('ui.debug.hidePanel', 'Hide Dev Panel') : t('ui.debug.showPanel', 'Dev Panel')}
+            <span className="dev-panel-emoji" aria-hidden="true">🛠</span>
+            <span className="dev-panel-label">{showDevPanel ? t('ui.debug.hidePanel', 'Hide Dev Panel') : t('ui.debug.showPanel', 'Dev Panel')}</span>
           </button>
         ) : null
       }
