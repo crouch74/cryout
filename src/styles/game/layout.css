@@ -43,8 +43,8 @@
 
 .status-ribbon {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
   align-items: center;
 }
 
@@ -205,37 +205,6 @@
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
   gap: 12px;
-}
-
-.board-core-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  align-items: start;
-  flex-wrap: wrap;
-}
-
-.board-core-head>div:first-child {
-  flex: 1 1 420px;
-  min-width: 0;
-}
-
-.board-core-head h1 {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(1.7rem, 2.5vw, 2.45rem);
-  line-height: 1;
-  letter-spacing: 0.02em;
-}
-
-.board-core-head p,
-.board-core-eyebrow {
-  margin: 0;
-}
-
-.board-core-head p {
-  max-width: 64ch;
-  opacity: 0.66;
 }
 
 .board-core .phase-progress-nav {
@@ -867,12 +836,31 @@ html[dir='rtl'] .deck-reveal-deck-label {
 }
 
 .ledger-toggle {
-  min-height: 34px;
-  padding: 6px 11px;
-  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 58px;
+  padding: 10px 16px;
+  border-radius: 12px;
   border: 1px solid var(--tile-rim-dark);
-  background: linear-gradient(180deg, rgba(255, 248, 236, 0.98), rgba(220, 202, 171, 0.9));
+  background:
+    linear-gradient(180deg, rgba(251, 245, 234, 0.98), rgba(218, 201, 172, 0.9)),
+    var(--theme-parchment);
   box-shadow: var(--tile-shadow), var(--tile-emboss);
+  transition: transform var(--motion-fast), box-shadow var(--motion-fast);
+}
+
+.ledger-toggle .ui-icon {
+  color: var(--theme-brass);
+  filter: drop-shadow(0 1px 0 rgba(255, 246, 226, 0.42));
+}
+
+.ledger-toggle span {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--theme-ink);
+  letter-spacing: 0.02em;
 }
 
 .front-track-bar {
@@ -1331,13 +1319,11 @@ html[dir='rtl'] .deck-reveal-deck-label {
   }
 
   .status-ribbon,
-  .board-core-head,
   .player-strip-focus {
     grid-template-columns: 1fr;
   }
 
-  .status-ribbon,
-  .board-core-head {
+  .status-ribbon {
     display: grid;
   }
 
@@ -1396,45 +1382,7 @@ html[dir='rtl'] .deck-reveal-deck-label {
   box-shadow: var(--tile-shadow), var(--tile-emboss);
 }
 
-.board-core-head {
-  position: relative;
-  padding: 14px 18px;
-  border-radius: 14px;
-  border: 1px solid var(--panel-rim);
-  background:
-    linear-gradient(180deg, rgba(255, 248, 236, 0.92), rgba(221, 206, 180, 0.8)),
-    var(--theme-parchment);
-  box-shadow: var(--panel-shadow), inset 0 1px 0 rgba(255, 250, 239, 0.72);
-}
 
-.board-core-head::before {
-  content: '';
-  position: absolute;
-  inset: 4px;
-  border: 1px solid rgba(255, 248, 233, 0.58);
-  border-radius: 10px;
-  pointer-events: none;
-}
-
-.board-core-head h1 {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: clamp(1.8rem, 2.4vw, 2.7rem);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--theme-ink);
-  text-shadow: 0 1px 0 rgba(255, 248, 236, 0.85);
-}
-
-.board-core-head p {
-  color: var(--text-2);
-  font-weight: 600;
-}
-
-.board-core-eyebrow {
-  color: var(--text-3);
-  letter-spacing: 0.14em;
-}
 
 .ledger-toggle,
 .context-panel-tabs button,

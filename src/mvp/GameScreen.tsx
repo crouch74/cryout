@@ -25,7 +25,6 @@ import {
   localizeDomainField,
   localizeFactionField,
   localizeRegionField,
-  localizeRulesetField,
   t,
 } from '../i18n/index.ts';
 import { ActionDock } from './ActionDock.tsx';
@@ -1325,15 +1324,15 @@ export function GameScreen({
       : profile.rotation;
     setActiveCardRevealOrigin(rect
       ? {
-          x: rect.left + (rect.width / 2),
-          y: rect.top + (rect.height / 2),
-          rotation,
-        }
+        x: rect.left + (rect.width / 2),
+        y: rect.top + (rect.height / 2),
+        rotation,
+      }
       : {
-          x: window.innerWidth * 0.18,
-          y: window.innerHeight * 0.3,
-          rotation,
-        });
+        x: window.innerWidth * 0.18,
+        y: window.innerHeight * 0.3,
+        rotation,
+      });
     void primeDeckAudio();
     playDeckCue('lift', nextReveal.deckId, audioEnabled);
 
@@ -1503,7 +1502,7 @@ export function GameScreen({
             label={surface === 'room' && roomId
               ? t('ui.game.room', 'Room {{roomId}}', { roomId })
               : t('ui.game.table', 'Table')}
-            onClick={() => {}}
+            onClick={() => { }}
           />
           <ThemePlate
             label={copied ? t('ui.game.saved', 'Saved') : t('ui.game.save', 'Save')}
@@ -1522,18 +1521,6 @@ export function GameScreen({
         onPointerDownCapture={handleEmptySpacePointerDown}
       >
         <section className="board-core">
-          <div className="board-core-head">
-            <div>
-              <span className="board-core-eyebrow">
-                {localizeRulesetField(content.ruleset.id, 'name', content.ruleset.name)}
-              </span>
-              <h1>{phasePresentation.verb}</h1>
-            </div>
-            <button type="button" className="ledger-toggle" onClick={() => { setContextMode('ledger'); setContextOpen(true); }}>
-              {t('ui.game.ledger', 'Ledger')}
-            </button>
-          </div>
-
           <PhaseProgress
             phase={state.phase}
             activeContent={phaseProgressControls}
@@ -1562,11 +1549,11 @@ export function GameScreen({
                       <span>{formatNumber(focusedPlayer.evidence)} {t('ui.game.evidence', 'Evidence')}</span>
                       <span>{t('ui.game.queuedCount', '{{count}} queued', { count: focusedPlayer.queuedIntents.length })}</span>
                     </div>
-                <div className="dock-queue-list" aria-label={t('ui.game.preparedMovesLabel', 'Prepared moves')}>
-                  {focusedPlayer.queuedIntents.length === 0 ? (
-                    <span className="dock-empty">{t('ui.game.noPreparedMoves', 'No prepared moves yet.')}</span>
-                  ) : (
-                    focusedPlayer.queuedIntents.map((intent) => (
+                    <div className="dock-queue-list" aria-label={t('ui.game.preparedMovesLabel', 'Prepared moves')}>
+                      {focusedPlayer.queuedIntents.length === 0 ? (
+                        <span className="dock-empty">{t('ui.game.noPreparedMoves', 'No prepared moves yet.')}</span>
+                      ) : (
+                        focusedPlayer.queuedIntents.map((intent) => (
                           <button
                             key={`${intent.actionId}-${intent.slot}`}
                             type="button"
@@ -1576,22 +1563,22 @@ export function GameScreen({
                           >
                             <span>{intent.slot + 1}</span>
                             <strong>{localizeActionField(intent.actionId, 'name', content.actions[intent.actionId].name)}</strong>
-                      </button>
-                    ))
-                  )}
-                </div>
-                <button
-                  type="button"
-                  className={`action-dock-submit ${focusedPlayer.ready ? 'is-active' : ''}`.trim()}
-                  disabled={focusedPlayer.actionsRemaining > 0}
-                  onClick={() => handleSetReady(!focusedPlayer.ready)}
-                >
-                  <Icon type="objective" size={18} className="action-dock-submit-icon" />
-                  <span>{focusedPlayer.ready ? t('ui.game.seatReady', 'Seat Ready') : t('ui.game.markSeatReady', 'Mark Seat Ready')}</span>
-                </button>
-              </>
-            )}
-          />
+                          </button>
+                        ))
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className={`action-dock-submit ${focusedPlayer.ready ? 'is-active' : ''}`.trim()}
+                      disabled={focusedPlayer.actionsRemaining > 0}
+                      onClick={() => handleSetReady(!focusedPlayer.ready)}
+                    >
+                      <Icon type="objective" size={18} className="action-dock-submit-icon" />
+                      <span>{focusedPlayer.ready ? t('ui.game.seatReady', 'Seat Ready') : t('ui.game.markSeatReady', 'Mark Seat Ready')}</span>
+                    </button>
+                  </>
+                )}
+              />
             </>
           ) : null}
 
@@ -1621,7 +1608,23 @@ export function GameScreen({
             </section>
           ) : null}
 
-          <StatusRibbon items={statusItems} highlightedIds={highlightedStatusItems} suspendHighlights={highlightSuspended} />
+          <StatusRibbon
+            items={statusItems}
+            highlightedIds={highlightedStatusItems}
+            suspendHighlights={highlightSuspended}
+            utilities={(
+              <button
+                type="button"
+                className="ledger-toggle"
+                onClick={() => { setContextMode('ledger'); setContextOpen(true); }}
+                aria-label={t('ui.game.ledger', 'Ledger')}
+              >
+                <Icon type="ledger" size={20} />
+                <span>{t('ui.game.ledger', 'Ledger')}</span>
+              </button>
+            )}
+          />
+
           {state.mode === 'SYMBOLIC' && activeBeaconObjectives.length > 0 ? (
             <section className="beacon-objective-strip" aria-label={t('ui.game.beaconObjectives', 'Beacon objectives')}>
               {activeBeaconObjectives.map((beacon) => (
@@ -1700,93 +1703,99 @@ export function GameScreen({
         </aside>
       </main>
 
-      {devMode ? (
-        <button
-          type="button"
-          className={`dev-panel-toggle ${showDevPanel ? 'is-active' : ''}`.trim()}
-          onClick={() => setShowDevPanel((current) => !current)}
-          aria-expanded={showDevPanel}
-          aria-controls="debug-panel-title"
-        >
-          {showDevPanel ? t('ui.debug.hidePanel', 'Hide Dev Panel') : t('ui.debug.showPanel', 'Dev Panel')}
-        </button>
-      ) : null}
-
-      {devMode && showDevPanel ? (
-        <DebugOverlay
-          state={state}
-          content={content}
-          roomId={roomId}
-          showDebugSnapshot={showDebugSnapshot}
-          autoPlayRounds={autoPlayRounds}
-          autoPlaySpeed={autoPlaySpeed}
-          autoPlayRunning={autoPlayRunning}
-          autoPlayStatus={autoPlayStatusText}
-          onToggleDebugSnapshot={() => setShowDebugSnapshot((current) => !current)}
-          onAutoPlayRoundsChange={setAutoPlayRounds}
-          onAutoPlaySpeedChange={setAutoPlaySpeed}
-          onAutoPlayStart={handleAutoPlayStart}
-          onAutoPlayStop={handleAutoPlayStop}
-          onClose={() => setShowDevPanel(false)}
-        />
-      ) : null}
-      {activeCardReveal ? (
-        <div className={`deck-reveal-overlay deck-reveal-stage-${cardRevealStage}`.trim()} role="dialog" aria-modal="true" aria-labelledby="deck-reveal-title">
-          <div className="deck-reveal-vignette" />
-          <div
-            className="deck-reveal-scene"
-            style={{
-              ['--reveal-origin-x' as string]: `${activeCardRevealOrigin?.x ?? 0}px`,
-              ['--reveal-origin-y' as string]: `${activeCardRevealOrigin?.y ?? 0}px`,
-              ['--reveal-origin-rotation' as string]: `${activeCardRevealOrigin?.rotation ?? 0}deg`,
-              ['--reveal-glow' as string]: getRevealMotionProfile(activeCardReveal.deckId).glow,
-              ['--reveal-ease' as string]: getRevealMotionProfile(activeCardReveal.deckId).ease,
-            }}
+      {
+        devMode ? (
+          <button
+            type="button"
+            className={`dev-panel-toggle ${showDevPanel ? 'is-active' : ''}`.trim()}
+            onClick={() => setShowDevPanel((current) => !current)}
+            aria-expanded={showDevPanel}
+            aria-controls="debug-panel-title"
           >
-            <article
-              className={`deck-reveal-card deck-reveal-card-${activeCardReveal.deckId}`.trim()}
-              data-seq={activeCardRevealSeq ?? undefined}
+            {showDevPanel ? t('ui.debug.hidePanel', 'Hide Dev Panel') : t('ui.debug.showPanel', 'Dev Panel')}
+          </button>
+        ) : null
+      }
+
+      {
+        devMode && showDevPanel ? (
+          <DebugOverlay
+            state={state}
+            content={content}
+            roomId={roomId}
+            showDebugSnapshot={showDebugSnapshot}
+            autoPlayRounds={autoPlayRounds}
+            autoPlaySpeed={autoPlaySpeed}
+            autoPlayRunning={autoPlayRunning}
+            autoPlayStatus={autoPlayStatusText}
+            onToggleDebugSnapshot={() => setShowDebugSnapshot((current) => !current)}
+            onAutoPlayRoundsChange={setAutoPlayRounds}
+            onAutoPlaySpeedChange={setAutoPlaySpeed}
+            onAutoPlayStart={handleAutoPlayStart}
+            onAutoPlayStop={handleAutoPlayStop}
+            onClose={() => setShowDevPanel(false)}
+          />
+        ) : null
+      }
+      {
+        activeCardReveal ? (
+          <div className={`deck-reveal-overlay deck-reveal-stage-${cardRevealStage}`.trim()} role="dialog" aria-modal="true" aria-labelledby="deck-reveal-title">
+            <div className="deck-reveal-vignette" />
+            <div
+              className="deck-reveal-scene"
+              style={{
+                ['--reveal-origin-x' as string]: `${activeCardRevealOrigin?.x ?? 0}px`,
+                ['--reveal-origin-y' as string]: `${activeCardRevealOrigin?.y ?? 0}px`,
+                ['--reveal-origin-rotation' as string]: `${activeCardRevealOrigin?.rotation ?? 0}deg`,
+                ['--reveal-glow' as string]: getRevealMotionProfile(activeCardReveal.deckId).glow,
+                ['--reveal-ease' as string]: getRevealMotionProfile(activeCardReveal.deckId).ease,
+              }}
             >
-              <div className="deck-reveal-rotator">
-                <div className="deck-reveal-face deck-reveal-face-back">
-                  <DeckBackArt
-                    deckId={activeCardReveal.deckId}
-                    deckName={getPrintedDeckTitle(activeCardReveal.deckId)}
-                    className="deck-reveal-back-art"
-                  />
-                </div>
-                <div className="deck-reveal-face deck-reveal-face-front">
-                  <header className="deck-reveal-front-head">
-                    <span className="deck-reveal-deck-label">{getPrintedDeckTitle(activeCardReveal.deckId)}</span>
-                    <strong id="deck-reveal-title">{getRevealCopy(content, activeCardReveal.deckId, activeCardReveal.cardId).title}</strong>
-                  </header>
-                  <div className="deck-reveal-illustration" aria-hidden="true">
-                    <span className="deck-reveal-illustration-emblem">{getPrintedDeckTitle(activeCardReveal.deckId)}</span>
+              <article
+                className={`deck-reveal-card deck-reveal-card-${activeCardReveal.deckId}`.trim()}
+                data-seq={activeCardRevealSeq ?? undefined}
+              >
+                <div className="deck-reveal-rotator">
+                  <div className="deck-reveal-face deck-reveal-face-back">
+                    <DeckBackArt
+                      deckId={activeCardReveal.deckId}
+                      deckName={getPrintedDeckTitle(activeCardReveal.deckId)}
+                      className="deck-reveal-back-art"
+                    />
                   </div>
-                  <div className="deck-reveal-body-copy">
-                    <p>{getRevealCopy(content, activeCardReveal.deckId, activeCardReveal.cardId).body}</p>
-                  </div>
-                  <div className="deck-reveal-footer">
-                    <div className="deck-reveal-chip-row" aria-label={t('ui.game.effectSummary', 'Effect summary')}>
-                      {getRevealSummaryChips(content, activeCardReveal.deckId, activeCardReveal.cardId).map((chip) => (
-                        <span key={chip} className="deck-reveal-chip">{chip}</span>
-                      ))}
+                  <div className="deck-reveal-face deck-reveal-face-front">
+                    <header className="deck-reveal-front-head">
+                      <span className="deck-reveal-deck-label">{getPrintedDeckTitle(activeCardReveal.deckId)}</span>
+                      <strong id="deck-reveal-title">{getRevealCopy(content, activeCardReveal.deckId, activeCardReveal.cardId).title}</strong>
+                    </header>
+                    <div className="deck-reveal-illustration" aria-hidden="true">
+                      <span className="deck-reveal-illustration-emblem">{getPrintedDeckTitle(activeCardReveal.deckId)}</span>
                     </div>
-                    <button
-                      ref={revealActionButtonRef}
-                      type="button"
-                      className="reveal-action-button"
-                      onClick={() => startRevealDismiss(true)}
-                    >
-                      {getRevealActionLabel(activeCardReveal.deckId)}
-                    </button>
+                    <div className="deck-reveal-body-copy">
+                      <p>{getRevealCopy(content, activeCardReveal.deckId, activeCardReveal.cardId).body}</p>
+                    </div>
+                    <div className="deck-reveal-footer">
+                      <div className="deck-reveal-chip-row" aria-label={t('ui.game.effectSummary', 'Effect summary')}>
+                        {getRevealSummaryChips(content, activeCardReveal.deckId, activeCardReveal.cardId).map((chip) => (
+                          <span key={chip} className="deck-reveal-chip">{chip}</span>
+                        ))}
+                      </div>
+                      <button
+                        ref={revealActionButtonRef}
+                        type="button"
+                        className="reveal-action-button"
+                        onClick={() => startRevealDismiss(true)}
+                      >
+                        {getRevealActionLabel(activeCardReveal.deckId)}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </article>
+              </article>
+            </div>
           </div>
-        </div>
-      ) : null}
-    </TableSurface>
+        ) : null
+      }
+    </TableSurface >
   );
 }
