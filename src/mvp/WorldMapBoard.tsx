@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { getAvailableRegions, type CompiledContent, type DomainId, type EngineState, type RegionId } from '../../engine/index.ts';
+import { getAvailableRegions, type CompiledContent, type DomainId, type EngineState, type RegionId, type RollResolution } from '../../engine/index.ts';
 import { formatNumber, localizeDomainField, localizeRegionField, t } from '../i18n/index.ts';
 import { getRegionDangerState } from './gameUiHelpers.ts';
+import { presentRoll } from './historyPresentation.ts';
 import { Icon } from './icons/Icon.tsx';
 import type { IconType } from './icons/iconTypes.ts';
 import {
@@ -26,16 +27,12 @@ interface WorldMapBoardProps {
   onSelectRegion: (regionId: RegionId) => void;
   debugLayout?: boolean;
   externalHighlightKeys?: ReadonlySet<string>;
-  campaignRoll?: {
+  campaignRoll?: (RollResolution & {
     seq: number;
-    regionId: RegionId;
-    total: number;
-    modifier: number;
     dieOne: number;
     dieTwo: number;
-    success: boolean;
     rolling: boolean;
-  } | null;
+  }) | null;
 }
 
 interface RegionGeometryInfo {
@@ -120,6 +117,9 @@ export function WorldMapBoard({
   externalHighlightKeys,
   campaignRoll = null,
 }: WorldMapBoardProps) {
+  const presentedRoll = campaignRoll
+    ? presentRoll({ ...campaignRoll, dice: [campaignRoll.dieOne, campaignRoll.dieTwo] }, content)
+    : null;
   const [hoveredRegionId, setHoveredRegionId] = useState<RegionId | null>(null);
   const [svgMarkup, setSvgMarkup] = useState('');
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
@@ -424,7 +424,7 @@ export function WorldMapBoard({
           </article>
         ) : null}
 
-        {campaignRoll && regionLayouts?.[campaignRoll.regionId] ? (
+        {campaignRoll && presentedRoll && regionLayouts?.[campaignRoll.regionId] ? (
           <article
             className={`campaign-roll-overlay ${campaignRoll.success ? 'is-success' : 'is-failure'} ${campaignRoll.rolling ? 'is-rolling' : ''}`.trim()}
             style={{
@@ -439,9 +439,8 @@ export function WorldMapBoard({
               <span>{formatNumber(campaignRoll.dieTwo)}</span>
             </div>
             <strong>{formatNumber(campaignRoll.total)}</strong>
-            <span>
-              {formatNumber(campaignRoll.dieOne)} + {formatNumber(campaignRoll.dieTwo)} + {formatNumber(campaignRoll.modifier)}
-            </span>
+            <span>{presentedRoll.formula}</span>
+            <span>{presentedRoll.outcome}: {presentedRoll.meaning}</span>
           </article>
         ) : null}
 

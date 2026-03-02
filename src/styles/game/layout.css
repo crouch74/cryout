@@ -290,37 +290,185 @@
 
 .board-deck-stack-shell.is-selected .deck-stack {
   border-color: var(--accent-primary-strong);
-  box-shadow: 0 0 0 1px rgba(255, 248, 236, 0.58), var(--shadow-lift), var(--shadow-inset);
+  box-shadow: 0 0 0 1px rgba(255, 248, 236, 0.58), 0 16px 30px rgba(45, 30, 17, 0.18);
 }
 
-.board-card-reveal {
-  position: absolute;
-  inset-inline: 18px 14px;
-  top: calc(100% + 8px);
+.beacon-objective-strip {
   display: grid;
-  gap: 4px;
-  padding: 12px;
-  border-radius: 14px;
-  border: 1px solid rgba(82, 61, 32, 0.18);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.beacon-objective-card {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(115, 89, 48, 0.18);
   background:
-    linear-gradient(180deg, rgba(255, 252, 245, 0.98), rgba(231, 214, 186, 0.94)),
+    linear-gradient(180deg, rgba(255, 251, 244, 0.94), rgba(226, 208, 178, 0.82)),
     var(--theme-paper);
-  box-shadow: 0 12px 22px rgba(41, 29, 20, 0.16);
+  box-shadow: 0 10px 20px rgba(41, 29, 20, 0.1), inset 0 1px 0 rgba(255, 249, 237, 0.8);
+}
+
+.beacon-objective-card strong {
+  font-family: var(--font-display);
+}
+
+.beacon-objective-card p {
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+
+.beacon-objective-state {
+  justify-self: start;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(88, 67, 37, 0.08);
+  color: var(--text-2);
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.beacon-objective-card.is-complete {
+  border-color: rgba(132, 104, 50, 0.34);
+  box-shadow: 0 12px 24px rgba(91, 68, 28, 0.14), inset 0 1px 0 rgba(255, 249, 237, 0.9);
+}
+
+.beacon-objective-card.is-complete .beacon-objective-state {
+  background: rgba(200, 167, 94, 0.2);
+  color: #5f4620;
+}
+
+.deck-reveal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  pointer-events: auto;
+}
+
+.deck-reveal-vignette {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.deck-reveal-card {
+  position: relative;
+  z-index: 1;
+  width: min(420px, calc(100vw - 40px));
+  min-height: 588px;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 22px;
+  border-radius: 20px;
+  border: 1px solid rgba(98, 74, 44, 0.22);
+  overflow: hidden;
+  isolation: isolate;
+  background-color: color-mix(in srgb, var(--theme-paper, var(--theme-parchment)) 92%, white 8%);
+  background:
+    linear-gradient(180deg, rgba(255, 253, 247, 0.98), rgba(239, 225, 199, 0.95)),
+    var(--theme-paper, var(--theme-parchment));
+  box-shadow:
+    0 28px 56px rgba(24, 16, 9, 0.26),
+    0 0 0 1px rgba(255, 250, 242, 0.65),
+    0 0 34px var(--reveal-glow);
+  transform-origin: center center;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  opacity: 0;
+}
+
+.deck-reveal-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 24%),
+    linear-gradient(135deg, rgba(110, 84, 46, 0.06), rgba(255, 255, 255, 0) 48%),
+    color-mix(in srgb, var(--theme-paper, var(--theme-parchment)) 94%, white 6%);
+  box-shadow: inset 0 1px 0 rgba(255, 250, 242, 0.74), inset 0 -1px 0 rgba(96, 72, 42, 0.12);
+  z-index: -1;
   pointer-events: none;
-  z-index: 3;
 }
 
-.board-card-reveal-enter {
-  animation: board-card-reveal-enter 250ms ease-out forwards;
+.deck-reveal-card strong {
+  font-family: var(--font-display);
+  font-size: 26px;
+  line-height: 1.1;
 }
 
-.board-card-reveal-hold {
+.deck-reveal-card p {
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--text-1);
+}
+
+.deck-reveal-note {
+  font-size: 0.88rem;
+  font-style: italic;
+  color: var(--text-2);
+}
+
+.deck-reveal-card-system {
+  border-color: rgba(122, 30, 30, 0.22);
+}
+
+.deck-reveal-card-resistance {
+  border-color: rgba(200, 167, 94, 0.26);
+}
+
+.deck-reveal-card-crisis {
+  border-color: rgba(138, 59, 47, 0.24);
+}
+
+.deck-reveal-stage-lift .deck-reveal-card {
   opacity: 1;
-  transform: translateY(0);
+  transform: translate3d(calc(var(--reveal-origin-x) - 50vw), calc(var(--reveal-origin-y) - 50vh - 24px), 0) scale(0.78) rotate(var(--reveal-origin-rotation));
 }
 
-.board-card-reveal-exit {
-  animation: board-card-reveal-exit 250ms ease-in forwards;
+.deck-reveal-stage-travel .deck-reveal-card {
+  opacity: 1;
+  transition: transform 480ms var(--reveal-ease), opacity 180ms ease;
+  transform: translate3d(0, -16px, 0) scale(0.92) rotate(calc(var(--reveal-origin-rotation) * 0.4));
+}
+
+.deck-reveal-stage-flip .deck-reveal-card {
+  opacity: 1;
+  transition: transform 380ms var(--reveal-ease), box-shadow 380ms ease;
+  transform: translate3d(0, -6px, 0) scale(1.02) rotateY(180deg);
+}
+
+.deck-reveal-stage-settle .deck-reveal-card {
+  opacity: 1;
+  transition: transform 280ms ease-out, opacity 120ms ease;
+  transform: translate3d(0, 0, 0) scale(1.1);
+}
+
+.reveal-action-button {
+  justify-self: start;
+  min-width: 128px;
+  padding: 12px 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(101, 73, 33, 0.28);
+  background:
+    linear-gradient(180deg, rgba(167, 121, 60, 0.96), rgba(109, 73, 34, 0.96)),
+    linear-gradient(90deg, rgba(255, 242, 213, 0.16), rgba(0, 0, 0, 0.08));
+  color: #fff7e9;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 242, 213, 0.38),
+    0 12px 22px rgba(46, 29, 12, 0.18);
+}
+
+.game-screen-compressed.is-reveal-active .board-map-panel {
+  filter: saturate(0.8);
 }
 
 .board-player-strip {
@@ -713,12 +861,30 @@
 }
 
 .deck-discard-row {
+  position: relative;
   display: grid;
   gap: 4px;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border-radius: 12px;
   border: 1px solid rgba(84, 62, 34, 0.12);
-  background: rgba(255, 248, 238, 0.7);
+  background:
+    linear-gradient(180deg, rgba(255, 250, 244, 0.88), rgba(238, 224, 197, 0.76)),
+    var(--theme-paper);
+  box-shadow: 0 8px 14px rgba(41, 29, 20, 0.08), inset 0 1px 0 rgba(255, 248, 236, 0.7);
+}
+
+.deck-discard-list,
+.deck-tray-list {
+  position: relative;
+}
+
+.deck-discard-list .deck-discard-row:not(:first-child),
+.deck-tray-list .deck-discard-row:not(:first-child) {
+  margin-top: -6px;
+}
+
+.deck-tray-list .deck-discard-row {
+  border-color: rgba(122, 30, 30, 0.16);
 }
 
 .deck-discard-row strong {
@@ -729,6 +895,17 @@
   font-size: 0.78rem;
   line-height: 1.4;
   color: var(--text-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deck-reveal-stage-lift .deck-reveal-card,
+  .deck-reveal-stage-travel .deck-reveal-card,
+  .deck-reveal-stage-flip .deck-reveal-card,
+  .deck-reveal-stage-settle .deck-reveal-card {
+    transition: none;
+    transform: translate3d(0, 0, 0) scale(1.04);
+    opacity: 1;
+  }
 }
 
 @keyframes board-card-reveal-enter {

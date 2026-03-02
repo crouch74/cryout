@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import {
   getAvailableDomains,
   getAvailableRegions,
@@ -14,6 +14,7 @@ import {
   type EngineState,
   type QueuedIntent,
   type RegionId,
+  type RollResolution,
 } from '../../engine/index.ts';
 import {
   formatNumber,
@@ -28,6 +29,7 @@ import {
 } from '../i18n/index.ts';
 import { ActionDock } from './ActionDock.tsx';
 import { ContextPanel } from './ContextPanel.tsx';
+import { playDeckCue, primeDeckAudio } from './deckSound.ts';
 import { DebugOverlay, type AutoPlaySpeedLevel } from './DebugOverlay.tsx';
 import { FrontTrackBar } from './FrontTrackBar.tsx';
 import { Icon } from './icons/Icon.tsx';
@@ -35,6 +37,7 @@ import type { IconType } from './icons/iconTypes.ts';
 import { PlayerStrip } from './PlayerStrip.tsx';
 import { PhaseProgress } from './PhaseProgress.tsx';
 import { StatusRibbon } from './StatusRibbon.tsx';
+import { localizeDisabledReason, presentHistoryEvent } from './historyPresentation.ts';
 import { useTransientHighlightKeys } from './useTransientHighlights.ts';
 import {
   buildIntentPreview,
@@ -80,17 +83,16 @@ const AUTOPLAY_SPEED_DELAYS: Record<AutoPlaySpeedLevel, number> = {
   5: 320,
 };
 const TERMINAL_PHASES: EngineState['phase'][] = ['WIN', 'LOSS'];
+const VISIBLE_DECK_IDS = ['system', 'resistance', 'crisis'] as const;
+
+type VisibleDeckId = typeof VISIBLE_DECK_IDS[number];
 
 type DraftState = Omit<QueuedIntent, 'slot'>;
 
-interface CampaignRollPresentation {
+interface CampaignRollPresentation extends RollResolution {
   seq: number;
-  regionId: RegionId;
-  total: number;
-  modifier: number;
   dieOne: number;
   dieTwo: number;
-  success: boolean;
   rolling: boolean;
 }
 
@@ -98,8 +100,16 @@ interface CardRevealQueueItem {
   key: string;
   eventSeq: number;
   revealIndex: number;
-  deckId: 'system' | 'resistance' | 'beacon';
+  deckId: VisibleDeckId;
   cardId: string;
+}
+
+type CardRevealStage = 'lift' | 'travel' | 'flip' | 'settle';
+
+interface CardRevealOrigin {
+  x: number;
+  y: number;
+  rotation: number;
 }
 
 interface PhaseInsight {
@@ -162,7 +172,7 @@ function getActionButtonLabel(phase: EngineState['phase']) {
 
 function getPhaseControlHint(state: EngineState, focusedSeat: number) {
   if (state.phase === 'SYSTEM') {
-    return t('ui.game.systemPhaseHint', 'Resolve the system strike to open coalition planning.');
+    return t('ui.game.systemPhaseHint', 'Resolve the Crisis draw and any System escalation to open coalition planning.');
   }
 
   if (state.phase === 'COALITION') {
@@ -196,12 +206,22 @@ function getLatestCampaignRoll(state: EngineState): CampaignRollPresentation | n
 
     return {
       seq: event.seq,
+      actionId: roll.actionId,
+      seat: roll.seat,
       regionId: roll.regionId,
+      domainId: roll.domainId,
+      dice: roll.dice,
       total: roll.total,
       modifier: roll.modifier,
       dieOne: roll.dice[0],
       dieTwo: roll.dice[1],
+      target: roll.target,
       success: roll.success,
+      outcomeBand: roll.outcomeBand,
+      extractionRemoved: roll.extractionRemoved,
+      domainDelta: roll.domainDelta,
+      globalGazeDelta: roll.globalGazeDelta,
+      warMachineDelta: roll.warMachineDelta,
       rolling: false,
     };
   }
@@ -209,7 +229,7 @@ function getLatestCampaignRoll(state: EngineState): CampaignRollPresentation | n
   return null;
 }
 
-function getLatestRevealCardIdForDeck(state: EngineState, deckId: 'system' | 'resistance' | 'beacon') {
+function getLatestRevealCardIdForDeck(state: EngineState, deckId: VisibleDeckId) {
   for (let eventIndex = state.eventLog.length - 1; eventIndex >= 0; eventIndex -= 1) {
     const reveals = state.eventLog[eventIndex]?.context?.cardReveals;
     if (!reveals?.length) {
@@ -229,22 +249,58 @@ function getLatestRevealCardIdForDeck(state: EngineState, deckId: 'system' | 're
 
 function getRevealCopy(
   content: CompiledContent,
-  deckId: 'system' | 'resistance' | 'beacon',
+  _deckId: VisibleDeckId,
   cardId: string,
 ) {
-  if (deckId === 'beacon') {
-    const beacon = content.beacons[cardId];
-    return {
-      title: beacon?.title ?? cardId,
-      body: beacon?.description ?? '',
-    };
-  }
-
   const card = content.cards[cardId];
   return {
     title: localizeCardField(cardId, 'name', card?.name ?? cardId),
     body: localizeCardField(cardId, 'text', card?.text ?? ''),
   };
+}
+
+function getRevealMotionProfile(deckId: VisibleDeckId) {
+  switch (deckId) {
+    case 'system':
+      return {
+        liftMs: 220,
+        travelMs: 480,
+        flipMs: 400,
+        ease: 'cubic-bezier(0.4, 0, 0.2, 1)',
+        glow: 'rgba(122, 30, 30, 0.12)',
+        rotation: 0,
+      };
+    case 'resistance':
+      return {
+        liftMs: 180,
+        travelMs: 400,
+        flipMs: 420,
+        ease: 'cubic-bezier(0.22, 1, 0.36, 1)',
+        glow: 'rgba(200, 167, 94, 0.10)',
+        rotation: -1.5,
+      };
+    case 'crisis':
+      return {
+        liftMs: 160,
+        travelMs: 420,
+        flipMs: 380,
+        ease: 'cubic-bezier(0.28, 0.82, 0.34, 1)',
+        glow: 'rgba(138, 59, 47, 0.14)',
+        rotation: ((Math.abs(deckId.length * 7) % 6) - 3) || 2,
+      };
+  }
+}
+
+function getRevealActionLabel(deckId: VisibleDeckId) {
+  return deckId === 'resistance'
+    ? t('ui.game.confirmCard', 'Confirm')
+    : t('ui.game.resolveCard', 'Resolve');
+}
+
+function getRevealResolutionCopy(deckId: VisibleDeckId) {
+  return deckId === 'system'
+    ? t('ui.game.revealToActive', 'Revealed on the board, then placed in the escalation tray.')
+    : t('ui.game.revealToDiscard', 'Revealed on the board, then moved to discard.');
 }
 
 function getPhaseInsights(state: EngineState, focusedSeat: number): PhaseInsight[] {
@@ -253,7 +309,7 @@ function getPhaseInsights(state: EngineState, focusedSeat: number): PhaseInsight
       {
         id: 'system-pressure',
         label: t('ui.game.phaseInsightPressure', 'Pressure rises'),
-        detail: t('ui.game.phaseInsightSystemCards', 'System cards and intervention push Extraction Tokens, War Machine pressure, and direct harm onto exposed regions.'),
+        detail: t('ui.game.phaseInsightSystemCards', 'Crisis cards strike each round, System escalations persist, and intervention pushes Extraction Tokens, War Machine pressure, and direct harm onto exposed regions.'),
       },
       {
         id: 'system-refresh',
@@ -285,12 +341,12 @@ function getPhaseInsights(state: EngineState, focusedSeat: number): PhaseInsight
     {
       id: 'resolution-resolve',
       label: t('ui.game.phaseInsightResolve', 'Resolve consequences'),
-      detail: t('ui.game.phaseInsightResolutionResolve', 'Prepared moves now change fronts, regions, comrades, witness, and cards in priority order.'),
+      detail: t('ui.game.phaseInsightResolutionResolve', 'Prepared moves now change Domains, regions, Bodies, Evidence, and cards in priority order.'),
     },
     {
       id: 'resolution-check',
       label: t('ui.game.phaseInsightCheck', 'Check why the round ends'),
-      detail: t('ui.game.phaseInsightResolutionCheck', 'After resolution, the game checks victory, defeat, solemn charges, and whether a new round begins.'),
+      detail: t('ui.game.phaseInsightResolutionCheck', 'After resolution, the game checks victory, defeat, Secret Mandates, and whether a new round begins.'),
     },
   ];
 }
@@ -345,7 +401,7 @@ function getVisualDeltaGlyph(delta: EngineState['eventLog'][number]['deltas'][nu
           icon: isGaze ? 'globalGaze' : 'warMachine',
           value: signedDelta ?? '*',
           tone: 'track',
-          ariaLabel: `${isGaze ? t('ui.game.globalGaze', 'Global Gaze') : t('ui.game.northernWarMachine', 'Northern War Machine')} ${signedDelta ?? ''}`.trim(),
+          ariaLabel: `${isGaze ? t('ui.game.globalGaze', 'Global Gaze') : t('ui.game.northernWarMachine', 'War Machine')} ${signedDelta ?? ''}`.trim(),
         } satisfies VisualDeltaGlyph,
         targetKeys: [isGaze ? 'globalGaze' : 'warMachine'],
       };
@@ -462,7 +518,7 @@ function getRecentVisualDeltaTiles(state: EngineState, content: CompiledContent)
         emoji: event.emoji,
         phaseIcon: getPhasePresentation(event.phase).icon,
         glyphs,
-        ariaLabel: `${event.message}. ${glyphs.map((glyph) => glyph.ariaLabel).join('. ')}`.trim(),
+        ariaLabel: `${presentHistoryEvent(event, content).title}. ${glyphs.map((glyph) => glyph.ariaLabel).join('. ')}`.trim(),
         targetKeys,
       };
     })
@@ -586,7 +642,7 @@ export function GameScreen({
   const [copied, setCopied] = useState(false);
   const [contextOpen, setContextOpen] = useState(false);
   const [contextMode, setContextMode] = useState<ContextPanelMode>('ledger');
-  const [selectedDeckId, setSelectedDeckId] = useState<'system' | 'resistance' | 'beacon'>('system');
+  const [selectedDeckId, setSelectedDeckId] = useState<VisibleDeckId>('system');
   const [draft, setDraft] = useState<DraftState>(() => createDraft('organize'));
   const [showDevPanel, setShowDevPanel] = useState(false);
   const [showDebugSnapshot, setShowDebugSnapshot] = useState(false);
@@ -597,14 +653,22 @@ export function GameScreen({
   const [autoPlayStatus, setAutoPlayStatus] = useState<string | null>(null);
   const [activeCardRevealSeq, setActiveCardRevealSeq] = useState<number | null>(null);
   const [activeCardReveal, setActiveCardReveal] = useState<CardRevealQueueItem | null>(null);
-  const [cardRevealStage, setCardRevealStage] = useState<'enter' | 'hold' | 'exit'>('enter');
+  const [cardRevealStage, setCardRevealStage] = useState<CardRevealStage>('lift');
+  const [activeCardRevealOrigin, setActiveCardRevealOrigin] = useState<CardRevealOrigin | null>(null);
   const [animatedCampaignRoll, setAnimatedCampaignRoll] = useState<CampaignRollPresentation | null>(null);
   const autoPlayTimerRef = useRef<number | null>(null);
   const revealQueueRef = useRef<CardRevealQueueItem[]>([]);
   const revealSeenRef = useRef(new Set<string>());
   const revealTimerRef = useRef<number | null>(null);
   const revealPhaseTimerRef = useRef<number | null>(null);
+  const revealCleanupTimerRef = useRef<number | null>(null);
   const lastCampaignRollSeqRef = useRef<number | null>(null);
+  const revealActionButtonRef = useRef<HTMLButtonElement | null>(null);
+  const deckButtonRefs = useRef<Record<VisibleDeckId, HTMLButtonElement | null>>({
+    system: null,
+    resistance: null,
+    crisis: null,
+  });
   const selectedRegionId = viewState.regionId;
 
   const draftAction = content.actions[draft.actionId];
@@ -615,6 +679,7 @@ export function GameScreen({
     ...draft,
     targetSeat: draft.targetSeat === focusedPlayer.seat ? undefined : draft.targetSeat,
   });
+  const localizedDisabledReason = localizeDisabledReason(disabledReason);
 
   const statusItems = getStatusRibbonItems(state, content);
   const frontRows = getFrontTrackRows(state, content);
@@ -654,7 +719,7 @@ export function GameScreen({
       onToast({
         tone: 'warning',
         title: t('ui.game.actions', 'Moves'),
-        message: nextDisabledReason.reason ?? t('ui.game.phaseLocked', 'Phase locked'),
+        message: localizeDisabledReason(nextDisabledReason) ?? t('ui.game.phaseLocked', 'Phase locked'),
         dismissAfterMs: 2200,
       });
       return;
@@ -702,7 +767,7 @@ export function GameScreen({
 
   const phaseActionDisabled = state.phase === 'COALITION'
     ? !state.players.every((player) => player.ready)
-    : state.phase === 'WIN' || state.phase === 'LOSS';
+    : state.phase === 'WIN' || state.phase === 'LOSS' || Boolean(activeCardReveal);
   const phaseInsights = getPhaseInsights(state, focusedPlayer.seat);
   const visualDeltaTiles = useMemo(() => getRecentVisualDeltaTiles(state, content), [content, state]);
   const visualTargetSignatures = useMemo(
@@ -723,6 +788,7 @@ export function GameScreen({
   const phaseActionLabel = state.phase === 'SYSTEM'
     ? t('ui.game.playSystemPhase', 'Play System')
     : getActionButtonLabel(state.phase);
+  const audioEnabled = !autoPlayRunning && !devMode;
   const highlightedStatusItems = useMemo(
     () => new Set(statusItems.map((item) => item.id).filter((itemId) => liveVisualTargets.has(itemId))),
     [liveVisualTargets, statusItems],
@@ -830,7 +896,7 @@ export function GameScreen({
 
         {draftAction.needsBodies ? (
           <label>
-            <span>{t('ui.game.bodiesCommitted', 'Comrades Committed')}</span>
+            <span>{t('ui.game.bodiesCommitted', 'Bodies Committed')}</span>
             <input
               type="number"
               min={1}
@@ -880,7 +946,7 @@ export function GameScreen({
           ))}
         </div>
         <div className="context-footer-actions">
-          {disabledReason.disabled ? <span className="context-warning">{disabledReason.reason}</span> : null}
+          {disabledReason.disabled ? <span className="context-warning">{localizedDisabledReason}</span> : null}
           <button type="button" className="context-primary" disabled={disabledReason.disabled} onClick={() => queueIntent(draft)}>
             {t('ui.game.prepareMove', 'Prepare Move')}
           </button>
@@ -895,12 +961,50 @@ export function GameScreen({
         <section key={group.key} className="context-card">
           <strong>{group.title}</strong>
           <div className="context-list">
-            {group.events.map((event) => (
-              <div key={event.seq} className="context-list-row">
-                <span>{event.emoji} {event.message}</span>
-                <small>{event.sourceId}</small>
-              </div>
-            ))}
+            {group.events.map((event) => {
+              const presented = presentHistoryEvent(event, content);
+              return (
+                <article key={event.seq} className="context-card context-history-card">
+                  <span className="context-eyebrow">{presented.sourceLabel}</span>
+                  <strong>{event.emoji} {presented.title}</strong>
+                  {presented.contextLabel ? <p>{presented.contextLabel}</p> : null}
+                  {presented.cardReveals.length > 0 ? (
+                    <div className="context-list">
+                      {presented.cardReveals.map((reveal) => (
+                        <div key={reveal.key} className="deck-discard-row">
+                          <strong>{reveal.seatLabel ? `${reveal.seatLabel} · ${reveal.deckLabel}` : reveal.deckLabel}</strong>
+                          <span>{reveal.title}</span>
+                          <span>{reveal.body}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                  {presented.roll ? (
+                    <div className="context-list">
+                      <div className="ledger-row">
+                        <span>{t('ui.history.roll', 'Roll')}</span>
+                        <strong dir="ltr">{presented.roll.formula}</strong>
+                      </div>
+                      <div className="ledger-row">
+                        <span>{presented.roll.target}</span>
+                        <strong>{presented.roll.outcome}</strong>
+                      </div>
+                      <p>{presented.roll.meaning}</p>
+                    </div>
+                  ) : null}
+                  {presented.deltas.length > 0 ? (
+                    <div className="ledger-list">
+                      {presented.deltas.map((delta) => (
+                        <div key={delta.key} className="ledger-row">
+                          <span>{delta.label}</span>
+                          <strong>{delta.value}</strong>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </article>
+              );
+            })}
           </div>
         </section>
       ))}
@@ -908,22 +1012,33 @@ export function GameScreen({
   );
 
   const selectedDeckSummary = deckSummaries.find((summary) => summary.deckId === selectedDeckId) ?? deckSummaries[0];
-  const selectedDeckCards = state.decks[selectedDeckId].discardPile.slice().reverse();
+  const selectedDeckCards = selectedDeckId === 'system'
+    ? state.activeSystemCardIds.slice().reverse()
+    : state.decks[selectedDeckId].discardPile.slice().reverse();
   const selectedDeckLatestCardId = getLatestRevealCardIdForDeck(state, selectedDeckId);
   const selectedDeckLatestCard = selectedDeckLatestCardId ? getRevealCopy(content, selectedDeckId, selectedDeckLatestCardId) : null;
+  const activeBeaconObjectives = state.activeBeaconIds.map((beaconId) => ({
+    id: beaconId,
+    title: content.beacons[beaconId]?.title ?? beaconId,
+    description: content.beacons[beaconId]?.description ?? '',
+    complete: state.beacons[beaconId]?.complete ?? false,
+  }));
 
   const decksContent = selectedDeckSummary ? (
     <div className="context-stack">
       <section className="context-card">
         <span className="context-eyebrow">{t('ui.game.latestReveal', 'Latest reveal')}</span>
         <strong>{selectedDeckSummary.label}</strong>
-        <p>{t('ui.game.drawReviewHint', 'Review the latest reveal here, then inspect the discard pile for earlier cards.')}</p>
+        <p>{selectedDeckId === 'system'
+          ? t('ui.game.systemReviewHint', 'Review the latest escalation here, then inspect the active tray for structural pressure already in play.')
+          : t('ui.game.drawReviewHint', 'Review the latest reveal here, then inspect the discard pile for earlier cards.')}
+        </p>
         {selectedDeckLatestCard ? (
           <CrisisCard
             title={selectedDeckLatestCard.title}
             body={selectedDeckLatestCard.body}
             tag={selectedDeckSummary.label}
-            emoji={selectedDeckId === 'beacon' ? '🕯️' : '🃏'}
+            emoji={selectedDeckId === 'system' ? '🚩' : selectedDeckId === 'crisis' ? '⚠️' : '🃏'}
           />
         ) : (
           <p>{t('ui.game.noRevealYet', 'No card has been revealed for this deck yet.')}</p>
@@ -931,12 +1046,18 @@ export function GameScreen({
       </section>
 
       <section className="context-card">
-        <span className="context-eyebrow">{t('ui.game.discardPile', 'Discard pile')}</span>
-        <strong>{t('ui.game.cardsInDiscard', '{{count}} in discard', { count: selectedDeckSummary.discardCount })}</strong>
+        <span className="context-eyebrow">{selectedDeckId === 'system' ? t('ui.game.escalationTray', 'Escalation tray') : t('ui.game.discardPile', 'Discard pile')}</span>
+        <strong>{selectedDeckId === 'system'
+          ? t('ui.game.cardsActive', '{{count}} active', { count: state.activeSystemCardIds.length })
+          : t('ui.game.cardsInDiscard', '{{count}} in discard', { count: selectedDeckSummary.discardCount })}
+        </strong>
         {selectedDeckCards.length === 0 ? (
-          <p>{t('ui.game.noDiscardYet', 'No discarded cards yet.')}</p>
+          <p>{selectedDeckId === 'system'
+            ? t('ui.game.noEscalationYet', 'No active system escalations yet.')
+            : t('ui.game.noDiscardYet', 'No discarded cards yet.')}
+          </p>
         ) : (
-          <div className="context-list">
+          <div className={`context-list ${selectedDeckId === 'system' ? 'deck-tray-list' : 'deck-discard-list'}`.trim()}>
             {selectedDeckCards.map((cardId, index) => {
               const revealCopy = getRevealCopy(content, selectedDeckId, cardId);
               return (
@@ -952,7 +1073,35 @@ export function GameScreen({
     </div>
   ) : null;
 
-  const openDeckPanel = (deckId: 'system' | 'resistance' | 'beacon') => {
+  const dismissActiveReveal = useEffectEvent((restoreFocus: boolean) => {
+    if (revealTimerRef.current !== null) {
+      window.clearTimeout(revealTimerRef.current);
+      revealTimerRef.current = null;
+    }
+    if (revealPhaseTimerRef.current !== null) {
+      window.clearTimeout(revealPhaseTimerRef.current);
+      revealPhaseTimerRef.current = null;
+    }
+    if (revealCleanupTimerRef.current !== null) {
+      window.clearTimeout(revealCleanupTimerRef.current);
+      revealCleanupTimerRef.current = null;
+    }
+
+    const sourceDeckId = activeCardReveal?.deckId ?? null;
+    if (sourceDeckId) {
+      playDeckCue(sourceDeckId === 'system' ? 'resolveSystem' : sourceDeckId === 'crisis' ? 'resolveCrisis' : 'settle', sourceDeckId, audioEnabled);
+    }
+    setActiveCardReveal(null);
+    setActiveCardRevealSeq(null);
+    setActiveCardRevealOrigin(null);
+    setCardRevealStage('lift');
+
+    if (restoreFocus && sourceDeckId) {
+      window.setTimeout(() => deckButtonRefs.current[sourceDeckId]?.focus(), 0);
+    }
+  });
+
+  const openDeckPanel = (deckId: VisibleDeckId) => {
     setSelectedDeckId(deckId);
     setContextMode('decks');
     setContextOpen(true);
@@ -976,13 +1125,16 @@ export function GameScreen({
     if (revealPhaseTimerRef.current !== null) {
       window.clearTimeout(revealPhaseTimerRef.current);
     }
+    if (revealCleanupTimerRef.current !== null) {
+      window.clearTimeout(revealCleanupTimerRef.current);
+    }
   }, []);
 
   useEffect(() => {
     for (const event of state.eventLog) {
       const reveals = event.context?.cardReveals ?? [];
       reveals.forEach((reveal, revealIndex) => {
-        if (!reveal.public) {
+        if (!reveal.public || !VISIBLE_DECK_IDS.includes(reveal.deckId as VisibleDeckId)) {
           return;
         }
         const key = `${event.seq}:${revealIndex}:${reveal.deckId}:${reveal.cardId}`;
@@ -994,7 +1146,7 @@ export function GameScreen({
           key,
           eventSeq: event.seq,
           revealIndex,
-          deckId: reveal.deckId,
+          deckId: reveal.deckId as VisibleDeckId,
           cardId: reveal.cardId,
         });
       });
@@ -1014,24 +1166,57 @@ export function GameScreen({
     setSelectedDeckId(nextReveal.deckId);
     setActiveCardRevealSeq(nextReveal.eventSeq);
     setActiveCardReveal(nextReveal);
-    setCardRevealStage('enter');
+    setCardRevealStage('lift');
+    const deckButton = deckButtonRefs.current[nextReveal.deckId];
+    const rect = deckButton?.getBoundingClientRect();
+    const profile = getRevealMotionProfile(nextReveal.deckId);
+    const rotation = nextReveal.deckId === 'crisis'
+      ? (((nextReveal.eventSeq + nextReveal.revealIndex) % 7) - 3)
+      : profile.rotation;
+    setActiveCardRevealOrigin(rect
+      ? {
+          x: rect.left + (rect.width / 2),
+          y: rect.top + (rect.height / 2),
+          rotation,
+        }
+      : {
+          x: window.innerWidth * 0.18,
+          y: window.innerHeight * 0.3,
+          rotation,
+        });
+    void primeDeckAudio();
+    playDeckCue('lift', nextReveal.deckId, audioEnabled);
 
     if (motionMode === 'reduced') {
-      revealTimerRef.current = window.setTimeout(() => {
-        setActiveCardReveal(null);
-        setActiveCardRevealSeq(null);
-      }, 900);
+      setCardRevealStage('settle');
+      if (autoPlayRunning) {
+        revealTimerRef.current = window.setTimeout(() => dismissActiveReveal(false), 320);
+      }
       return;
     }
 
-    revealPhaseTimerRef.current = window.setTimeout(() => setCardRevealStage('hold'), 250);
-    revealTimerRef.current = window.setTimeout(() => setCardRevealStage('exit'), 1150);
-    window.setTimeout(() => {
-      setActiveCardReveal(null);
-      setActiveCardRevealSeq(null);
-      setCardRevealStage('enter');
-    }, 1400);
-  }, [activeCardReveal, motionMode, state.eventLog]);
+    revealPhaseTimerRef.current = window.setTimeout(() => {
+      setCardRevealStage('travel');
+    }, profile.liftMs);
+    revealTimerRef.current = window.setTimeout(() => {
+      setCardRevealStage('flip');
+      playDeckCue('flip', nextReveal.deckId, audioEnabled);
+    }, profile.liftMs + profile.travelMs);
+    revealCleanupTimerRef.current = window.setTimeout(() => {
+      setCardRevealStage('settle');
+      if (autoPlayRunning) {
+        revealCleanupTimerRef.current = window.setTimeout(() => dismissActiveReveal(false), 360);
+      }
+    }, profile.liftMs + profile.travelMs + profile.flipMs);
+  }, [activeCardReveal, audioEnabled, autoPlayRunning, motionMode, state.eventLog]);
+
+  useEffect(() => {
+    if (cardRevealStage !== 'settle' || !activeCardReveal || autoPlayRunning) {
+      return;
+    }
+
+    revealActionButtonRef.current?.focus();
+  }, [activeCardReveal, autoPlayRunning, cardRevealStage]);
 
   useEffect(() => {
     if (!latestCampaignRoll) {
@@ -1160,7 +1345,7 @@ export function GameScreen({
     : autoPlayStatus;
 
   return (
-    <TableSurface className="game-screen game-screen-compressed">
+    <TableSurface className={`game-screen game-screen-compressed ${activeCardReveal ? 'is-reveal-active' : ''}`.trim()}>
       <header className="game-header-shell">
         <div className="table-utility-bar">
           <LocaleSwitcher locale={locale} onChange={onLocaleChange} />
@@ -1220,7 +1405,7 @@ export function GameScreen({
                   <>
                     <div className="dock-queue-summary">
                       <strong>{localizeFactionField(faction.id, 'shortName', faction.shortName)}</strong>
-                      <span>{formatNumber(getPlayerBodyTotal(state, focusedPlayer.seat))} {t('ui.game.bodies', 'Comrades')}</span>
+                      <span>{formatNumber(getPlayerBodyTotal(state, focusedPlayer.seat))} {t('ui.game.bodies', 'Bodies')}</span>
                       <span>{formatNumber(focusedPlayer.evidence)} {t('ui.game.evidence', 'Evidence')}</span>
                       <span>{t('ui.game.queuedCount', '{{count}} queued', { count: focusedPlayer.queuedIntents.length })}</span>
                     </div>
@@ -1284,6 +1469,20 @@ export function GameScreen({
           ) : null}
 
           <StatusRibbon items={statusItems} highlightedIds={highlightedStatusItems} />
+          {state.mode === 'SYMBOLIC' && activeBeaconObjectives.length > 0 ? (
+            <section className="beacon-objective-strip" aria-label={t('ui.game.beaconObjectives', 'Beacon objectives')}>
+              {activeBeaconObjectives.map((beacon) => (
+                <article key={beacon.id} className={`beacon-objective-card ${beacon.complete ? 'is-complete' : ''}`.trim()}>
+                  <span className="context-eyebrow">{t('ui.game.beaconObjective', 'Beacon objective')}</span>
+                  <strong>{beacon.title}</strong>
+                  <p>{beacon.description}</p>
+                  <span className="beacon-objective-state">
+                    {beacon.complete ? t('ui.game.beaconComplete', 'Complete') : t('ui.game.beaconOpen', 'Open')}
+                  </span>
+                </article>
+              ))}
+            </section>
+          ) : null}
 
           <div className="board-map-panel">
             <section className="board-deck-rail" aria-label={t('ui.game.decks', 'Decks')}>
@@ -1298,23 +1497,23 @@ export function GameScreen({
                     className={`board-deck-stack-shell ${selectedDeckId === summary.deckId ? 'is-selected' : ''}`.trim()}
                   >
                     <DeckStack
+                      ref={(node) => {
+                        deckButtonRefs.current[summary.deckId] = node;
+                      }}
                       label={summary.label}
+                      deckId={summary.deckId}
                       deckName={summary.label}
                       drawCount={summary.drawCount}
                       discardCount={summary.discardCount}
                       activeCount={summary.activeCount}
+                      lowCount={summary.drawCount <= 3}
+                      shakeEmpty={summary.drawCount === 0 && selectedDeckId === summary.deckId}
+                      onPointerDown={() => {
+                        void primeDeckAudio();
+                        playDeckCue('press', summary.deckId, audioEnabled);
+                      }}
                       onClick={() => openDeckPanel(summary.deckId)}
                     />
-                    {activeCardReveal?.deckId === summary.deckId ? (
-                      <article
-                        className={`board-card-reveal board-card-reveal-${cardRevealStage}`.trim()}
-                        data-seq={activeCardRevealSeq ?? undefined}
-                      >
-                        <span className="context-eyebrow">{t('ui.game.drawReveal', 'Draw reveal')}</span>
-                        <strong>{getRevealCopy(content, activeCardReveal.deckId, activeCardReveal.cardId).title}</strong>
-                        <span>{t('ui.game.revealToDiscard', 'Revealed on the board, then moved to discard.')}</span>
-                      </article>
-                    ) : null}
                   </div>
                 ))}
               </div>
@@ -1368,6 +1567,7 @@ export function GameScreen({
       {devMode && showDevPanel ? (
         <DebugOverlay
           state={state}
+          content={content}
           roomId={roomId}
           showDebugSnapshot={showDebugSnapshot}
           autoPlayRounds={autoPlayRounds}
@@ -1381,6 +1581,35 @@ export function GameScreen({
           onAutoPlayStop={handleAutoPlayStop}
           onClose={() => setShowDevPanel(false)}
         />
+      ) : null}
+      {activeCardReveal ? (
+        <div className={`deck-reveal-overlay deck-reveal-stage-${cardRevealStage}`.trim()} role="dialog" aria-modal="true" aria-labelledby="deck-reveal-title">
+          <div className="deck-reveal-vignette" />
+          <article
+            className={`deck-reveal-card deck-reveal-card-${activeCardReveal.deckId}`.trim()}
+            data-seq={activeCardRevealSeq ?? undefined}
+            style={{
+              ['--reveal-origin-x' as string]: `${activeCardRevealOrigin?.x ?? 0}px`,
+              ['--reveal-origin-y' as string]: `${activeCardRevealOrigin?.y ?? 0}px`,
+              ['--reveal-origin-rotation' as string]: `${activeCardRevealOrigin?.rotation ?? 0}deg`,
+              ['--reveal-glow' as string]: getRevealMotionProfile(activeCardReveal.deckId).glow,
+              ['--reveal-ease' as string]: getRevealMotionProfile(activeCardReveal.deckId).ease,
+            }}
+          >
+            <span className="context-eyebrow">{t('ui.game.drawReveal', 'Draw reveal')}</span>
+            <strong id="deck-reveal-title">{getRevealCopy(content, activeCardReveal.deckId, activeCardReveal.cardId).title}</strong>
+            <p>{getRevealCopy(content, activeCardReveal.deckId, activeCardReveal.cardId).body}</p>
+            <span className="deck-reveal-note">{getRevealResolutionCopy(activeCardReveal.deckId)}</span>
+            <button
+              ref={revealActionButtonRef}
+              type="button"
+              className="reveal-action-button"
+              onClick={() => dismissActiveReveal(true)}
+            >
+              {getRevealActionLabel(activeCardReveal.deckId)}
+            </button>
+          </article>
+        </div>
       ) : null}
     </TableSurface>
   );

@@ -1,4 +1,5 @@
 import { Icon } from './icons/Icon.tsx';
+import { getLocaleDirection } from '../i18n/index.ts';
 import type { StatusRibbonItem } from './gameUiHelpers.ts';
 
 function shouldLockMetricDirection(value: string) {
@@ -13,6 +14,9 @@ export function StatusPill({
   isChanging?: boolean;
 }) {
   const lockMetricDirection = shouldLockMetricDirection(item.value);
+  const metricDirection = lockMetricDirection
+    ? (getLocaleDirection() === 'rtl' ? 'rtl' : 'ltr')
+    : undefined;
 
   return (
     <article
@@ -22,7 +26,7 @@ export function StatusPill({
       <Icon type={item.icon} size={18} title={item.label} />
       <div className="status-pill-copy">
         <span>{item.label}</span>
-        <strong dir={lockMetricDirection ? 'ltr' : undefined}>{item.value}</strong>
+        <strong dir={metricDirection}>{item.value}</strong>
       </div>
     </article>
   );

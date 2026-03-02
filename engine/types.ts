@@ -24,7 +24,14 @@ export type FactionId =
   | 'mekong_echo_network'
   | 'amazon_guardians';
 
-export type DeckId = 'system' | 'resistance' | 'beacon';
+export type DeckId = 'system' | 'resistance' | 'crisis';
+export type RevealDeckId = DeckId | 'beacon';
+export type SystemEscalationTriggerId =
+  | 'extraction_threshold'
+  | 'war_machine_threshold'
+  | 'gaze_threshold'
+  | 'failed_campaigns'
+  | 'symbolic_round_six';
 export type ResistanceCardType = 'action' | 'support';
 export type ActionId =
   | 'organize'
@@ -157,12 +164,30 @@ export interface ResistanceCardDefinition {
   effects?: Effect[];
 }
 
+export interface CrisisCardDefinition {
+  id: string;
+  deck: 'crisis';
+  name: string;
+  text: string;
+  effects: Effect[];
+}
+
+export interface SystemPersistentModifiers {
+  campaignTargetDelta?: number;
+  campaignModifierDelta?: number;
+  outreachCostDelta?: number;
+  resistanceDrawDelta?: number;
+  crisisDrawDelta?: number;
+  crisisExtractionBonus?: number;
+}
+
 export interface SystemCardDefinition {
   id: string;
   deck: 'system';
   name: string;
   text: string;
-  effects: Effect[];
+  onReveal: Effect[];
+  persistentModifiers?: SystemPersistentModifiers;
 }
 
 export interface ActionDefinition {
@@ -190,6 +215,7 @@ export interface RulesetDefinition {
   beacons: BeaconDefinition[];
   actions: ActionDefinition[];
   resistanceCards: ResistanceCardDefinition[];
+  crisisCards: CrisisCardDefinition[];
   systemCards: SystemCardDefinition[];
   liberationThreshold: number;
   suddenDeathRound: number;
@@ -203,7 +229,7 @@ export interface CompiledContent {
   regions: Record<RegionId, RegionDefinition>;
   factions: Record<FactionId, FactionDefinition>;
   beacons: Record<string, BeaconDefinition>;
-  cards: Record<string, ResistanceCardDefinition | SystemCardDefinition>;
+  cards: Record<string, ResistanceCardDefinition | CrisisCardDefinition | SystemCardDefinition>;
   decks: Record<DeckId, string[]>;
 }
 
@@ -249,11 +275,12 @@ export interface DeckState {
 }
 
 export interface CardRevealEvent {
-  deckId: DeckId;
+  deckId: RevealDeckId;
   cardId: string;
   destination: 'discard' | 'hand' | 'active';
   seat?: number;
   public: boolean;
+  origin: 'opening_hand' | 'investigate' | 'system_phase' | 'beacon_activation' | 'played_action_card' | 'other';
 }
 
 export interface RollResolution {
@@ -264,7 +291,13 @@ export interface RollResolution {
   dice: [number, number];
   modifier: number;
   total: number;
+  target: number;
   success: boolean;
+  outcomeBand: 'backlash' | 'attention' | 'success' | 'surge';
+  extractionRemoved: number;
+  domainDelta: number;
+  globalGazeDelta: number;
+  warMachineDelta: number;
 }
 
 export interface BeaconState {
@@ -303,7 +336,9 @@ export interface DomainEvent {
     actingSeat?: number;
     targetRegionId?: RegionId;
     targetDomainId?: DomainId;
-    sourceDeckId?: DeckId;
+    sourceDeckId?: RevealDeckId;
+    actionId?: ActionId;
+    readyState?: boolean;
     cardReveals?: CardRevealEvent[];
     roll?: RollResolution;
   };
@@ -332,6 +367,9 @@ export interface EngineState {
   decks: Record<DeckId, DeckState>;
   beacons: Record<string, BeaconState>;
   activeBeaconIds: string[];
+  activeSystemCardIds: string[];
+  usedSystemEscalationTriggers: Record<SystemEscalationTriggerId, boolean>;
+  failedCampaigns: number;
   lastSystemCardIds: string[];
   publicAttentionEvents: string[];
   commandLog: EngineCommand[];
@@ -421,5 +459,23 @@ export interface SerializedGame {
 export interface DisabledActionReason {
   actionId: ActionId;
   disabled: boolean;
+  reasonCode?:
+    | 'unknown_seat'
+    | 'phase_locked'
+    | 'seat_already_ready'
+    | 'no_actions_remaining'
+    | 'select_region'
+    | 'select_domain'
+    | 'select_another_seat'
+    | 'need_three_bodies'
+    | 'not_enough_evidence'
+    | 'no_evidence_to_move'
+    | 'need_one_body'
+    | 'commit_one_body'
+    | 'not_enough_bodies'
+    | 'support_card_unavailable'
+    | 'action_card_unavailable'
+    | 'select_card';
+  reasonValues?: Record<string, string | number>;
   reason?: string;
 }

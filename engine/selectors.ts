@@ -85,5 +85,5 @@ export function buildEffectPreview(action: ActionDefinition): string {
 }
 
 export function getPlayerStatusSummary(player: PlayerState) {
-  return `${player.evidence} Witness • ${player.actionsRemaining} moves left`;
+  return `${player.evidence} Evidence • ${player.actionsRemaining} moves left`;
 }

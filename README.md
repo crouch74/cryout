@@ -11,6 +11,8 @@ This repo now ships the hard-cutover ruleset:
 - 2 resources: Bodies and Evidence
 - 2 victory modes: Liberation and Symbolic
 - 1 central threat system: Extraction Tokens
+- 3 live decks: System, Resistance, and Crisis
+- Beacons remain Symbolic-mode objectives, not deck stacks
 - 2 global meters: Global Gaze and Northern War Machine
 - 4 asymmetric factions with secret mandates
 
@@ -21,7 +23,7 @@ The previous `witness_dignity` / `green_resistance` scenario line is no longer t
 Each round follows three phases:
 
 1. `SYSTEM`
-   The game resolves system cards, public-attention backlash, and military intervention.
+   The game resolves one or more Crisis draws, checks for a System escalation, then resolves military intervention.
 2. `COALITION`
    Each seat queues two actions from the universal action set, then marks ready.
 3. `RESOLUTION`
@@ -72,4 +74,5 @@ npm run build
 
 - Local autosaves are intentionally versioned to the cutover ruleset and old saves are not forward-compatible.
 - The Node room service is the active multiplayer path.
+- The legacy survival-loop threat deck is archived under `content/base_design/legacy/` for reference only.
 - Legacy prototypes remain in the repo for reference but are not the active product.

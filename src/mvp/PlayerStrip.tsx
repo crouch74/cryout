@@ -36,7 +36,7 @@ export function PlayerStrip({
           <span>{active.homeRegion}</span>
         </div>
         <div className="player-strip-metrics">
-          <span><Icon type="bodies" size={16} title={t('ui.game.bodies', 'Comrades')} /> {formatNumber(active.bodies)}</span>
+          <span><Icon type="bodies" size={16} title={t('ui.game.bodies', 'Bodies')} /> {formatNumber(active.bodies)}</span>
           <span><Icon type="evidence" size={16} title={t('ui.game.evidence', 'Evidence')} /> {formatNumber(active.evidence)}</span>
           <span><Icon type="objective" size={16} title={t('ui.game.moves', 'Moves')} /> {formatNumber(active.moves)}</span>
         </div>

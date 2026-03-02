@@ -61,7 +61,7 @@
       "seat": "Seat {{seat}}",
       "duplicateFactions": "Factions must be unique.",
       "replaces": "This Ruleset Replaces",
-      "replacesBody": "The product now ships one canonical six-region map, Comrades and Witness, Global Gaze, Northern War Machine, Extraction Tokens, solemn charges, and Liberation or Symbolic victory.",
+      "replacesBody": "The product now ships one canonical six-region map, Bodies and Evidence, Global Gaze, War Machine, Extraction Tokens, Secret Mandates, and Liberation or Symbolic victory.",
       "loadSave": "Load Save",
       "utilities": "Utilities",
       "pasteSave": "Paste a serialized save payload here.",
@@ -84,6 +84,7 @@
       "saveRestored": "Save restored",
       "saveRestoredBody": "Serialized state loaded into a local table.",
       "saveInvalid": "Save invalid",
+      "saveInvalidBody": "Save payload could not be parsed.",
       "autosaveMissing": "Autosave missing",
       "autosaveMissingBody": "No autosave was found for this browser.",
       "saveCopied": "Save copied",
@@ -105,21 +106,21 @@
       "coreThreat": "Core Threat",
       "coreThreat1": "Extraction Tokens are the center of the board. The system adds them through system cards and intervention.",
       "coreThreat2": "Any region reaching 6 Extraction Tokens is an immediate loss.",
-      "coreThreat3": "Global Gaze and Northern War Machine shape how dangerous each round becomes.",
+      "coreThreat3": "Global Gaze and War Machine shape how dangerous each round becomes.",
       "universalActions": "Universal Actions",
       "canonicalRegions": "Canonical Regions",
       "roundLoop": "Round Loop",
       "economy": "Economy",
-      "beaconsMandates": "Beacons and Charges",
+      "beaconsMandates": "Beacons and Secret Mandates",
       "factions": "Factions",
       "loop1": "System Phase: resolve system cards, backlash, and interventions.",
       "loop2": "Coalition Phase: queue two moves for each seat, then mark every seat ready.",
       "loop3": "Resolution Phase: resolve the prepared moves in priority order, then check victory and defeat.",
-      "economy1": "Comrades live in regions and are spent from those regions.",
-      "economy2": "Witness belongs to seats and powers campaigns, appeals, and support work.",
+      "economy1": "Bodies live in regions and are spent from those regions.",
+      "economy2": "Evidence belongs to seats and powers campaigns, appeals, and support work.",
       "economy3": "Defense is temporary and only exists to blunt the next system strike.",
       "beacon1": "Symbolic mode activates three Beacons from a six-card deck.",
-      "beacon2": "Every faction carries a solemn charge. Reaching the public win condition without satisfying all charges still ends in failure."
+      "beacon2": "Every faction carries a Secret Mandate. Reaching the public win condition without satisfying all Secret Mandates still ends in failure."
     },
     "mode": {
       "liberation": "Liberation",
@@ -128,7 +129,7 @@
       "symbolicSummary": "Complete all three active Beacons.",
       "liberationProgress": "{{count}} regions already sit at the threshold.",
       "symbolicProgress": "{{count}} of {{total}} active Beacons are complete.",
-      "liberationStatus": "Keep every theatre below the breach line while preserving all solemn charges."
+      "liberationStatus": "Keep every theatre below the breach line while preserving all Secret Mandates."
     },
     "game": {
       "developerTools": "Developer Tools",
@@ -148,10 +149,11 @@
       "decks": "Decks",
       "systemDeck": "System Deck",
       "resistanceDeck": "Resistance Deck",
+      "crisisDeck": "Crisis Deck",
       "beaconDeck": "Beacon Deck",
       "modeLabel": "Mode",
       "objectiveLabel": "Objective",
-      "objectiveLiberationValue": "1 Extraction/region",
+      "objectiveLiberationValue": "1 Extraction Token/region",
       "objectiveBeaconValue": "{{complete}}/{{total}} Beacons",
       "gazeLabel": "Gaze",
       "warLabel": "War",
@@ -164,26 +166,26 @@
       "closeRegionPanel": "Close region panel",
       "regionExtractionTooltip": "Extraction Tokens: {{count}}. If this reaches 6, the region is lost. Remove them with Launch Campaign, Build Solidarity, and resistance effects.",
       "regionDefenseTooltip": "Defense: {{count}}. Defense absorbs the next system strike here, then clears. Raise it with Defend and supportive effects before the system phase.",
-      "regionBodiesTooltip": "Comrades: {{count}}. Comrades are the people and organizing strength in this region. Commit them to Launch Campaign, Build Solidarity, and Defend.",
+      "regionBodiesTooltip": "Bodies: {{count}}. Bodies are the people and organizing strength in this region. Commit them to Launch Campaign, Build Solidarity, and Defend.",
       "preparedMovesLabel": "Prepared moves",
       "queuedCount": "{{count}} queued",
       "focusSeatAbbrev": "S{{seat}}",
       "extractionTokens": "Extraction Tokens",
       "extractionPool": "Extraction Pool",
       "globalGaze": "Global Gaze",
-      "northernWarMachine": "Northern War Machine",
-      "domains": "Fronts",
+      "northernWarMachine": "War Machine",
+      "domains": "Domains",
       "progress": "Progress",
       "focusedSeat": "Focused Seat",
       "weakness": "Weakness",
-      "bodies": "Comrades",
-      "evidence": "Witness",
+      "bodies": "Bodies",
+      "evidence": "Evidence",
       "actions": "Moves",
-      "comrades": "Comrades",
-      "witness": "Witness",
+      "comrades": "Bodies",
+      "witness": "Evidence",
       "moves": "Moves",
-      "secretMandate": "Solemn Charge",
-      "solemnCharge": "Solemn Charge",
+      "secretMandate": "Secret Mandate",
+      "solemnCharge": "Secret Mandate",
       "queuedMoves": "Prepared Moves",
       "preparedMoves": "Prepared Moves",
       "noQueuedMoves": "No prepared moves yet.",
@@ -197,20 +199,20 @@
       "move": "Move",
       "playMove": "Play Move",
       "region": "Region",
-      "front": "Front",
+      "front": "Domain",
       "cost": "Cost",
       "risk": "Risk",
       "outcome": "Outcome",
       "card": "Card",
       "domain": "Domain",
       "targetSeat": "Target Seat",
-      "bodiesCommitted": "Comrades Committed",
-      "evidenceCommitted": "Witness Committed",
-      "comradesCommitted": "Comrades Committed",
-      "witnessCommitted": "Witness Committed",
-      "comradesCount": "{{count}} comrades",
-      "witnessCount": "{{count}} witness",
-      "oneComradeInRegion": "1 comrade in-region",
+      "bodiesCommitted": "Bodies Committed",
+      "evidenceCommitted": "Evidence Committed",
+      "comradesCommitted": "Bodies Committed",
+      "witnessCommitted": "Evidence Committed",
+      "comradesCount": "{{count}} Bodies",
+      "witnessCount": "{{count}} Evidence",
+      "oneComradeInRegion": "1 Body in-region",
       "nearBreachRisk": "This region is already near the breach line.",
       "campaignRisk": "Campaigns can consume resources without clearing the front.",
       "supportCard": "Support Card",
@@ -233,12 +235,12 @@
       "openBeaconsCount": "{{count}} open beacons",
       "beaconPressureSummary": "{{count}} beacon objectives still need to be completed.",
       "regionsAboveThreshold": "{{count}} regions remain above the liberation threshold.",
-      "frontsUnderStrain": "Fronts under strain",
+      "frontsUnderStrain": "Domains under strain",
       "missionSlip": "Mission Slip",
       "thresholdStatus": "Threshold Status",
       "suggestedNextMove": "Suggested next move.",
       "organizeHomeRegion": "Organize in home region",
-      "investigateForWitness": "Investigate for witness",
+      "investigateForWitness": "Investigate for Evidence",
       "showDebug": "Show Debug",
       "hideDebug": "Hide Debug",
       "beaconComplete": "Complete",
@@ -254,12 +256,12 @@
       "selectRegion": "Select a region",
       "selectDomain": "Select a domain",
       "selectAnotherSeat": "Select another seat",
-      "needThreeBodies": "Need 3 comrades in region",
-      "notEnoughEvidence": "Not enough witness",
-      "noEvidenceToMove": "No witness to move",
-      "needOneBody": "Need 1 comrade in region",
-      "commitOneBody": "Commit at least 1 comrade",
-      "notEnoughBodies": "Not enough comrades in region",
+      "needThreeBodies": "Need 3 Bodies in region",
+      "notEnoughEvidence": "Not enough Evidence",
+      "noEvidenceToMove": "No Evidence to move",
+      "needOneBody": "Need 1 Body in region",
+      "commitOneBody": "Commit at least 1 Body",
+      "notEnoughBodies": "Not enough Bodies in region",
       "supportCardUnavailable": "Support card unavailable",
       "actionCardUnavailable": "Action card unavailable",
       "selectCard": "Select a card",
@@ -272,12 +274,12 @@
       "vulnerability": "Vulnerability",
       "extractionShort": "X",
       "defenseShort": "D",
-      "comradesReinforce": "Reinforce a region with fresh comrades.",
-      "comradesGather": "Gather witness and draw new resistance cards.",
+      "comradesReinforce": "Reinforce a region with fresh Bodies.",
+      "comradesGather": "Gather Evidence and draw new resistance cards.",
       "comradesCampaign": "Press a vulnerable front with coordinated force.",
       "comradesSolidarity": "Advance a front without rolling.",
-      "comradesSmuggle": "Move witness across seats through a corridor.",
-      "comradesOutreach": "Raise global gaze.",
+      "comradesSmuggle": "Move Evidence across seats through a corridor.",
+      "comradesOutreach": "Raise Global Gaze.",
       "comradesShield": "Set a shield against the next strike.",
       "comradesUnleash": "Unleash a prepared card effect now.",
       "ledger": "Ledger",
@@ -287,14 +289,14 @@
       "holding": "Holding",
       "strained": "Strained",
       "nearCollapse": "Near Collapse",
-      "passiveCongoPrimary": "Comrades +1 at home",
+      "passiveCongoPrimary": "Bodies +1 at home",
       "passiveCongoSecondary": "Campaign +1 at home",
       "passiveLevantPrimary": "Defense +1 at home",
       "passiveLevantSecondary": "War campaigns +1 at home",
       "passiveMekongPrimary": "Evidence +1 at home",
       "passiveMekongSecondary": "Truth support +1",
       "passiveAmazonPrimary": "Campaign +1 in Amazon",
-      "passiveAmazonSecondary": "Comrades +1 at home",
+      "passiveAmazonSecondary": "Bodies +1 at home",
       "moveOrganize": "Organize",
       "moveInvestigate": "Investigate",
       "moveCampaign": "Campaign",
@@ -314,8 +316,14 @@
       "sourceSystem": "System record",
       "sourceCommand": "Table order",
       "sourceAction": "Prepared move",
-      "sourceCard": "Resistance card",
-      "sourceMandate": "Solemn charge",
+      "sourceCard": "Card record",
+      "sourceMandate": "Secret Mandate record",
+      "trackGazeHigh": "Global Gaze is breaking through the blockade.",
+      "trackGazeLow": "Global Gaze is fragile and easily reversed.",
+      "trackWarHigh": "War Machine is near a breach posture.",
+      "trackWarLow": "War Machine pressure is contained for now.",
+      "readyForReckoning": "Ready for reckoning",
+      "movesLeftToPrepare": "{{count}} moves left to prepare",
       "sourceBeacon": "Beacon record",
       "intentQueuedTitle": "Intent queued",
       "intentQueuedMessage": "{{action}} added to Seat {{seat}}.",
@@ -346,18 +354,28 @@
       "phaseInsightCoalitionReadyPending": "This seat still has moves to prepare before it can mark ready.",
       "phaseInsightCoalitionReady": "When every seat is ready, the prepared moves resolve and the board changes.",
       "phaseInsightResolve": "Resolve consequences",
-      "phaseInsightResolutionResolve": "Prepared moves now change fronts, regions, comrades, witness, and cards in priority order.",
+      "phaseInsightResolutionResolve": "Prepared moves now change Domains, regions, Bodies, Evidence, and cards in priority order.",
       "phaseInsightCheck": "Check why the round ends",
-      "phaseInsightResolutionCheck": "After resolution, the game checks victory, defeat, solemn charges, and whether a new round begins.",
+      "phaseInsightResolutionCheck": "After resolution, the game checks victory, defeat, Secret Mandates, and whether a new round begins.",
       "cardsChanged": "Cards changed",
+      "cardsLabel": "Cards",
       "cardsInDiscard": "{{count}} in discard",
+      "cardsActive": "{{count}} active",
       "discardPile": "Discard pile",
+      "escalationTray": "Escalation tray",
       "latestReveal": "Latest reveal",
       "drawReviewHint": "Review the latest reveal here, then inspect the discard pile for earlier cards.",
+      "systemReviewHint": "Review the latest escalation here, then inspect the active tray for structural pressure already in play.",
       "noRevealYet": "No card has been revealed for this deck yet.",
       "noDiscardYet": "No discarded cards yet.",
+      "noEscalationYet": "No active system escalations yet.",
       "drawReveal": "Draw reveal",
       "revealToDiscard": "Revealed on the board, then moved to discard.",
+      "revealToActive": "Revealed on the board, then placed in the escalation tray.",
+      "confirmCard": "Confirm",
+      "resolveCard": "Resolve",
+      "beaconObjectives": "Beacon objectives",
+      "beaconObjective": "Beacon objective",
       "drawsVisible": "Draws reveal on the board before they settle into discard.",
       "drawsWaiting": "Draws will reveal here when the decks move."
     },
@@ -375,15 +393,15 @@
     "map": {
       "viewport": "World Map",
       "viewportDetail": "SVG board restored as a live state layer",
-      "viewportNote": "Markers reflect extraction, defense, and comrades on the current six-region ruleset.",
+      "viewportNote": "Markers reflect Extraction Tokens, Defense, and Bodies on the current six-region ruleset.",
       "legend": "Legend",
       "legendDetail": "Read the board at a glance",
       "selectedRegion": "Selected Region",
       "worldMapAlt": "World map showing the six canonical theatres",
       "focusCountries": "Map focus",
       "dominantDomains": "Pressure line",
-      "bodiesPresent": "Comrades present",
-      "comradesPresent": "Comrades present"
+      "bodiesPresent": "Bodies present",
+      "comradesPresent": "Bodies present"
     },
     "debug": {
       "devPanel": "Development panel",
@@ -412,7 +430,7 @@
       "rngCalls": "RNG Calls",
       "extractionPool": "Extraction Pool",
       "gaze": "Global Gaze",
-      "warMachine": "Northern War Machine",
+      "warMachine": "War Machine",
       "activeBeacons": "Active Beacons",
       "systemCards": "Last system cards",
       "attentionFeed": "Attention feed",
@@ -433,6 +451,64 @@
       "autoplayTick": "Autoplay: round {{round}}, phase {{phase}}.",
       "na": "n/a",
       "none": "none"
+    },
+    "history": {
+      "roll": "Roll",
+      "rollTarget": "Target {{target}}+",
+      "rollOutcomeBacklash": "Backlash",
+      "rollOutcomeAttention": "Setback",
+      "rollOutcomeSuccess": "Success",
+      "rollOutcomeSurge": "Strong success",
+      "extractionTokenSingular": "Extraction Token",
+      "extractionTokenPlural": "Extraction Tokens",
+      "advance": "Advance",
+      "reduce": "Reduce",
+      "raise": "Raise",
+      "lower": "Lower",
+      "rollMeaningExtractionRemoved": "Remove {{count}} {{token}}.",
+      "rollMeaningDomain": "{{direction}} {{domain}} by {{count}}.",
+      "rollMeaningGaze": "{{direction}} Global Gaze by {{count}}.",
+      "rollMeaningWarMachine": "{{direction}} War Machine by {{count}}.",
+      "rollMeaningNone": "No board change followed from the roll.",
+      "failedCampaigns": "Failed campaigns",
+      "systemEscalations": "System escalations",
+      "resistanceDiscard": "Resistance discard",
+      "crisisDiscard": "Crisis discard",
+      "cardsChanged": "Cards",
+      "drawResistance": "Draw Resistance",
+      "modifyGaze": "Modify Global Gaze",
+      "modifyWarMachine": "Modify War Machine",
+      "modifyDomain": "Modify Domain",
+      "addExtraction": "Add Extraction Tokens",
+      "removeExtraction": "Remove Extraction Tokens",
+      "modifyBodies": "Modify Bodies",
+      "modifyEvidence": "Modify Evidence",
+      "setDefense": "Set Defense",
+      "logEffect": "Log effect",
+      "systemPhase": "System Phase",
+      "resolutionPhase": "Resolution Phase",
+      "traceExecuted": "Executed",
+      "traceSkipped": "Skipped",
+      "traceFailed": "Failed",
+      "eventOpeningDraw": "🃏 {{seat}} drew an opening resistance card.",
+      "eventInvestigateDraw": "🃏 {{seat}} drew a resistance card.",
+      "eventPlayedCard": "🃏 {{seat}} played {{card}}.",
+      "eventBeaconActivated": "🕯️ {{card}} became an active Beacon.",
+      "eventQueueIntent": "{{seat}} prepared {{action}}.",
+      "eventRemoveIntent": "{{seat}} removed a prepared move.",
+      "eventReorderIntent": "{{seat}} reordered prepared moves.",
+      "eventSeatReady": "{{seat}} marked ready.",
+      "eventSeatNotReady": "{{seat}} is no longer ready.",
+      "eventSystemResolved": "System Phase resolved.",
+      "eventCoalitionCommitted": "Coalition prepared moves resolved.",
+      "eventResolutionResolved": "Resolution Phase completed.",
+      "eventLaunchCampaign": "{{seat}} launched a campaign in {{region}}.",
+      "eventExtractionBreach": "A region reached 6 Extraction Tokens.",
+      "eventMandateFailure": "Public victory failed because Secret Mandates were broken.",
+      "eventVictory": "The coalition achieved victory.",
+      "eventSuddenDeath": "Sudden death ended the struggle.",
+      "eventPublicAttention": "System pressure shifted under public attention.",
+      "eventLoss": "The coalition lost the struggle."
     }
   },
   "content": {
@@ -440,7 +516,7 @@
       "base_design": {
         "name": "Where the Stones Cry Out",
         "description": "A six-region cooperative struggle against extraction, war, hunger, and erasure.",
-        "introduction": "The coalition is trying to do more than survive. It must break extraction, move witness across borders, and keep every movement's solemn charge intact long enough to win together."
+        "introduction": "The coalition is trying to do more than survive. It must break extraction, move Evidence across borders, and keep every movement's Secret Mandate intact long enough to win together."
       }
     },
     "domains": {
@@ -458,7 +534,7 @@
       },
       "SilencedTruth": {
         "name": "Silenced Truth",
-        "description": "Witness, press freedom, and the ability to circulate testimony."
+        "description": "Evidence, press freedom, and the ability to circulate testimony."
       },
       "EmptyStomach": {
         "name": "Empty Stomach",
@@ -482,7 +558,7 @@
       "Levant": {
         "name": "The Levant",
         "description": "Occupation, siege, surveillance, and the politics of imposed scarcity.",
-        "strapline": "Witness survives under bombardment."
+        "strapline": "Evidence survives under bombardment."
       },
       "Amazon": {
         "name": "The Amazon",
@@ -509,8 +585,8 @@
       "congo_basin_collective": {
         "name": "Congo Basin Collective",
         "shortName": "Congo Collective",
-        "passive": "Organize gains +1 Comrade in Congo and Launch Campaign gains +1 there.",
-        "weakness": "Global Appeal costs +1 Witness.",
+        "passive": "Organize gains +1 Body in Congo and Launch Campaign gains +1 there.",
+        "weakness": "Global Appeal costs +1 Evidence.",
         "mandateTitle": "Keep The Forest Unpriced",
         "mandateDescription": "End with Congo at 2 or fewer Extraction Tokens and Dying Planet ahead of War Machine."
       },
@@ -518,14 +594,14 @@
         "name": "Levant Sumud Front",
         "shortName": "Sumud Front",
         "passive": "Defend gains +1 Defense in the Levant and campaigns against War Machine gain +1 there.",
-        "weakness": "Organize outside the Levant gains -1 Comrade.",
+        "weakness": "Organize outside the Levant gains -1 Body.",
         "mandateTitle": "Refuse Managed Siege",
-        "mandateDescription": "End with the Levant at 1 or fewer Extraction Tokens and Northern War Machine at 6 or less."
+        "mandateDescription": "End with the Levant at 1 or fewer Extraction Tokens and War Machine at 6 or less."
       },
       "mekong_echo_network": {
         "name": "Mekong Echo Network",
         "shortName": "Echo Network",
-        "passive": "Investigate gains +1 Witness in the Mekong and support cards gain +1 on Silenced Truth campaigns.",
+        "passive": "Investigate gains +1 Evidence in the Mekong and support cards gain +1 on Silenced Truth campaigns.",
         "weakness": "Defend outside the Mekong sets 1 less Defense.",
         "mandateTitle": "Keep The River Speaking",
         "mandateDescription": "End with the Mekong at 1 or fewer Extraction Tokens and Silenced Truth at 5 or more."
@@ -533,8 +609,8 @@
       "amazon_guardians": {
         "name": "Amazon Guardians",
         "shortName": "Guardians",
-        "passive": "Campaigns in the Amazon or Dying Planet gain +1 and Organize gains +1 Comrade in the Amazon.",
-        "weakness": "Smuggle Witness can move only 1 Witness at a time.",
+        "passive": "Campaigns in the Amazon or Dying Planet gain +1 and Organize gains +1 Body in the Amazon.",
+        "weakness": "Smuggle Evidence can move only 1 Evidence at a time.",
         "mandateTitle": "No Green Sacrifice Zone",
         "mandateDescription": "End with the Amazon at 1 or fewer Extraction Tokens and Fossil Grip at 5 or more progress."
       }
@@ -542,31 +618,31 @@
     "actions": {
       "organize": {
         "name": "Organize",
-        "description": "Roll 1d6 Comrades into a region, plus pressure bonuses where extraction is already entrenched."
+        "description": "Roll 1d6 Bodies into a region, plus pressure bonuses where extraction is already entrenched."
       },
       "investigate": {
         "name": "Investigate",
-        "description": "Generate Witness and draw resistance cards."
+        "description": "Generate Evidence and draw resistance cards."
       },
       "launch_campaign": {
         "name": "Launch Campaign",
-        "description": "Commit Comrades and Witness to a 2d6 campaign against a domain in a region."
+        "description": "Commit Bodies and Evidence to a 2d6 campaign against a Domain in a region."
       },
       "build_solidarity": {
         "name": "Build Solidarity",
-        "description": "Spend 3 Comrades in-region to advance a domain without a roll."
+        "description": "Spend 3 Bodies in-region to advance a Domain without a roll."
       },
       "smuggle_evidence": {
-        "name": "Smuggle Witness",
-        "description": "Move Witness to another faction through a risky corridor."
+        "name": "Smuggle Evidence",
+        "description": "Move Evidence to another faction through a risky corridor."
       },
       "international_outreach": {
         "name": "Global Appeal",
-        "description": "Spend Witness to raise Global Gaze."
+        "description": "Spend Evidence to raise Global Gaze."
       },
       "defend": {
         "name": "Defend",
-        "description": "Convert Comrades into a one-round Defense Rating against the next intervention."
+        "description": "Convert Bodies into a one-round Defense Rating against the next intervention."
       },
       "play_card": {
         "name": "Play Card",
@@ -602,7 +678,7 @@
     "cards": {
       "res_archive_leak": {
         "name": "Archive Leak",
-        "text": "Raise Global Gaze by 1 and gain 1 Witness."
+        "text": "Raise Global Gaze by 1 and gain 1 Evidence."
       },
       "res_mutual_aid_convoy": {
         "name": "Mutual Aid Convoy",
@@ -610,15 +686,15 @@
       },
       "res_radio_uprising": {
         "name": "Radio Uprising",
-        "text": "Advance Silenced Truth by 1 and add 1 Comrade to the target region."
+        "text": "Advance Silenced Truth by 1 and add 1 Body to the target region."
       },
       "res_strike_fund": {
         "name": "Strike Fund",
-        "text": "Add 3 Comrades to the target region."
+        "text": "Add 3 Bodies to the target region."
       },
       "res_lawyers_brief": {
         "name": "Lawyers Brief",
-        "text": "Advance Gilded Cage by 1 and reduce Northern War Machine by 1."
+        "text": "Advance Gilded Cage by 1 and reduce War Machine by 1."
       },
       "sup_arms_manifest": {
         "name": "Arms Shipment Manifest",
@@ -647,6 +723,70 @@
       "sup_songbook": {
         "name": "Songbook",
         "text": "+2 on a Stolen Voice campaign."
+      },
+      "crisis_military_raid": {
+        "name": "Military Raid",
+        "text": "A logistics corridor is secured through direct force."
+      },
+      "crisis_media_smear": {
+        "name": "Media Smear",
+        "text": "The movement is reframed as disorder to cool public attention."
+      },
+      "crisis_fuel_convoy": {
+        "name": "Fuel Convoy",
+        "text": "The corridor reopens under armed protection."
+      },
+      "crisis_border_lockdown": {
+        "name": "Border Lockdown",
+        "text": "Containment expands under the language of security."
+      },
+      "crisis_hunger_discipline": {
+        "name": "Hunger Discipline",
+        "text": "Debt, rationing, and coercion force communities back into dependence."
+      },
+      "crisis_climate_shock": {
+        "name": "Climate Shock",
+        "text": "Disaster is turned into a fast lane for seizure."
+      },
+      "crisis_memory_purge": {
+        "name": "Memory Purge",
+        "text": "Archives, schools, and ceremonies are treated as hostile terrain."
+      },
+      "crisis_attention_backlash": {
+        "name": "Attention Backlash",
+        "text": "Visibility triggers a sharper retaliatory strike."
+      },
+      "crisis_port_seizure": {
+        "name": "Port Seizure",
+        "text": "Trade chokepoints are tightened to discipline the region."
+      },
+      "crisis_platform_blackout": {
+        "name": "Platform Blackout",
+        "text": "The channel collapses under coordinated censorship."
+      },
+      "sys_emergency_powers": {
+        "name": "Emergency Powers Enacted",
+        "text": "Exception is written into ordinary rule. Campaigns face a higher bar from here forward."
+      },
+      "sys_resource_privatization_wave": {
+        "name": "Resource Privatization Wave",
+        "text": "Every new crisis becomes another pretext to deepen the carve-up."
+      },
+      "sys_militarized_infrastructure": {
+        "name": "Militarized Infrastructure",
+        "text": "Roads, ports, and corridors become permanent security architecture."
+      },
+      "sys_surveillance_normalization": {
+        "name": "Surveillance Normalization",
+        "text": "Every campaign now moves through denser fog and better targeting."
+      },
+      "sys_structural_adjustment_program": {
+        "name": "Structural Adjustment Program",
+        "text": "Appeals to the outside now cost more because every concession is monetized."
+      },
+      "sys_counterinsurgency_doctrine": {
+        "name": "Counterinsurgency Doctrine Expansion",
+        "text": "Evidence circulates more slowly as suppression becomes doctrine."
       }
     }
   }

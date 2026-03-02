@@ -87,7 +87,7 @@ export function HomeScreen({
             detail={localizeRulesetField(
               RULESET?.id ?? 'base_design',
               'description',
-              RULESET?.description ?? 'Six regions. Extraction as the central threat. Comrades and Witness as the coalition economy.',
+              RULESET?.description ?? 'Six regions. Extraction as the central threat. Bodies and Evidence as the coalition economy.',
             )}
             actions={
               <div className="header-action-plates">
@@ -193,7 +193,7 @@ export function HomeScreen({
 
             <PaperSheet tone="note">
               <span className="engraved-eyebrow">{t('ui.home.replaces', 'This Ruleset Replaces')}</span>
-              <p>{t('ui.home.replacesBody', 'The product now ships one canonical six-region map, Comrades and Witness, Global Gaze, Northern War Machine, Extraction Tokens, solemn charges, and Liberation or Symbolic victory.')}</p>
+              <p>{t('ui.home.replacesBody', 'The product now ships one canonical six-region map, Bodies and Evidence, Global Gaze, War Machine, Extraction Tokens, Secret Mandates, and Liberation or Symbolic victory.')}</p>
             </PaperSheet>
 
             <details className="setup-utility-drawer">

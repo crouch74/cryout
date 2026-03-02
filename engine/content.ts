@@ -25,18 +25,18 @@ export function compileContent(rulesetId: string = CONTENT_PACKS[0]?.id ?? 'base
   }
 
   return {
-    version: `design-cutover:${ruleset.id}:1`,
+    version: `design-cutover:${ruleset.id}:2`,
     ruleset,
     actions: byId(ruleset.actions) as CompiledContent['actions'],
     domains: byId(ruleset.domains) as CompiledContent['domains'],
     regions: byId(ruleset.regions) as CompiledContent['regions'],
     factions: byId(ruleset.factions) as CompiledContent['factions'],
     beacons: byId(ruleset.beacons),
-    cards: byId([...ruleset.resistanceCards, ...ruleset.systemCards]),
+    cards: byId([...ruleset.resistanceCards, ...ruleset.crisisCards, ...ruleset.systemCards]),
     decks: {
       system: ruleset.systemCards.map((card) => card.id),
       resistance: ruleset.resistanceCards.map((card) => card.id),
-      beacon: ruleset.beacons.map((beacon) => beacon.id),
+      crisis: ruleset.crisisCards.map((card) => card.id),
     },
   };
 }

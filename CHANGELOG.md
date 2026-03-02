@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.0] - 2026-03-02
+
+### Added
+- 🃏 **Dual-Threat Deck Model** — split the old single threat flow into a recurring `Crisis Deck` plus persistent `System Deck` escalations, while keeping Beacons as Symbolic objectives instead of a playable deck.
+- 🎞️ **Center-Stage Card Reveal** — replaced the small under-deck reveal with a gated cinematic reveal overlay that lifts cards from the physical deck rail into the center of the table.
+- 🔊 **Procedural Deck Audio** — added lightweight Web Audio cues for deck press, lift, flip, resolve, and settle interactions without bundling sound assets.
+- 🧪 **Deck and Escalation Regression Coverage** — expanded engine and UI tests around Crisis draws, System trigger gating, replay serialization, and the rebuilt deck rail.
+
+### Changed
+- 🎴 **Premium Physical Deck Rendering** — rebuilt the deck rail around layered physical stacks, engraved wooden counters, deck-specific backs, and stacked discard or escalation presentation.
+- 🚩 **Persistent System Escalations** — System cards now enter an active escalation tray and apply ongoing campaign, draw, and pressure modifiers instead of discarding immediately.
+- 🕯️ **Beacon Separation** — active Beacons are now surfaced as objective cards in Symbolic mode instead of occupying a slot in the deck rail.
+
 ## [0.8.0] - 2026-03-02
 
 ### Added
@@ -128,4 +141,3 @@ All notable changes to this project will be documented in this file.
 - Data structures for: Cards, Decks, Fronts, Roles with Burnout, Capture Engine decks.
 - UI backend integration: GameDashboard now fetches initial state and sends intents to the FastAPI backend.
 - Seeded deterministic test run capability for testing entire MVP scenario loop.
-

@@ -10,6 +10,9 @@ import {
   initializeGame,
   type EngineCommand,
 } from '../engine/index.ts';
+import { formatTrackFraction, setLocale } from '../src/i18n/index.ts';
+import { localizeDisabledReason, presentHistoryEvent } from '../src/mvp/historyPresentation.ts';
+import type { DomainEvent } from '../engine/index.ts';
 import {
   getActionDockItems,
   buildIntentPreview,
@@ -43,13 +46,60 @@ test('disabled reason explains phase gating and body requirements', () => {
 
   const systemReason = getSeatDisabledReason(state, content, 0, { actionId: 'organize', regionId: 'Congo' });
   assert.equal(systemReason.disabled, true);
+  assert.equal(systemReason.reasonCode, 'phase_locked');
   assert.equal(systemReason.reason, 'Phase locked');
 
   state.phase = 'COALITION';
   state.regions.Congo.bodiesPresent[0] = 0;
   const solidarityReason = getSeatDisabledReason(state, content, 0, { actionId: 'build_solidarity', regionId: 'Congo', domainId: 'DyingPlanet' });
   assert.equal(solidarityReason.disabled, true);
+  assert.equal(solidarityReason.reasonCode, 'need_three_bodies');
   assert.equal(solidarityReason.reason, 'Need 3 Bodies in region');
+});
+
+test('history presenter localizes reveal details and disabled reasons', () => {
+  const content = compileContent(startCommand.rulesetId);
+  const revealEvent: DomainEvent = {
+    seq: 1,
+    round: 1,
+    phase: 'SYSTEM',
+    sourceType: 'action',
+    sourceId: 'investigate',
+    emoji: '🃏',
+    message: '',
+    causedBy: ['investigate'],
+    deltas: [],
+    trace: [],
+    context: {
+      actingSeat: 0,
+      targetRegionId: 'Congo',
+      cardReveals: [
+        {
+          deckId: 'resistance',
+          cardId: 'res_archive_leak',
+          destination: 'discard',
+          seat: 0,
+          public: true,
+          origin: 'investigate',
+        },
+      ],
+    },
+  };
+
+  setLocale('en');
+  const english = presentHistoryEvent(revealEvent, content);
+  assert.equal(english.title, '🃏 Seat 1 drew a resistance card.');
+  assert.equal(english.cardReveals[0]?.title, 'Archive Leak');
+  assert.match(english.cardReveals[0]?.body ?? '', /Global Gaze/);
+  assert.equal(localizeDisabledReason({ reasonCode: 'need_three_bodies' }), 'Need 3 Bodies in region');
+
+  setLocale('ar-EG');
+  const arabic = presentHistoryEvent(revealEvent, content);
+  assert.match(arabic.title, /المقعد/);
+  assert.match(arabic.cardReveals[0]?.body ?? '', /Global Gaze/);
+  assert.match(localizeDisabledReason({ reasonCode: 'need_three_bodies' }) ?? '', /Bodies/);
+
+  setLocale('en');
 });
 
 test('selectors expose useful copy for the new ruleset', () => {
@@ -124,6 +174,7 @@ test('deck summaries and next unfinished seat helpers track the visible table st
 
   assert.equal(summaries.length, 3);
   assert.equal(summaries.some((summary) => summary.deckId === 'system'), true);
+  assert.equal(summaries.some((summary) => summary.deckId === 'crisis'), true);
   assert.equal(summaries.some((summary) => summary.deckId === 'resistance' && summary.discardCount >= startCommand.playerCount), true);
 
   state.phase = 'COALITION';
@@ -147,6 +198,8 @@ test('game screen source keeps the compressed board layout contract', () => {
   assert.match(source, /ContextPanel/);
   assert.match(source, /DeckStack/);
   assert.match(source, /decksContent/);
+  assert.match(source, /deck-reveal-overlay/);
+  assert.match(source, /activeBeaconObjectives/);
   assert.match(source, /visual-delta-strip/);
   assert.match(source, /activeHelpContent/);
   assert.match(source, /externalHighlightKeys/);
@@ -206,4 +259,55 @@ test('toast helpers keep live-region metadata and role semantics', () => {
   assert.equal(GAME_A11Y_LABELS.liveUpdates, 'Live game updates');
   assert.equal(getToastRole('success'), 'status');
   assert.equal(getToastRole('error'), 'alert');
+});
+
+function flattenCatalogKeys(value: unknown, path = ''): string[] {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return path ? [path] : [];
+  }
+
+  return Object.entries(value as Record<string, unknown>).flatMap(([key, child]) => {
+    const next = path ? `${path}.${key}` : key;
+    return flattenCatalogKeys(child, next);
+  });
+}
+
+test('Arabic catalog stays key-complete and preserves canonical mechanic names', () => {
+  const enCatalog = JSON.parse(readFileSync(new URL('../src/i18n/en.json', import.meta.url), 'utf8')) as Record<string, unknown>;
+  const arCatalog = JSON.parse(readFileSync(new URL('../src/i18n/ar-EG.json', import.meta.url), 'utf8')) as Record<string, unknown>;
+
+  assert.deepEqual(flattenCatalogKeys(arCatalog).sort(), flattenCatalogKeys(enCatalog).sort());
+
+  const arUi = arCatalog.ui as Record<string, Record<string, string>>;
+  assert.equal(arUi.game.bodies, 'Bodies');
+  assert.equal(arUi.game.evidence, 'Evidence');
+  assert.equal(arUi.game.extractionTokens, 'Extraction Tokens');
+  assert.equal(arUi.game.globalGaze, 'Global Gaze');
+  assert.equal(arUi.game.northernWarMachine, 'War Machine');
+  assert.equal(arUi.game.domains, 'Domains');
+  assert.equal(arUi.game.secretMandate, 'Secret Mandate');
+});
+
+test('all shipped base-design cards have localization entries in both catalogs', () => {
+  const content = compileContent('base_design');
+  const enCatalog = JSON.parse(readFileSync(new URL('../src/i18n/en.json', import.meta.url), 'utf8')) as Record<string, any>;
+  const arCatalog = JSON.parse(readFileSync(new URL('../src/i18n/ar-EG.json', import.meta.url), 'utf8')) as Record<string, any>;
+  const enCards = enCatalog.content.cards as Record<string, unknown>;
+  const arCards = arCatalog.content.cards as Record<string, unknown>;
+
+  for (const cardId of Object.keys(content.cards)) {
+    assert.equal(typeof enCards[cardId], 'object', `Missing English card localization for ${cardId}`);
+    assert.equal(typeof arCards[cardId], 'object', `Missing Arabic card localization for ${cardId}`);
+  }
+});
+
+test('track fractions invert order in RTL while keeping Arabic-Indic numerals', () => {
+  setLocale('en');
+  assert.equal(formatTrackFraction(5, 20), '5/20');
+
+  setLocale('ar-EG');
+  assert.equal(formatTrackFraction(5, 20), '٢٠/٥');
+  assert.equal(formatTrackFraction(7, 12), '١٢/٧');
+
+  setLocale('en');
 });

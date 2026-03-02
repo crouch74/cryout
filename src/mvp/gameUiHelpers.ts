@@ -18,12 +18,14 @@ import {
 } from '../../engine/index.ts';
 import {
   formatNumber,
+  formatTrackFraction,
   localizeDomainField,
   localizeFactionField,
   localizeRegionField,
   localizeRulesetField,
   t,
 } from '../i18n/index.ts';
+import { getEventSourceLabel, localizeDisabledReason } from './historyPresentation.ts';
 import type { IconType } from './icons/iconTypes.ts';
 
 type NormalizedPhase = 'SYSTEM' | 'COALITION' | 'RESOLUTION';
@@ -291,8 +293,8 @@ export function getTrackPresentation(state: EngineState) {
       severity: globalGazeSeverity,
       thresholds: [5, 10, 15],
       status: state.globalGaze >= 10
-        ? 'Witness is breaking through the blockade.'
-        : 'Global attention is fragile and easily reversed.',
+        ? t('ui.game.trackGazeHigh', 'Global Gaze is breaking through the blockade.')
+        : t('ui.game.trackGazeLow', 'Global Gaze is fragile and easily reversed.'),
     } satisfies TrackPresentation,
     northernWarMachine: {
       id: 'northernWarMachine',
@@ -302,8 +304,8 @@ export function getTrackPresentation(state: EngineState) {
       severity: warMachineSeverity,
       thresholds: [4, 8, 10],
       status: state.northernWarMachine >= 8
-        ? 'The war machine is near a breach posture.'
-        : 'Military pressure is contained for now.',
+        ? t('ui.game.trackWarHigh', 'War Machine is near a breach posture.')
+        : t('ui.game.trackWarLow', 'War Machine pressure is contained for now.'),
     } satisfies TrackPresentation,
   };
 }
@@ -364,7 +366,7 @@ function getPassiveShorthand(factionId: FactionId) {
   switch (factionId) {
     case 'congo_basin_collective':
       return {
-        primary: t('ui.game.passiveCongoPrimary', 'Comrades +1 at home'),
+        primary: t('ui.game.passiveCongoPrimary', 'Bodies +1 at home'),
         secondary: t('ui.game.passiveCongoSecondary', 'Campaign +1 at home'),
       };
     case 'levant_sumud':
@@ -380,7 +382,7 @@ function getPassiveShorthand(factionId: FactionId) {
     case 'amazon_guardians':
       return {
         primary: t('ui.game.passiveAmazonPrimary', 'Campaign +1 in Amazon'),
-        secondary: t('ui.game.passiveAmazonSecondary', 'Comrades +1 at home'),
+        secondary: t('ui.game.passiveAmazonSecondary', 'Bodies +1 at home'),
       };
   }
 }
@@ -416,7 +418,9 @@ export function getSeatPresentation(player: PlayerState, content: CompiledConten
     comrades,
     witness: player.evidence,
     moves: player.actionsRemaining,
-    readiness: player.ready ? 'Ready for reckoning' : `${formatNumber(player.actionsRemaining)} moves left to prepare`,
+    readiness: player.ready
+      ? t('ui.game.readyForReckoning', 'Ready for reckoning')
+      : t('ui.game.movesLeftToPrepare', '{{count}} moves left to prepare', { count: player.actionsRemaining }),
     urgency,
   };
 }
@@ -470,7 +474,7 @@ export function getStatusRibbonItems(state: EngineState, content: CompiledConten
     {
       id: 'globalGaze',
       label: t('ui.game.gazeLabel', 'Gaze'),
-      value: `${formatNumber(state.globalGaze)}/${formatNumber(20)}`,
+      value: formatTrackFraction(state.globalGaze, 20),
       icon: 'globalGaze',
       tone: 'gaze',
       tooltip: getTrackPresentation(state).globalGaze.status,
@@ -478,7 +482,7 @@ export function getStatusRibbonItems(state: EngineState, content: CompiledConten
     {
       id: 'warMachine',
       label: t('ui.game.warLabel', 'War'),
-      value: `${formatNumber(state.northernWarMachine)}/${formatNumber(12)}`,
+      value: formatTrackFraction(state.northernWarMachine, 12),
       icon: 'warMachine',
       tone: 'war',
       tooltip: getTrackPresentation(state).northernWarMachine.status,
@@ -565,7 +569,7 @@ export function getActionDockItems(state: EngineState, content: CompiledContent,
       }[action.id],
       icon: ACTION_ICONS[action.id],
       disabled: quickQueue.disabled.disabled,
-      disabledReason: quickQueue.disabled.reason,
+      disabledReason: localizeDisabledReason(quickQueue.disabled),
       quickQueue: quickQueue.quickQueue,
     };
   });
@@ -698,17 +702,17 @@ export function buildIntentPreview(
 export function getEventSourcePresentation(sourceType: DomainEvent['sourceType']): EventSourcePresentation {
   switch (sourceType) {
     case 'system':
-      return { icon: 'Seal', label: t('ui.game.sourceSystem', 'System record') };
+      return { icon: 'Seal', label: getEventSourceLabel(sourceType) };
     case 'command':
-      return { icon: 'Clerk', label: t('ui.game.sourceCommand', 'Table order') };
+      return { icon: 'Clerk', label: getEventSourceLabel(sourceType) };
     case 'action':
-      return { icon: 'Move', label: t('ui.game.sourceAction', 'Prepared move') };
+      return { icon: 'Move', label: getEventSourceLabel(sourceType) };
     case 'card':
-      return { icon: 'Card', label: t('ui.game.sourceCard', 'Resistance card') };
+      return { icon: 'Card', label: getEventSourceLabel(sourceType) };
     case 'mandate':
-      return { icon: 'Charge', label: t('ui.game.sourceMandate', 'Solemn charge') };
+      return { icon: 'Charge', label: getEventSourceLabel(sourceType) };
     case 'beacon':
-      return { icon: 'Beacon', label: t('ui.game.sourceBeacon', 'Beacon record') };
+      return { icon: 'Beacon', label: getEventSourceLabel(sourceType) };
   }
 }
 
@@ -722,16 +726,16 @@ export function getActiveCoalitionSeat(players: PlayerState[]) {
 
 export function getDeckSummaries(state: EngineState, _content: CompiledContent): DeckSummary[] {
   const latestReveal = getLatestPublicCardReveal(state)?.reveal ?? null;
-  return (['system', 'resistance', 'beacon'] as DeckId[]).map((deckId) => ({
+  return (['system', 'resistance', 'crisis'] as DeckId[]).map((deckId) => ({
     deckId,
     label: {
       system: t('ui.game.systemDeck', 'System Deck'),
       resistance: t('ui.game.resistanceDeck', 'Resistance Deck'),
-      beacon: t('ui.game.beaconDeck', 'Beacon Deck'),
+      crisis: t('ui.game.crisisDeck', 'Crisis Deck'),
     }[deckId],
     drawCount: state.decks[deckId].drawPile.length,
     discardCount: state.decks[deckId].discardPile.length,
-    activeCount: deckId === 'beacon' ? state.activeBeaconIds.length : undefined,
+    activeCount: deckId === 'system' ? state.activeSystemCardIds.length : undefined,
     latestRevealCardId: latestReveal?.deckId === deckId ? latestReveal.cardId : null,
   }));
 }

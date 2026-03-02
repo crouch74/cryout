@@ -1,16 +1,20 @@
-import type { DomainEvent } from '../../engine/index.ts';
+import type { CompiledContent, DomainEvent } from '../../engine/index.ts';
 import { t } from '../i18n/index.ts';
+import { presentHistoryEvent } from './historyPresentation.ts';
 import { PaperSheet } from './tabletop.tsx';
 
 interface TraceDrawerProps {
   event: DomainEvent | null;
+  content: CompiledContent;
   onClose: () => void;
 }
 
-export function TraceDrawer({ event, onClose }: TraceDrawerProps) {
+export function TraceDrawer({ event, content, onClose }: TraceDrawerProps) {
   if (!event) {
     return null;
   }
+
+  const presented = presentHistoryEvent(event, content);
 
   return (
     <aside className="evidence-drawer evidence-trace-drawer" role="dialog" aria-modal="false" aria-labelledby="trace-drawer-title">
@@ -19,9 +23,9 @@ export function TraceDrawer({ event, onClose }: TraceDrawerProps) {
           <div>
             <span className="engraved-eyebrow">{t('ui.game.meetingNotes', 'Meeting Notes')}</span>
             <h3 id="trace-drawer-title">
-              {event.emoji} {event.message}
+              {event.emoji} {presented.title}
             </h3>
-            <p>{event.causedBy.join(' → ')}</p>
+            <p>{presented.contextLabel ?? presented.sourceLabel}</p>
           </div>
           <button type="button" className="mini-plate" onClick={onClose}>
             {t('ui.traceDrawer.close', 'Close')}
@@ -29,21 +33,20 @@ export function TraceDrawer({ event, onClose }: TraceDrawerProps) {
         </div>
 
         <div className="trace-slip-list">
-          {event.trace.length === 0 ? <p>{t('ui.status.noTraceRecorded', 'No trace recorded for this entry.')}</p> : null}
-          {event.trace.map((trace, index) => (
-            <PaperSheet key={`${trace.effectType}-${index}`} tone="note" className={`trace-slip trace-${trace.status}`}>
+          {presented.traces.length === 0 ? <p>{t('ui.status.noTraceRecorded', 'No trace recorded for this entry.')}</p> : null}
+          {presented.traces.map((trace) => (
+            <PaperSheet key={trace.key} tone="note" className={`trace-slip trace-${trace.status.toLowerCase()}`}>
               <div className="drawer-header">
-                <strong>{trace.effectType}</strong>
+                <strong>{trace.title}</strong>
                 <span className="engraved-eyebrow">{trace.status}</span>
               </div>
-              <p>{trace.message}</p>
-              {trace.causedBy.length > 0 ? <p>{trace.causedBy.join(' → ')}</p> : null}
+              {trace.detail ? <p>{trace.detail}</p> : null}
               <div className="ledger-list">
                 {trace.deltas.length === 0 ? <span>{t('ui.status.noStateDeltas', 'No state deltas')}</span> : null}
                 {trace.deltas.map((delta) => (
-                  <div key={`${delta.label}-${String(delta.before)}-${String(delta.after)}`} className="ledger-row">
+                  <div key={delta.key} className="ledger-row">
                     <span>{delta.label}</span>
-                    <strong>{String(delta.before)} → {String(delta.after)}</strong>
+                    <strong>{delta.value}</strong>
                   </div>
                 ))}
               </div>

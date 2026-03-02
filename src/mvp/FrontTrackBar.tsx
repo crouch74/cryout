@@ -1,7 +1,7 @@
 import { useMemo, type CSSProperties } from 'react';
 import { Icon } from './icons/Icon.tsx';
 import type { FrontTrackRow } from './gameUiHelpers.ts';
-import { formatNumber, t } from '../i18n/index.ts';
+import { formatTrackFraction, getLocaleDirection, t } from '../i18n/index.ts';
 import { useTransientHighlightKeys } from './useTransientHighlights.ts';
 
 export function FrontTrackBar({ rows, highlightedIds }: { rows: FrontTrackRow[]; highlightedIds?: ReadonlySet<string> }) {
@@ -32,7 +32,7 @@ export function FrontTrackBar({ rows, highlightedIds }: { rows: FrontTrackRow[];
             </div>
             <span className="front-track-marker" style={{ ['--track-progress' as string]: `${(row.value / row.max) * 100}%` }} />
           </div>
-          <strong dir="ltr">{formatNumber(row.value)}/{formatNumber(row.max)}</strong>
+          <strong dir={getLocaleDirection() === 'rtl' ? 'rtl' : 'ltr'}>{formatTrackFraction(row.value, row.max)}</strong>
         </article>
       ))}
     </section>

@@ -52,6 +52,18 @@ export function getLocaleDirection(locale: Locale = activeLocale): 'ltr' | 'rtl'
   return locale === 'ar-EG' ? 'rtl' : 'ltr';
 }
 
+export function isRtlLocale(locale: Locale = activeLocale) {
+  return getLocaleDirection(locale) === 'rtl';
+}
+
+export function formatTrackFraction(current: number, max: number, locale: Locale = activeLocale) {
+  const currentText = formatNumber(current, locale);
+  const maxText = formatNumber(max, locale);
+  return getLocaleDirection(locale) === 'rtl'
+    ? `${maxText}/${currentText}`
+    : `${currentText}/${maxText}`;
+}
+
 export function t(path: string, fallback: string, values?: Record<string, InterpolationValue>) {
   const value = lookup(path);
   return interpolate(typeof value === 'string' ? value : fallback, values);

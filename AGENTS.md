@@ -37,7 +37,7 @@ The following terms are fixed and must not be renamed:
 Extraction Tokens — Black hexes placed in regions (0–6).
 Global Gaze — Global attention/media track (0–20).
 War Machine — Militarism escalation track (0–12).
-Bodies — Red cubes representing people and cost.
+Comrades — Red cubes representing people and cost.
 Evidence — Blue cubes representing documentation/proof.
 Domains — System pressures (War Machine, Dying Planet, etc.).
 Secret Mandates — Hidden player objectives with hard failure risk.
@@ -52,7 +52,7 @@ Launch Campaign uses 2d6 with target 8+ unless officially changed.
 
 Regions lose at 6 Extraction Tokens.
 
-A player reaching 0 Bodies triggers defeat.
+A player reaching 0 Comrades triggers defeat.
 
 Global tracks must respond to narrative and mechanical events.
 

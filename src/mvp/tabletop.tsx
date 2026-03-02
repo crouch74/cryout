@@ -1,5 +1,6 @@
 import {
   createContext,
+  forwardRef,
   useContext,
   useEffect,
   useMemo,
@@ -235,48 +236,74 @@ export function CivicBoard({ children, className = '' }: HTMLAttributes<HTMLElem
   );
 }
 
-export function DeckStack({
-  label,
-  deckName,
-  drawCount,
-  discardCount,
-  activeCount,
-  disabled,
-  locked,
-  onClick,
-}: {
+export const DeckStack = forwardRef<HTMLButtonElement, {
   label: string;
+  deckId: 'system' | 'resistance' | 'crisis';
   deckName: string;
   drawCount: number;
   discardCount?: number;
   activeCount?: number;
   disabled?: boolean;
   locked?: boolean;
+  lowCount?: boolean;
+  shakeEmpty?: boolean;
   onClick?: () => void;
-}) {
+  onPointerDown?: ButtonHTMLAttributes<HTMLButtonElement>['onPointerDown'];
+}>(({
+  label,
+  deckId,
+  deckName,
+  drawCount,
+  discardCount,
+  activeCount,
+  disabled,
+  locked,
+  lowCount,
+  shakeEmpty,
+  onClick,
+  onPointerDown,
+}, ref) => {
+  const layers = Array.from({ length: 14 }, (_, index) => index);
+
   return (
     <button
+      ref={ref}
       type="button"
-      className={`deck-stack ${locked ? 'is-locked' : ''}`}
+      className={`deck-stack deck-stack-${deckId} ${locked ? 'is-locked' : ''} ${lowCount ? 'is-low' : ''} ${drawCount === 0 ? 'is-empty' : ''} ${shakeEmpty ? 'is-shaking' : ''}`.trim()}
       disabled={disabled}
       onClick={onClick}
+      onPointerDown={onPointerDown}
       aria-label={label}
+      data-deck-id={deckId}
     >
-      <div className="deck-stack-cards" aria-hidden="true">
-        <span />
-        <span />
-        <span />
+      <div className="deck-stack-physical" aria-hidden="true">
+        <div className="deck-stack-cards">
+          {layers.map((layer) => (
+            <span key={layer} className="deck-stack-layer" style={{ ['--deck-layer' as string]: String(layer) }} />
+          ))}
+          <span className="deck-stack-top-card">
+            <span className="deck-stack-corner deck-stack-corner-top">✢</span>
+            <span className="deck-stack-corner deck-stack-corner-bottom">✢</span>
+            <span className="deck-stack-emblem" />
+          </span>
+        </div>
+        <div className={`deck-counter-badge ${lowCount ? 'is-alert' : ''}`.trim()}>
+          <strong dir="ltr">{formatNumber(drawCount)}</strong>
+          <span>{t('ui.game.cardsLabel', 'Cards')}</span>
+        </div>
       </div>
       <div className="deck-stack-copy">
         <strong>{deckName}</strong>
         <span>{t('ui.decks.cardsRemain', '{{count}} cards remain', { count: drawCount })}</span>
         {discardCount !== undefined ? <span>{t('ui.game.cardsInDiscard', '{{count}} in discard', { count: discardCount })}</span> : null}
-        {activeCount !== undefined ? <span>{t('ui.decks.staged', '{{count}} staged', { count: activeCount })}</span> : null}
+        {activeCount !== undefined ? <span>{t('ui.game.cardsActive', '{{count}} active', { count: activeCount })}</span> : null}
       </div>
       {locked ? <WaxSealLock label={t('ui.game.sealed', 'Sealed')} /> : null}
     </button>
   );
-}
+});
+
+DeckStack.displayName = 'DeckStack';
 
 export function CrisisCard({
   title,

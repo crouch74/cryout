@@ -39,14 +39,14 @@ export function GuidelinesScreen({ locale, onLocaleChange, onBackHome, onOpenOff
             <span className="engraved-eyebrow">{t('ui.guide.victoryModes', 'Victory Modes')}</span>
             <p>{t('ui.mode.liberation', 'Liberation')}: {t('ui.mode.liberationSummary', 'End Resolution with every region at 1 Extraction or less.')}</p>
             <p>{t('ui.mode.symbolic', 'Symbolic')}: {t('ui.mode.symbolicSummary', 'Complete all three active Beacons.')}</p>
-            <p>{t('ui.guide.beacon2', 'Every faction carries a solemn charge. Reaching the public win condition without satisfying all charges still ends in failure.')}</p>
+            <p>{t('ui.guide.beacon2', 'Every faction carries a Secret Mandate. Reaching the public win condition without satisfying all Secret Mandates still ends in failure.')}</p>
           </PaperSheet>
 
           <PaperSheet tone="tray">
             <span className="engraved-eyebrow">{t('ui.guide.coreThreat', 'Core Threat')}</span>
             <p>{t('ui.guide.coreThreat1', 'Extraction Tokens are the center of the board. The system adds them through system cards and intervention.')}</p>
             <p>{t('ui.guide.coreThreat2', 'Any region reaching 6 Extraction Tokens is an immediate loss.')}</p>
-            <p>{t('ui.guide.coreThreat3', 'Global Gaze and Northern War Machine shape how dangerous each round becomes.')}</p>
+            <p>{t('ui.guide.coreThreat3', 'Global Gaze and War Machine shape how dangerous each round becomes.')}</p>
           </PaperSheet>
 
           <PaperSheet tone="tray">

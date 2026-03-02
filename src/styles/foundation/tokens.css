@@ -122,6 +122,7 @@
   --panel-rim-strong: rgba(48, 33, 18, 0.62);
   --tile-rim-dark: rgba(62, 44, 24, 0.56);
   --theme-parchment: #efe3cf;
+  --theme-paper: var(--theme-parchment);
   --theme-ink: #24180f;
   --theme-brass: #9f7b2d;
   --panel-shadow: 0 22px 40px rgba(54, 37, 19, 0.18);

@@ -5,6 +5,7 @@ import type {
   ActionId,
   CardRevealEvent,
   CompiledContent,
+  DeckId,
   Condition,
   DisabledActionReason,
   DomainEvent,
@@ -23,12 +24,23 @@ import type {
   SeatSelector,
   StartGameCommand,
   StateDelta,
+  SystemEscalationTriggerId,
+  SystemPersistentModifiers,
 } from './types.ts';
 
 const REGION_IDS: RegionId[] = ['Congo', 'Levant', 'Amazon', 'Sahel', 'Mekong', 'Andes'];
 const ACTIONS_PER_TURN = 2;
 const EXTRACTION_DEFEAT_THRESHOLD = 6;
 const MAX_EXTRACTION_POOL = 36;
+const BASE_CAMPAIGN_TARGET = 8;
+const SYMBOLIC_ESCALATION_ROUND = 6;
+const SYSTEM_ESCALATION_TRIGGER_PRIORITY: SystemEscalationTriggerId[] = [
+  'extraction_threshold',
+  'war_machine_threshold',
+  'gaze_threshold',
+  'failed_campaigns',
+  'symbolic_round_six',
+];
 
 interface ResolveContext {
   actingSeat?: number;
@@ -44,6 +56,12 @@ interface ApplyEffectSource {
   message: string;
   causedBy: string[];
   context: ResolveContext;
+  crisisExtractionBonus?: number;
+}
+
+interface DisabledReasonDetail {
+  code: NonNullable<DisabledActionReason['reasonCode']>;
+  values?: Record<string, string | number>;
 }
 
 function cloneState<T>(value: T): T {
@@ -81,6 +99,18 @@ function createDelta(
   return { kind, label, before, after };
 }
 
+function compactContext(context: DomainEvent['context']) {
+  if (!context) {
+    return undefined;
+  }
+
+  const compacted = Object.fromEntries(
+    Object.entries(context).filter(([, value]) => value !== undefined),
+  ) as DomainEvent['context'];
+
+  return Object.keys(compacted as Record<string, unknown>).length > 0 ? compacted : undefined;
+}
+
 function addEvent(
   state: EngineState,
   sourceType: DomainEvent['sourceType'],
@@ -91,6 +121,7 @@ function addEvent(
   trace: EffectTrace[] = [],
   context?: DomainEvent['context'],
 ): void {
+  const compactedContext = compactContext(context);
   state.eventLog.push({
     seq: nextEventSeq(state),
     round: state.round,
@@ -102,7 +133,7 @@ function addEvent(
     causedBy,
     deltas: trace.flatMap((entry) => entry.deltas),
     trace,
-    ...(context ? { context } : {}),
+    ...(compactedContext ? { context: compactedContext } : {}),
   });
 }
 
@@ -119,6 +150,43 @@ function addSimpleEvent(
 
 function addRejectedCommandEvent(state: EngineState, command: EngineCommand, reason: string): void {
   addSimpleEvent(state, 'command', command.type, '❌', reason, [command.type]);
+}
+
+function toLegacyDisabledReason(detail: DisabledReasonDetail): string {
+  switch (detail.code) {
+    case 'unknown_seat':
+      return 'Unknown seat';
+    case 'phase_locked':
+      return 'Phase locked';
+    case 'seat_already_ready':
+      return 'Seat already ready';
+    case 'no_actions_remaining':
+      return 'No actions remaining';
+    case 'select_region':
+      return 'Select a region';
+    case 'select_domain':
+      return 'Select a domain';
+    case 'select_another_seat':
+      return 'Select another seat';
+    case 'need_three_bodies':
+      return 'Need 3 Bodies in region';
+    case 'not_enough_evidence':
+      return 'Not enough Evidence';
+    case 'no_evidence_to_move':
+      return 'No Evidence to move';
+    case 'need_one_body':
+      return 'Need 1 Body in region';
+    case 'commit_one_body':
+      return 'Commit at least 1 Body';
+    case 'not_enough_bodies':
+      return 'Not enough Bodies in region';
+    case 'support_card_unavailable':
+      return 'Support card unavailable';
+    case 'action_card_unavailable':
+      return 'Action card unavailable';
+    case 'select_card':
+      return 'Select a card';
+  }
 }
 
 function addCardRevealEvent(
@@ -152,6 +220,48 @@ function getSeatTotalBodies(state: EngineState, seat: number) {
 function calculateExtractionPool(state: EngineState) {
   const inPlay = Object.values(state.regions).reduce((sum, region) => sum + region.extractionTokens, 0);
   return Math.max(0, MAX_EXTRACTION_POOL - inPlay);
+}
+
+function getTotalExtractionTokens(state: EngineState) {
+  return Object.values(state.regions).reduce((sum, region) => sum + region.extractionTokens, 0);
+}
+
+function createDefaultEscalationTriggers(): Record<SystemEscalationTriggerId, boolean> {
+  return {
+    extraction_threshold: false,
+    war_machine_threshold: false,
+    gaze_threshold: false,
+    failed_campaigns: false,
+    symbolic_round_six: false,
+  };
+}
+
+function getSystemPersistentModifiers(state: EngineState, content: CompiledContent): Required<SystemPersistentModifiers> {
+  const totals: Required<SystemPersistentModifiers> = {
+    campaignTargetDelta: 0,
+    campaignModifierDelta: 0,
+    outreachCostDelta: 0,
+    resistanceDrawDelta: 0,
+    crisisDrawDelta: 0,
+    crisisExtractionBonus: 0,
+  };
+
+  for (const cardId of state.activeSystemCardIds) {
+    const card = content.cards[cardId];
+    if (!card || card.deck !== 'system') {
+      continue;
+    }
+
+    const modifiers = card.persistentModifiers ?? {};
+    totals.campaignTargetDelta += modifiers.campaignTargetDelta ?? 0;
+    totals.campaignModifierDelta += modifiers.campaignModifierDelta ?? 0;
+    totals.outreachCostDelta += modifiers.outreachCostDelta ?? 0;
+    totals.resistanceDrawDelta += modifiers.resistanceDrawDelta ?? 0;
+    totals.crisisDrawDelta += modifiers.crisisDrawDelta ?? 0;
+    totals.crisisExtractionBonus += modifiers.crisisExtractionBonus ?? 0;
+  }
+
+  return totals;
 }
 
 function revealMandates(state: EngineState) {
@@ -269,9 +379,9 @@ function resolveRegionSelector(
   return [tied[index].regionId];
 }
 
-function drawCard(state: EngineState, deckId: 'system' | 'resistance' | 'beacon'): string | null {
+function drawCard(state: EngineState, deckId: DeckId): string | null {
   const deck = state.decks[deckId];
-  if (deck.drawPile.length === 0 && deck.discardPile.length > 0) {
+  if (deckId !== 'system' && deck.drawPile.length === 0 && deck.discardPile.length > 0) {
     const [nextRng, shuffled] = shuffle(state.rng, deck.discardPile);
     state.rng = nextRng;
     deck.drawPile = shuffled;
@@ -280,7 +390,7 @@ function drawCard(state: EngineState, deckId: 'system' | 'resistance' | 'beacon'
   return deck.drawPile.shift() ?? null;
 }
 
-function moveCardToDiscard(state: EngineState, deckId: 'system' | 'resistance', cardId: string) {
+function moveCardToDiscard(state: EngineState, deckId: 'resistance' | 'crisis', cardId: string) {
   state.decks[deckId].discardPile.push(cardId);
 }
 
@@ -298,6 +408,59 @@ function updateBeaconCompletion(state: EngineState, content: CompiledContent) {
     const beacon = content.beacons[beaconId];
     state.beacons[beaconId].complete = evaluateCondition(state, content, beacon.condition, { causedBy: [beaconId] });
   }
+}
+
+function getSystemEscalationTriggerMessage(triggerId: SystemEscalationTriggerId) {
+  switch (triggerId) {
+    case 'extraction_threshold':
+      return 'Extraction has spread across the board. A structural escalation enters play.';
+    case 'war_machine_threshold':
+      return 'War Machine pressure crossed its escalation line. A structural escalation enters play.';
+    case 'gaze_threshold':
+      return 'Global Gaze collapsed beneath the pressure line. A structural escalation enters play.';
+    case 'failed_campaigns':
+      return 'Repeated failed campaigns hardened the system. A structural escalation enters play.';
+    case 'symbolic_round_six':
+      return 'The symbolic window narrowed. A structural escalation enters play.';
+  }
+}
+
+function getNextSystemEscalationTrigger(state: EngineState): SystemEscalationTriggerId | null {
+  for (const triggerId of SYSTEM_ESCALATION_TRIGGER_PRIORITY) {
+    if (state.usedSystemEscalationTriggers[triggerId]) {
+      continue;
+    }
+
+    switch (triggerId) {
+      case 'extraction_threshold':
+        if (getTotalExtractionTokens(state) >= 8) {
+          return triggerId;
+        }
+        break;
+      case 'war_machine_threshold':
+        if (state.northernWarMachine >= 6) {
+          return triggerId;
+        }
+        break;
+      case 'gaze_threshold':
+        if (state.globalGaze <= 5) {
+          return triggerId;
+        }
+        break;
+      case 'failed_campaigns':
+        if (state.failedCampaigns >= 2) {
+          return triggerId;
+        }
+        break;
+      case 'symbolic_round_six':
+        if (state.mode === 'SYMBOLIC' && state.round >= SYMBOLIC_ESCALATION_ROUND) {
+          return triggerId;
+        }
+        break;
+    }
+  }
+
+  return null;
 }
 
 function checkExtractionLoss(state: EngineState) {
@@ -331,7 +494,7 @@ function checkPositiveVictory(state: EngineState, content: CompiledContent): boo
   revealMandates(state);
   if (failedMandates.length > 0) {
     state.phase = 'LOSS';
-    state.lossReason = `Public victory was reached, but ${failedMandates.length} solemn charge(s) failed.`;
+    state.lossReason = `Public victory was reached, but ${failedMandates.length} Secret Mandate(s) failed.`;
     addSimpleEvent(state, 'mandate', 'mandate_failure', '🕳️', state.lossReason, ['mandate_failure']);
     return true;
   }
@@ -342,7 +505,12 @@ function checkPositiveVictory(state: EngineState, content: CompiledContent): boo
   return true;
 }
 
-function resolveCardDraws(state: EngineState, seat: number, count: number): EffectTrace {
+function resolveCardDraws(
+  state: EngineState,
+  seat: number,
+  count: number,
+  origin: CardRevealEvent['origin'] = 'other',
+): EffectTrace {
   let cardsDrawn = 0;
   for (let index = 0; index < count; index += 1) {
     const cardId = drawCard(state, 'resistance');
@@ -360,6 +528,7 @@ function resolveCardDraws(state: EngineState, seat: number, count: number): Effe
         destination: 'discard',
         seat,
         public: true,
+        origin,
       },
       'card',
       'draw_resistance',
@@ -377,6 +546,12 @@ function resolveCardDraws(state: EngineState, seat: number, count: number): Effe
       ? [createDelta('card', `resistance:discard`, state.decks.resistance.discardPile.length - cardsDrawn, state.decks.resistance.discardPile.length)]
       : [],
   };
+}
+
+function getOutreachCost(state: EngineState, content: CompiledContent, seat: number) {
+  const faction = getFaction(content, state.players[seat]);
+  const pressure = getSystemPersistentModifiers(state, content);
+  return Math.max(0, 2 + faction.outreachPenalty + pressure.outreachCostDelta);
 }
 
 function applyEffects(state: EngineState, content: CompiledContent, effects: Effect[], source: ApplyEffectSource): EffectTrace[] {
@@ -405,7 +580,7 @@ function applyEffects(state: EngineState, content: CompiledContent, effects: Eff
           state.northernWarMachine + effect.delta,
           effect.clamp ?? { min: 0, max: 12 },
         );
-        trace.message = `Northern War Machine ${before} -> ${state.northernWarMachine}.`;
+        trace.message = `War Machine ${before} -> ${state.northernWarMachine}.`;
         trace.deltas.push(createDelta('track', 'northernWarMachine', before, state.northernWarMachine));
         break;
       }
@@ -434,7 +609,7 @@ function applyEffects(state: EngineState, content: CompiledContent, effects: Eff
           const region = state.regions[regionId];
           const beforeExtraction = region.extractionTokens;
           const beforeDefense = region.defenseRating;
-          let pending = effect.amount;
+          let pending = effect.amount + (effect.type === 'add_extraction' ? source.crisisExtractionBonus ?? 0 : 0);
 
           if (effect.type === 'add_extraction') {
             while (pending > 0 && region.defenseRating > 0) {
@@ -581,7 +756,7 @@ function resolveMilitaryIntervention(state: EngineState, content: CompiledConten
       {
         effectType: 'system_phase',
         status: 'executed',
-        message: `Comrades ${before} -> ${region.bodiesPresent[targetSeat]}.`,
+        message: `Bodies ${before} -> ${region.bodiesPresent[targetSeat]}.`,
         causedBy: ['intervention'],
         deltas: [createDelta('bodies', `${targetRegionId}.seat:${targetSeat}`, before, region.bodiesPresent[targetSeat])],
       },
@@ -605,15 +780,44 @@ function resolveMilitaryIntervention(state: EngineState, content: CompiledConten
   addEvent(state, 'system', 'military_intervention', '⚔️', `Military intervention entrenched extraction in ${targetRegionId}.`, ['intervention'], traces);
 }
 
+function resolveCrisisCard(state: EngineState, content: CompiledContent, cardId: string) {
+  const card = assertExists(content.cards[cardId], `Missing card ${cardId}.`);
+  if (card.deck !== 'crisis') {
+    throw new Error(`Card ${cardId} is not a crisis card.`);
+  }
+
+  const pressure = getSystemPersistentModifiers(state, content);
+  const traces = applyEffects(
+    state,
+    content,
+    card.effects,
+    {
+      sourceType: 'card',
+      sourceId: card.id,
+      emoji: '🃏',
+      message: card.name,
+      causedBy: [card.id],
+      context: { causedBy: [card.id] },
+      crisisExtractionBonus: pressure.crisisExtractionBonus,
+    },
+  );
+  moveCardToDiscard(state, 'crisis', cardId);
+  addEvent(state, 'card', card.id, '🃏', `${card.name}: ${card.text}`, [card.id], traces, {
+    sourceDeckId: 'crisis',
+    cardReveals: [{ deckId: 'crisis', cardId, destination: 'discard', public: true, origin: 'system_phase' }],
+  });
+}
+
 function resolveSystemCard(state: EngineState, content: CompiledContent, cardId: string) {
   const card = assertExists(content.cards[cardId], `Missing card ${cardId}.`);
   if (card.deck !== 'system') {
     throw new Error(`Card ${cardId} is not a system card.`);
   }
+  const activeBefore = state.activeSystemCardIds.length;
   const traces = applyEffects(
     state,
     content,
-    card.effects,
+    card.onReveal,
     {
       sourceType: 'card',
       sourceId: card.id,
@@ -623,11 +827,36 @@ function resolveSystemCard(state: EngineState, content: CompiledContent, cardId:
       context: { causedBy: [card.id] },
     },
   );
-  moveCardToDiscard(state, 'system', cardId);
+  state.activeSystemCardIds.push(cardId);
+  traces.push({
+    effectType: 'system_phase',
+    status: 'executed',
+    message: `Active escalations ${activeBefore} -> ${state.activeSystemCardIds.length}.`,
+    causedBy: [card.id],
+    deltas: [createDelta('card', 'system:active', activeBefore, state.activeSystemCardIds.length)],
+  });
   addEvent(state, 'card', card.id, '🂠', `${card.name}: ${card.text}`, [card.id], traces, {
     sourceDeckId: 'system',
-    cardReveals: [{ deckId: 'system', cardId, destination: 'discard', public: true }],
+    cardReveals: [{ deckId: 'system', cardId, destination: 'active', public: true, origin: 'system_phase' }],
   });
+}
+
+function resolveSystemEscalation(state: EngineState, content: CompiledContent) {
+  const triggerId = getNextSystemEscalationTrigger(state);
+  if (!triggerId) {
+    return;
+  }
+
+  state.usedSystemEscalationTriggers[triggerId] = true;
+  addSimpleEvent(state, 'system', triggerId, '🚩', getSystemEscalationTriggerMessage(triggerId), [triggerId]);
+  const cardId = drawCard(state, 'system');
+  if (!cardId) {
+    addSimpleEvent(state, 'system', 'system_deck_empty', '🪵', 'The System deck is exhausted.', [triggerId, 'system_deck_empty']);
+    return;
+  }
+
+  state.lastSystemCardIds.push(cardId);
+  resolveSystemCard(state, content, cardId);
 }
 
 function createInitialPlayers(command: StartGameCommand, content: CompiledContent): PlayerState[] {
@@ -651,10 +880,10 @@ function createInitialState(command: StartGameCommand, content: CompiledContent)
   const decks = {
     system: { drawPile: [] as string[], discardPile: [] as string[] },
     resistance: { drawPile: [] as string[], discardPile: [] as string[] },
-    beacon: { drawPile: [] as string[], discardPile: [] as string[] },
+    crisis: { drawPile: [] as string[], discardPile: [] as string[] },
   };
 
-  for (const deckId of ['system', 'resistance', 'beacon'] as const) {
+  for (const deckId of ['system', 'resistance', 'crisis'] as const) {
     const [nextRng, shuffled] = shuffle(rng, content.decks[deckId]);
     rng = nextRng;
     decks[deckId].drawPile = shuffled;
@@ -679,7 +908,7 @@ function createInitialState(command: StartGameCommand, content: CompiledContent)
   }
 
   const beacons = Object.fromEntries(
-    content.decks.beacon.map((beaconId) => [
+    Object.keys(content.beacons).map((beaconId) => [
       beaconId,
       {
         id: beaconId,
@@ -691,8 +920,10 @@ function createInitialState(command: StartGameCommand, content: CompiledContent)
 
   const activeBeaconIds: string[] = [];
   if (command.mode === 'SYMBOLIC') {
+    const [nextRng, shuffledBeacons] = shuffle(rng, Object.keys(content.beacons));
+    rng = nextRng;
     for (let index = 0; index < 3; index += 1) {
-      const beaconId = decks.beacon.drawPile.shift() ?? null;
+      const beaconId = shuffledBeacons[index] ?? null;
       if (beaconId) {
         activeBeaconIds.push(beaconId);
         beacons[beaconId].active = true;
@@ -701,7 +932,7 @@ function createInitialState(command: StartGameCommand, content: CompiledContent)
   }
 
   const state: EngineState = {
-    version: 'design-cutover-1',
+    version: 'design-cutover-2',
     seed: command.seed,
     rng,
     rulesetId: command.rulesetId,
@@ -719,6 +950,9 @@ function createInitialState(command: StartGameCommand, content: CompiledContent)
     decks,
     beacons,
     activeBeaconIds,
+    activeSystemCardIds: [],
+    usedSystemEscalationTriggers: createDefaultEscalationTriggers(),
+    failedCampaigns: 0,
     lastSystemCardIds: [],
     publicAttentionEvents: [],
     commandLog: [cloneState(command)],
@@ -729,31 +963,16 @@ function createInitialState(command: StartGameCommand, content: CompiledContent)
   };
 
   for (const player of state.players) {
-    const drawTrace = resolveCardDraws(state, player.seat, 1);
-    addEvent(
-      state,
-      'system',
-      'starting_hands',
-      '🃏',
-      `Seat ${player.seat + 1} revealed an opening resistance card.`,
-      ['StartGame'],
-      [drawTrace],
-      { actingSeat: player.seat, sourceDeckId: 'resistance' },
-    );
+    resolveCardDraws(state, player.seat, 1, 'opening_hand');
   }
 
   for (const beaconId of activeBeaconIds) {
-    addCardRevealEvent(
+    addSimpleEvent(
       state,
-      {
-        deckId: 'beacon',
-        cardId: beaconId,
-        destination: 'active',
-        public: true,
-      },
       'beacon',
       beaconId,
-      `${content.beacons[beaconId]?.title ?? beaconId} was activated from the beacon deck.`,
+      '🕯️',
+      `${content.beacons[beaconId]?.title ?? beaconId} was activated as a symbolic objective.`,
       ['StartGame', beaconId],
     );
   }
@@ -774,82 +993,81 @@ function getDisabledReasonForIntent(
   seat: number,
   intent: Omit<QueuedIntent, 'slot'>,
   options?: { resolvingQueued?: boolean },
-): string | undefined {
+): DisabledReasonDetail | undefined {
   const player = state.players[seat];
   const action = getBaseActionDefinition(content, intent.actionId);
   if (!player) {
-    return 'Unknown seat';
+    return { code: 'unknown_seat' };
   }
   if (state.phase !== 'COALITION') {
-    return 'Phase locked';
+    return { code: 'phase_locked' };
   }
   if (!options?.resolvingQueued && player.ready) {
-    return 'Seat already ready';
+    return { code: 'seat_already_ready' };
   }
   if (!options?.resolvingQueued && player.actionsRemaining <= 0) {
-    return 'No actions remaining';
+    return { code: 'no_actions_remaining' };
   }
   if (action.needsRegion && !intent.regionId) {
-    return 'Select a region';
+    return { code: 'select_region' };
   }
   if (action.needsDomain && !intent.domainId) {
-    return 'Select a domain';
+    return { code: 'select_domain' };
   }
   if (action.needsTargetSeat && (intent.targetSeat === undefined || intent.targetSeat === seat)) {
-    return 'Select another seat';
+    return { code: 'select_another_seat' };
   }
   if (action.id === 'build_solidarity') {
     if ((state.regions[intent.regionId!].bodiesPresent[seat] ?? 0) < 3) {
-      return 'Need 3 Bodies in region';
+      return { code: 'need_three_bodies' };
     }
   }
   if (action.id === 'international_outreach') {
-    const faction = getFaction(content, player);
-    const cost = 2 + faction.outreachPenalty;
+    const cost = getOutreachCost(state, content, seat);
     if (player.evidence < cost) {
-      return 'Not enough Evidence';
+      return { code: 'not_enough_evidence', values: { count: cost } };
     }
   }
   if (action.id === 'smuggle_evidence') {
     if (player.evidence <= 0) {
-      return 'No Evidence to move';
+      return { code: 'no_evidence_to_move' };
     }
     if ((state.regions[intent.regionId!].bodiesPresent[seat] ?? 0) < 1) {
-      return 'Need 1 Body in region';
+      return { code: 'need_one_body' };
     }
   }
   if (action.id === 'defend') {
     if (!intent.bodiesCommitted || intent.bodiesCommitted < 1) {
-      return 'Commit at least 1 Body';
+      return { code: 'commit_one_body' };
     }
     if ((state.regions[intent.regionId!].bodiesPresent[seat] ?? 0) < intent.bodiesCommitted) {
-      return 'Not enough Bodies in region';
+      return { code: 'not_enough_bodies' };
     }
   }
   if (action.id === 'launch_campaign') {
     if (!intent.bodiesCommitted || intent.bodiesCommitted < 1) {
-      return 'Commit at least 1 Body';
+      return { code: 'commit_one_body' };
     }
     if ((state.regions[intent.regionId!].bodiesPresent[seat] ?? 0) < intent.bodiesCommitted) {
-      return 'Not enough Bodies in region';
+      return { code: 'not_enough_bodies' };
     }
     if ((intent.evidenceCommitted ?? 0) > player.evidence) {
-      return 'Not enough Evidence';
+      return { code: 'not_enough_evidence', values: { count: intent.evidenceCommitted ?? 0 } };
     }
     if (intent.cardId) {
       const card = content.cards[intent.cardId];
       if (!card || card.deck !== 'resistance' || card.type !== 'support' || !player.resistanceHand.includes(intent.cardId)) {
-        return 'Support card unavailable';
+        return { code: 'support_card_unavailable' };
       }
     }
   }
   if (action.id === 'play_card') {
     if (!intent.cardId) {
-      return 'Select a card';
+      return { code: 'select_card' };
     }
     const card = content.cards[intent.cardId];
     if (!card || card.deck !== 'resistance' || card.type !== 'action' || !player.resistanceHand.includes(intent.cardId)) {
-      return 'Action card unavailable';
+      return { code: 'action_card_unavailable' };
     }
   }
 
@@ -862,11 +1080,13 @@ export function getDisabledActionReason(
   seat: number,
   action: Omit<QueuedIntent, 'slot'>,
 ): DisabledActionReason {
-  const reason = getDisabledReasonForIntent(state, content, seat, action);
+  const detail = getDisabledReasonForIntent(state, content, seat, action);
   return {
     actionId: action.actionId,
-    disabled: Boolean(reason),
-    reason,
+    disabled: Boolean(detail),
+    reasonCode: detail?.code,
+    reasonValues: detail?.values,
+    reason: detail ? toLegacyDisabledReason(detail) : undefined,
   };
 }
 
@@ -936,7 +1156,8 @@ function resolveInvestigate(state: EngineState, content: CompiledContent, seat: 
       context: { actingSeat: seat, targetRegionId: regionId, causedBy: ['investigate'] },
     },
   );
-  traces.push(resolveCardDraws(state, seat, 1));
+  const pressure = getSystemPersistentModifiers(state, content);
+  traces.push(resolveCardDraws(state, seat, Math.max(0, 1 + pressure.resistanceDrawDelta), 'investigate'));
   return traces;
 }
 
@@ -962,8 +1183,8 @@ function resolveBuildSolidarity(state: EngineState, content: CompiledContent, se
 }
 
 function resolveSmuggleEvidence(state: EngineState, content: CompiledContent, seat: number, intent: QueuedIntent): EffectTrace[] {
-  const regionId = assertExists(intent.regionId, 'Smuggle Witness requires region.');
-  const targetSeat = assertExists(intent.targetSeat, 'Smuggle Witness requires target seat.');
+  const regionId = assertExists(intent.regionId, 'Smuggle Evidence requires region.');
+  const targetSeat = assertExists(intent.targetSeat, 'Smuggle Evidence requires target seat.');
   const faction = getFaction(content, state.players[seat]);
   const transferAmount = faction.id === 'amazon_guardians' ? 1 : Math.min(2, state.players[seat].evidence);
   return applyEffects(
@@ -978,7 +1199,7 @@ function resolveSmuggleEvidence(state: EngineState, content: CompiledContent, se
       sourceType: 'action',
       sourceId: 'smuggle_evidence',
       emoji: '📨',
-      message: `Seat ${seat + 1} smuggled witness to seat ${targetSeat + 1}.`,
+      message: `Seat ${seat + 1} smuggled Evidence to seat ${targetSeat + 1}.`,
       causedBy: ['smuggle_evidence'],
       context: { actingSeat: seat, targetRegionId: regionId, causedBy: ['smuggle_evidence'] },
     },
@@ -986,8 +1207,7 @@ function resolveSmuggleEvidence(state: EngineState, content: CompiledContent, se
 }
 
 function resolveInternationalOutreach(state: EngineState, content: CompiledContent, seat: number): EffectTrace[] {
-  const faction = getFaction(content, state.players[seat]);
-  const cost = 2 + faction.outreachPenalty;
+  const cost = getOutreachCost(state, content, seat);
   return applyEffects(
     state,
     content,
@@ -1038,6 +1258,21 @@ function resolvePlayCard(state: EngineState, content: CompiledContent, seat: num
   }
   removeCardFromHand(state, seat, cardId);
   moveCardToDiscard(state, 'resistance', cardId);
+  addCardRevealEvent(
+    state,
+    {
+      deckId: 'resistance',
+      cardId,
+      destination: 'discard',
+      seat,
+      public: true,
+      origin: 'played_action_card',
+    },
+    'card',
+    card.id,
+    `${card.name} was played.`,
+    ['play_card', card.id],
+  );
   return applyEffects(
     state,
     content,
@@ -1066,6 +1301,7 @@ function resolveLaunchCampaign(
   const player = state.players[seat];
   const faction = getFaction(content, player);
   const support = getCampaignSupportBonus(state, content, seat, intent);
+  const pressure = getSystemPersistentModifiers(state, content);
 
   const spendTrace = applyEffects(
     state,
@@ -1101,9 +1337,15 @@ function resolveLaunchCampaign(
     modifier += 1;
   }
   modifier += support.bonus;
+  modifier += pressure.campaignModifierDelta;
 
   const total = dieOne + dieTwo + modifier;
-  const success = total >= 8;
+  const successTarget = BASE_CAMPAIGN_TARGET + pressure.campaignTargetDelta;
+  const success = total >= successTarget;
+  const extractionRemoved = success ? (total >= 11 ? 2 : 1) : 0;
+  const domainDelta = success ? 1 : 0;
+  const globalGazeDelta = success ? 0 : total <= 5 ? 0 : 1;
+  const warMachineDelta = success ? (domainId === 'WarMachine' && total >= 10 ? -1 : 0) : total <= 5 ? 1 : 0;
   const roll: RollResolution = {
     actionId: 'launch_campaign',
     seat,
@@ -1112,21 +1354,27 @@ function resolveLaunchCampaign(
     dice: [dieOne, dieTwo],
     modifier,
     total,
+    target: successTarget,
     success,
+    outcomeBand: success ? (total >= 11 ? 'surge' : 'success') : (total <= 5 ? 'backlash' : 'attention'),
+    extractionRemoved,
+    domainDelta,
+    globalGazeDelta,
+    warMachineDelta,
   };
   const traces = [...spendTrace];
 
   traces.push({
     effectType: 'launch_campaign',
     status: 'executed',
-    message: `Campaign rolled ${dieOne}+${dieTwo}+${modifier} = ${total}.`,
+    message: `Campaign rolled ${dieOne}+${dieTwo}+${modifier} = ${total} against ${successTarget}+.`,
     causedBy: ['launch_campaign'],
     deltas: [],
   });
 
   if (success) {
     const victoryEffects: Effect[] = [
-      { type: 'remove_extraction', region: regionId, amount: total >= 11 ? 2 : 1 },
+      { type: 'remove_extraction', region: regionId, amount: extractionRemoved },
       { type: 'modify_domain', domain: domainId, delta: 1 },
     ];
     if (domainId === 'WarMachine' && total >= 10) {
@@ -1148,6 +1396,15 @@ function resolveLaunchCampaign(
       ),
     );
   } else {
+    const failedCampaignsBefore = state.failedCampaigns;
+    state.failedCampaigns += 1;
+    traces.push({
+      effectType: 'launch_campaign',
+      status: 'executed',
+      message: `Failed campaigns ${failedCampaignsBefore} -> ${state.failedCampaigns}.`,
+      causedBy: ['launch_campaign'],
+      deltas: [createDelta('track', 'failedCampaigns', failedCampaignsBefore, state.failedCampaigns)],
+    });
     const backlashEffects: Effect[] = total <= 5
       ? [
           { type: 'add_extraction', region: regionId, amount: 1 },
@@ -1229,9 +1486,48 @@ export function normalizeEngineState(state: EngineState): EngineState {
   const next = cloneState(state);
   next.extractionPool = calculateExtractionPool(next);
   next.activeBeaconIds = next.activeBeaconIds ?? [];
+  next.activeSystemCardIds = next.activeSystemCardIds ?? [];
+  next.usedSystemEscalationTriggers = next.usedSystemEscalationTriggers ?? createDefaultEscalationTriggers();
+  next.failedCampaigns = next.failedCampaigns ?? 0;
   next.publicAttentionEvents = next.publicAttentionEvents ?? [];
   next.lastSystemCardIds = next.lastSystemCardIds ?? [];
   next.mandatesResolved = next.mandatesResolved ?? false;
+  next.eventLog = (next.eventLog ?? []).map((event) => ({
+    ...event,
+    ...(event.context
+      ? {
+        context: {
+          ...event.context,
+          cardReveals: event.context.cardReveals?.map((reveal) => ({
+            ...reveal,
+            origin: reveal.origin ?? 'other',
+          })),
+          ...(event.context.roll
+            ? {
+              roll: {
+                ...event.context.roll,
+                target: event.context.roll.target ?? BASE_CAMPAIGN_TARGET,
+                outcomeBand: event.context.roll.outcomeBand
+                  ?? (event.context.roll.success
+                    ? (event.context.roll.total >= 11 ? 'surge' : 'success')
+                    : (event.context.roll.total <= 5 ? 'backlash' : 'attention')),
+                extractionRemoved: event.context.roll.extractionRemoved ?? (event.context.roll.success ? (event.context.roll.total >= 11 ? 2 : 1) : 0),
+                domainDelta: event.context.roll.domainDelta ?? (event.context.roll.success ? 1 : 0),
+                globalGazeDelta: event.context.roll.globalGazeDelta ?? (!event.context.roll.success && event.context.roll.total > 5 ? 1 : 0),
+                warMachineDelta: event.context.roll.warMachineDelta
+                  ?? (event.context.roll.success
+                    ? (event.context.roll.domainId === 'WarMachine' && event.context.roll.total >= 10 ? -1 : 0)
+                    : (event.context.roll.total <= 5 ? 1 : 0)),
+              },
+            }
+            : {}),
+        },
+      }
+      : {}),
+  }));
+  if (!next.decks.crisis) {
+    next.decks.crisis = { drawPile: [], discardPile: [] };
+  }
   return next;
 }
 
@@ -1263,13 +1559,18 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
     case 'QueueIntent': {
       const reason = getDisabledReasonForIntent(next, content, command.seat, command.action);
       if (reason) {
-        addRejectedCommandEvent(next, command, reason);
+        addRejectedCommandEvent(next, command, toLegacyDisabledReason(reason));
         return next;
       }
       const player = next.players[command.seat];
       player.queuedIntents.push({ ...command.action, slot: player.queuedIntents.length });
       player.actionsRemaining -= 1;
-      addSimpleEvent(next, 'command', 'QueueIntent', '📝', `Seat ${command.seat + 1} queued ${command.action.actionId}.`, ['QueueIntent']);
+      addEvent(next, 'command', 'QueueIntent', '📝', `Seat ${command.seat + 1} queued ${command.action.actionId}.`, ['QueueIntent'], [], {
+        actingSeat: command.seat,
+        actionId: command.action.actionId,
+        targetRegionId: command.action.regionId,
+        targetDomainId: command.action.domainId,
+      });
       return next;
     }
     case 'RemoveQueuedIntent': {
@@ -1286,7 +1587,9 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
       player.queuedIntents = player.queuedIntents.filter((intent) => intent.slot !== command.slot).map((intent, slot) => ({ ...intent, slot }));
       player.actionsRemaining += 1;
       player.ready = false;
-      addSimpleEvent(next, 'command', 'RemoveQueuedIntent', '↩️', `Seat ${command.seat + 1} pulled a queued move.`, ['RemoveQueuedIntent']);
+      addEvent(next, 'command', 'RemoveQueuedIntent', '↩️', `Seat ${command.seat + 1} pulled a queued move.`, ['RemoveQueuedIntent'], [], {
+        actingSeat: command.seat,
+      });
       return next;
     }
     case 'ReorderQueuedIntent': {
@@ -1304,7 +1607,9 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
       queue.splice(command.toSlot, 0, moved);
       player.queuedIntents = queue.map((intent, slot) => ({ ...intent, slot }));
       player.ready = false;
-      addSimpleEvent(next, 'command', 'ReorderQueuedIntent', '🔀', `Seat ${command.seat + 1} reordered planned moves.`, ['ReorderQueuedIntent']);
+      addEvent(next, 'command', 'ReorderQueuedIntent', '🔀', `Seat ${command.seat + 1} reordered planned moves.`, ['ReorderQueuedIntent'], [], {
+        actingSeat: command.seat,
+      });
       return next;
     }
     case 'SetReady': {
@@ -1322,7 +1627,10 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
         return next;
       }
       player.ready = command.ready;
-      addSimpleEvent(next, 'command', 'SetReady', command.ready ? '✅' : '⚪', `Seat ${command.seat + 1} is ${command.ready ? 'ready' : 'not ready'}.`, ['SetReady']);
+      addEvent(next, 'command', 'SetReady', command.ready ? '✅' : '⚪', `Seat ${command.seat + 1} is ${command.ready ? 'ready' : 'not ready'}.`, ['SetReady'], [], {
+        actingSeat: command.seat,
+        readyState: command.ready,
+      });
       return next;
     }
     case 'ResolveSystemPhase': {
@@ -1333,21 +1641,29 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
 
       next.lastSystemCardIds = [];
       next.publicAttentionEvents = [];
-      const drawCount = next.globalGaze >= 10 ? 2 : 1;
-      if (drawCount > 1) {
-        addSystemAttentionEvent(next, 'Global Gaze is high. The system strikes twice this round.');
+      const pressure = getSystemPersistentModifiers(next, content);
+      const drawCount = Math.max(1, 1 + (next.globalGaze >= 10 ? 1 : 0) + pressure.crisisDrawDelta);
+      if (next.globalGaze >= 10) {
+        addSystemAttentionEvent(next, 'Global Gaze is high. The Crisis deck strikes twice this round.');
+      }
+      if (pressure.crisisDrawDelta > 0) {
+        addSystemAttentionEvent(next, 'A structural escalation forces additional Crisis draws this round.');
       }
 
       for (let drawIndex = 0; drawIndex < drawCount; drawIndex += 1) {
-        const cardId = drawCard(next, 'system');
+        const cardId = drawCard(next, 'crisis');
         if (!cardId) {
           continue;
         }
-        next.lastSystemCardIds.push(cardId);
-        resolveSystemCard(next, content, cardId);
+        resolveCrisisCard(next, content, cardId);
         if (checkExtractionLoss(next)) {
           return next;
         }
+      }
+
+      resolveSystemEscalation(next, content);
+      if (checkExtractionLoss(next)) {
+        return next;
       }
 
       resolveMilitaryIntervention(next, content);
@@ -1387,7 +1703,7 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
       for (const { seat, intent } of ordered) {
         const reason = getDisabledReasonForIntent(next, content, seat, intent, { resolvingQueued: true });
         if (reason) {
-          addSimpleEvent(next, 'action', intent.actionId, '❌', `Seat ${seat + 1} failed to resolve ${intent.actionId}: ${reason}.`, [
+          addSimpleEvent(next, 'action', intent.actionId, '❌', `Seat ${seat + 1} failed to resolve ${intent.actionId}: ${toLegacyDisabledReason(reason)}.`, [
             'CommitCoalitionIntent',
             intent.actionId,
           ]);

@@ -1,7 +1,7 @@
 import { normalizeEngineState, replayCommands } from './runtime.ts';
 import type { EngineState, SerializedGame } from './types.ts';
 
-const SERIALIZER_VERSION = 'design-cutover-1';
+const SERIALIZER_VERSION = 'design-cutover-2';
 
 export function serializeGame(state: EngineState): string {
   const payload: SerializedGame = {

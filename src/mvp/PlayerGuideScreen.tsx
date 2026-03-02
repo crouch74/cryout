@@ -42,15 +42,15 @@ export function PlayerGuideScreen({ locale, onLocaleChange, onBackHome }: Player
 
           <PaperSheet tone="tray">
             <span className="engraved-eyebrow">{t('ui.guide.economy', 'Economy')}</span>
-            <p>{t('ui.guide.economy1', 'Comrades live in regions and are spent from those regions.')}</p>
-            <p>{t('ui.guide.economy2', 'Witness belongs to seats and powers campaigns, appeals, and support work.')}</p>
+            <p>{t('ui.guide.economy1', 'Bodies live in regions and are spent from those regions.')}</p>
+            <p>{t('ui.guide.economy2', 'Evidence belongs to seats and powers campaigns, appeals, and support work.')}</p>
             <p>{t('ui.guide.economy3', 'Defense is temporary and only exists to blunt the next system strike.')}</p>
           </PaperSheet>
 
           <PaperSheet tone="tray">
-            <span className="engraved-eyebrow">{t('ui.guide.beaconsMandates', 'Beacons and Charges')}</span>
+            <span className="engraved-eyebrow">{t('ui.guide.beaconsMandates', 'Beacons and Secret Mandates')}</span>
             <p>{t('ui.guide.beacon1', 'Symbolic mode activates three Beacons from a six-card deck.')}</p>
-            <p>{t('ui.guide.beacon2', 'Every faction carries a solemn charge. Reaching the public win condition without satisfying all charges still ends in failure.')}</p>
+            <p>{t('ui.guide.beacon2', 'Every faction carries a Secret Mandate. Reaching the public win condition without satisfying all Secret Mandates still ends in failure.')}</p>
           </PaperSheet>
 
           <PaperSheet tone="tray">

@@ -453,7 +453,7 @@ export default function App() {
       pushToast({
         tone: 'error',
         title: t('ui.app.saveInvalid', 'Save invalid'),
-        message: error instanceof Error ? error.message : 'Save payload could not be parsed.',
+        message: t('ui.app.saveInvalidBody', 'Save payload could not be parsed.'),
         dismissAfterMs: 4200,
       });
     }

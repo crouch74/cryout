@@ -1,11 +1,13 @@
-import type { EngineState } from '../../engine/index.ts';
+import type { CompiledContent, EngineState } from '../../engine/index.ts';
 import { formatNumber, t } from '../i18n/index.ts';
+import { getTerminalStateLabel, presentHistoryEvent } from './historyPresentation.ts';
 import { PaperSheet } from './tabletop.tsx';
 
 export type AutoPlaySpeedLevel = 1 | 2 | 3 | 4 | 5;
 
 interface DebugOverlayProps {
   state: EngineState;
+  content: CompiledContent;
   roomId?: string | null;
   showDebugSnapshot: boolean;
   autoPlayRounds: string;
@@ -30,6 +32,7 @@ const AUTO_PLAY_SPEED_OPTIONS: Array<{ value: AutoPlaySpeedLevel; label: string 
 
 export function DebugOverlay({
   state,
+  content,
   roomId,
   showDebugSnapshot,
   autoPlayRounds,
@@ -43,6 +46,15 @@ export function DebugOverlay({
   onAutoPlayStop,
   onClose,
 }: DebugOverlayProps) {
+  let lastAttentionEvent = null;
+  for (let index = state.eventLog.length - 1; index >= 0; index -= 1) {
+    const event = state.eventLog[index];
+    if (event?.sourceId === 'public_attention') {
+      lastAttentionEvent = event;
+      break;
+    }
+  }
+  const terminalStateLabel = getTerminalStateLabel(state, content);
   return (
     <aside className="debug-ledger" aria-label={t('ui.debug.devPanel', 'Development panel')}>
       <PaperSheet tone="folio">
@@ -127,14 +139,14 @@ export function DebugOverlay({
               <div className="ledger-row"><span>{t('ui.debug.rngCalls', 'RNG Calls')}</span><strong>{formatNumber(state.rng.calls)}</strong></div>
               <div className="ledger-row"><span>{t('ui.debug.extractionPool', 'Extraction Pool')}</span><strong>{formatNumber(state.extractionPool)}</strong></div>
               <div className="ledger-row"><span>{t('ui.debug.gaze', 'Global Gaze')}</span><strong>{formatNumber(state.globalGaze)}</strong></div>
-              <div className="ledger-row"><span>{t('ui.debug.warMachine', 'Northern War Machine')}</span><strong>{formatNumber(state.northernWarMachine)}</strong></div>
+              <div className="ledger-row"><span>{t('ui.debug.warMachine', 'War Machine')}</span><strong>{formatNumber(state.northernWarMachine)}</strong></div>
               <div className="ledger-row"><span>{t('ui.debug.activeBeacons', 'Active Beacons')}</span><strong>{state.activeBeaconIds.length || t('ui.debug.none', 'none')}</strong></div>
               <div className="ledger-row"><span>{t('ui.debug.systemCards', 'Last system cards')}</span><strong>{state.lastSystemCardIds.join(', ') || t('ui.debug.none', 'none')}</strong></div>
-              <div className="ledger-row"><span>{t('ui.debug.attentionFeed', 'Attention feed')}</span><strong>{state.publicAttentionEvents.at(-1) ?? t('ui.debug.none', 'none')}</strong></div>
+              <div className="ledger-row"><span>{t('ui.debug.attentionFeed', 'Attention feed')}</span><strong>{lastAttentionEvent ? presentHistoryEvent(lastAttentionEvent, content).title : t('ui.debug.none', 'none')}</strong></div>
               <div className="ledger-row"><span>{t('ui.debug.commandLog', 'Command log')}</span><strong>{formatNumber(state.commandLog.length)}</strong></div>
               <div className="ledger-row"><span>{t('ui.debug.eventLog', 'Event log')}</span><strong>{formatNumber(state.eventLog.length)}</strong></div>
-              <div className="ledger-row"><span>{t('ui.debug.winner', 'Winner')}</span><strong>{state.winner ?? t('ui.debug.na', 'n/a')}</strong></div>
-              <div className="ledger-row"><span>{t('ui.debug.lossReason', 'Loss reason')}</span><strong>{state.lossReason ?? t('ui.debug.na', 'n/a')}</strong></div>
+              <div className="ledger-row"><span>{t('ui.debug.winner', 'Winner')}</span><strong>{state.phase === 'WIN' ? (terminalStateLabel ?? t('ui.debug.na', 'n/a')) : t('ui.debug.na', 'n/a')}</strong></div>
+              <div className="ledger-row"><span>{t('ui.debug.lossReason', 'Loss reason')}</span><strong>{state.phase === 'LOSS' ? (terminalStateLabel ?? t('ui.debug.na', 'n/a')) : t('ui.debug.na', 'n/a')}</strong></div>
               {roomId ? <div className="ledger-row"><span>{t('ui.debug.room', 'Room')}</span><strong>{roomId}</strong></div> : null}
             </div>
           ) : null}
