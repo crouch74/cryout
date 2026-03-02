@@ -147,6 +147,9 @@ test('game screen source keeps the compressed board layout contract', () => {
   assert.match(source, /ContextPanel/);
   assert.match(source, /DeckStack/);
   assert.match(source, /decksContent/);
+  assert.match(source, /visual-delta-strip/);
+  assert.match(source, /activeHelpContent/);
+  assert.match(source, /externalHighlightKeys/);
   assert.match(source, /getNextUnfinishedCoalitionSeat/);
   assert.match(source, /FrontTrackBar/);
   assert.match(source, /Commit Prepared Moves/);
@@ -154,17 +157,19 @@ test('game screen source keeps the compressed board layout contract', () => {
   assert.match(source, /debugLayout=\{devMode\}/);
   assert.match(source, /advancePhase/);
   assert.match(source, /aria-label=\{phaseActionLabel\}/);
+  assert.doesNotMatch(source, /phase-brief-grid/);
+  assert.doesNotMatch(source, /whyBoardShifted/);
   assert.doesNotMatch(source, /<footer/);
 });
 
-test('phase progress source keeps help affordances on every step', () => {
+test('phase progress source keeps the active question-mark help affordance', () => {
   const source = readFileSync(new URL('../src/mvp/PhaseProgress.tsx', import.meta.url), 'utf8');
-  const trackSource = readFileSync(new URL('../src/mvp/tabletop.tsx', import.meta.url), 'utf8');
 
+  assert.match(source, /activeHelpContent/);
   assert.match(source, /activeHint/);
-  assert.match(source, /tooltipContent/);
-  assert.match(source, /tooltipId/);
-  assert.match(trackSource, /phase-progress-help-tooltip/);
+  assert.match(source, /phase-help-trigger/);
+  assert.match(source, /phase-progress-help-popover/);
+  assert.match(source, /aria-expanded/);
 });
 
 test('world map source renders the launch campaign dice overlay on the active board', () => {

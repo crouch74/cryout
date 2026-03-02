@@ -328,6 +328,8 @@
       "coalitionWaitingHint": "Every seat must be marked ready before the coalition can resolve.",
       "coalitionResolveHint": "The coalition is ready. Resolve the prepared moves.",
       "resolutionPhaseHint": "Check the aftermath, then begin the next round.",
+      "phaseHelp": "Phase details",
+      "phaseHelpGlyph": "?",
       "phaseBrief": "Phase brief",
       "thisPhaseChanges": "This phase changes",
       "latestChanges": "Latest changes",

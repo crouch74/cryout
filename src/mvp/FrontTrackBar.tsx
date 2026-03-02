@@ -4,7 +4,7 @@ import type { FrontTrackRow } from './gameUiHelpers.ts';
 import { formatNumber, t } from '../i18n/index.ts';
 import { useTransientHighlightKeys } from './useTransientHighlights.ts';
 
-export function FrontTrackBar({ rows }: { rows: FrontTrackRow[] }) {
+export function FrontTrackBar({ rows, highlightedIds }: { rows: FrontTrackRow[]; highlightedIds?: ReadonlySet<string> }) {
   const rowSignatures = useMemo(
     () => Object.fromEntries(rows.map((row) => [row.id, row.value])),
     [rows],
@@ -16,7 +16,7 @@ export function FrontTrackBar({ rows }: { rows: FrontTrackRow[] }) {
       {rows.map((row) => (
         <article
           key={row.id}
-          className={`front-track-row is-${row.severity} ${highlightedRows.has(row.id) ? 'is-changing' : ''}`.trim()}
+          className={`front-track-row is-${row.severity} ${highlightedRows.has(row.id) || highlightedIds?.has(row.id) === true ? 'is-changing' : ''}`.trim()}
           title={row.tooltip}
           style={{ ['--track-color' as string]: row.color } as CSSProperties}
         >

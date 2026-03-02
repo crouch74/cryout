@@ -6,9 +6,11 @@ import { useTransientHighlightKeys } from './useTransientHighlights.ts';
 
 export function StatusRibbon({
   items,
+  highlightedIds,
   utilities,
 }: {
   items: StatusRibbonItem[];
+  highlightedIds?: ReadonlySet<string>;
   utilities?: ReactNode;
 }) {
   const itemSignatures = useMemo(
@@ -22,7 +24,7 @@ export function StatusRibbon({
       <div className="status-ribbon-track" role="list" aria-label={t('ui.game.boardStatusRibbon', 'Board status ribbon')}>
         {items.map((item) => (
           <div key={item.id} role="listitem">
-            <StatusPill item={item} isChanging={highlightedItems.has(item.id)} />
+            <StatusPill item={item} isChanging={highlightedItems.has(item.id) || highlightedIds?.has(item.id) === true} />
           </div>
         ))}
       </div>

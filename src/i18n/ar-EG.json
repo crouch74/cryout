@@ -328,6 +328,8 @@
       "coalitionWaitingHint": "لازم كل المقاعد تتعلّم جاهزة قبل ما يتحل التحالف.",
       "coalitionResolveHint": "التحالف جاهز. حل التحركات المُعدّة.",
       "resolutionPhaseHint": "راجع اللي حصل ثم ابدأ الجولة التالية.",
+      "phaseHelp": "تفاصيل المرحلة",
+      "phaseHelpGlyph": "؟",
       "phaseBrief": "ملخص المرحلة",
       "thisPhaseChanges": "المرحلة دي بتغيّر",
       "latestChanges": "آخر التغييرات",

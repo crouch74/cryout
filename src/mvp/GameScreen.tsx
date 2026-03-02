@@ -31,6 +31,7 @@ import { ContextPanel } from './ContextPanel.tsx';
 import { DebugOverlay, type AutoPlaySpeedLevel } from './DebugOverlay.tsx';
 import { FrontTrackBar } from './FrontTrackBar.tsx';
 import { Icon } from './icons/Icon.tsx';
+import type { IconType } from './icons/iconTypes.ts';
 import { PlayerStrip } from './PlayerStrip.tsx';
 import { PhaseProgress } from './PhaseProgress.tsx';
 import { StatusRibbon } from './StatusRibbon.tsx';
@@ -107,13 +108,32 @@ interface PhaseInsight {
   detail: string;
 }
 
-interface ChangeSnapshot {
+interface VisualDeltaGlyph {
+  id: string;
+  icon: IconType;
+  value: string;
+  tone: 'track' | 'region' | 'resource' | 'card' | 'player';
+  ariaLabel: string;
+}
+
+interface VisualDeltaTile {
   id: string;
   emoji: string;
-  title: string;
-  reason: string;
-  changes: string[];
+  phaseIcon: string;
+  glyphs: VisualDeltaGlyph[];
+  ariaLabel: string;
+  targetKeys: string[];
 }
+
+const DOMAIN_DELTA_ICONS: Record<DomainId, IconType> = {
+  WarMachine: 'frontWar',
+  DyingPlanet: 'frontPlanet',
+  GildedCage: 'frontCage',
+  SilencedTruth: 'frontTruth',
+  EmptyStomach: 'frontHunger',
+  FossilGrip: 'frontFossil',
+  StolenVoice: 'frontVoice',
+};
 
 function createDraft(actionId: ActionId): DraftState {
   return {
@@ -275,40 +295,178 @@ function getPhaseInsights(state: EngineState, focusedSeat: number): PhaseInsight
   ];
 }
 
-function formatDeltaSummary(delta: EngineState['eventLog'][number]['deltas'][number]) {
+function getSignedDelta(before: number | string | boolean | null, after: number | string | boolean | null) {
+  if (typeof before !== 'number' || typeof after !== 'number') {
+    return null;
+  }
+
+  const amount = after - before;
+  if (amount === 0) {
+    return '0';
+  }
+
+  return `${amount > 0 ? '+' : ''}${formatNumber(amount)}`;
+}
+
+function getRegionIdFromDeltaLabel(label: string): RegionId | null {
+  const regionId = label.split('.')[0] ?? '';
+  return REGION_IDS.includes(regionId as RegionId) ? regionId as RegionId : null;
+}
+
+function getSeatFromDeltaLabel(label: string) {
+  const match = label.match(/seat:(\d+)/);
+  return match ? Number(match[1]) : null;
+}
+
+function getEventDeltas(event: EngineState['eventLog'][number]) {
+  const seen = new Set<string>();
+
+  return [event.deltas, ...event.trace.map((trace) => trace.deltas)]
+    .flat()
+    .filter((delta) => {
+      const key = `${delta.kind}:${delta.label}:${String(delta.before)}:${String(delta.after)}`;
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
+}
+
+function getVisualDeltaGlyph(delta: EngineState['eventLog'][number]['deltas'][number], content: CompiledContent) {
+  const signedDelta = getSignedDelta(delta.before, delta.after);
+
   switch (delta.kind) {
-    case 'track':
-      return `${delta.label === 'globalGaze' ? t('ui.game.globalGaze', 'Global Gaze') : t('ui.game.northernWarMachine', 'Northern War Machine')} ${delta.before} -> ${delta.after}`;
-    case 'domain':
-      return `${delta.label} ${delta.before} -> ${delta.after}`;
-    case 'extraction':
-      return `${delta.label.split('.')[0]} ${t('ui.game.extractionTokens', 'Extraction Tokens')} ${delta.before} -> ${delta.after}`;
-    case 'defense':
-      return `${delta.label.split('.')[0]} ${t('ui.game.defense', 'Defense')} ${delta.before} -> ${delta.after}`;
-    case 'evidence':
-      return `${t('ui.game.evidence', 'Evidence')} ${delta.before} -> ${delta.after}`;
-    case 'bodies':
-      return `${delta.label.split('.')[0]} ${t('ui.game.bodies', 'Comrades')} ${delta.before} -> ${delta.after}`;
+    case 'track': {
+      const isGaze = delta.label === 'globalGaze';
+      return {
+        glyph: {
+          id: `${delta.kind}:${delta.label}`,
+          icon: isGaze ? 'globalGaze' : 'warMachine',
+          value: signedDelta ?? '*',
+          tone: 'track',
+          ariaLabel: `${isGaze ? t('ui.game.globalGaze', 'Global Gaze') : t('ui.game.northernWarMachine', 'Northern War Machine')} ${signedDelta ?? ''}`.trim(),
+        } satisfies VisualDeltaGlyph,
+        targetKeys: [isGaze ? 'globalGaze' : 'warMachine'],
+      };
+    }
+    case 'domain': {
+      const domainId = delta.label as DomainId;
+      return {
+        glyph: {
+          id: `${delta.kind}:${delta.label}`,
+          icon: DOMAIN_DELTA_ICONS[domainId],
+          value: signedDelta ?? '*',
+          tone: 'track',
+          ariaLabel: `${localizeDomainField(domainId, 'name', content.domains[domainId].name)} ${signedDelta ?? ''}`.trim(),
+        } satisfies VisualDeltaGlyph,
+        targetKeys: [domainId],
+      };
+    }
+    case 'extraction': {
+      const regionId = getRegionIdFromDeltaLabel(delta.label);
+      return {
+        glyph: {
+          id: `${delta.kind}:${delta.label}`,
+          icon: 'extraction',
+          value: signedDelta ?? '*',
+          tone: 'region',
+          ariaLabel: `${regionId ? localizeRegionField(regionId, 'name', content.regions[regionId].name) : t('ui.game.extractionTokens', 'Extraction Tokens')} ${t('ui.game.extractionTokens', 'Extraction Tokens')} ${signedDelta ?? ''}`.trim(),
+        } satisfies VisualDeltaGlyph,
+        targetKeys: regionId ? [`region:${regionId}`, `region:${regionId}:extraction`] : [],
+      };
+    }
+    case 'defense': {
+      const regionId = getRegionIdFromDeltaLabel(delta.label);
+      return {
+        glyph: {
+          id: `${delta.kind}:${delta.label}`,
+          icon: 'defense',
+          value: signedDelta ?? '*',
+          tone: 'region',
+          ariaLabel: `${regionId ? localizeRegionField(regionId, 'name', content.regions[regionId].name) : t('ui.game.defense', 'Defense')} ${t('ui.game.defense', 'Defense')} ${signedDelta ?? ''}`.trim(),
+        } satisfies VisualDeltaGlyph,
+        targetKeys: regionId ? [`region:${regionId}`, `region:${regionId}:defense`] : [],
+      };
+    }
+    case 'bodies': {
+      const regionId = getRegionIdFromDeltaLabel(delta.label);
+      const seat = getSeatFromDeltaLabel(delta.label);
+      return {
+        glyph: {
+          id: `${delta.kind}:${delta.label}`,
+          icon: 'bodies',
+          value: signedDelta ?? '*',
+          tone: 'resource',
+          ariaLabel: `${regionId ? localizeRegionField(regionId, 'name', content.regions[regionId].name) : t('ui.game.bodies', 'Bodies')} ${t('ui.game.bodies', 'Bodies')} ${signedDelta ?? ''}`.trim(),
+        } satisfies VisualDeltaGlyph,
+        targetKeys: [
+          ...(regionId ? [`region:${regionId}`, `region:${regionId}:bodies`] : []),
+          ...(seat === null ? [] : [`player:${seat}:bodies`]),
+        ],
+      };
+    }
+    case 'evidence': {
+      const seat = getSeatFromDeltaLabel(delta.label);
+      return {
+        glyph: {
+          id: `${delta.kind}:${delta.label}`,
+          icon: 'evidence',
+          value: signedDelta ?? '*',
+          tone: 'resource',
+          ariaLabel: `${t('ui.game.evidence', 'Evidence')} ${signedDelta ?? ''}`.trim(),
+        } satisfies VisualDeltaGlyph,
+        targetKeys: seat === null ? [] : [`player:${seat}:evidence`],
+      };
+    }
     case 'card':
-      return t('ui.game.cardsChanged', 'Cards changed');
+      return {
+        glyph: {
+          id: `${delta.kind}:${delta.label}`,
+          icon: 'playCard',
+          value: '+',
+          tone: 'card',
+          ariaLabel: t('ui.game.cardsChanged', 'Cards changed'),
+        } satisfies VisualDeltaGlyph,
+        targetKeys: [],
+      };
     case 'player':
-      return `${delta.label} ${delta.before} -> ${delta.after}`;
+      return {
+        glyph: {
+          id: `${delta.kind}:${delta.label}`,
+          icon: 'seat',
+          value: signedDelta ?? '*',
+          tone: 'player',
+          ariaLabel: `${delta.label} ${signedDelta ?? ''}`.trim(),
+        } satisfies VisualDeltaGlyph,
+        targetKeys: [],
+      };
   }
 }
 
-function getRecentChangeSnapshots(state: EngineState): ChangeSnapshot[] {
+function getRecentVisualDeltaTiles(state: EngineState, content: CompiledContent): VisualDeltaTile[] {
   return state.eventLog
     .slice()
     .reverse()
     .filter((event) => event.deltas.length > 0 || event.trace.some((trace) => trace.deltas.length > 0))
     .slice(0, 3)
-    .map((event) => ({
-      id: String(event.seq),
-      emoji: event.emoji,
-      title: event.message,
-      reason: t(`ui.phases.${event.phase}`, event.phase),
-      changes: event.deltas.slice(0, 3).map(formatDeltaSummary),
-    }));
+    .map((event) => {
+      const glyphEntries = getEventDeltas(event)
+        .slice(0, 3)
+        .map((delta) => getVisualDeltaGlyph(delta, content));
+      const glyphs = glyphEntries.map((entry) => entry.glyph);
+      const targetKeys = [...new Set(glyphEntries.flatMap((entry) => entry.targetKeys))];
+
+      return {
+        id: String(event.seq),
+        emoji: event.emoji,
+        phaseIcon: getPhasePresentation(event.phase).icon,
+        glyphs,
+        ariaLabel: `${event.message}. ${glyphs.map((glyph) => glyph.ariaLabel).join('. ')}`.trim(),
+        targetKeys,
+      };
+    })
+    .filter((tile) => tile.glyphs.length > 0);
 }
 
 function createAutoPlayIntent(
@@ -546,15 +704,50 @@ export function GameScreen({
     ? !state.players.every((player) => player.ready)
     : state.phase === 'WIN' || state.phase === 'LOSS';
   const phaseInsights = getPhaseInsights(state, focusedPlayer.seat);
-  const recentChangeSnapshots = useMemo(() => getRecentChangeSnapshots(state), [state]);
-  const recentChangeSignatures = useMemo(
-    () => Object.fromEntries(recentChangeSnapshots.map((item) => [`change:${item.id}`, item.id])),
-    [recentChangeSnapshots],
+  const visualDeltaTiles = useMemo(() => getRecentVisualDeltaTiles(state, content), [content, state]);
+  const visualTargetSignatures = useMemo(
+    () => Object.fromEntries(
+      [...new Set(visualDeltaTiles.flatMap((tile) => tile.targetKeys))].map((key) => [
+        key,
+        visualDeltaTiles.filter((tile) => tile.targetKeys.includes(key)).map((tile) => tile.id).join(':'),
+      ]),
+    ),
+    [visualDeltaTiles],
   );
-  const liveRecentChanges = useTransientHighlightKeys(recentChangeSignatures, 1900);
+  const liveVisualTargets = useTransientHighlightKeys(visualTargetSignatures, 1900);
+  const visualDeltaTileSignatures = useMemo(
+    () => Object.fromEntries(visualDeltaTiles.map((tile) => [`delta:${tile.id}`, tile.id])),
+    [visualDeltaTiles],
+  );
+  const liveVisualDeltaTiles = useTransientHighlightKeys(visualDeltaTileSignatures, 1900);
   const phaseActionLabel = state.phase === 'SYSTEM'
     ? t('ui.game.playSystemPhase', 'Play System')
     : getActionButtonLabel(state.phase);
+  const highlightedStatusItems = useMemo(
+    () => new Set(statusItems.map((item) => item.id).filter((itemId) => liveVisualTargets.has(itemId))),
+    [liveVisualTargets, statusItems],
+  );
+  const highlightedFrontRows = useMemo(
+    () => new Set(frontRows.map((row) => row.id).filter((rowId) => liveVisualTargets.has(rowId))),
+    [frontRows, liveVisualTargets],
+  );
+  const highlightedMapTargets = useMemo(
+    () => new Set([...liveVisualTargets].filter((key) => key.startsWith('region:'))),
+    [liveVisualTargets],
+  );
+  const phaseHelpContent = (
+    <span className="phase-help-copy">
+      <span>{phasePresentation.copy}</span>
+      <span className="phase-help-insight-list">
+        {phaseInsights.map((item) => (
+          <span key={item.id} className="phase-help-insight">
+            <strong>{item.label}</strong>
+            <span>{item.detail}</span>
+          </span>
+        ))}
+      </span>
+    </span>
+  );
 
   const phaseProgressControls = (
     <div className="phase-progress-controls">
@@ -997,14 +1190,18 @@ export function GameScreen({
                 {localizeRulesetField(content.ruleset.id, 'name', content.ruleset.name)}
               </span>
               <h1>{phasePresentation.verb}</h1>
-              <p>{phasePresentation.copy}</p>
             </div>
             <button type="button" className="ledger-toggle" onClick={() => { setContextMode('ledger'); setContextOpen(true); }}>
               {t('ui.game.ledger', 'Ledger')}
             </button>
           </div>
 
-          <PhaseProgress phase={state.phase} activeContent={phaseProgressControls} activeHint={phaseControlHint} />
+          <PhaseProgress
+            phase={state.phase}
+            activeContent={phaseProgressControls}
+            activeHint={phaseControlHint}
+            activeHelpContent={phaseHelpContent}
+          />
 
           {state.phase === 'COALITION' ? (
             <>
@@ -1060,45 +1257,33 @@ export function GameScreen({
             </>
           ) : null}
 
-          <section className="phase-brief-grid" aria-label={t('ui.game.phaseBrief', 'Phase brief')}>
-            <article className="phase-brief-card">
-              <span className="context-eyebrow">{t('ui.game.thisPhaseChanges', 'This phase changes')}</span>
-              <strong>{t(`ui.phases.${state.phase}`, state.phase)}</strong>
-              <div className="phase-brief-list">
-                {phaseInsights.map((item) => (
-                  <div key={item.id} className="phase-brief-item">
-                    <strong>{item.label}</strong>
-                    <span>{item.detail}</span>
+          {visualDeltaTiles.length > 0 ? (
+            <section className="visual-delta-strip" aria-label={t('ui.game.latestChanges', 'Latest changes')}>
+              {visualDeltaTiles.map((tile) => (
+                <article
+                  key={tile.id}
+                  className={`visual-delta-tile ${liveVisualDeltaTiles.has(`delta:${tile.id}`) ? 'is-live' : ''}`.trim()}
+                  aria-label={tile.ariaLabel}
+                  title={tile.ariaLabel}
+                >
+                  <div className="visual-delta-tile-head" aria-hidden="true">
+                    <span className="visual-delta-phase-marker">{tile.phaseIcon}</span>
+                    <span className="visual-delta-emoji">{tile.emoji}</span>
                   </div>
-                ))}
-              </div>
-            </article>
-            <article className="phase-brief-card">
-              <span className="context-eyebrow">{t('ui.game.latestChanges', 'Latest changes')}</span>
-              <strong>{t('ui.game.whyBoardShifted', 'Why the board shifted')}</strong>
-              <div className="phase-brief-list">
-                {recentChangeSnapshots.length === 0 ? (
-                  <div className="phase-brief-item">
-                    <strong>{t('ui.game.noMajorChangeYet', 'No major board change yet')}</strong>
-                    <span>{t('ui.game.noMajorChangeYetBody', 'Resolve the current phase to see the next material shifts on tracks, regions, and coalition resources.')}</span>
+                  <div className="visual-delta-glyph-row" aria-hidden="true">
+                    {tile.glyphs.map((glyph) => (
+                      <span key={glyph.id} className={`visual-delta-glyph tone-${glyph.tone}`.trim()}>
+                        <Icon type={glyph.icon} size={16} title={glyph.ariaLabel} />
+                        <strong dir="ltr">{glyph.value}</strong>
+                      </span>
+                    ))}
                   </div>
-                ) : (
-                  recentChangeSnapshots.map((item) => (
-                    <div
-                      key={item.id}
-                      className={`phase-brief-item ${liveRecentChanges.has(`change:${item.id}`) ? 'is-live' : ''}`.trim()}
-                    >
-                      <strong>{item.emoji} {item.title}</strong>
-                      <span>{item.reason}</span>
-                      {item.changes.length > 0 ? <span>{item.changes.join(' • ')}</span> : null}
-                    </div>
-                  ))
-                )}
-              </div>
-            </article>
-          </section>
+                </article>
+              ))}
+            </section>
+          ) : null}
 
-          <StatusRibbon items={statusItems} />
+          <StatusRibbon items={statusItems} highlightedIds={highlightedStatusItems} />
 
           <div className="board-map-panel">
             <section className="board-deck-rail" aria-label={t('ui.game.decks', 'Decks')}>
@@ -1140,13 +1325,14 @@ export function GameScreen({
               selectedRegionId={selectedRegionId}
               campaignRoll={animatedCampaignRoll}
               debugLayout={devMode}
+              externalHighlightKeys={highlightedMapTargets}
               onSelectRegion={(regionId) => {
                 onViewStateChange({ regionId });
               }}
             />
           </div>
 
-          <FrontTrackBar rows={frontRows} />
+          <FrontTrackBar rows={frontRows} highlightedIds={highlightedFrontRows} />
         </section>
 
         <aside className="board-context-slot" aria-label={t('ui.game.boardContext', 'Board context')}>

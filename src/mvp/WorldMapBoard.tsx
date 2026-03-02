@@ -25,6 +25,7 @@ interface WorldMapBoardProps {
   selectedRegionId: RegionId | null;
   onSelectRegion: (regionId: RegionId) => void;
   debugLayout?: boolean;
+  externalHighlightKeys?: ReadonlySet<string>;
   campaignRoll?: {
     seq: number;
     regionId: RegionId;
@@ -116,6 +117,7 @@ export function WorldMapBoard({
   selectedRegionId,
   onSelectRegion,
   debugLayout = false,
+  externalHighlightKeys,
   campaignRoll = null,
 }: WorldMapBoardProps) {
   const [hoveredRegionId, setHoveredRegionId] = useState<RegionId | null>(null);
@@ -243,6 +245,10 @@ export function WorldMapBoard({
     [regionCounts, regionIds],
   );
   const highlightedRegionKeys = useTransientHighlightKeys(regionChangeSignatures, 1800);
+  const activeHighlightKeys = useMemo(
+    () => new Set([...highlightedRegionKeys, ...(externalHighlightKeys ?? new Set<string>())]),
+    [externalHighlightKeys, highlightedRegionKeys],
+  );
 
   const regionLayouts = useMemo(() => {
     if (canvasSize.width === 0 || canvasSize.height === 0 || !mapCamera) {
@@ -446,7 +452,7 @@ export function WorldMapBoard({
               const danger = getRegionDangerState(region.extractionTokens);
               const layout = regionLayouts[regionId];
               const label = localizeRegionField(regionId, 'name', content.regions[regionId].name);
-              const regionChanging = highlightedRegionKeys.has(`region:${regionId}`);
+              const regionChanging = activeHighlightKeys.has(`region:${regionId}`);
 
               return (
                 <button
@@ -488,8 +494,8 @@ export function WorldMapBoard({
                     {layout.cluster.items.map((item) => (
                       <span
                         key={`${regionId}-${item.type}`}
-                        className={`board-region-token-group board-region-token-group-${item.type} ${highlightedRegionKeys.has(`region:${regionId}:${item.type}`) ? 'is-changing' : ''}`.trim()}
-                        data-token-changing={highlightedRegionKeys.has(`region:${regionId}:${item.type}`)}
+                        className={`board-region-token-group board-region-token-group-${item.type} ${activeHighlightKeys.has(`region:${regionId}:${item.type}`) ? 'is-changing' : ''}`.trim()}
+                        data-token-changing={activeHighlightKeys.has(`region:${regionId}:${item.type}`)}
                         style={{
                           left: `${item.x}px`,
                           top: `${item.y}px`,
