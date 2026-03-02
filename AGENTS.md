@@ -144,3 +144,5 @@ Realign terminology.
 Re-anchor mechanics to documented rules.
 
 This document overrides stylistic convenience and creative deviation.
+
+New commits must have long form commit messages like in the commit history.

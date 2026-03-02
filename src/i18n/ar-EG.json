@@ -721,6 +721,7 @@
       "eventCoalitionCommitted": "تحركات التحالف المُعدّة اتحلت.",
       "eventResolutionResolved": "مرحلة الحسم اكتملت.",
       "eventLaunchCampaign": "{{seat}} أطلق حملة في {{region}}.",
+      "eventGameStart": "🌍 تبدأ {{ruleset}} في وضع {{mode}}.",
       "eventExtractionBreach": "منطقة وصلت لـ٦ رموز الاستخراج.",
       "eventMandateFailure": "النصر العام فشل لأن التكليفات السرية اتكسرت.",
       "eventVictory": "التحالف حقق النصر.",

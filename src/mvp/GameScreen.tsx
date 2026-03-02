@@ -1588,12 +1588,23 @@ export function GameScreen({
           ) : null}
 
           <div className="board-map-panel">
+            <WorldMapBoard
+              state={state}
+              content={content}
+              selectedRegionId={selectedRegionId}
+              campaignRoll={animatedCampaignRoll}
+              debugLayout={devMode}
+              externalHighlightKeys={highlightedMapTargets}
+              onSelectRegion={(regionId) => {
+                onViewStateChange({ regionId });
+              }}
+            />
             <section className="board-deck-rail" aria-label={t('ui.game.decks', 'Decks')}>
               <div className="board-deck-rail-grid">
                 {deckSummaries.map((summary) => (
                   <div
                     key={summary.deckId}
-                    className={`board-deck-stack-shell ${selectedDeckId === summary.deckId ? 'is-selected' : ''}`.trim()}
+                    className={`board-deck-stack-shell board-deck-stack-shell-${summary.deckId} ${selectedDeckId === summary.deckId ? 'is-selected' : ''}`.trim()}
                   >
                     <DeckStack
                       ref={(node) => {
@@ -1615,17 +1626,6 @@ export function GameScreen({
                 ))}
               </div>
             </section>
-            <WorldMapBoard
-              state={state}
-              content={content}
-              selectedRegionId={selectedRegionId}
-              campaignRoll={animatedCampaignRoll}
-              debugLayout={devMode}
-              externalHighlightKeys={highlightedMapTargets}
-              onSelectRegion={(regionId) => {
-                onViewStateChange({ regionId });
-              }}
-            />
           </div>
 
           <FrontTrackBar rows={frontRows} highlightedIds={highlightedFrontRows} />

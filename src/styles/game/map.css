@@ -117,7 +117,7 @@
 
 .game-screen-compressed .board-region-sidecard {
   position: absolute;
-  top: 16px;
+  top: 28px;
   inset-inline-end: 16px;
   z-index: 6;
   width: min(300px, calc(100% - 32px));
@@ -287,6 +287,7 @@
 .game-screen-compressed .board-region-label {
   position: absolute;
   transform: translate(-50%, -100%);
+  z-index: 5;
   min-width: max-content;
   padding: 2px 6px;
   border-radius: 999px;

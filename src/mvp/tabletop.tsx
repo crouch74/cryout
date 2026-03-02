@@ -262,10 +262,12 @@ export function DeckBackArt({
     <div className={`deck-back-art deck-back-art-${deckId} ${className}`.trim()} aria-hidden="true">
       <span className="deck-back-corner deck-back-corner-top">{glyph}</span>
       <span className="deck-back-corner deck-back-corner-bottom">{glyph}</span>
-      <span className="deck-back-emblem">
-        <span className="deck-back-emblem-mark">{glyph}</span>
+      <span className="deck-back-core">
+        <span className="deck-back-emblem">
+          <span className="deck-back-emblem-mark">{glyph}</span>
+        </span>
+        <span className="deck-back-title" dir="auto">{deckName}</span>
       </span>
-      <span className="deck-back-title" dir="auto">{deckName}</span>
     </div>
   );
 }

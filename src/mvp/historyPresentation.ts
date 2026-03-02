@@ -17,6 +17,7 @@ import {
   localizeCardField,
   localizeDomainField,
   localizeRegionField,
+  localizeRulesetField,
   t,
 } from '../i18n/index.ts';
 
@@ -445,6 +446,15 @@ function getEventTitle(event: DomainEvent, content: CompiledContent) {
       return t('ui.history.eventSuddenDeath', 'Sudden death ended the struggle.');
     case 'public_attention':
       return t('ui.history.eventPublicAttention', 'System pressure shifted under public attention.');
+    case 'game_start': {
+      const mode = event.message.includes('SYMBOLIC')
+        ? t('ui.mode.symbolic', 'Symbolic')
+        : t('ui.mode.liberation', 'Liberation');
+      return t('ui.history.eventGameStart', '🌍 {{ruleset}} begins in {{mode}} mode.', {
+        ruleset: localizeRulesetField(content.ruleset.id, 'name', content.ruleset.name),
+        mode,
+      });
+    }
   }
 
   return event.message;

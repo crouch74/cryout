@@ -377,6 +377,41 @@ export function WorldMapBoard({
       data-gaze-elevated={boardState.gazeElevated}
       data-region-critical={boardState.regionCritical}
     >
+      {cardRegionId ? (
+        <article className="board-region-sidecard">
+          <span className="context-eyebrow">{t('ui.game.regionSummary', 'Region')}</span>
+          <strong>{localizeRegionField(cardRegionId, 'name', content.regions[cardRegionId].name)}</strong>
+          <p>{localizeRegionField(cardRegionId, 'strapline', content.regions[cardRegionId].strapline)}</p>
+          <div className="board-region-sidecard-metrics">
+            <span>
+              <Icon type="extraction" size={15} />
+              {t('ui.game.extraction', 'Extraction')} {formatNumber(state.regions[cardRegionId].extractionTokens)}
+            </span>
+            <span>
+              <Icon type="defense" size={15} />
+              {t('ui.game.defense', 'Defense')} {formatNumber(state.regions[cardRegionId].defenseRating)}
+            </span>
+            <span>
+              <Icon type="bodies" size={15} />
+              {t('ui.game.bodies', 'Bodies')} {formatNumber(
+                state.players.reduce((sum, player) => sum + (state.regions[cardRegionId].bodiesPresent[player.seat] ?? 0), 0),
+              )}
+            </span>
+          </div>
+          <div className="board-region-sidecard-fronts">
+            {(Object.entries(state.regions[cardRegionId].vulnerability) as Array<[DomainId, number]>)
+              .sort((left, right) => right[1] - left[1])
+              .slice(0, 3)
+              .map(([domainId, value]) => (
+                <span key={domainId}>
+                  <Icon type={DOMAIN_ICON_BY_ID[domainId]} size={15} />
+                  {localizeDomainField(domainId, 'name', content.domains[domainId].name)} {formatNumber(value)}
+                </span>
+              ))}
+          </div>
+        </article>
+      ) : null}
+
       <div
         ref={canvasRef}
         className="board-map-canvas"
@@ -388,41 +423,6 @@ export function WorldMapBoard({
         }}
       >
         <div ref={svgHostRef} className="board-world-map" aria-hidden="true" />
-
-        {cardRegionId ? (
-          <article className="board-region-sidecard">
-            <span className="context-eyebrow">{t('ui.game.regionSummary', 'Region')}</span>
-            <strong>{localizeRegionField(cardRegionId, 'name', content.regions[cardRegionId].name)}</strong>
-            <p>{localizeRegionField(cardRegionId, 'strapline', content.regions[cardRegionId].strapline)}</p>
-            <div className="board-region-sidecard-metrics">
-              <span>
-                <Icon type="extraction" size={15} />
-                {t('ui.game.extraction', 'Extraction')} {formatNumber(state.regions[cardRegionId].extractionTokens)}
-              </span>
-              <span>
-                <Icon type="defense" size={15} />
-                {t('ui.game.defense', 'Defense')} {formatNumber(state.regions[cardRegionId].defenseRating)}
-              </span>
-              <span>
-                <Icon type="bodies" size={15} />
-                {t('ui.game.bodies', 'Bodies')} {formatNumber(
-                  state.players.reduce((sum, player) => sum + (state.regions[cardRegionId].bodiesPresent[player.seat] ?? 0), 0),
-                )}
-              </span>
-            </div>
-            <div className="board-region-sidecard-fronts">
-              {(Object.entries(state.regions[cardRegionId].vulnerability) as Array<[DomainId, number]>)
-                .sort((left, right) => right[1] - left[1])
-                .slice(0, 3)
-                .map(([domainId, value]) => (
-                  <span key={domainId}>
-                    <Icon type={DOMAIN_ICON_BY_ID[domainId]} size={15} />
-                    {localizeDomainField(domainId, 'name', content.domains[domainId].name)} {formatNumber(value)}
-                  </span>
-                ))}
-            </div>
-          </article>
-        ) : null}
 
         {campaignRoll && presentedRoll && regionLayouts?.[campaignRoll.regionId] ? (
           <article

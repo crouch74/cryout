@@ -721,6 +721,7 @@
       "eventCoalitionCommitted": "Coalition prepared moves resolved.",
       "eventResolutionResolved": "Resolution Phase completed.",
       "eventLaunchCampaign": "{{seat}} launched a campaign in {{region}}.",
+      "eventGameStart": "🌍 {{ruleset}} begins in {{mode}} mode.",
       "eventExtractionBreach": "A region reached 6 Extraction Tokens.",
       "eventMandateFailure": "Public victory failed because Secret Mandates were broken.",
       "eventVictory": "The coalition achieved victory.",
