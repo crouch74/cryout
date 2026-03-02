@@ -2132,6 +2132,11 @@ html[dir='rtl'] .phase-progress-nav .dock-control-button.is-play-button .ui-icon
   inset-inline-end: 0;
 }
 
+html[dir='rtl'] .phase-progress-help-popover {
+  inset-inline-start: 0;
+  inset-inline-end: auto;
+}
+
 .phase-help-anchor.is-open .phase-progress-help-popover {
   opacity: 1;
   transform: translateY(0) scale(1);
@@ -2150,6 +2155,16 @@ html[dir='rtl'] .phase-progress-nav .dock-control-button.is-play-button .ui-icon
   border-left: 1px solid rgba(73, 58, 40, 0.16);
   background: rgba(255, 247, 232, 0.96);
   transform: rotate(45deg);
+}
+
+.phase-progress-help-popover::before {
+  inset-inline-start: auto;
+  inset-inline-end: 10px;
+}
+
+html[dir='rtl'] .phase-progress-help-popover::before {
+  inset-inline-start: 10px;
+  inset-inline-end: auto;
 }
 
 .phase-progress-help-tooltip strong {

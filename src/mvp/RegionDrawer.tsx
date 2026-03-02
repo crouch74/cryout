@@ -8,7 +8,14 @@ import {
   type ResourceType,
 } from '../../engine/index.ts';
 import type { ToastMessage } from './ToastStack.tsx';
-import { formatEffectPreview, t } from '../i18n/index.ts';
+import {
+  formatEffectPreview,
+  getFrontLabel,
+  localizeActionField,
+  localizeInstitutionField,
+  localizeRegionField,
+  t,
+} from '../i18n/index.ts';
 import { ActionCard, PaperSheet, TokenStack, WaxSealLock } from './tabletop.tsx';
 
 interface RegionDrawerProps {
@@ -31,7 +38,7 @@ export function RegionDrawer({ regionId, focusedSeat, state, content, onClose, o
 
   const region = state.regions[regionId];
   const regionDefinition = content.regions[regionId];
-  const regionName = regionDefinition.name;
+  const regionName = localizeRegionField(regionId, 'name', regionDefinition.name);
   const roleActions = getSeatActions(state, content, focusedSeat).standard.filter((action) => action.targetKind === 'REGION');
 
   return (
@@ -59,7 +66,7 @@ export function RegionDrawer({ regionId, focusedSeat, state, content, onClose, o
             <div className="lock-ribbon">
               {region.locks.length === 0 ? <span>{t('ui.status.noActiveLocks', 'No active locks.')}</span> : null}
               {region.locks.map((lock) => (
-                <span key={lock} className="rule-slip">{lock}</span>
+                <span key={lock} className="rule-slip">{t(`ui.regionDrawer.lockLabels.${lock}`, lock)}</span>
               ))}
             </div>
           </PaperSheet>
@@ -69,7 +76,7 @@ export function RegionDrawer({ regionId, focusedSeat, state, content, onClose, o
             <div className="ledger-list">
               {Object.entries(region.vulnerability).map(([front, value]) => (
                 <div key={front} className="ledger-row">
-                  <span>{content.fronts[front as keyof CompiledContent['fronts']].name}</span>
+                  <span>{getFrontLabel(front)}</span>
                   <strong>{value}</strong>
                 </div>
               ))}
@@ -83,7 +90,7 @@ export function RegionDrawer({ regionId, focusedSeat, state, content, onClose, o
             {region.institutions.length === 0 ? <span>{t('ui.status.noInstitutionsYet', 'No institutions yet.')}</span> : null}
             {region.institutions.map((institution) => (
               <div key={institution.type} className="ledger-row">
-                <span>{content.institutions[institution.type].name}</span>
+                <span>{localizeInstitutionField(institution.type, 'name', content.institutions[institution.type].name)}</span>
                 <strong>{institution.status}</strong>
               </div>
             ))}
@@ -155,7 +162,7 @@ export function RegionDrawer({ regionId, focusedSeat, state, content, onClose, o
                         tone: 'success',
                         title: t('ui.toast.intentQueuedTitle', 'Intent queued'),
                         message: t('ui.toast.intentQueuedFromRegionMessage', '{{action}} was added from {{region}}.', {
-                          action: action.name,
+                          action: localizeActionField(action.id, 'name', action.name),
                           region: regionName,
                         }),
                         dismissAfterMs: 2200,
@@ -164,7 +171,7 @@ export function RegionDrawer({ regionId, focusedSeat, state, content, onClose, o
                   }
                 >
                   <span className="engraved-eyebrow">{t('ui.actionBoard.priorityCode', 'P{{priority}}', { priority: action.resolvePriority })}</span>
-                  <strong>{action.name}</strong>
+                  <strong>{localizeActionField(action.id, 'name', action.name)}</strong>
                   <span>{formatEffectPreview(action, content)}</span>
                   {disabled.disabled ? <WaxSealLock label={disabled.reason ?? t('ui.game.sealed', 'Sealed')} /> : null}
                 </ActionCard>

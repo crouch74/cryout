@@ -103,9 +103,9 @@ function getRegionSummaryLabel(regionId: RegionId, state: EngineState, content: 
   const region = state.regions[regionId];
   const totalBodies = state.players.reduce((sum, player) => sum + (region.bodiesPresent[player.seat] ?? 0), 0);
   return `${localizeRegionField(regionId, 'name', content.regions[regionId].name)}. `
-    + `${t('ui.game.extraction', 'Extraction')} ${region.extractionTokens}. `
-    + `${t('ui.game.defense', 'Defense')} ${region.defenseRating}. `
-    + `${t('ui.game.bodies', 'Bodies')} ${totalBodies}.`;
+    + `${t('ui.game.extraction', 'Extraction')} ${formatNumber(region.extractionTokens)}. `
+    + `${t('ui.game.defense', 'Defense')} ${formatNumber(region.defenseRating)}. `
+    + `${t('ui.game.bodies', 'Bodies')} ${formatNumber(totalBodies)}.`;
 }
 
 export function WorldMapBoard({

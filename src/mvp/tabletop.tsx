@@ -9,7 +9,7 @@ import {
   type HTMLAttributes,
   type ReactNode,
 } from 'react';
-import { LOCALE_OPTIONS, formatNumber, t, type Locale } from '../i18n/index.ts';
+import { formatNumber, getLocaleOptions, t, type Locale } from '../i18n/index.ts';
 
 type ContrastMode = 'default' | 'high';
 type MotionMode = 'full' | 'reduced';
@@ -176,6 +176,8 @@ export function LocaleSwitcher({
   locale: Locale;
   onChange: (locale: Locale) => void;
 }) {
+  const localeOptions = getLocaleOptions();
+
   return (
     <label className="locale-switcher">
       <span className="engraved-eyebrow">{t('ui.language.label', 'Language')}</span>
@@ -184,7 +186,7 @@ export function LocaleSwitcher({
         onChange={(event) => onChange(event.target.value as Locale)}
         aria-label={t('ui.language.label', 'Language')}
       >
-        {LOCALE_OPTIONS.map((option) => (
+        {localeOptions.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
           </option>

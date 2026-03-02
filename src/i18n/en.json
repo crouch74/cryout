@@ -1,7 +1,11 @@
 {
   "ui": {
     "language": {
-      "label": "Language"
+      "label": "Language",
+      "locales": {
+        "en": "English",
+        "ar-EG": "Egyptian Arabic"
+      }
     },
     "accessibility": {
       "controls": "Tabletop accessibility controls",
@@ -20,15 +24,96 @@
     },
     "toast": {
       "liveGameUpdates": "Live game updates",
-      "dismissNotification": "Dismiss notification"
+      "dismissNotification": "Dismiss notification",
+      "intentQueuedTitle": "Intent queued",
+      "intentQueuedMessage": "{{action}} added to Seat {{seat}}.",
+      "intentRemovedTitle": "Intent removed",
+      "intentRemovedMessage": "Removed from Seat {{seat}}.",
+      "intentQueuedFromRegionMessage": "{{action}} was added from {{region}}."
     },
     "regionDrawer": {
-      "close": "Close"
+      "close": "Close",
+      "focusedSeat": "Focused seat: {{seat}}",
+      "tokensLocks": "Tokens & Locks",
+      "vulnerabilities": "Vulnerabilities",
+      "cities": "Cities",
+      "resources": "Resources",
+      "exploitedZones": "Exploited Zones",
+      "powerActors": "Power Actors",
+      "globalPowers": "Global powers",
+      "regionalPlayers": "Regional players",
+      "actionsTargeting": "Actions Targeting {{region}}",
+      "lockLabels": {
+        "AidAccess": "Aid Access",
+        "Surveillance": "Surveillance",
+        "Censorship": "Censorship"
+      }
+    },
+    "actionBoard": {
+      "tableWide": "Table-wide",
+      "plannedMovesTitle": "Arrange the action cards",
+      "slotsLeft": "Slots left {{count}}",
+      "priority": "Priority {{priority}}",
+      "moveLeft": "Move Left",
+      "moveRight": "Move Right",
+      "pullTab": "Pull Tab",
+      "toolkit": "Action Toolkit",
+      "libraryTitle": "Action cards in hand",
+      "priorityCode": "P{{priority}}",
+      "breakthrough": "Breakthrough",
+      "selectedAction": "Selected Action",
+      "target": "Target",
+      "projectedEffect": "Projected effect",
+      "hide": "Hide",
+      "queueAction": "Queue Action"
+    },
+    "scenarioBooklet": {
+      "eyebrow": "Scenario Booklet",
+      "title": "Stories, rules, and table texture",
+      "subtitle": "Read each dossier like a spread from the campaign guide, then carry the selected chapter straight into setup.",
+      "previous": "Previous Chapter",
+      "next": "Next Chapter",
+      "chapter": "Chapter {{chapter}}",
+      "story": "Story",
+      "dramatization": "Dramatization",
+      "rulesFolio": "Rules Folio",
+      "moralCenter": "Moral center",
+      "civicSpace": "Civic space",
+      "startingHeat": "Starting heat",
+      "roundWindow": "Round window",
+      "roundWindowValue": "{{core}} core / {{full}} full",
+      "gameplay": "Gameplay",
+      "mechanics": "Mechanics",
+      "pressureProfile": "Pressure Profile",
+      "featuredRegions": "Featured Regions",
+      "civicSpaceValues": {
+        "OPEN": "Open",
+        "NARROWED": "Narrowed",
+        "REPRESSED": "Repressed",
+        "CLOSED": "Closed"
+      }
+    },
+    "now": {
+      "phase": "Phase",
+      "step": "Step {{count}}",
+      "worldBlockers": "Adoption remains sealed until the deck has been drawn.",
+      "coalitionAction": "Lay out planned moves on the player mats, then place every commit marker.",
+      "coalitionChoices": "Still arranging: {{seats}}.",
+      "coalitionReady": "The table is ready to resolve the planned moves.",
+      "coalitionBlockers": "Commit remains sealed until every seat has placed its marker.",
+      "compromiseAction": "A compromise slip is on the table. Record each vote to proceed.",
+      "compromiseChoices": "Open the offer and resolve the ballot.",
+      "compromiseBlockers": "The round cannot advance while the compromise is unsettled.",
+      "endAction": "Close the minute book, advance delayed effects, and begin the next round.",
+      "endChoices": "The table is ready for the end-of-round resolution.",
+      "gameOverAction": "Review the record, the charter outcome, and the surviving institutions.",
+      "gameOverChoices": "Export the table state if you want to keep this sitting."
     },
     "phases": {
       "SYSTEM": "System",
       "COALITION": "Coalition",
       "RESOLUTION": "Resolution",
+      "END": "End",
       "WIN": "Win",
       "LOSS": "Loss",
       "SYSTEM_VERB": "Acts",
@@ -154,6 +239,7 @@
       "crisisDeck": "Crisis Deck",
       "crisisDeckPrinted": "Crisis",
       "beaconDeck": "Beacon Deck",
+      "chairsDocket": "Chair's Docket",
       "modeLabel": "Mode",
       "objectiveLabel": "Objective",
       "objectiveLiberationValue": "1 Extraction Token/region",
@@ -171,6 +257,7 @@
       "regionDefenseTooltip": "Defense: {{count}}. Defense absorbs the next system strike here, then clears. Raise it with Defend and supportive effects before the system phase.",
       "regionBodiesTooltip": "Bodies: {{count}}. Bodies are the people and organizing strength in this region. Commit them to Launch Campaign, Build Solidarity, and Defend.",
       "preparedMovesLabel": "Prepared moves",
+      "coalitionDeskSections": "Coalition desk sections",
       "queuedCount": "{{count}} queued",
       "focusSeatAbbrev": "S{{seat}}",
       "extractionTokens": "Extraction Tokens",
@@ -249,8 +336,11 @@
       "beaconComplete": "Complete",
       "beaconOpen": "Open",
       "resolveSystemPhase": "Resolve System Phase",
+      "drawWorldCards": "Draw World Cards",
+      "adoptResolution": "Adopt Resolution",
       "commitCoalitionIntent": "Commit Prepared Moves",
       "resolveResolutionPhase": "Resolve Resolution Phase",
+      "closeRound": "Close Round",
       "tableClosed": "Table Closed",
       "phaseLocked": "Phase locked",
       "unknownSeat": "Unknown seat",
@@ -269,11 +359,16 @@
       "actionCardUnavailable": "Action card unavailable",
       "selectCard": "Select a card",
       "phaseProgress": "Turn Progress",
+      "civicTheatre": "Civic Theatre",
       "seat": "Seat {{seat}}",
       "seatShort": "S",
       "focusSeat": "Seat {{seat}}",
       "extraction": "Extraction",
       "defense": "Defense",
+      "displacement": "Displacement",
+      "disinfo": "Disinfo",
+      "locks": "Locks",
+      "institutions": "Institutions",
       "vulnerability": "Vulnerability",
       "extractionShort": "X",
       "defenseShort": "D",
@@ -318,6 +413,9 @@
       "mandateAmazonLine2": "Fossil Grip >= 5",
       "sourceSystem": "System record",
       "sourceCommand": "Table order",
+      "drawResolutionLead": "Open the crisis deck, reveal the current draw, and place the active card on the board.",
+      "adoptResolutionLead": "Cards are on the table. Review the crisis slot, then adopt the resolution.",
+      "temperatureDetail": "Band {{band}}. {{count}} crisis card{{plural}} on the next world resolution.",
       "sourceAction": "Prepared move",
       "sourceCard": "Card record",
       "sourceMandate": "Secret Mandate record",
@@ -561,6 +659,64 @@
         "description": "Cultural survival, language, art, and memory against erasure."
       }
     },
+    "fronts": {
+      "WAR": {
+        "name": "War & Conflict",
+        "description": "Militarism, siege, occupation, and organized coercion."
+      },
+      "CLIMATE": {
+        "name": "Climate Crisis",
+        "description": "Flood, fire, extraction, and ecological breakdown."
+      },
+      "RIGHTS": {
+        "name": "Human Rights",
+        "description": "Legal protections, civil rights, and the fight against state abuse."
+      },
+      "SPEECH_INFO": {
+        "name": "Speech & Information",
+        "description": "Press freedom, testimony, and the struggle over narrative control."
+      },
+      "POVERTY": {
+        "name": "Economic Poverty",
+        "description": "Debt, austerity, and disciplined scarcity."
+      },
+      "ENERGY": {
+        "name": "Energy Access",
+        "description": "Fuel corridors, grids, and contested resource systems."
+      },
+      "CULTURE": {
+        "name": "Art & Culture",
+        "description": "Memory, ceremony, language, and living cultural continuity."
+      },
+      "WarMachine": {
+        "name": "War Machine",
+        "description": "Militarism, bases, and logistics of permanent intervention."
+      },
+      "DyingPlanet": {
+        "name": "Dying Planet",
+        "description": "Ecological defense against flood, fire, extraction, and collapse."
+      },
+      "GildedCage": {
+        "name": "Gilded Cage",
+        "description": "Freedom from carceral control, dispossession, and managed rights."
+      },
+      "SilencedTruth": {
+        "name": "Silenced Truth",
+        "description": "Evidence, press freedom, and the ability to circulate testimony."
+      },
+      "EmptyStomach": {
+        "name": "Empty Stomach",
+        "description": "Food sovereignty, debt resistance, and survival beyond austerity."
+      },
+      "FossilGrip": {
+        "name": "Fossil Grip",
+        "description": "Energy justice against pipeline rule, sacrifice zones, and fuel empires."
+      },
+      "StolenVoice": {
+        "name": "Stolen Voice",
+        "description": "Cultural survival, language, art, and memory against erasure."
+      }
+    },
     "regions": {
       "Congo": {
         "name": "Congo Basin",
@@ -591,6 +747,23 @@
         "name": "The Andes",
         "description": "Highland resistance to debt, lithium extraction, and privatized life.",
         "strapline": "The mountain is priced before it is heard."
+      }
+    },
+    "regionLabels": {
+      "Palestine": {
+        "name": "Palestine"
+      },
+      "Lebanon": {
+        "name": "Lebanon"
+      },
+      "Egypt": {
+        "name": "Egypt"
+      },
+      "Sudan": {
+        "name": "Sudan"
+      },
+      "Yemen": {
+        "name": "Yemen"
       }
     },
     "factions": {
@@ -799,6 +972,48 @@
       "sys_counterinsurgency_doctrine": {
         "name": "Counterinsurgency Doctrine Expansion",
         "text": "Evidence circulates more slowly as suppression becomes doctrine."
+      }
+    },
+    "scenarios": {
+      "witness_dignity": {
+        "name": "Witness & Dignity",
+        "description": "Palestine, Lebanon, and Egypt sit under stacked war, rights, and border pressure while climate accelerates the broader crisis.",
+        "introduction": "A coalition of organizers, journalists, lawyers, and planners works across a narrowing civic landscape to protect civilians, keep truth moving, and build institutions that can outlast the Capture Engine.",
+        "story": "Witness & Dignity keeps Palestine as the moral center of the scenario framing without reducing it to spectacle. The coalition acts under severe pressure, trying to hold open corridors of care, remedy, and testimony across Palestine, Lebanon, and Egypt while climate stress compounds every front.",
+        "dramatization": "The table should feel like an emergency newsroom, a legal triage room, and a mutual-aid corridor all at once. Every gain is fragile. Every delay has a civilian cost. The scenario is written to keep witness, care, and political clarity in the foreground rather than spectacle.",
+        "gameplay": "Witness & Dignity opens under immediate pressure. War, rights, and poverty all threaten to outrun the coalition before long-term institutions can stabilize the map. The strongest line of play is coordinated pacing: protect Palestine from spiraling displacement while building enough evidence and solidarity to unlock charter progress across nearby corridors.",
+        "mechanics": "The scenario rewards public testimony and careful timing. Witness Window cancels the first disinformation placement in a round when the coalition keeps evidence high, while Aid Corridor punishes unchecked war pressure by locking access in Palestine. Expect a tighter, more tactical game with fewer safe turns and heavier emphasis on media, legal, and relief sequencing.",
+        "moralCenter": "Palestine is framed as the moral center: rights-focused, unsensational, and grounded in civilian protection.",
+        "specialRules": {
+          "witness_window": {
+            "label": "Witness Window",
+            "description": "If evidence is at least 3, the first disinfo placement each round is cancelled."
+          },
+          "aid_corridor": {
+            "label": "Aid Corridor",
+            "description": "When WAR pressure reaches 8, Palestine gains an AidAccess lock until Organizer or Lawyer clears it."
+          }
+        }
+      },
+      "green_resistance": {
+        "name": "Green Resistance",
+        "description": "Forest communities face a coordinated extraction surge where climate, energy, and rights pressure reinforce each other.",
+        "introduction": "The coalition shifts toward land defenders, river communities, and movement journalists trying to hold the line across Congo, Sudan, the Sahel, and the wider climate frontier.",
+        "story": "Green Resistance frames frontline environmental defense as a struggle over memory, sovereignty, and survival. Concessions, private security, and disinformation campaigns clear the way for extraction while local communities fight to keep forests, rivers, and energy futures from becoming sacrifice zones.",
+        "dramatization": "This scenario should feel slower, wetter, and more territorial than Witness & Dignity. One turn is a blockade on a logging road, the next a testimony circuit, the next a jury-rigged microgrid keeping a village clinic alive while the smoke closes in.",
+        "gameplay": "Green Resistance begins with more grassroots capacity than the Palestine scenario, but the coalition is spread across more regions and starts with tighter civic space. The challenge is preventing climate and energy escalation from creating a rolling displacement crisis while still investing in culture, legal protection, and long-term infrastructure.",
+        "mechanics": "Root Solidarity turns cultural protection into momentum by generating solidarity at the start of a round once Art & Culture is stabilized. Extraction Spiral punishes ignored climate pressure by pushing fresh displacement into Congo and Sudan before the world phase resolves. The scenario rewards distributed institution-building and punishes leaving ecological fronts to drift.",
+        "moralCenter": "Indigenous land defenders and forest communities are treated as protagonists with agency, not background scenery for a climate disaster story.",
+        "specialRules": {
+          "root_solidarity": {
+            "label": "Root Solidarity",
+            "description": "At the start of a round, if Art & Culture protection is 5+, gain 1 solidarity."
+          },
+          "extraction_spiral": {
+            "label": "Extraction Spiral",
+            "description": "When Climate pressure reaches 7 or more, Congo and Sudan each gain 1 displacement during the world phase."
+          }
+        }
       }
     }
   }

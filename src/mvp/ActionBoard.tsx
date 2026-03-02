@@ -15,7 +15,13 @@ import {
   type ResourceType,
 } from '../../engine/index.ts';
 import type { ToastMessage } from './ToastStack.tsx';
-import { formatEffectPreview, t } from '../i18n/index.ts';
+import {
+  formatEffectPreview,
+  getFrontLabel,
+  getRegionLabel,
+  localizeActionField,
+  t,
+} from '../i18n/index.ts';
 import { ActionCard, PaperSheet, WaxSealLock } from './tabletop.tsx';
 
 interface ActionBoardProps {
@@ -33,11 +39,11 @@ interface ActionBoardProps {
 
 function renderTargetLabel(content: CompiledContent, target: ActionTarget) {
   if (target.kind === 'REGION' && target.regionId) {
-    return content.regions[target.regionId].name;
+    return getRegionLabel(target.regionId);
   }
 
   if (target.kind === 'FRONT' && target.frontId) {
-    return content.fronts[target.frontId].name;
+    return getFrontLabel(target.frontId);
   }
 
   return t('ui.actionBoard.tableWide', 'Table-wide');
@@ -90,7 +96,7 @@ export function ActionBoard({
         tone: 'success',
         title: t('ui.toast.intentQueuedTitle', 'Intent queued'),
         message: t('ui.toast.intentQueuedMessage', '{{action}} added to Seat {{seat}}.', {
-          action: action.name,
+          action: localizeActionField(action.id, 'name', action.name),
           seat: seat + 1,
         }),
         dismissAfterMs: 2200,
@@ -139,7 +145,7 @@ export function ActionBoard({
                   <span className="engraved-eyebrow">
                     {t('ui.actionBoard.priority', 'Priority {{priority}}', { priority: action.resolvePriority })}
                   </span>
-                  <strong>{action.name}</strong>
+                  <strong>{localizeActionField(action.id, 'name', action.name)}</strong>
                   <span>{renderTargetLabel(content, intent.target)}</span>
                 </div>
                 <div className="planned-move-card-actions">
@@ -201,7 +207,7 @@ export function ActionBoard({
                   {t('ui.actionBoard.priorityCode', 'P{{priority}}', { priority: action.resolvePriority })}
                   {isBreakthrough ? ` · ${t('ui.actionBoard.breakthrough', 'Breakthrough')}` : ''}
                 </span>
-                <strong>{action.name}</strong>
+                <strong>{localizeActionField(action.id, 'name', action.name)}</strong>
                 <span>{formatEffectPreview(action, content)}</span>
               </ActionCard>
             );
@@ -214,14 +220,14 @@ export function ActionBoard({
           <div className="planned-moves-header">
             <div>
               <span className="engraved-eyebrow">{t('ui.actionBoard.selectedAction', 'Selected Action')}</span>
-              <h3>{readingAction.name}</h3>
+              <h3>{localizeActionField(readingAction.id, 'name', readingAction.name)}</h3>
             </div>
             <button type="button" className="mini-plate" onClick={() => setReadingActionId(null)}>
               {t('ui.game.back', 'Back')}
             </button>
           </div>
 
-          <p>{readingAction.description}</p>
+          <p>{localizeActionField(readingAction.id, 'description', readingAction.description)}</p>
 
           {readingAction.targetKind !== 'NONE' ? (
             <label className="action-target-picker">
@@ -233,8 +239,8 @@ export function ActionBoard({
                 {(readingAction.targetKind === 'REGION' ? getAvailableRegions() : getAvailableFronts()).map((option) => (
                   <option key={option} value={option}>
                     {readingAction.targetKind === 'REGION'
-                      ? content.regions[option as RegionId].name
-                      : content.fronts[option as FrontId].name}
+                      ? getRegionLabel(option as RegionId)
+                      : getFrontLabel(option as FrontId)}
                   </option>
                 ))}
               </select>

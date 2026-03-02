@@ -1,5 +1,14 @@
 import type { FrontId, RegionId, ScenarioDefinition } from '../../engine/index.ts';
-import { getCivicSpaceLabel, getFrontLabel, getRegionLabel, t } from '../i18n/index.ts';
+import {
+  formatChapterNumber,
+  formatNumber,
+  getCivicSpaceLabel,
+  getFrontLabel,
+  getRegionLabel,
+  localizeScenarioField,
+  localizeScenarioRuleField,
+  t,
+} from '../i18n/index.ts';
 
 interface ScenarioBookletProps {
   scenarios: ScenarioDefinition[];
@@ -41,6 +50,7 @@ export function ScenarioBooklet({ scenarios, selectedScenarioId, onSelectScenari
     scenarios.findIndex((scenario) => scenario.id === selectedScenarioId),
   );
   const scenario = scenarios[currentIndex] ?? scenarios[0];
+  const chapterNumber = formatChapterNumber(currentIndex + 1);
   const pressureProfile = getPressureProfile(scenario);
   const featuredRegions = getFeaturedRegions(scenario);
 
@@ -74,21 +84,21 @@ export function ScenarioBooklet({ scenarios, selectedScenarioId, onSelectScenari
         <article className="booklet-paper">
           <span className="booklet-page-label">
             {t('ui.scenarioBooklet.chapter', 'Chapter {{chapter}}', {
-              chapter: String(currentIndex + 1).padStart(2, '0'),
+              chapter: chapterNumber,
             })}
           </span>
-          <p className="booklet-kicker">{scenario.description}</p>
-          <h3>{scenario.name}</h3>
-          <p className="booklet-lead">{scenario.introduction}</p>
+          <p className="booklet-kicker">{localizeScenarioField(scenario.id, 'description', scenario.description)}</p>
+          <h3>{localizeScenarioField(scenario.id, 'name', scenario.name)}</h3>
+          <p className="booklet-lead">{localizeScenarioField(scenario.id, 'introduction', scenario.introduction)}</p>
 
           <div className="booklet-copy-block">
             <span className="booklet-copy-label">{t('ui.scenarioBooklet.story', 'Story')}</span>
-            <p>{scenario.story}</p>
+            <p>{localizeScenarioField(scenario.id, 'story', scenario.story)}</p>
           </div>
 
           <div className="booklet-copy-block">
             <span className="booklet-copy-label">{t('ui.scenarioBooklet.dramatization', 'Dramatization')}</span>
-            <p>{scenario.dramatization}</p>
+            <p>{localizeScenarioField(scenario.id, 'dramatization', scenario.dramatization)}</p>
           </div>
         </article>
 
@@ -98,7 +108,7 @@ export function ScenarioBooklet({ scenarios, selectedScenarioId, onSelectScenari
           <div className="booklet-meta-grid">
             <div>
               <span>{t('ui.scenarioBooklet.moralCenter', 'Moral center')}</span>
-              <strong>{scenario.moralCenter}</strong>
+              <strong>{localizeScenarioField(scenario.id, 'moralCenter', scenario.moralCenter)}</strong>
             </div>
             <div>
               <span>{t('ui.scenarioBooklet.civicSpace', 'Civic space')}</span>
@@ -106,7 +116,7 @@ export function ScenarioBooklet({ scenarios, selectedScenarioId, onSelectScenari
             </div>
             <div>
               <span>{t('ui.scenarioBooklet.startingHeat', 'Starting heat')}</span>
-              <strong>+{scenario.setup.temperature}°C</strong>
+              <strong>+{formatNumber(scenario.setup.temperature)}°C</strong>
             </div>
             <div>
               <span>{t('ui.scenarioBooklet.roundWindow', 'Round window')}</span>
@@ -121,12 +131,12 @@ export function ScenarioBooklet({ scenarios, selectedScenarioId, onSelectScenari
 
           <div className="booklet-copy-block">
             <span className="booklet-copy-label">{t('ui.scenarioBooklet.gameplay', 'Gameplay')}</span>
-            <p>{scenario.gameplay}</p>
+            <p>{localizeScenarioField(scenario.id, 'gameplay', scenario.gameplay ?? '')}</p>
           </div>
 
           <div className="booklet-copy-block">
             <span className="booklet-copy-label">{t('ui.scenarioBooklet.mechanics', 'Mechanics')}</span>
-            <p>{scenario.mechanics}</p>
+            <p>{localizeScenarioField(scenario.id, 'mechanics', scenario.mechanics ?? '')}</p>
           </div>
 
           <div className="booklet-insight-grid">
@@ -135,7 +145,7 @@ export function ScenarioBooklet({ scenarios, selectedScenarioId, onSelectScenari
               <div className="hero-tags">
                 {pressureProfile.map((front) => (
                   <span key={front.frontId}>
-                    {getFrontLabel(front.frontId as FrontId)} {front.pressure}
+                    {getFrontLabel(front.frontId as FrontId)} {formatNumber(front.pressure)}
                   </span>
                 ))}
               </div>
@@ -154,8 +164,8 @@ export function ScenarioBooklet({ scenarios, selectedScenarioId, onSelectScenari
           <div className="booklet-rule-grid">
             {scenario.specialRuleChips.map((rule) => (
               <div key={rule.id} className="booklet-rule-card">
-                <strong>{rule.label}</strong>
-                <p>{rule.description}</p>
+                <strong>{localizeScenarioRuleField(scenario.id, rule.id, 'label', rule.label)}</strong>
+                <p>{localizeScenarioRuleField(scenario.id, rule.id, 'description', rule.description)}</p>
               </div>
             ))}
           </div>
@@ -166,9 +176,9 @@ export function ScenarioBooklet({ scenarios, selectedScenarioId, onSelectScenari
         {scenarios.map((entry, index) => (
           <article key={entry.id} className={`booklet-chapter-card ${entry.id === scenario.id ? 'active' : ''}`}>
             <button type="button" className="booklet-chapter-main" onClick={() => onSelectScenario(entry.id)}>
-              <span>{String(index + 1).padStart(2, '0')}</span>
-              <strong>{entry.name}</strong>
-              <p>{entry.description}</p>
+              <span>{formatChapterNumber(index + 1)}</span>
+              <strong>{localizeScenarioField(entry.id, 'name', entry.name)}</strong>
+              <p>{localizeScenarioField(entry.id, 'description', entry.description)}</p>
             </button>
           </article>
         ))}
