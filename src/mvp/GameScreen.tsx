@@ -21,6 +21,7 @@ import {
 import {
   formatNumber,
   localizeActionField,
+  localizeBeaconField,
   localizeCardField,
   localizeDomainField,
   localizeFactionField,
@@ -1068,6 +1069,31 @@ export function GameScreen({
 
   const ledgerContent = (
     <div className="context-stack">
+      {visualDeltaTiles.length > 0 ? (
+        <section className="visual-delta-strip" aria-label={t('ui.game.latestChanges', 'Latest changes')}>
+          {visualDeltaTiles.map((tile) => (
+            <article
+              key={tile.id}
+              className={`visual-delta-tile ${liveVisualDeltaTiles.has(`delta:${tile.id}`) ? 'is-live' : ''}`.trim()}
+              aria-label={tile.ariaLabel}
+              title={tile.ariaLabel}
+            >
+              <div className="visual-delta-tile-head" aria-hidden="true">
+                <span className="visual-delta-phase-marker">{tile.phaseIcon}</span>
+                <span className="visual-delta-emoji">{tile.emoji}</span>
+              </div>
+              <div className="visual-delta-glyph-row" aria-hidden="true">
+                {tile.glyphs.map((glyph) => (
+                  <span key={glyph.id} className={`visual-delta-glyph tone-${glyph.tone}`.trim()}>
+                    <Icon type={glyph.icon} size={16} title={glyph.ariaLabel} />
+                    <strong dir="ltr">{glyph.value}</strong>
+                  </span>
+                ))}
+              </div>
+            </article>
+          ))}
+        </section>
+      ) : null}
       {ledgerGroups.map((group) => (
         <section key={group.key} className="context-card">
           <strong>{group.title}</strong>
@@ -1130,8 +1156,8 @@ export function GameScreen({
   const selectedDeckLatestCard = selectedDeckLatestCardId ? getRevealCopy(content, selectedDeckId, selectedDeckLatestCardId) : null;
   const activeBeaconObjectives = state.activeBeaconIds.map((beaconId) => ({
     id: beaconId,
-    title: content.beacons[beaconId]?.title ?? beaconId,
-    description: content.beacons[beaconId]?.description ?? '',
+    title: localizeBeaconField(beaconId, 'title', content.beacons[beaconId]?.title ?? beaconId),
+    description: localizeBeaconField(beaconId, 'description', content.beacons[beaconId]?.description ?? ''),
     complete: state.beacons[beaconId]?.complete ?? false,
   }));
 
@@ -1580,32 +1606,6 @@ export function GameScreen({
                 )}
               />
             </>
-          ) : null}
-
-          {visualDeltaTiles.length > 0 ? (
-            <section className="visual-delta-strip" aria-label={t('ui.game.latestChanges', 'Latest changes')}>
-              {visualDeltaTiles.map((tile) => (
-                <article
-                  key={tile.id}
-                  className={`visual-delta-tile ${liveVisualDeltaTiles.has(`delta:${tile.id}`) ? 'is-live' : ''}`.trim()}
-                  aria-label={tile.ariaLabel}
-                  title={tile.ariaLabel}
-                >
-                  <div className="visual-delta-tile-head" aria-hidden="true">
-                    <span className="visual-delta-phase-marker">{tile.phaseIcon}</span>
-                    <span className="visual-delta-emoji">{tile.emoji}</span>
-                  </div>
-                  <div className="visual-delta-glyph-row" aria-hidden="true">
-                    {tile.glyphs.map((glyph) => (
-                      <span key={glyph.id} className={`visual-delta-glyph tone-${glyph.tone}`.trim()}>
-                        <Icon type={glyph.icon} size={16} title={glyph.ariaLabel} />
-                        <strong dir="ltr">{glyph.value}</strong>
-                      </span>
-                    ))}
-                  </div>
-                </article>
-              ))}
-            </section>
           ) : null}
 
           <StatusRibbon

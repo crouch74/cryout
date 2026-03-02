@@ -14,6 +14,7 @@ import type {
 import {
   formatNumber,
   localizeActionField,
+  localizeBeaconField,
   localizeCardField,
   localizeDomainField,
   localizeRegionField,
@@ -68,8 +69,8 @@ function getRevealTitle(content: CompiledContent, reveal: CardRevealEvent) {
   if (reveal.deckId === 'beacon') {
     const beacon = content.beacons[reveal.cardId];
     return {
-      title: beacon?.title ?? reveal.cardId,
-      body: beacon?.description ?? '',
+      title: localizeBeaconField(reveal.cardId, 'title', beacon?.title ?? reveal.cardId),
+      body: localizeBeaconField(reveal.cardId, 'description', beacon?.description ?? ''),
     };
   }
 
