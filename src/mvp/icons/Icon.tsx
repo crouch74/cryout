@@ -150,6 +150,13 @@ function renderGlyph(type: IconType) {
           <rect x="8.9" y="14.3" width="3.8" height="1.5" rx=".75" fill="#f4ead6" opacity="0.9" />
         </>
       );
+    case 'advancePhase':
+      return (
+        <>
+          <path d="M6.2 6.2 15.8 12 6.2 17.8V6.2Z" fill="currentColor" />
+          <rect x="16.8" y="6.6" width="1.9" height="10.8" rx=".95" fill="currentColor" opacity="0.9" />
+        </>
+      );
     case 'frontWar':
       return (
         <>

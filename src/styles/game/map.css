@@ -3,14 +3,19 @@
   min-height: 0;
   height: 100%;
   width: 100%;
-  border-radius: 28px;
-  overflow: visible;
+  margin: 0;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid var(--panel-rim-strong);
   background:
-    radial-gradient(circle at 20% 10%, rgba(255, 255, 255, 0.4), transparent 28%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.45), rgba(219, 204, 175, 0.32)),
+    radial-gradient(circle at 14% 12%, rgba(255, 249, 238, 0.3), transparent 18%),
+    radial-gradient(circle at 78% 16%, rgba(139, 106, 61, 0.1), transparent 20%),
+    linear-gradient(180deg, rgba(255, 248, 236, 0.74), rgba(216, 198, 167, 0.58)),
     var(--board-ivory);
-  border: 1px solid rgba(73, 58, 40, 0.18);
-  box-shadow: var(--shadow-0);
+  box-shadow:
+    var(--panel-shadow),
+    inset 0 0 0 1px rgba(255, 248, 233, 0.45),
+    inset 0 0 24px rgba(57, 40, 22, 0.08);
 }
 
 .game-screen-compressed .board-map-shell::before,
@@ -23,46 +28,43 @@
 
 .game-screen-compressed .board-map-shell::before {
   background:
-    radial-gradient(circle at 25% 30%, transparent 0, transparent 60%, rgba(73, 58, 40, 0.08) 100%),
-    linear-gradient(120deg, transparent 0 30%, rgba(122, 109, 92, 0.06) 30% 31%, transparent 31% 100%);
+    radial-gradient(circle at 50% 10%, rgba(255, 249, 236, 0.24), transparent 26%),
+    linear-gradient(120deg, transparent 0 26%, rgba(92, 72, 48, 0.04) 26% 27%, transparent 27% 100%);
+  z-index: 0;
+  mix-blend-mode: multiply;
 }
 
 .game-screen-compressed .board-map-shell::after {
-  background: transparent;
-  transition: background 180ms ease;
+  inset: 4px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 246, 226, 0.36);
+  background: radial-gradient(circle at center, transparent 62%, rgba(52, 37, 20, 0.06) 100%);
+  transition: box-shadow var(--motion-mid), background var(--motion-mid);
+  z-index: 0;
 }
 
 .game-screen-compressed .board-map-shell[data-war-critical='true']::after {
-  background: radial-gradient(circle at center, transparent 48%, var(--board-war-vignette) 100%);
+  box-shadow: inset 0 0 0 1px rgba(140, 47, 43, 0.16), inset 0 0 36px rgba(140, 47, 43, 0.08);
 }
 
 .game-screen-compressed .board-map-shell[data-gaze-elevated='true']::before {
   background:
-    radial-gradient(circle at 50% 40%, var(--board-gaze-halo), transparent 42%),
-    linear-gradient(120deg, transparent 0 30%, rgba(122, 109, 92, 0.06) 30% 31%, transparent 31% 100%);
+    radial-gradient(circle at 48% 42%, rgba(154, 122, 59, 0.18), transparent 30%),
+    linear-gradient(120deg, transparent 0 26%, rgba(92, 72, 48, 0.04) 26% 27%, transparent 27% 100%);
 }
 
 .game-screen-compressed .board-map-canvas {
   position: relative;
-  inset: auto;
-  left: auto;
-  top: auto;
   width: 100%;
   height: 100%;
-  min-height: 320px;
-  overflow: visible;
+  min-height: 360px;
+  overflow: hidden;
   z-index: 1;
-  border-radius: inherit;
-  --map-pin-margin-x: 72px;
-  --map-pin-margin-top: 104px;
-  --map-pin-margin-bottom: 28px;
 }
 
 .game-screen-compressed .board-world-map {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
   overflow: hidden;
   pointer-events: auto;
   z-index: 1;
@@ -77,56 +79,48 @@
   height: var(--map-canvas-height);
 }
 
-.game-screen-compressed .board-world-map > svg,
 .game-screen-compressed .board-world-map-svg {
-  opacity: 1;
-  mix-blend-mode: normal;
-}
-
-.game-screen-compressed .board-world-map-svg {
-  filter: saturate(0.78) contrast(1.06);
+  filter: sepia(0.54) saturate(0.42) contrast(1.1) brightness(0.96);
 }
 
 .game-screen-compressed .board-world-map-svg [id] {
-  fill: rgba(133, 120, 99, 0.22);
-  stroke: rgba(73, 58, 40, 0.25);
-  stroke-width: 0.8px;
-  transition: fill 140ms ease, opacity 140ms ease, filter 140ms ease;
+  fill: rgba(112, 97, 78, 0.2);
+  stroke: rgba(58, 42, 24, 0.38);
+  stroke-width: 1px;
+  transition: fill 140ms ease, filter 140ms ease, stroke 140ms ease;
 }
 
 .game-screen-compressed .board-world-map-svg .map-region-fill-active,
 .game-screen-compressed .board-world-map-svg .map-region-fill-active path {
-  fill: rgba(198, 167, 94, 0.26);
+  fill: rgba(179, 138, 43, 0.22);
+  stroke: rgba(255, 245, 222, 0.54);
+  filter: drop-shadow(0 0 8px rgba(179, 138, 43, 0.18));
 }
 
 .game-screen-compressed .board-world-map-svg .map-region-fill-hover,
 .game-screen-compressed .board-world-map-svg .map-region-fill-hover path {
-  fill: rgba(227, 160, 8, 0.24);
+  fill: rgba(38, 77, 132, 0.18);
+  stroke: rgba(255, 245, 222, 0.48);
+  filter: drop-shadow(0 0 9px rgba(38, 77, 132, 0.14));
 }
 
-.game-screen-compressed .region-token-marker {
-  position: absolute;
-  left: clamp(var(--map-pin-margin-x), var(--map-point-x), calc(100% - var(--map-pin-margin-x)));
-  top: clamp(var(--map-pin-margin-top), var(--map-point-y), calc(100% - var(--map-pin-margin-bottom)));
-  transform: translate(-50%, -50%);
-  width: 1px;
-  height: 1px;
-  overflow: visible;
-  background: none;
-  border: 0;
-  padding: 0;
-  color: inherit;
-  cursor: pointer;
-  z-index: 4;
-  pointer-events: auto;
+.game-screen-compressed .board-world-map-svg text,
+.game-screen-compressed .board-world-map-svg tspan {
+  fill: rgba(52, 37, 21, 0.86);
+  font-weight: 700;
+  paint-order: stroke fill;
+  stroke: rgba(246, 236, 220, 0.72);
+  stroke-width: 1px;
+  letter-spacing: 0.02em;
+  filter: drop-shadow(0 1px 0 rgba(255, 247, 232, 0.45));
 }
 
 .game-screen-compressed .board-region-sidecard {
   position: absolute;
-  top: 18px;
-  inset-inline-end: 18px;
-  z-index: 5;
-  width: min(300px, calc(100% - 36px));
+  top: 16px;
+  inset-inline-end: 16px;
+  z-index: 6;
+  width: min(300px, calc(100% - 32px));
   display: grid;
   gap: 10px;
   padding: 14px 16px;
@@ -178,541 +172,286 @@
   font-weight: 700;
 }
 
-.game-screen-compressed .board-region-sidecard .board-icon {
-  flex: 0 0 auto;
-}
-
-.game-screen-compressed .region-token-ring {
+.game-screen-compressed .board-region-clusters,
+.game-screen-compressed .board-region-debug-overlay {
   position: absolute;
-  inset: -8px;
-  border-radius: 999px;
-  border: 2px solid var(--region-tone);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9), 0 0 18px color-mix(in srgb, var(--region-tone) 45%, transparent);
+  inset: 0;
 }
 
-.game-screen-compressed .region-token-marker.is-selected .region-token-ring {
-  box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.95),
-    0 0 0 4px color-mix(in srgb, var(--region-tone) 25%, transparent),
-    0 0 22px color-mix(in srgb, var(--region-tone) 55%, transparent);
-}
-
-.game-screen-compressed .region-token-stack {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 7px 8px;
-  border-radius: 999px;
-  background: rgba(255, 252, 245, 0.95);
-  border: 1px solid rgba(73, 58, 40, 0.14);
-  box-shadow: 0 8px 18px rgba(73, 58, 40, 0.14);
-}
-
-.game-screen-compressed .region-token-count {
-  min-width: 22px;
-  min-height: 22px;
+.game-screen-compressed .campaign-roll-overlay {
+  position: absolute;
+  transform: translate(-50%, calc(-100% - 18px));
   display: grid;
-  place-items: center;
-  border-radius: 999px;
+  gap: 2px;
+  min-width: 92px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(73, 58, 40, 0.18);
+  background:
+    linear-gradient(180deg, rgba(255, 249, 238, 0.97), rgba(224, 208, 181, 0.92)),
+    var(--theme-parchment);
+  box-shadow: 0 10px 18px rgba(52, 37, 24, 0.18);
+  color: var(--theme-ink);
+  text-align: center;
+  pointer-events: none;
+}
+
+.game-screen-compressed .campaign-roll-overlay-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
+
+.game-screen-compressed .campaign-roll-overlay strong {
+  font-family: var(--font-data);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.game-screen-compressed .campaign-roll-overlay span:last-child {
   font-family: var(--font-data);
   font-size: 11px;
-  font-weight: 700;
 }
 
-.game-screen-compressed .extraction-count {
-  color: #fff;
-  background: #1f1f1f;
+.game-screen-compressed .campaign-roll-overlay.is-success strong {
+  color: var(--accent-success);
 }
 
-.game-screen-compressed .defense-count {
-  color: #fff;
-  background: #5f8d6d;
+.game-screen-compressed .campaign-roll-overlay.is-failure strong {
+  color: var(--accent-danger);
 }
 
-.game-screen-compressed .bodies-count {
-  color: #fff;
-  background: #8e2c2c;
+.game-screen-compressed .board-region-clusters {
+  z-index: 4;
 }
 
-.game-screen-compressed .region-token-marker[data-region-tone='safe'] .region-token-ring {
-  border-color: var(--map-safe);
-}
-
-.game-screen-compressed .region-token-marker[data-region-tone='strained'] .region-token-ring {
-  border-color: var(--map-strained);
-}
-
-.game-screen-compressed .region-token-marker[data-region-tone='critical'] .region-token-ring,
-.game-screen-compressed .region-token-marker[data-region-tone='breach'] .region-token-ring {
-  border-color: var(--map-critical);
-}
-
-.game-screen-compressed .region-token-marker[data-region-pulsing='true'] .region-token-ring {
-  animation: map-critical-pulse 2s ease-in-out infinite;
-}
-
-html[data-motion='reduced'] .game-screen-compressed .region-token-marker[data-region-pulsing='true'] .region-token-ring {
-  animation: none;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.95), 0 0 20px rgba(139, 30, 30, 0.35);
-}
-
-.game-screen-compressed .board-map-hover {
+.game-screen-compressed .board-region-cluster {
   position: absolute;
-  left: 20px;
-  top: 20px;
-  z-index: 3;
-}
-
-.game-screen-compressed .selected-region-popup {
-  position: absolute;
-  z-index: 12;
-  width: min(260px, calc(100% - 24px));
-  padding: 0;
-  pointer-events: auto;
-}
-
-.game-screen-compressed .selected-region-popup-sheet {
-  display: grid;
-  gap: 8px;
-  padding: 12px 14px 10px;
-  border-radius: 18px;
-  background: rgba(255, 252, 245, 0.97);
-  border: 1px solid rgba(73, 58, 40, 0.14);
-  box-shadow: 0 18px 36px rgba(73, 58, 40, 0.2);
-}
-
-.game-screen-compressed .selected-region-popup-metrics,
-.game-screen-compressed .selected-region-popup-fronts,
-.game-screen-compressed .selected-region-popup-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.game-screen-compressed .selected-region-popup-metrics span,
-.game-screen-compressed .selected-region-popup-fronts span {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 5px 8px;
-  border-radius: 999px;
-  background: rgba(73, 58, 40, 0.06);
-  font-size: 12px;
-}
-
-.game-screen-compressed .selected-region-popup-close {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  min-height: 28px;
-  padding: 4px 9px;
-  border-radius: 999px;
-  border: 1px solid rgba(73, 58, 40, 0.14);
-  background: rgba(255, 252, 245, 0.96);
-  color: inherit;
-}
-
-.game-screen-compressed .region-hover-card {
-  display: grid;
-  gap: 8px;
-  min-width: 180px;
-  padding: 12px 14px;
-  border-radius: 18px;
-  background: rgba(255, 252, 245, 0.94);
-  border: 1px solid rgba(73, 58, 40, 0.14);
-  box-shadow: 0 16px 28px rgba(73, 58, 40, 0.16);
-}
-
-.game-screen-compressed .region-hover-row {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.game-screen-compressed .region-hover-row span {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-@keyframes map-critical-pulse {
-  0%,
-  100% {
-    opacity: 1;
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.95), 0 0 16px rgba(139, 30, 30, 0.18);
-  }
-
-  50% {
-    opacity: 0.82;
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.95), 0 0 24px rgba(139, 30, 30, 0.3);
-  }
-}
-
-.game-screen-compressed .board-map-shell {
-  border-radius: 26px;
-  border: 1px solid var(--panel-rim-strong);
-  background:
-    radial-gradient(circle at 14% 12%, rgba(255, 249, 238, 0.34), transparent 18%),
-    radial-gradient(circle at 78% 16%, rgba(139, 106, 61, 0.12), transparent 20%),
-    linear-gradient(180deg, rgba(255, 248, 236, 0.75), rgba(216, 198, 167, 0.6)),
-    var(--board-ivory);
-  box-shadow:
-    var(--panel-shadow),
-    inset 0 0 0 1px rgba(255, 248, 233, 0.45),
-    inset 0 0 0 12px rgba(88, 66, 42, 0.06),
-    inset 0 0 46px rgba(57, 40, 22, 0.1);
-}
-
-.game-screen-compressed .board-map-shell::before {
-  background:
-    radial-gradient(circle at 50% 10%, rgba(255, 249, 236, 0.26), transparent 26%),
-    linear-gradient(120deg, transparent 0 26%, rgba(92, 72, 48, 0.05) 26% 27%, transparent 27% 100%),
-    url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='0.08'/%3E%3C/svg%3E");
-  z-index: 0;
-  mix-blend-mode: multiply;
-}
-
-.game-screen-compressed .board-map-shell::after {
-  inset: 10px;
-  border: 1px solid rgba(255, 246, 226, 0.44);
-  border-radius: 18px;
-  background: radial-gradient(circle at center, transparent 60%, rgba(52, 37, 20, 0.08) 100%);
-  transition: box-shadow var(--motion-mid), background var(--motion-mid);
-  z-index: 0;
-}
-
-.game-screen-compressed .board-map-shell[data-war-critical='true']::after {
-  box-shadow: inset 0 0 0 1px rgba(140, 47, 43, 0.16), inset 0 0 42px rgba(140, 47, 43, 0.1);
-}
-
-.game-screen-compressed .board-map-shell[data-gaze-elevated='true']::before {
-  background:
-    radial-gradient(circle at 48% 42%, rgba(154, 122, 59, 0.18), transparent 30%),
-    linear-gradient(120deg, transparent 0 26%, rgba(92, 72, 48, 0.05) 26% 27%, transparent 27% 100%);
-}
-
-.game-screen-compressed .board-world-map-svg {
-  filter: sepia(0.54) saturate(0.42) contrast(1.1) brightness(0.96);
-}
-
-.game-screen-compressed .board-world-map-svg [id] {
-  fill: rgba(112, 97, 78, 0.2);
-  stroke: rgba(58, 42, 24, 0.38);
-  stroke-width: 1px;
-}
-
-.game-screen-compressed .board-world-map-svg .map-region-fill-active,
-.game-screen-compressed .board-world-map-svg .map-region-fill-active path {
-  fill: rgba(179, 138, 43, 0.22);
-  stroke: rgba(255, 245, 222, 0.54);
-  filter: drop-shadow(0 0 8px rgba(179, 138, 43, 0.18));
-}
-
-.game-screen-compressed .board-world-map-svg .map-region-fill-hover,
-.game-screen-compressed .board-world-map-svg .map-region-fill-hover path {
-  fill: rgba(38, 77, 132, 0.18);
-  stroke: rgba(255, 245, 222, 0.48);
-  filter: drop-shadow(0 0 9px rgba(38, 77, 132, 0.14));
-}
-
-.game-screen-compressed .board-world-map-svg text,
-.game-screen-compressed .board-world-map-svg tspan {
-  fill: rgba(52, 37, 21, 0.86);
-  font-weight: 700;
-  paint-order: stroke fill;
-  stroke: rgba(246, 236, 220, 0.72);
-  stroke-width: 1px;
-  letter-spacing: 0.02em;
-  filter: drop-shadow(0 1px 0 rgba(255, 247, 232, 0.45));
-}
-
-.game-screen-compressed .region-token-marker {
-  position: absolute;
-  left: var(--map-point-x);
-  top: var(--map-point-y);
-  width: var(--token-size);
-  height: calc(var(--token-size) * 1.1);
   transform: translate(-50%, -50%);
   border: 0;
   padding: 0;
   background: transparent;
   color: inherit;
   cursor: pointer;
-  z-index: 4;
-  transition: transform var(--motion-fast), filter var(--motion-fast);
-  filter: drop-shadow(0 6px 10px rgba(52, 37, 24, 0.2));
+  transition: filter var(--motion-fast), transform var(--motion-fast);
+  filter: drop-shadow(0 7px 12px rgba(52, 37, 24, 0.18));
 }
 
-.game-screen-compressed .region-token-marker:hover,
-.game-screen-compressed .region-token-marker:focus-visible {
-  transform: translate(-50%, -50%) scale(1.06);
-  filter: drop-shadow(0 8px 14px rgba(52, 37, 24, 0.24));
+.game-screen-compressed .board-region-cluster:hover,
+.game-screen-compressed .board-region-cluster:focus-visible {
+  transform: translate(-50%, -50%) scale(1.02);
+  filter: drop-shadow(0 10px 16px rgba(52, 37, 24, 0.22));
 }
 
-.game-screen-compressed .region-token-marker.is-selected .region-token-face {
-  box-shadow:
-    0 0 0 2px rgba(255, 247, 232, 0.96),
-    0 0 0 5px color-mix(in srgb, var(--region-tone) 24%, transparent),
-    0 8px 12px rgba(52, 37, 24, 0.22);
+.game-screen-compressed .board-region-cluster:focus-visible {
+  outline: none;
 }
 
-.game-screen-compressed .region-token-face,
-.game-screen-compressed .region-token-face::before,
-.game-screen-compressed .region-token-face::after {
+.game-screen-compressed .board-region-label {
   position: absolute;
-  inset: 0;
-  content: '';
+  transform: translate(-50%, -100%);
+  min-width: max-content;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(255, 249, 238, 0.92);
+  border: 1px solid rgba(73, 58, 40, 0.12);
+  color: var(--theme-ink);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   pointer-events: none;
-  transform: rotate(var(--token-rotation)) skewX(var(--token-tilt));
+  white-space: nowrap;
 }
 
-.game-screen-compressed .region-token-face::before {
-  transform: translate(-18%, 12%) rotate(calc(var(--token-rotation) - 2deg)) skewX(var(--token-tilt));
-  opacity: 0;
+.game-screen-compressed .board-region-token-container {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--cluster-natural-width);
+  height: var(--cluster-natural-height);
+  transform: translate(-50%, -50%) scale(var(--cluster-scale));
+  transform-origin: center;
+  pointer-events: none;
 }
 
-.game-screen-compressed .region-token-face::after {
-  transform: translate(-9%, 5%) rotate(calc(var(--token-rotation) - 1deg)) skewX(var(--token-tilt));
-  opacity: 0;
+.game-screen-compressed .board-region-token-group {
+  position: absolute;
 }
 
-.game-screen-compressed .region-token-face,
-.game-screen-compressed .region-token-face::before,
-.game-screen-compressed .region-token-face::after {
-  box-shadow: 0 4px 8px rgba(50, 35, 23, 0.18);
+.game-screen-compressed .board-region-token {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  box-shadow:
+    0 3px 0 rgba(77, 56, 34, 0.16),
+    0 6px 10px rgba(50, 35, 23, 0.18);
 }
 
-.game-screen-compressed .region-token-face[data-stack-size='2']::after,
-.game-screen-compressed .region-token-face[data-stack-size='3']::after {
-  opacity: 0.76;
+.game-screen-compressed .board-region-cluster.is-selected .board-region-token {
+  box-shadow:
+    0 0 0 2px rgba(255, 247, 232, 0.94),
+    0 0 0 5px color-mix(in srgb, var(--region-tone) 18%, transparent),
+    0 6px 12px rgba(52, 37, 24, 0.22);
 }
 
-.game-screen-compressed .region-token-face[data-stack-size='3']::before {
-  opacity: 0.52;
-}
-
-.game-screen-compressed .region-token-marker-extraction .region-token-face,
-.game-screen-compressed .region-token-marker-extraction .region-token-face::before,
-.game-screen-compressed .region-token-marker-extraction .region-token-face::after {
+.game-screen-compressed .board-region-token-extraction {
   border: 1px solid rgba(139, 106, 61, 0.92);
   background: linear-gradient(180deg, #3b3028, #1f1a17);
   clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
-  border-radius: 0;
 }
 
-.game-screen-compressed .region-token-marker-defense .region-token-face,
-.game-screen-compressed .region-token-marker-defense .region-token-face::before,
-.game-screen-compressed .region-token-marker-defense .region-token-face::after {
+.game-screen-compressed .board-region-token-defense {
   border: 1px solid rgba(49, 83, 131, 0.92);
   background: linear-gradient(180deg, #4f7db1, #264d84);
   border-radius: 999px;
 }
 
-.game-screen-compressed .region-token-marker-bodies .region-token-face,
-.game-screen-compressed .region-token-marker-bodies .region-token-face::before,
-.game-screen-compressed .region-token-marker-bodies .region-token-face::after {
+.game-screen-compressed .board-region-token-bodies {
   border: 1px solid rgba(88, 28, 26, 0.92);
   background: linear-gradient(180deg, #a84741, #8c2f2b);
   border-radius: 6px;
 }
 
-.game-screen-compressed .region-token-marker[data-tooltip]::after {
-  content: attr(data-tooltip);
+.game-screen-compressed .board-region-overflow-badge {
   position: absolute;
-  width: max-content;
-  max-width: 220px;
-  height: auto;
-  left: 50%;
-  bottom: calc(100% + 10px);
-  padding: 8px 10px;
-  border-radius: 10px;
-  border: 1px solid var(--panel-rim);
-  background:
-    linear-gradient(180deg, rgba(255, 249, 238, 0.98), rgba(226, 210, 182, 0.94)),
-    var(--theme-parchment);
-  box-shadow: var(--panel-shadow), inset 0 1px 0 rgba(255, 248, 236, 0.72);
+  transform: translate(-50%, -50%);
+  min-width: 32px;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(73, 58, 40, 0.16);
+  background: rgba(255, 249, 238, 0.94);
   color: var(--theme-ink);
-  text-align: left;
-  line-height: 1.35;
-  white-space: normal;
-  opacity: 0;
-  transform: translate(-50%, 4px);
-  transition: opacity var(--motion-fast), transform var(--motion-fast);
-  z-index: 8;
-  pointer-events: none;
+  font-family: var(--font-data);
+  font-size: 11px;
+  font-weight: 800;
+  box-shadow: 0 4px 10px rgba(52, 37, 24, 0.18);
 }
 
-.game-screen-compressed .region-token-marker:hover::after,
-.game-screen-compressed .region-token-marker:focus-visible::after {
-  opacity: 1;
-  transform: translate(-50%, 0);
+.game-screen-compressed .board-region-cluster[data-region-tone='safe'] {
+  --region-tone: var(--map-safe);
 }
 
-.game-screen-compressed .region-token-marker[data-region-pulsing='true'] .region-token-face {
+.game-screen-compressed .board-region-cluster[data-region-tone='strained'] {
+  --region-tone: var(--map-strained);
+}
+
+.game-screen-compressed .board-region-cluster[data-region-tone='critical'],
+.game-screen-compressed .board-region-cluster[data-region-tone='breach'] {
+  --region-tone: var(--map-critical);
+}
+
+.game-screen-compressed .board-region-cluster[data-region-pulsing='true'] .board-region-token-container {
   animation: map-critical-pulse 2s ease-in-out infinite;
 }
 
-.game-screen-compressed .campaign-roll-overlay {
-  position: absolute;
-  left: var(--map-point-x);
-  top: var(--map-point-y);
-  z-index: 7;
-  display: grid;
-  gap: 8px;
-  min-width: 188px;
-  padding: 12px 14px;
-  border-radius: 18px;
-  border: 1px solid rgba(73, 58, 40, 0.18);
-  background:
-    linear-gradient(180deg, rgba(255, 249, 238, 0.97), rgba(225, 209, 182, 0.94)),
-    var(--theme-parchment);
-  box-shadow:
-    0 18px 30px rgba(52, 37, 24, 0.22),
-    inset 0 1px 0 rgba(255, 247, 232, 0.74);
-  transform: translate(-50%, -115%) scale(0.94) rotate(-4deg);
-  transform-origin: bottom center;
+.game-screen-compressed .board-region-debug-overlay {
+  z-index: 5;
   pointer-events: none;
-  backdrop-filter: blur(3px);
 }
 
-.game-screen-compressed .campaign-roll-overlay.is-success {
-  box-shadow:
-    0 18px 30px rgba(52, 37, 24, 0.22),
-    0 0 0 1px rgba(78, 123, 64, 0.18),
-    inset 0 1px 0 rgba(255, 247, 232, 0.74);
+.game-screen-compressed .board-region-debug-radius,
+.game-screen-compressed .board-region-debug-anchor,
+.game-screen-compressed .board-region-debug-crosshair,
+.game-screen-compressed .board-region-debug-vector {
+  position: absolute;
+  pointer-events: none;
 }
 
-.game-screen-compressed .campaign-roll-overlay.is-failure {
-  box-shadow:
-    0 18px 30px rgba(52, 37, 24, 0.22),
-    0 0 0 1px rgba(140, 47, 43, 0.18),
-    inset 0 1px 0 rgba(255, 247, 232, 0.74);
+.game-screen-compressed .board-region-debug-radius {
+  border-radius: 999px;
+  border: 1px dashed rgba(38, 77, 132, 0.45);
+  transform: translate(-50%, -50%);
 }
 
-.game-screen-compressed .campaign-roll-overlay.is-rolling {
-  animation: campaign-roll-arrive 260ms ease-out, campaign-roll-float 1050ms ease-in-out 260ms infinite alternate;
+.game-screen-compressed .board-region-debug-anchor {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(161, 46, 42, 0.88);
+  transform: translate(-50%, -50%);
 }
 
-.game-screen-compressed .campaign-roll-overlay.is-settled {
-  transform: translate(-50%, -110%) scale(1) rotate(-1deg);
-  transition: transform 220ms ease, opacity 220ms ease;
+.game-screen-compressed .board-region-debug-crosshair {
+  width: 24px;
+  height: 24px;
+  border-left: 1px solid rgba(38, 77, 132, 0.4);
+  border-top: 1px solid rgba(38, 77, 132, 0.4);
+  transform: translate(-50%, -50%);
 }
 
-.game-screen-compressed .campaign-roll-banner {
+.game-screen-compressed .board-region-debug-vector {
+  height: 2px;
+  background: rgba(161, 46, 42, 0.65);
+  transform-origin: left center;
+}
+
+.game-screen-compressed .region-hover-card {
   display: grid;
-  gap: 2px;
-}
-
-.game-screen-compressed .campaign-roll-eyebrow {
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(59, 42, 24, 0.66);
-}
-
-.game-screen-compressed .campaign-roll-banner strong,
-.game-screen-compressed .campaign-roll-result strong {
-  font-family: var(--font-display);
-  color: var(--theme-ink);
-}
-
-.game-screen-compressed .campaign-roll-dice {
-  display: grid;
-  grid-template-columns: auto auto auto auto auto;
-  align-items: center;
-  justify-content: start;
   gap: 8px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--panel-rim);
+  background:
+    linear-gradient(180deg, rgba(255, 249, 238, 0.97), rgba(224, 208, 181, 0.92)),
+    var(--theme-parchment);
+  box-shadow: var(--panel-shadow), inset 0 1px 0 rgba(255, 247, 232, 0.76);
 }
 
-.game-screen-compressed .campaign-roll-die,
-.game-screen-compressed .campaign-roll-modifier {
-  display: grid;
-  place-items: center;
-  min-width: 34px;
-  min-height: 34px;
-  padding: 6px;
-  border-radius: 10px;
-  border: 1px solid rgba(73, 58, 40, 0.18);
-  background: rgba(255, 252, 246, 0.92);
-  font-family: var(--font-data);
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: var(--theme-ink);
-  box-shadow: inset 0 -2px 0 rgba(73, 58, 40, 0.08);
-}
-
-.game-screen-compressed .campaign-roll-overlay.is-rolling .campaign-roll-die {
-  animation: campaign-roll-die-tumble 520ms cubic-bezier(0.2, 0.8, 0.2, 1) 2;
-}
-
-.game-screen-compressed .campaign-roll-plus {
-  font-family: var(--font-data);
-  font-size: 0.88rem;
-  font-weight: 800;
-  color: rgba(59, 42, 24, 0.7);
-}
-
-.game-screen-compressed .campaign-roll-result {
+.game-screen-compressed .region-hover-row {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
   flex-wrap: wrap;
+  gap: 8px;
 }
 
-.game-screen-compressed .campaign-roll-result strong {
-  font-size: 1.4rem;
-  line-height: 1;
+.game-screen-compressed .region-hover-row span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 5px 9px;
+  border-radius: 10px;
+  border: 1px solid rgba(73, 58, 40, 0.14);
+  background: rgba(73, 58, 40, 0.06);
+  color: var(--theme-ink);
+  font-family: var(--font-data);
+  font-size: 0.75rem;
+  font-weight: 700;
 }
 
-.game-screen-compressed .campaign-roll-result span {
-  font-size: 0.8rem;
-  line-height: 1.35;
-  color: rgba(59, 42, 24, 0.74);
-}
-
-@keyframes campaign-roll-arrive {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -98%) scale(0.8) rotate(-8deg);
-  }
-
-  to {
-    opacity: 1;
-    transform: translate(-50%, -115%) scale(0.94) rotate(-4deg);
-  }
-}
-
-@keyframes campaign-roll-float {
-  from {
-    transform: translate(-50%, -112%) scale(0.94) rotate(-4deg);
-  }
-
-  to {
-    transform: translate(-50%, -118%) scale(0.98) rotate(-2deg);
-  }
-}
-
-@keyframes campaign-roll-die-tumble {
-  0% {
-    transform: translateY(0) rotate(0deg) scale(1);
-  }
-
-  40% {
-    transform: translateY(-10px) rotate(-11deg) scale(1.08);
-  }
-
-  70% {
-    transform: translateY(3px) rotate(8deg) scale(0.98);
-  }
-
+@keyframes map-critical-pulse {
+  0%,
   100% {
-    transform: translateY(0) rotate(0deg) scale(1);
+    filter: drop-shadow(0 6px 10px rgba(52, 37, 24, 0.18));
+  }
+
+  50% {
+    filter: drop-shadow(0 10px 16px rgba(139, 30, 30, 0.24));
   }
 }
 
-html[data-motion='reduced'] .game-screen-compressed .region-token-marker[data-region-pulsing='true'] .region-token-face,
-html[data-motion='reduced'] .game-screen-compressed .campaign-roll-overlay.is-rolling,
-html[data-motion='reduced'] .game-screen-compressed .campaign-roll-overlay.is-rolling .campaign-roll-die {
+html[data-motion='reduced'] .game-screen-compressed .board-region-cluster[data-region-pulsing='true'] .board-region-token-container {
   animation: none;
+}
+
+@media (max-width: 900px) {
+  .game-screen-compressed .board-map-shell {
+    width: 100%;
+  }
+
+  .game-screen-compressed .board-region-sidecard {
+    width: min(280px, calc(100% - 24px));
+    top: 12px;
+    inset-inline-end: 12px;
+  }
+
+  .game-screen-compressed .board-region-label {
+    font-size: 10px;
+    letter-spacing: 0.03em;
+  }
 }

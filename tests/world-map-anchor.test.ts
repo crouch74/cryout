@@ -180,3 +180,18 @@ test('real world map anchor outputs stay stable for the shipped SVG asset', () =
     assert.equal(Math.abs(parsePercent(anchor.y) - expected[regionId].y) < 0.05, true);
   }
 });
+
+test('manifest keeps repaired token anchors aligned to the stable marker baseline', () => {
+  for (const regionId of getAvailableRegions()) {
+    const entry = BOARD_REGION_MAP_MANIFEST[regionId];
+
+    assert.ok(entry.tokenAnchor);
+    assert.deepEqual(entry.tokenAnchor, entry.marker);
+    assert.deepEqual(entry.anchorBias, { x: 0, y: 0 });
+    assert.equal(entry.clusterRadius >= 60, true);
+    assert.equal(entry.labelOffsetY, -14);
+    assert.deepEqual(entry.opticalCenteringByTokenType.extraction, { x: 0, y: -1 });
+    assert.deepEqual(entry.opticalCenteringByTokenType.defense, { x: 0, y: 0 });
+    assert.deepEqual(entry.opticalCenteringByTokenType.bodies, { x: 0, y: 0.5 });
+  }
+});

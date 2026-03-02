@@ -17,6 +17,7 @@ export type IconType =
   | 'internationalOutreach'
   | 'defend'
   | 'playCard'
+  | 'advancePhase'
   | 'frontWar'
   | 'frontPlanet'
   | 'frontCage'

@@ -32,6 +32,17 @@ export interface BoardRegionMapEntry {
     x: string;
     y: string;
   };
+  tokenAnchor: {
+    x: string;
+    y: string;
+  };
+  anchorBias: {
+    x: number;
+    y: number;
+  };
+  clusterRadius: number;
+  labelOffsetY: number;
+  opticalCenteringByTokenType: Record<'extraction' | 'defense' | 'bodies', { x: number; y: number }>;
   labelOffset: {
     x: string;
     y: string;
@@ -183,6 +194,15 @@ export const BOARD_REGION_MAP_MANIFEST: Record<RegionId, BoardRegionMapEntry> = 
     regionId: 'Congo',
     label: 'Congo Basin',
     marker: { x: '55.64%', y: '64.66%' },
+    tokenAnchor: { x: '55.64%', y: '64.66%' },
+    anchorBias: { x: 0, y: 0 },
+    clusterRadius: 76,
+    labelOffsetY: -14,
+    opticalCenteringByTokenType: {
+      extraction: { x: 0, y: -1 },
+      defense: { x: 0, y: 0 },
+      bodies: { x: 0, y: 0.5 },
+    },
     labelOffset: { x: '28px', y: '-16px' },
     tooltipOffset: { x: '18px', y: '-214px' },
     territoryTilt: '-4deg',
@@ -198,6 +218,15 @@ export const BOARD_REGION_MAP_MANIFEST: Record<RegionId, BoardRegionMapEntry> = 
     regionId: 'Levant',
     label: 'Levant',
     marker: { x: '60.18%', y: '47.88%' },
+    tokenAnchor: { x: '60.18%', y: '47.88%' },
+    anchorBias: { x: 0, y: 0 },
+    clusterRadius: 68,
+    labelOffsetY: -14,
+    opticalCenteringByTokenType: {
+      extraction: { x: 0, y: -1 },
+      defense: { x: 0, y: 0 },
+      bodies: { x: 0, y: 0.5 },
+    },
     labelOffset: { x: '22px', y: '-18px' },
     tooltipOffset: { x: '-34px', y: '-214px' },
     territoryTilt: '3deg',
@@ -213,6 +242,15 @@ export const BOARD_REGION_MAP_MANIFEST: Record<RegionId, BoardRegionMapEntry> = 
     regionId: 'Amazon',
     label: 'Amazon',
     marker: { x: '28.25%', y: '69.05%' },
+    tokenAnchor: { x: '28.25%', y: '69.05%' },
+    anchorBias: { x: 0, y: 0 },
+    clusterRadius: 84,
+    labelOffsetY: -14,
+    opticalCenteringByTokenType: {
+      extraction: { x: 0, y: -1 },
+      defense: { x: 0, y: 0 },
+      bodies: { x: 0, y: 0.5 },
+    },
     labelOffset: { x: '24px', y: '-18px' },
     tooltipOffset: { x: '-6px', y: '-214px' },
     territoryTilt: '-3deg',
@@ -228,6 +266,15 @@ export const BOARD_REGION_MAP_MANIFEST: Record<RegionId, BoardRegionMapEntry> = 
     regionId: 'Sahel',
     label: 'Sahel',
     marker: { x: '51.17%', y: '54.65%' },
+    tokenAnchor: { x: '51.17%', y: '54.65%' },
+    anchorBias: { x: 0, y: 0 },
+    clusterRadius: 74,
+    labelOffsetY: -14,
+    opticalCenteringByTokenType: {
+      extraction: { x: 0, y: -1 },
+      defense: { x: 0, y: 0 },
+      bodies: { x: 0, y: 0.5 },
+    },
     labelOffset: { x: '18px', y: '-16px' },
     tooltipOffset: { x: '-4px', y: '-206px' },
     territoryTilt: '2deg',
@@ -243,6 +290,15 @@ export const BOARD_REGION_MAP_MANIFEST: Record<RegionId, BoardRegionMapEntry> = 
     regionId: 'Mekong',
     label: 'Mekong',
     marker: { x: '77.08%', y: '42.74%' },
+    tokenAnchor: { x: '77.08%', y: '42.74%' },
+    anchorBias: { x: 0, y: 0 },
+    clusterRadius: 70,
+    labelOffsetY: -14,
+    opticalCenteringByTokenType: {
+      extraction: { x: 0, y: -1 },
+      defense: { x: 0, y: 0 },
+      bodies: { x: 0, y: 0.5 },
+    },
     labelOffset: { x: '24px', y: '-16px' },
     tooltipOffset: { x: '-136px', y: '-212px' },
     territoryTilt: '4deg',
@@ -258,6 +314,15 @@ export const BOARD_REGION_MAP_MANIFEST: Record<RegionId, BoardRegionMapEntry> = 
     regionId: 'Andes',
     label: 'Andes',
     marker: { x: '25.94%', y: '77.12%' },
+    tokenAnchor: { x: '25.94%', y: '77.12%' },
+    anchorBias: { x: 0, y: 0 },
+    clusterRadius: 72,
+    labelOffsetY: -14,
+    opticalCenteringByTokenType: {
+      extraction: { x: 0, y: -1 },
+      defense: { x: 0, y: 0 },
+      bodies: { x: 0, y: 0.5 },
+    },
     labelOffset: { x: '18px', y: '-18px' },
     tooltipOffset: { x: '18px', y: '-208px' },
     territoryTilt: '-5deg',

@@ -496,18 +496,26 @@ export function GameScreen({
     : state.phase === 'WIN' || state.phase === 'LOSS';
   const phaseInsights = getPhaseInsights(state, focusedPlayer.seat);
   const recentChangeSnapshots = useMemo(() => getRecentChangeSnapshots(state), [state]);
+  const phaseActionLabel = state.phase === 'SYSTEM'
+    ? t('ui.game.playSystemPhase', 'Play System')
+    : getActionButtonLabel(state.phase);
+  const phaseActionTooltip = `${phaseActionLabel} • ${phaseControlHint}`;
 
   const phaseProgressControls = (
     <div className="phase-progress-controls">
       <button
         type="button"
-        className={`dock-control-button is-primary ${state.phase === 'SYSTEM' ? 'is-play-button' : ''}`.trim()}
+        className="dock-control-button is-primary is-play-button"
         disabled={phaseActionDisabled}
         onClick={runPhaseAction}
+        aria-label={phaseActionLabel}
+        title={phaseActionTooltip}
       >
-        {state.phase === 'SYSTEM' ? t('ui.game.playSystemPhase', 'Play System') : getActionButtonLabel(state.phase)}
+        <Icon type="advancePhase" size={18} title={phaseActionLabel} />
       </button>
-      <span className="dock-phase-hint">{phaseControlHint}</span>
+      <span className="dock-phase-hint" title={phaseActionTooltip}>
+        {phaseActionLabel}
+      </span>
     </div>
   );
 
@@ -899,6 +907,7 @@ export function GameScreen({
               content={content}
               selectedRegionId={selectedRegionId}
               campaignRoll={latestCampaignRoll}
+              debugLayout={devMode}
               onSelectRegion={(regionId) => {
                 onViewStateChange({ regionId });
               }}

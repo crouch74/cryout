@@ -19,6 +19,7 @@ export const ICON_COLORS = {
   internationalOutreach: '#E3A008',
   defend: '#5F8D6D',
   playCard: '#6E4A7E',
+  advancePhase: '#8B6A3D',
   frontWar: '#9E1B1B',
   frontPlanet: '#3E6F4F',
   frontCage: '#8B5E3C',

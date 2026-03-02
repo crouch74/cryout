@@ -128,6 +128,9 @@ test('game screen source keeps the compressed board layout contract', () => {
   assert.match(source, /FrontTrackBar/);
   assert.match(source, /Commit Prepared Moves/);
   assert.match(source, /QueueIntent/);
+  assert.match(source, /debugLayout=\{devMode\}/);
+  assert.match(source, /advancePhase/);
+  assert.match(source, /aria-label=\{phaseActionLabel\}/);
   assert.doesNotMatch(source, /<footer/);
 });
 
@@ -137,6 +140,9 @@ test('world map source renders the launch campaign dice overlay on the active bo
   assert.match(source, /campaign-roll-overlay/);
   assert.match(source, /Launch Campaign/);
   assert.match(source, /campaignRoll/);
+  assert.match(source, /board-region-clusters/);
+  assert.match(source, /board-region-token-container/);
+  assert.doesNotMatch(source, /createRandom/);
 });
 
 test('default game view state is simplified for the cutover shell', () => {

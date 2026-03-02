@@ -12,15 +12,18 @@ import {
 import {
   extractSvgGeometry,
   getPathDataForId,
-  getSignedDistanceToPolygons,
   parsePathToPolygons,
   type Point,
 } from './svgPathCentroid.ts';
+import { buildRegionCountSummary, buildRegionLayouts } from './worldMapTokenLayout.ts';
+import { buildFocusedMapViewport, getUnionBounds } from './worldMapViewport.ts';
 
 interface WorldMapBoardProps {
   state: EngineState;
   content: CompiledContent;
   selectedRegionId: RegionId | null;
+  onSelectRegion: (regionId: RegionId) => void;
+  debugLayout?: boolean;
   campaignRoll?: {
     seq: number;
     regionId: RegionId;
@@ -30,45 +33,11 @@ interface WorldMapBoardProps {
     dieTwo: number;
     success: boolean;
   } | null;
-  onSelectRegion: (regionId: RegionId) => void;
-}
-
-type RegionTokenType = 'extraction' | 'defense' | 'bodies';
-
-interface RegionTokenPlacement {
-  key: string;
-  regionId: RegionId;
-  type: RegionTokenType;
-  stackSize: 1 | 2 | 3;
-  x: string;
-  y: string;
-  tooltip: string;
-  size: number;
-  rotation: number;
-  tilt: number;
 }
 
 interface RegionGeometryInfo {
   polygons: Point[][];
   bounds: { minX: number; minY: number; maxX: number; maxY: number };
-}
-
-interface MapViewportStyle {
-  width: string;
-  height: string;
-  left: string;
-  top: string;
-}
-
-interface CampaignRollOverlayState {
-  seq: number;
-  regionId: RegionId;
-  total: number;
-  modifier: number;
-  dieOne: number;
-  dieTwo: number;
-  success: boolean;
-  settled: boolean;
 }
 
 const DOMAIN_ICON_BY_ID: Record<DomainId, IconType> = {
@@ -80,27 +49,6 @@ const DOMAIN_ICON_BY_ID: Record<DomainId, IconType> = {
   FossilGrip: 'frontFossil',
   StolenVoice: 'frontVoice',
 };
-
-function createSeed(input: string) {
-  let hash = 2166136261;
-  for (let index = 0; index < input.length; index += 1) {
-    hash ^= input.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
-}
-
-function createRandom(seed: number) {
-  let value = seed || 1;
-  return () => {
-    value = (Math.imul(value, 1664525) + 1013904223) >>> 0;
-    return value / 4294967296;
-  };
-}
-
-function toPercentage(value: number, min: number, span: number) {
-  return `${((value - min) / span) * 100}%`;
-}
 
 function getBoundingBox(points: Point[]) {
   let minX = Number.POSITIVE_INFINITY;
@@ -116,29 +64,6 @@ function getBoundingBox(points: Point[]) {
   }
 
   return { minX, minY, maxX, maxY };
-}
-
-function getRegionTokenTooltip(type: RegionTokenType, stackCount: number, totalCount: number) {
-  switch (type) {
-    case 'extraction':
-      return t(
-        'ui.game.regionExtractionTooltip',
-        'Extraction Tokens: this stack shows {{stack}} of {{count}}. If the region reaches 6, it is lost. Remove them with Launch Campaign, Build Solidarity, and resistance effects.',
-        { stack: stackCount, count: totalCount },
-      );
-    case 'defense':
-      return t(
-        'ui.game.regionDefenseTooltip',
-        'Defense: this stack shows {{stack}} of {{count}}. Defense absorbs the next system strike here, then clears. Raise it with Defend and supportive effects before the system phase.',
-        { stack: stackCount, count: totalCount },
-      );
-    case 'bodies':
-      return t(
-        'ui.game.regionBodiesTooltip',
-        'Comrades: this stack shows {{stack}} of {{count}}. Comrades are the people and organizing strength in this region. Commit them to Launch Campaign, Build Solidarity, and Defend.',
-        { stack: stackCount, count: totalCount },
-      );
-  }
 }
 
 function getRegionGeometry(svgMarkup: string) {
@@ -167,208 +92,35 @@ function getRegionGeometry(svgMarkup: string) {
       maxX: Math.max(merged.maxX, box.maxX),
       maxY: Math.max(merged.maxY, box.maxY),
     }));
+
     regions[regionId] = { polygons, bounds };
   }
 
   return { viewBox: geometry.viewBox, regions };
 }
 
-function buildMapViewport(
-  viewBox: [number, number, number, number],
-  regionGeometry: Partial<Record<RegionId, RegionGeometryInfo>>,
-  state: EngineState,
-  selectedRegionId: RegionId | null,
-) {
-  const [minX, minY, width, height] = viewBox;
-  const pressuredRegions = getAvailableRegions().filter((regionId) => {
-    const region = state.regions[regionId];
-    return region.extractionTokens > 0 || region.defenseRating > 0;
-  });
-  const comradeRegions = getAvailableRegions().filter((regionId) => {
-    const region = state.regions[regionId];
-    return state.players.some((player) => (region.bodiesPresent[player.seat] ?? 0) > 0);
-  });
-  const sourceRegionIds = pressuredRegions.length > 0
-    ? pressuredRegions
-    : selectedRegionId
-      ? [selectedRegionId]
-      : comradeRegions.length > 0
-        ? comradeRegions
-        : getAvailableRegions();
-  const visibleRegions = sourceRegionIds
-    .map((regionId) => regionGeometry[regionId])
-    .filter((entry): entry is RegionGeometryInfo => Boolean(entry));
-
-  if (visibleRegions.length === 0) {
-    return {
-      width: WORLD_MAP_SVG_METADATA.viewport.canvasWidth,
-      height: WORLD_MAP_SVG_METADATA.viewport.canvasHeight,
-      left: WORLD_MAP_SVG_METADATA.viewport.canvasLeft,
-      top: WORLD_MAP_SVG_METADATA.viewport.canvasTop,
-    } satisfies MapViewportStyle;
-  }
-
-  const bounds = visibleRegions.reduce(
-    (merged, region) => ({
-      minX: Math.min(merged.minX, region.bounds.minX),
-      minY: Math.min(merged.minY, region.bounds.minY),
-      maxX: Math.max(merged.maxX, region.bounds.maxX),
-      maxY: Math.max(merged.maxY, region.bounds.maxY),
-    }),
-    {
-      minX: Number.POSITIVE_INFINITY,
-      minY: Number.POSITIVE_INFINITY,
-      maxX: Number.NEGATIVE_INFINITY,
-      maxY: Number.NEGATIVE_INFINITY,
-    },
-  );
-  const marginX = width * 0.045;
-  const marginY = height * 0.05;
-  const paddedWidth = Math.min(width, bounds.maxX - bounds.minX + marginX * 2);
-  const paddedHeight = Math.min(height, bounds.maxY - bounds.minY + marginY * 2);
-  const centerX = (bounds.minX + bounds.maxX) / 2;
-  const centerY = (bounds.minY + bounds.maxY) / 2;
-  const baseWidthPercent = Number.parseFloat(WORLD_MAP_SVG_METADATA.viewport.canvasWidth);
-  const baseHeightPercent = Number.parseFloat(WORLD_MAP_SVG_METADATA.viewport.canvasHeight);
-  const baseVisibleWidth = 100 / baseWidthPercent;
-  const baseVisibleHeight = 100 / baseHeightPercent;
-  const targetWidthFraction = paddedWidth / width;
-  const targetHeightFraction = paddedHeight / height;
-  const scale = Math.min(baseVisibleWidth / targetWidthFraction, baseVisibleHeight / targetHeightFraction, 4);
-  const widthPercent = baseWidthPercent * scale;
-  const heightPercent = baseHeightPercent * scale;
-  const centerXFraction = (centerX - minX) / width;
-  const centerYFraction = (centerY - minY) / height;
-
-  return {
-    width: `${widthPercent}%`,
-    height: `${heightPercent}%`,
-    left: `${50 - centerXFraction * widthPercent}%`,
-    top: `${50 - centerYFraction * heightPercent}%`,
-  } satisfies MapViewportStyle;
-}
-
-function buildStacks(total: number): Array<1 | 2 | 3> {
-  if (total <= 0) {
-    return [];
-  }
-  const fullStacks = Math.floor(total / 3);
-  const remainder = total % 3;
-  const stacks: Array<1 | 2 | 3> = Array.from({ length: fullStacks }, () => 3 as const);
-  if (remainder > 0) {
-    stacks.push(remainder as 1 | 2 | 3);
-  }
-  return stacks;
-}
-
-function buildRegionTokenPlacements(
-  viewBox: [number, number, number, number],
-  regionGeometry: Partial<Record<RegionId, RegionGeometryInfo>>,
-  state: EngineState,
-) {
-  const [minX, minY, width, height] = viewBox;
-  const placements: Partial<Record<RegionId, RegionTokenPlacement[]>> = {};
-
-  for (const regionId of getAvailableRegions()) {
-    const geometry = regionGeometry[regionId];
-    if (!geometry) {
-      placements[regionId] = [];
-      continue;
-    }
-
-    const { polygons, bounds } = geometry;
-    const region = state.regions[regionId];
-    const totalBodies = state.players.reduce((sum, player) => sum + (region.bodiesPresent[player.seat] ?? 0), 0);
-    const tokenStacks: Array<{ type: RegionTokenType; stackSize: 1 | 2 | 3; total: number }> = [
-      ...buildStacks(region.extractionTokens).map((stackSize) => ({ type: 'extraction' as const, stackSize, total: region.extractionTokens })),
-      ...buildStacks(region.defenseRating).map((stackSize) => ({ type: 'defense' as const, stackSize, total: region.defenseRating })),
-      ...buildStacks(totalBodies).map((stackSize) => ({ type: 'bodies' as const, stackSize, total: totalBodies })),
-    ];
-
-    const regionPlacements: RegionTokenPlacement[] = [];
-    const placed: Array<{ x: number; y: number; radius: number }> = [];
-    const minDimension = Math.min(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY);
-    const baseSize = Math.max(30, Math.min(60, minDimension / 3.6));
-
-    tokenStacks.forEach((token, index) => {
-      const random = createRandom(createSeed(`${regionId}-${token.type}-${index}-${token.stackSize}`));
-      const tokenSize = Math.round(baseSize + (random() - 0.5) * Math.max(2, baseSize * 0.18));
-      let position: Point | null = null;
-      let minDistance = tokenSize * 0.95;
-
-      for (let attempt = 0; attempt < 180 && !position; attempt += 1) {
-        if (attempt > 0 && attempt % 45 === 0) {
-          minDistance *= 0.9;
-        }
-
-        const candidate = {
-          x: bounds.minX + random() * (bounds.maxX - bounds.minX),
-          y: bounds.minY + random() * (bounds.maxY - bounds.minY),
-        };
-        const edgeDistance = getSignedDistanceToPolygons(candidate, polygons);
-        if (edgeDistance < tokenSize * 0.68) {
-          continue;
-        }
-
-        const collides = placed.some((current) => {
-          const dx = current.x - candidate.x;
-          const dy = current.y - candidate.y;
-          return Math.sqrt(dx * dx + dy * dy) < current.radius + minDistance;
-        });
-
-        if (!collides) {
-          position = candidate;
-        }
-      }
-
-      const fallback = position ?? {
-        x: bounds.minX + ((index + 1) / (tokenStacks.length + 1)) * (bounds.maxX - bounds.minX),
-        y: bounds.minY + ((index % 3) + 1) / 4 * (bounds.maxY - bounds.minY),
-      };
-
-      const rotation = Math.round((random() - 0.5) * 22);
-      const tilt = Math.round((random() - 0.5) * 8);
-
-      placed.push({ ...fallback, radius: tokenSize * 0.55 });
-      regionPlacements.push({
-        key: `${regionId}-${token.type}-${index}`,
-        regionId,
-        type: token.type,
-        stackSize: token.stackSize,
-        x: toPercentage(fallback.x, minX, width),
-        y: toPercentage(fallback.y, minY, height),
-        tooltip: getRegionTokenTooltip(token.type, token.stackSize, token.total),
-        size: tokenSize,
-        rotation,
-        tilt,
-      });
-    });
-
-    placements[regionId] = regionPlacements;
-  }
-
-  return placements;
+function getRegionSummaryLabel(regionId: RegionId, state: EngineState, content: CompiledContent) {
+  const region = state.regions[regionId];
+  const totalBodies = state.players.reduce((sum, player) => sum + (region.bodiesPresent[player.seat] ?? 0), 0);
+  return `${localizeRegionField(regionId, 'name', content.regions[regionId].name)}. `
+    + `${t('ui.game.extraction', 'Extraction')} ${region.extractionTokens}. `
+    + `${t('ui.game.defense', 'Defense')} ${region.defenseRating}. `
+    + `${t('ui.game.bodies', 'Bodies')} ${totalBodies}.`;
 }
 
 export function WorldMapBoard({
   state,
   content,
   selectedRegionId,
-  campaignRoll,
   onSelectRegion,
+  debugLayout = false,
+  campaignRoll = null,
 }: WorldMapBoardProps) {
   const [hoveredRegionId, setHoveredRegionId] = useState<RegionId | null>(null);
   const [svgMarkup, setSvgMarkup] = useState('');
-  const [tokenPlacements, setTokenPlacements] = useState<Partial<Record<RegionId, RegionTokenPlacement[]>>>({});
-  const [mapViewport, setMapViewport] = useState<MapViewportStyle>({
-    width: WORLD_MAP_SVG_METADATA.viewport.canvasWidth,
-    height: WORLD_MAP_SVG_METADATA.viewport.canvasHeight,
-    left: WORLD_MAP_SVG_METADATA.viewport.canvasLeft,
-    top: WORLD_MAP_SVG_METADATA.viewport.canvasTop,
-  });
+  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
   const svgHostRef = useRef<HTMLDivElement | null>(null);
-  const diceTimerRef = useRef<number | null>(null);
-  const diceDismissTimerRef = useRef<number | null>(null);
+  const canvasRef = useRef<HTMLDivElement | null>(null);
   const regionIds = getAvailableRegions();
   const boardState = useMemo(() => ({
     warCritical: state.northernWarMachine >= 9,
@@ -376,8 +128,6 @@ export function WorldMapBoard({
     regionCritical: regionIds.some((regionId) => state.regions[regionId].extractionTokens >= 5),
   }), [regionIds, state.globalGaze, state.northernWarMachine, state.regions]);
   const cardRegionId = hoveredRegionId ?? selectedRegionId ?? null;
-
-  const [campaignOverlay, setCampaignOverlay] = useState<CampaignRollOverlayState | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -397,18 +147,103 @@ export function WorldMapBoard({
   }, []);
 
   useEffect(() => {
-    if (!svgMarkup) {
+    if (!canvasRef.current) {
       return;
     }
 
-    const geometry = getRegionGeometry(svgMarkup);
+    const node = canvasRef.current;
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) {
+        return;
+      }
+      setCanvasSize({
+        width: Math.round(entry.contentRect.width),
+        height: Math.round(entry.contentRect.height),
+      });
+    });
+
+    observer.observe(node);
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  const geometry = useMemo(() => (svgMarkup ? getRegionGeometry(svgMarkup) : { viewBox: null, regions: {} }), [svgMarkup]);
+  const focusRegionIds = useMemo(() => {
+    const pressuredRegions = regionIds.filter((regionId) => {
+      const region = state.regions[regionId];
+      return region.extractionTokens > 0 || region.defenseRating > 0;
+    });
+    if (pressuredRegions.length > 0) {
+      return pressuredRegions;
+    }
+
+    if (selectedRegionId) {
+      return [selectedRegionId];
+    }
+
+    const comradeRegions = regionIds.filter((regionId) => {
+      const region = state.regions[regionId];
+      return state.players.some((player) => (region.bodiesPresent[player.seat] ?? 0) > 0);
+    });
+
+    return comradeRegions;
+  }, [regionIds, selectedRegionId, state.players, state.regions]);
+
+  const mapCamera = useMemo(() => {
     if (!geometry.viewBox) {
-      return;
+      return null;
     }
 
-    setMapViewport(buildMapViewport(geometry.viewBox, geometry.regions, state, selectedRegionId));
-    setTokenPlacements(buildRegionTokenPlacements(geometry.viewBox, geometry.regions, state));
-  }, [selectedRegionId, svgMarkup, state]);
+    const targetAspectRatio = canvasSize.width > 0 && canvasSize.height > 0
+      ? canvasSize.width / canvasSize.height
+      : geometry.viewBox[2] / geometry.viewBox[3];
+    const focusBounds = getUnionBounds(
+      focusRegionIds
+        .map((regionId) => geometry.regions[regionId]?.bounds)
+        .filter((entry): entry is RegionGeometryInfo['bounds'] => Boolean(entry)),
+    );
+
+    return buildFocusedMapViewport({
+      viewBox: geometry.viewBox,
+      defaultViewport: WORLD_MAP_SVG_METADATA.viewport,
+      focusBounds,
+      targetAspectRatio,
+      focusBlend: focusRegionIds.length <= 1 ? 0.55 : 0.35,
+      marginXRatio: 0.08,
+      marginYRatio: 0.10,
+      minWidthRatio: 0.78,
+      minHeightRatio: 0.84,
+    });
+  }, [canvasSize.height, canvasSize.width, focusRegionIds, geometry]);
+  const mapViewport = mapCamera?.viewport ?? WORLD_MAP_SVG_METADATA.viewport;
+
+  const regionCounts = useMemo(() => Object.fromEntries(
+    regionIds.map((regionId) => {
+      const region = state.regions[regionId];
+      const totalBodies = state.players.reduce((sum, player) => sum + (region.bodiesPresent[player.seat] ?? 0), 0);
+      return [regionId, buildRegionCountSummary(region.extractionTokens, region.defenseRating, totalBodies)];
+    }),
+  ) as Record<RegionId, ReturnType<typeof buildRegionCountSummary>>, [regionIds, state.players, state.regions]);
+
+  const regionLayouts = useMemo(() => {
+    if (canvasSize.width === 0 || canvasSize.height === 0 || !mapCamera) {
+      return null;
+    }
+
+    return buildRegionLayouts({
+      canvasWidth: canvasSize.width,
+      canvasHeight: canvasSize.height,
+      mapViewport,
+      defaultVisibleWorldWidth: mapCamera.defaultBounds.maxX - mapCamera.defaultBounds.minX,
+      currentVisibleWorldWidth: mapCamera.bounds.maxX - mapCamera.bounds.minX,
+      regionIds,
+      selectedRegionId,
+      regionCounts,
+      manifest: BOARD_REGION_MAP_MANIFEST,
+    });
+  }, [canvasSize.height, canvasSize.width, mapCamera, mapViewport, regionCounts, regionIds, selectedRegionId]);
 
   useEffect(() => {
     if (!svgHostRef.current || !svgMarkup) {
@@ -490,11 +325,19 @@ export function WorldMapBoard({
       target.classList.remove('map-region-fill-active', 'map-region-fill-hover');
     }
 
-    if (!hoveredRegionId) {
-      return;
+    const activeRegionIds = [selectedRegionId].filter((entry): entry is RegionId => Boolean(entry));
+    const hoverRegionIds = [hoveredRegionId].filter((entry): entry is RegionId => Boolean(entry));
+
+    for (const regionId of activeRegionIds) {
+      for (const id of BOARD_REGION_MAP_MANIFEST[regionId].svgCoverage) {
+        const target = rootSvg.querySelector(`#${id}`);
+        if (target) {
+          target.classList.add('map-region-fill-active');
+        }
+      }
     }
 
-    for (const regionId of [hoveredRegionId]) {
+    for (const regionId of hoverRegionIds) {
       for (const id of BOARD_REGION_MAP_MANIFEST[regionId].svgCoverage) {
         const target = rootSvg.querySelector(`#${id}`);
         if (target) {
@@ -502,56 +345,7 @@ export function WorldMapBoard({
         }
       }
     }
-  }, [hoveredRegionId, regionIds, svgMarkup]);
-
-  useEffect(() => () => {
-    if (diceTimerRef.current !== null) {
-      window.clearTimeout(diceTimerRef.current);
-    }
-    if (diceDismissTimerRef.current !== null) {
-      window.clearTimeout(diceDismissTimerRef.current);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!campaignRoll) {
-      return;
-    }
-
-    setCampaignOverlay((current) => {
-      if (current?.seq === campaignRoll.seq) {
-        return current;
-      }
-      return { ...campaignRoll, settled: false };
-    });
-
-    if (diceTimerRef.current !== null) {
-      window.clearTimeout(diceTimerRef.current);
-    }
-    if (diceDismissTimerRef.current !== null) {
-      window.clearTimeout(diceDismissTimerRef.current);
-    }
-
-    diceTimerRef.current = window.setTimeout(() => {
-      setCampaignOverlay((current) => (current?.seq === campaignRoll.seq ? { ...current, settled: true } : current));
-    }, 1350);
-    diceDismissTimerRef.current = window.setTimeout(() => {
-      setCampaignOverlay((current) => (current?.seq === campaignRoll.seq ? null : current));
-    }, 4300);
-
-    console.log(`🎲 [WorldMapBoard] Showing Launch Campaign roll in ${campaignRoll.regionId}: ${campaignRoll.dieOne}+${campaignRoll.dieTwo}+${campaignRoll.modifier} = ${campaignRoll.total}.`);
-
-    return () => {
-      if (diceTimerRef.current !== null) {
-        window.clearTimeout(diceTimerRef.current);
-        diceTimerRef.current = null;
-      }
-      if (diceDismissTimerRef.current !== null) {
-        window.clearTimeout(diceDismissTimerRef.current);
-        diceDismissTimerRef.current = null;
-      }
-    };
-  }, [campaignRoll]);
+  }, [hoveredRegionId, regionIds, selectedRegionId, svgMarkup]);
 
   return (
     <section
@@ -561,12 +355,13 @@ export function WorldMapBoard({
       data-region-critical={boardState.regionCritical}
     >
       <div
+        ref={canvasRef}
         className="board-map-canvas"
         style={{
-          ['--map-canvas-width' as string]: mapViewport.width,
-          ['--map-canvas-height' as string]: mapViewport.height,
-          ['--map-canvas-left' as string]: mapViewport.left,
-          ['--map-canvas-top' as string]: mapViewport.top,
+          ['--map-canvas-width' as string]: mapViewport.canvasWidth,
+          ['--map-canvas-height' as string]: mapViewport.canvasHeight,
+          ['--map-canvas-left' as string]: mapViewport.canvasLeft,
+          ['--map-canvas-top' as string]: mapViewport.canvasTop,
         }}
       >
         <div ref={svgHostRef} className="board-world-map" aria-hidden="true" />
@@ -587,7 +382,7 @@ export function WorldMapBoard({
               </span>
               <span>
                 <Icon type="bodies" size={15} />
-                {t('ui.game.bodies', 'Comrades')} {formatNumber(
+                {t('ui.game.bodies', 'Bodies')} {formatNumber(
                   state.players.reduce((sum, player) => sum + (state.regions[cardRegionId].bodiesPresent[player.seat] ?? 0), 0),
                 )}
               </span>
@@ -606,63 +401,156 @@ export function WorldMapBoard({
           </article>
         ) : null}
 
-        {regionIds.flatMap((regionId) => {
-          const region = state.regions[regionId];
-          const danger = getRegionDangerState(region.extractionTokens);
-          return (tokenPlacements[regionId] ?? []).map((placement) => (
-            <button
-              key={placement.key}
-              type="button"
-              className={`region-token-marker region-token-marker-${placement.type} ${selectedRegionId === regionId ? 'is-selected' : ''}`.trim()}
-              data-region-tone={danger.tone}
-              data-region-pulsing={danger.pulsing}
-              data-tooltip={placement.tooltip}
-              aria-label={placement.tooltip}
-              onClick={() => onSelectRegion(regionId)}
-              onMouseEnter={() => setHoveredRegionId(regionId)}
-              onMouseLeave={() => setHoveredRegionId((current) => (current === regionId ? null : current))}
-              style={{
-                ['--map-point-x' as string]: placement.x,
-                ['--map-point-y' as string]: placement.y,
-                ['--region-tone' as string]: danger.color,
-                ['--token-size' as string]: `${placement.size}px`,
-                ['--token-rotation' as string]: `${placement.rotation}deg`,
-                ['--token-tilt' as string]: `${placement.tilt}deg`,
-              }}
-            >
-              <span className="region-token-face" data-stack-size={placement.stackSize}></span>
-            </button>
-          ));
-        })}
-
-        {campaignOverlay ? (
-          <div
-            className={`campaign-roll-overlay ${campaignOverlay.settled ? 'is-settled' : 'is-rolling'} ${campaignOverlay.success ? 'is-success' : 'is-failure'}`.trim()}
+        {campaignRoll && regionLayouts?.[campaignRoll.regionId] ? (
+          <article
+            className={`campaign-roll-overlay ${campaignRoll.success ? 'is-success' : 'is-failure'}`.trim()}
             style={{
-              ['--map-point-x' as string]: BOARD_REGION_MAP_MANIFEST[campaignOverlay.regionId].marker.x,
-              ['--map-point-y' as string]: BOARD_REGION_MAP_MANIFEST[campaignOverlay.regionId].marker.y,
+              left: `${regionLayouts[campaignRoll.regionId].position.x}px`,
+              top: `${regionLayouts[campaignRoll.regionId].position.y}px`,
+              zIndex: regionLayouts[campaignRoll.regionId].zIndex + 2,
             }}
-            aria-live="polite"
           >
-            <div className="campaign-roll-banner">
-              <span className="campaign-roll-eyebrow">{t('ui.game.launchCampaignRoll', 'Launch Campaign')}</span>
-              <strong>{localizeRegionField(campaignOverlay.regionId, 'name', content.regions[campaignOverlay.regionId].name)}</strong>
-            </div>
-            <div className="campaign-roll-dice" aria-hidden="true">
-              <span className="campaign-roll-die" data-value={campaignOverlay.dieOne}>{campaignOverlay.dieOne}</span>
-              <span className="campaign-roll-plus">+</span>
-              <span className="campaign-roll-die" data-value={campaignOverlay.dieTwo}>{campaignOverlay.dieTwo}</span>
-              <span className="campaign-roll-plus">+</span>
-              <span className="campaign-roll-modifier">{campaignOverlay.modifier >= 0 ? `+${campaignOverlay.modifier}` : campaignOverlay.modifier}</span>
-            </div>
-            <div className="campaign-roll-result">
-              <strong>{campaignOverlay.total}</strong>
-              <span>
-                {campaignOverlay.success
-                  ? t('ui.game.launchCampaignSuccess', 'Campaign advances the movement.')
-                  : t('ui.game.launchCampaignFailure', 'Campaign meets fierce backlash.')}
-              </span>
-            </div>
+            <span className="campaign-roll-overlay-eyebrow">{t('ui.game.launchCampaign', 'Launch Campaign')}</span>
+            <strong>{formatNumber(campaignRoll.total)}</strong>
+            <span>
+              {formatNumber(campaignRoll.dieOne)} + {formatNumber(campaignRoll.dieTwo)} + {formatNumber(campaignRoll.modifier)}
+            </span>
+          </article>
+        ) : null}
+
+        <div className="board-region-clusters">
+          {regionLayouts
+            ? regionIds.map((regionId) => {
+              const region = state.regions[regionId];
+              const danger = getRegionDangerState(region.extractionTokens);
+              const layout = regionLayouts[regionId];
+              const label = localizeRegionField(regionId, 'name', content.regions[regionId].name);
+
+              return (
+                <button
+                  key={regionId}
+                  type="button"
+                  className={`board-region-cluster ${selectedRegionId === regionId ? 'is-selected' : ''}`.trim()}
+                  data-region-tone={danger.tone}
+                  data-region-pulsing={danger.pulsing}
+                  aria-label={getRegionSummaryLabel(regionId, state, content)}
+                  onClick={() => onSelectRegion(regionId)}
+                  onMouseEnter={() => setHoveredRegionId(regionId)}
+                  onMouseLeave={() => setHoveredRegionId((current) => (current === regionId ? null : current))}
+                  style={{
+                    left: `${layout.position.x}px`,
+                    top: `${layout.position.y}px`,
+                    width: `${layout.cluster.width}px`,
+                    height: `${layout.cluster.height}px`,
+                    zIndex: layout.zIndex,
+                    ['--cluster-width' as string]: `${layout.cluster.width}px`,
+                    ['--cluster-height' as string]: `${layout.cluster.height}px`,
+                    ['--cluster-natural-width' as string]: `${layout.cluster.naturalWidth}px`,
+                    ['--cluster-natural-height' as string]: `${layout.cluster.naturalHeight}px`,
+                    ['--cluster-scale' as string]: String(layout.cluster.scale),
+                    ['--region-tone' as string]: danger.color,
+                  }}
+                >
+                  <span
+                    className="board-region-label"
+                    style={{
+                      left: '50%',
+                      top: `calc(50% + ${layout.label.y}px)`,
+                    }}
+                  >
+                    {label}
+                  </span>
+
+                  <span className="board-region-token-container">
+                    {layout.cluster.items.map((item) => (
+                      <span
+                        key={`${regionId}-${item.type}`}
+                        className={`board-region-token-group board-region-token-group-${item.type}`}
+                        style={{
+                          left: `${item.x}px`,
+                          top: `${item.y}px`,
+                          width: `${item.width}px`,
+                          height: `${item.height}px`,
+                        }}
+                      >
+                        {item.units.map((unit) => (
+                          <span
+                            key={unit.key}
+                            className={`board-region-token board-region-token-${unit.type}`}
+                            style={{
+                              left: `${item.width / 2 + unit.x}px`,
+                              top: `${item.height / 2 + unit.y}px`,
+                              width: `${layout.cluster.tokenSize}px`,
+                              height: `${layout.cluster.tokenSize}px`,
+                            }}
+                          />
+                        ))}
+                        {item.overflowBadge ? (
+                          <span
+                            className="board-region-overflow-badge"
+                            style={{
+                              left: `${item.width / 2 + item.overflowBadge.x}px`,
+                              top: `${item.height / 2 + item.overflowBadge.y}px`,
+                            }}
+                          >
+                            {item.overflowBadge.label}
+                          </span>
+                        ) : null}
+                      </span>
+                    ))}
+                  </span>
+                </button>
+              );
+            })
+            : null}
+        </div>
+
+        {debugLayout && regionLayouts ? (
+          <div className="board-region-debug-overlay" aria-hidden="true">
+            {regionIds.map((regionId) => {
+              const layout = regionLayouts[regionId];
+              const vectorLength = Math.hypot(layout.resolvedOffset.x, layout.resolvedOffset.y);
+              const vectorAngle = Math.atan2(layout.resolvedOffset.y, layout.resolvedOffset.x);
+
+              return (
+                <div key={`debug-${regionId}`}>
+                  <span
+                    className="board-region-debug-radius"
+                    style={{
+                      left: `${layout.anchor.snappedX}px`,
+                      top: `${layout.anchor.snappedY}px`,
+                      width: `${layout.cluster.radius * 2}px`,
+                      height: `${layout.cluster.radius * 2}px`,
+                    }}
+                  />
+                  <span
+                    className="board-region-debug-anchor"
+                    style={{
+                      left: `${layout.anchor.snappedX}px`,
+                      top: `${layout.anchor.snappedY}px`,
+                    }}
+                  />
+                  <span
+                    className="board-region-debug-crosshair"
+                    style={{
+                      left: `${layout.anchor.snappedX}px`,
+                      top: `${layout.anchor.snappedY}px`,
+                    }}
+                  />
+                  {vectorLength > 0 ? (
+                    <span
+                      className="board-region-debug-vector"
+                      style={{
+                        left: `${layout.anchor.snappedX}px`,
+                        top: `${layout.anchor.snappedY}px`,
+                        width: `${vectorLength}px`,
+                        transform: `translateY(-50%) rotate(${vectorAngle}rad)`,
+                      }}
+                    />
+                  ) : null}
+                </div>
+              );
+            })}
           </div>
         ) : null}
       </div>

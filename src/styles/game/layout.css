@@ -167,7 +167,7 @@
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) auto;
   gap: 16px 18px;
-  padding: 10px 20px 8px;
+  padding: 8px 20px 6px;
   overflow: visible;
 }
 
@@ -180,7 +180,7 @@
   min-height: 0;
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
-  gap: 16px;
+  gap: 12px;
 }
 
 .board-core-head {
@@ -234,7 +234,9 @@
   display: flex;
   flex: 1 1 auto;
   min-height: 0;
-  height: auto;
+  height: 100%;
+  align-items: stretch;
+  justify-content: center;
 }
 
 .board-player-strip {
@@ -1396,22 +1398,35 @@
 
 .phase-progress-controls {
   display: grid;
-  gap: 10px;
+  gap: 6px;
   align-items: start;
+  justify-items: start;
 }
 
 .phase-progress-nav .dock-control-button {
-  min-width: 172px;
+  min-width: 0;
 }
 
 .phase-progress-nav .dock-control-button.is-play-button {
+  width: 46px;
+  min-width: 46px;
   min-height: 46px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
   font-size: 0.95rem;
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
+}
+
+.phase-progress-nav .dock-control-button.is-play-button .ui-icon {
+  display: block;
 }
 
 .phase-progress-nav .dock-phase-hint {
+  max-width: 18ch;
   font-size: 0.8rem;
+  line-height: 1.2;
 }
 
 .dock-empty {

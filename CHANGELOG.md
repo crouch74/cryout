@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.0] - 2026-03-02
+
+### Added
+- 🗺️ **Dynamic Token Layout Engine** — introduced a sophisticated coordinate-snapping and avoidance system for placing extraction, defense, and troop tokens within region nodes.
+- 🔍 **Adaptive Viewport Management** — implemented a focal-point centering system that automatically pans and zooms the world map to maintain optimal focus on active regions.
+- 📐 **Token Clustering & Overflow** — added logic for organized token groupings with automatic badge-based overflow handling for high-density regions.
+- 🧪 **Board Layout Test Suite** — added regression tests for viewport blending, token anchor calculations, and coordinate normalization.
+
 ## [0.7.1] - 2026-03-01
 
 ### Fixed
