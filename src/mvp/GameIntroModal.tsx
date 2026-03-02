@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { CompiledContent, EngineState } from '../../engine/index.ts';
 import { localizeRulesetField, t } from '../i18n/index.ts';
 import { Icon } from './icons/Icon.tsx';
+import { PaperSheet } from './tabletop.tsx';
 
 interface GameIntroModalProps {
     state: EngineState;
@@ -24,7 +25,7 @@ export function GameIntroModal({ state, content }: GameIntroModalProps) {
 
     return (
         <div className="paper-modal-shell context-intro-modal" role="presentation">
-            <article className="paper-modal-card" role="dialog" aria-modal="true" aria-labelledby="intro-title">
+            <PaperSheet tone="folio" className="paper-modal-card" role="dialog" aria-modal="true" aria-labelledby="intro-title">
                 <header className="debug-panel-header">
                     <h2 id="intro-title" style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '2rem' }}>
                         {localizeRulesetField(content.ruleset.id, 'name', content.ruleset.name)}
@@ -63,7 +64,7 @@ export function GameIntroModal({ state, content }: GameIntroModalProps) {
                         {t('ui.game.beginStruggle', 'Begin the Struggle')} <Icon type="objective" size={18} />
                     </button>
                 </div>
-            </article>
+            </PaperSheet>
         </div>
     );
 }
