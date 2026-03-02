@@ -1,5 +1,6 @@
 // src/components/ScenarioBrief.tsx
 import { useState } from 'react';
+import { t } from '../i18n/index.ts';
 
 export function ScenarioBrief({ title, description, rules }: { title: string, description: string, rules: string[] }) {
     const [isExpanded, setIsExpanded] = useState(false);
@@ -11,7 +12,7 @@ export function ScenarioBrief({ title, description, rules }: { title: string, de
                 {description}
             </p>
             <span className="scenario-expand" onClick={() => setIsExpanded(!isExpanded)}>
-                {isExpanded ? 'less' : 'more...'}
+                {isExpanded ? t('ui.legacyDashboard.less', 'less') : t('ui.legacyDashboard.more', 'more...')}
             </span>
             <div className="special-rules" style={{ marginTop: '1rem' }}>
                 {rules.map((rule, idx) => (

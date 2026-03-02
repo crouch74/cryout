@@ -1,5 +1,6 @@
 // src/components/RegionDrawer.tsx
 import type { Region, PlayerRole, GameState } from '../engine/types';
+import { formatNumber, t } from '../i18n/index.ts';
 
 interface RegionDrawerProps {
     region: Region | null;
@@ -11,32 +12,37 @@ interface RegionDrawerProps {
 
 export function RegionDrawer({ region, gameState, role, onClose, onAction }: RegionDrawerProps) {
     if (!region || !gameState || !role) return <div className={`drawer ${region ? 'open' : ''}`} />;
+    const tokenLabels: Record<string, string> = {
+        displacement: t('ui.legacyDashboard.displacement', 'Displacement'),
+        disinformation: t('ui.legacyDashboard.disinformation', 'Disinformation'),
+        temperature: t('ui.legacyDashboard.temperature', 'Temperature'),
+    };
 
     return (
         <div className={`drawer glass-panel ${region ? 'open' : ''}`}>
             <div className="drawer-header">
-                <h2>{region.id.toUpperCase()} STATUS</h2>
+                <h2>{t('ui.legacyDashboard.regionStatus', '{{region}} STATUS', { region: region.id.toUpperCase() })}</h2>
                 <button className="btn-close" onClick={onClose}>×</button>
             </div>
 
             <div className="drawer-content">
                 <section>
-                    <h4>Vulnerabilities</h4>
+                    <h4>{t('ui.legacyDashboard.vulnerabilities', 'Vulnerabilities')}</h4>
                     <div className="tag-cloud" style={{ marginTop: '0.5rem' }}>
                         {Object.entries(region.vulnerability).map(([front, val]) => (
                             <span key={front} className="tag vulnerability">
-                                {front}: {val}/3
+                                {front}: {formatNumber(val)}/{formatNumber(3)}
                             </span>
                         ))}
                     </div>
                 </section>
 
                 <section>
-                    <h4>Tokens & Dynamics</h4>
+                    <h4>{t('ui.legacyDashboard.tokensDynamics', 'Tokens & Dynamics')}</h4>
                     <div className="token-grid" style={{ marginTop: '0.5rem' }}>
                         {Object.entries(region.tokens).map(([type, count]) => (
                             <div key={type} className={`token-chip ${type}`}>
-                                {type === 'displacement' ? '🧍' : type === 'disinformation' ? '🛰' : '🌍'} {count} {type.toUpperCase()}
+                                {type === 'displacement' ? '🧍' : type === 'disinformation' ? '🛰' : '🌍'} {formatNumber(count)} {tokenLabels[type] ?? type}
                             </div>
                         ))}
                         {region.locks.map(lock => (
@@ -46,7 +52,7 @@ export function RegionDrawer({ region, gameState, role, onClose, onAction }: Reg
                 </section>
 
                 <section>
-                    <h4>Local Institutions</h4>
+                    <h4>{t('ui.legacyDashboard.localInstitutions', 'Local Institutions')}</h4>
                     <div className="clause-list" style={{ marginTop: '0.5rem' }}>
                         {region.institutions.map(inst => (
                             <div key={inst.id} className={`clause-item unlocked status-${inst.status}`}>
@@ -64,7 +70,7 @@ export function RegionDrawer({ region, gameState, role, onClose, onAction }: Reg
 
                 {gameState.phase === 'COALITION' && (
                     <section>
-                        <h4>Actions Targeting {region.id}</h4>
+                        <h4>{t('ui.legacyDashboard.actionsTargeting', 'Actions Targeting {{region}}', { region: region.id })}</h4>
                         <div className="actions-grid" style={{ marginTop: '1rem' }}>
                             {role.unique_actions.map(action => (
                                 <button

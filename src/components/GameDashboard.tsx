@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { PlayerRole, GameState, Region, Front, PlayerState } from '../engine/types';
+import { formatNumber, t } from '../i18n/index.ts';
 
 // Components
 import { RegionDrawer } from './RegionDrawer';
@@ -11,42 +12,11 @@ import { CharterPanel } from './CharterPanel';
 import { ScenarioBrief } from './ScenarioBrief';
 import { DealModal } from './DealModal';
 
-// Mock Roles for MVP
-const MOCK_ROLES: PlayerRole[] = [
-    {
-        id: 'organizer',
-        name: 'Community Organizer',
-        base_actions_per_turn: 2,
-        burnout_max: 10,
-        burnout_strained_threshold: 7,
-        passive: 'Mutual Aid: -1 Solidarity cost for local actions.',
-        unique_actions: [
-            { id: 'mutual_aid_network', name: 'Mutual Aid Network', description: 'Reduce poverty pressure.', resource_costs: { solidarity: 1 }, burnout_cost: 1, effects: [] },
-            { id: 'protest_march', name: 'Protest March', description: 'Counter disinformation.', resource_costs: { evidence: 1 }, burnout_cost: 1, effects: [] }
-        ],
-        breakthrough_action: { id: 'general_strike', name: 'General Strike', description: 'Massive pressure reduction.', effects: [] }
-    },
-    {
-        id: 'investigative_journalist',
-        name: 'Investigative Journalist',
-        base_actions_per_turn: 2,
-        burnout_max: 8,
-        burnout_strained_threshold: 5,
-        passive: 'Truth Seeker: +1 Evidence when exposing corruption.',
-        unique_actions: [
-            { id: 'expose_corruption', name: 'Expose Corruption', description: 'Increase rights protection.', resource_costs: { solidarity: 1 }, burnout_cost: 1, effects: [] },
-            { id: 'deep_investigation', name: 'Deep Investigation', description: 'Gain massive evidence.', resource_costs: { capacity: 1 }, burnout_cost: 1, effects: [] }
-        ],
-        breakthrough_action: { id: 'global_expose', name: 'Global Expose', description: 'Massive impact on speech.', effects: [] }
-    }
-];
-
-
 function MeterBar({ value, type }: { value: number; type: 'pressure' | 'protection' | 'impact' }) {
     const percentage = (value / 10) * 100;
     return (
         <div className="meter-row">
-            <span className="meter-label">{type.toUpperCase()}</span>
+            <span className="meter-label">{t(`ui.legacyDashboard.meter.${type}`, type.toUpperCase())}</span>
             <div className="meter-bar-bg">
                 <div
                     className={`meter-fill ${type}`}
@@ -68,6 +38,72 @@ export function GameDashboard() {
     const [selectedLogIdx, setSelectedLogIdx] = useState<number | null>(null);
     const [isDealOpen, setIsDealOpen] = useState(false);
     const [activeOverlay, setActiveOverlay] = useState<string>('displacement');
+    const mockRoles: PlayerRole[] = [
+        {
+            id: 'organizer',
+            name: t('ui.legacyDashboard.roles.organizer.name', 'Community Organizer'),
+            base_actions_per_turn: 2,
+            burnout_max: 10,
+            burnout_strained_threshold: 7,
+            passive: t('ui.legacyDashboard.roles.organizer.passive', 'Mutual Aid: -1 Solidarity cost for local actions.'),
+            unique_actions: [
+                {
+                    id: 'mutual_aid_network',
+                    name: t('ui.legacyDashboard.roles.organizer.action1Name', 'Mutual Aid Network'),
+                    description: t('ui.legacyDashboard.roles.organizer.action1Desc', 'Reduce poverty pressure.'),
+                    resource_costs: { solidarity: 1 },
+                    burnout_cost: 1,
+                    effects: [],
+                },
+                {
+                    id: 'protest_march',
+                    name: t('ui.legacyDashboard.roles.organizer.action2Name', 'Protest March'),
+                    description: t('ui.legacyDashboard.roles.organizer.action2Desc', 'Counter disinformation.'),
+                    resource_costs: { evidence: 1 },
+                    burnout_cost: 1,
+                    effects: [],
+                },
+            ],
+            breakthrough_action: {
+                id: 'general_strike',
+                name: t('ui.legacyDashboard.roles.organizer.breakthroughName', 'General Strike'),
+                description: t('ui.legacyDashboard.roles.organizer.breakthroughDesc', 'Massive pressure reduction.'),
+                effects: [],
+            },
+        },
+        {
+            id: 'investigative_journalist',
+            name: t('ui.legacyDashboard.roles.journalist.name', 'Investigative Journalist'),
+            base_actions_per_turn: 2,
+            burnout_max: 8,
+            burnout_strained_threshold: 5,
+            passive: t('ui.legacyDashboard.roles.journalist.passive', 'Truth Seeker: +1 Evidence when exposing corruption.'),
+            unique_actions: [
+                {
+                    id: 'expose_corruption',
+                    name: t('ui.legacyDashboard.roles.journalist.action1Name', 'Expose Corruption'),
+                    description: t('ui.legacyDashboard.roles.journalist.action1Desc', 'Increase rights protection.'),
+                    resource_costs: { solidarity: 1 },
+                    burnout_cost: 1,
+                    effects: [],
+                },
+                {
+                    id: 'deep_investigation',
+                    name: t('ui.legacyDashboard.roles.journalist.action2Name', 'Deep Investigation'),
+                    description: t('ui.legacyDashboard.roles.journalist.action2Desc', 'Gain massive Evidence.'),
+                    resource_costs: { capacity: 1 },
+                    burnout_cost: 1,
+                    effects: [],
+                },
+            ],
+            breakthrough_action: {
+                id: 'global_expose',
+                name: t('ui.legacyDashboard.roles.journalist.breakthroughName', 'Global Expose'),
+                description: t('ui.legacyDashboard.roles.journalist.breakthroughDesc', 'Massive impact on speech.'),
+                effects: [],
+            },
+        },
+    ];
 
     useEffect(() => {
         if (!state && id && !roomId) {
@@ -89,7 +125,7 @@ export function GameDashboard() {
     }, [id, state, roomId]);
 
     if (!state) {
-        return <div style={{ padding: '2rem', textAlign: 'center', color: '#fff' }}>Loading scenario...</div>;
+        return <div style={{ padding: '2rem', textAlign: 'center', color: '#fff' }}>{t('ui.legacyDashboard.loadingScenario', 'Loading scenario...')}</div>;
     }
 
     const isCoalitionReady = state.players.every((p: PlayerState) => p.isReady);
@@ -131,10 +167,10 @@ export function GameDashboard() {
     };
 
     const getTemperatureBand = (temp: number) => {
-        if (temp < 4) return { band: 1, max: 4, desc: 'Draw 1 crisis, cascade chance 0%' };
-        if (temp < 7) return { band: 2, max: 4, desc: 'Draw 1 crisis, cascade chance 10%' };
-        if (temp < 10) return { band: 3, max: 4, desc: 'Draw 2 crisis, cascade chance 25%' };
-        return { band: 4, max: 4, desc: 'CRITICAL CASCADE' };
+        if (temp < 4) return { band: 1, max: 4, desc: t('ui.legacyDashboard.temperatureBand1', 'Draw 1 crisis, cascade chance 0%') };
+        if (temp < 7) return { band: 2, max: 4, desc: t('ui.legacyDashboard.temperatureBand2', 'Draw 1 crisis, cascade chance 10%') };
+        if (temp < 10) return { band: 3, max: 4, desc: t('ui.legacyDashboard.temperatureBand3', 'Draw 2 crisis, cascade chance 25%') };
+        return { band: 4, max: 4, desc: t('ui.legacyDashboard.temperatureBand4', 'CRITICAL CASCADE') };
     };
 
     const tempInfo = getTemperatureBand(state.temperature);
@@ -150,7 +186,9 @@ export function GameDashboard() {
                 <div onClick={resetToHome} style={{ cursor: 'pointer' }}>
                     <h1>The Stones Are Crying Out</h1>
                     <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '0.25rem' }}>
-                        ROUND: 0{state.currentRound} | COALITION OF SEVEN | LOCAL | CLICK TO HOME
+                        {t('ui.legacyDashboard.headerMeta', 'ROUND: {{round}} | COALITION OF SEVEN | LOCAL | CLICK TO HOME', {
+                            round: `0${state.currentRound}`,
+                        })}
                     </div>
                 </div>
 
@@ -158,18 +196,18 @@ export function GameDashboard() {
 
                 <div className="header-stats">
                     <div className="stat-item tooltip-host">
-                        <span className="label">Temperature</span>
+                        <span className="label">{t('ui.legacyDashboard.temperature', 'Temperature')}</span>
                         <span className={`value ${state.temperature >= 7 ? 'critical' : (state.temperature >= 4 ? 'warning' : '')}`}>
-                            🌡️ +{state.temperature}°C ({tempInfo.band}/{tempInfo.max})
+                            🌡️ +{formatNumber(state.temperature)}°C ({formatNumber(tempInfo.band)}/{formatNumber(tempInfo.max)})
                         </span>
                         <div className="tooltip">{tempInfo.desc}</div>
                     </div>
                     <div className="stat-item">
-                        <span className="label">Civic Space</span>
+                        <span className="label">{t('ui.legacyDashboard.civicSpace', 'Civic Space')}</span>
                         <span className="value" style={{ color: '#c084fc' }}>⚖️ {state.civic_space}</span>
                     </div>
                     <div className="stat-item">
-                        <span className="label">Solidarity</span>
+                        <span className="label">{t('ui.legacyDashboard.solidarity', 'Solidarity')}</span>
                         <span className="value" style={{ color: 'var(--accent-green)' }}>🤝 {state.resources.solidarity}</span>
                     </div>
                 </div>
@@ -178,16 +216,26 @@ export function GameDashboard() {
             {/* LEFT: FRONTS & CHARTER */}
             <div className="systems-dashboard glass-panel">
                 <ScenarioBrief
-                    title={state.scenarioId === 'green_resistance' ? "Green Resistance" : "Witness & Dignity"}
+                    title={state.scenarioId === 'green_resistance'
+                        ? t('ui.legacyDashboard.greenResistance', 'Green Resistance')
+                        : t('ui.legacyDashboard.witnessDignity', 'Witness & Dignity')}
                     description={state.scenarioId === 'green_resistance' ?
-                        "Protect the lungs of the earth from illegal extraction." :
-                        "The occupation intensifies in MENA. Global solidarity is our only shield."}
+                        t('ui.legacyDashboard.greenResistanceDesc', 'Protect the lungs of the earth from illegal extraction.') :
+                        t('ui.legacyDashboard.witnessDignityDesc', 'The occupation intensifies in MENA. Global solidarity is our only shield.')}
                     rules={state.scenarioId === 'green_resistance' ?
-                        ['Guardian Bond: +1 Protection in Amazon', 'Extraction Ban: Strict'] :
-                        ['Witness Window: +1 Evidence in MENA', 'Aid Corridor: Locked']}
+                        [
+                            t('ui.legacyDashboard.greenRule1', 'Guardian Bond: +1 Protection in Amazon'),
+                            t('ui.legacyDashboard.greenRule2', 'Extraction Ban: Strict'),
+                        ] :
+                        [
+                            t('ui.legacyDashboard.witnessRule1', 'Witness Window: +1 Evidence in MENA'),
+                            t('ui.legacyDashboard.witnessRule2', 'Aid Corridor: Locked'),
+                        ]}
                 />
 
-                <h3 style={{ marginBottom: '1rem', color: '#94a3b8', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Systemic Fronts</h3>
+                <h3 style={{ marginBottom: '1rem', color: '#94a3b8', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                    {t('ui.legacyDashboard.systemicFronts', 'Systemic Fronts')}
+                </h3>
                 {(Object.values(state.fronts) as Front[]).map(front => (
                     <div key={front.id} className="front-card" style={{ borderLeftColor: front.pressure >= 7 ? 'var(--accent-red)' : 'var(--accent-orange)' }}>
                         <div style={{ fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.75rem' }}>{front.name}</div>
@@ -209,7 +257,7 @@ export function GameDashboard() {
                             className={`btn-overlay ${activeOverlay === ov ? 'active' : ''}`}
                             onClick={() => setActiveOverlay(ov)}
                         >
-                            {ov}
+                            {t(`ui.legacyDashboard.overlays.${ov}`, ov)}
                         </button>
                     ))}
                 </div>
@@ -241,7 +289,7 @@ export function GameDashboard() {
                 <div className="phase-ctl" style={{ top: 'auto', bottom: '2rem', position: 'absolute' }}>
                     {state.phase === 'WORLD' ? (
                         <button className="btn-phase" onClick={advancePhase}>
-                            🌍 Resolve World Phase
+                            🌍 {t('ui.legacyDashboard.resolveWorldPhase', 'Resolve World Phase')}
                         </button>
                     ) : state.phase === 'COALITION' ? (
                         <button
@@ -249,11 +297,13 @@ export function GameDashboard() {
                             onClick={advancePhase}
                             disabled={!isCoalitionReady}
                         >
-                            🤝 {isCoalitionReady ? 'Commit Coalition Intents' : 'Players Selecting...'}
+                            🤝 {isCoalitionReady
+                                ? t('ui.legacyDashboard.commitCoalitionIntents', 'Commit Coalition Intents')
+                                : t('ui.legacyDashboard.playersSelecting', 'Players Selecting...')}
                         </button>
                     ) : (
                         <button className="btn-phase" onClick={advancePhase}>
-                            🧩 End Round Phase
+                            🧩 {t('ui.legacyDashboard.endRoundPhase', 'End Round Phase')}
                         </button>
                     )}
                 </div>
@@ -262,13 +312,15 @@ export function GameDashboard() {
             {/* RIGHT: PLAYERS & LOG */}
             <div className="right-sidebar glass-panel">
                 <div className="player-panel">
-                    <h3 style={{ marginBottom: '1rem', color: '#94a3b8', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Coalition Strategic Intent</h3>
+                    <h3 style={{ marginBottom: '1rem', color: '#94a3b8', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                        {t('ui.legacyDashboard.coalitionStrategicIntent', 'Coalition Strategic Intent')}
+                    </h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                         {state.players.map((p, i) => (
                             <div key={i} className={`player-intent-block ${p.isReady ? 'ready' : ''}`}>
                                 <ActionList
                                     player={p}
-                                    role={MOCK_ROLES[i % MOCK_ROLES.length]}
+                                    role={mockRoles[i % mockRoles.length]}
                                     gameState={state}
                                     onCommit={(actId) => handleCommitIntent(i, actId)}
                                     onReady={(ready) => handleSetReady(i, ready)}
@@ -284,7 +336,7 @@ export function GameDashboard() {
                 </div>
 
                 <div className="log-panel" style={{ marginTop: '2rem' }}>
-                    <div className="log-header">SYSTEM TRACE LOG</div>
+                    <div className="log-header">{t('ui.legacyDashboard.systemTraceLog', 'SYSTEM TRACE LOG')}</div>
                     <div className="log-messages">
                         {state.logs.slice().reverse().map((log: any, idx: number) => (
                             <div
@@ -298,7 +350,7 @@ export function GameDashboard() {
                                     <div className="log-text">{log.message}</div>
                                     <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.2rem' }}>
                                         {/* Mock delta chips if info was in log */}
-                                        {log.message.includes('temperature') && <span className="tag token" style={{ fontSize: '0.6rem' }}>🌡️ +1</span>}
+                                        {log.message.includes('temperature') && <span className="tag token" style={{ fontSize: '0.6rem' }}>🌡️ +{formatNumber(1)}</span>}
                                     </div>
                                 </div>
                             </div>
@@ -310,7 +362,7 @@ export function GameDashboard() {
             <RegionDrawer
                 region={selectedRegionId ? state.regions[selectedRegionId] : null}
                 gameState={state}
-                role={MOCK_ROLES[0]} // Mock for first player interaction
+                role={mockRoles[0]} // Mock for first player interaction
                 onClose={() => setSelectedRegionId(null)}
                 onAction={(actId, targetId) => handleCommitIntent(0, actId, targetId)}
             />

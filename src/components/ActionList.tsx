@@ -1,5 +1,6 @@
 // src/components/ActionList.tsx
 import type { PlayerState, PlayerRole, ActionDef, GameState } from '../engine/types';
+import { t } from '../i18n/index.ts';
 
 interface ActionListProps {
     player: PlayerState;
@@ -17,7 +18,9 @@ export function ActionList({ player, role, gameState, onCommit, onReady }: Actio
         <div className="player-action-list">
             <div className="player-header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                 <span className={`role-badge ${role.id}`} style={{ fontWeight: 800, fontSize: '0.8rem', color: 'var(--accent-blue)' }}>{role.name}</span>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Ready: {player.isReady ? '✅' : '⚪'}</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                    {t('ui.legacyDashboard.readyLabel', 'Ready')}: {player.isReady ? '✅' : '⚪'}
+                </span>
             </div>
 
             <div className="actions-grid">
@@ -59,7 +62,9 @@ export function ActionList({ player, role, gameState, onCommit, onReady }: Actio
                 onClick={() => onReady(!player.isReady)}
                 style={{ marginTop: '1rem' }}
             >
-                {player.isReady ? 'READY FOR RESOLVE' : 'SET READY'}
+                {player.isReady
+                    ? t('ui.legacyDashboard.readyForResolve', 'READY FOR RESOLVE')
+                    : t('ui.legacyDashboard.setReady', 'SET READY')}
             </button>
         </div>
     );
