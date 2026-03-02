@@ -30,7 +30,7 @@ They must never repair broken base systems.
 
 If a request contradicts these pillars, the agent must ask for clarification or reframe the request.
 
-CANONICAL TERMINOLOGY (DO NOT SUBSTITUTE)
+CANONICAL TERMINOLOGY (DO NOT SUBSTITUTE but allow for translations and localisation)
 
 The following terms are fixed and must not be renamed:
 

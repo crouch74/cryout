@@ -12,9 +12,11 @@ import {
   type DomainId,
   type EngineCommand,
   type EngineState,
+  type Effect,
   type QueuedIntent,
   type RegionId,
   type RollResolution,
+  type SystemPersistentModifiers,
 } from '../../engine/index.ts';
 import {
   formatNumber,
@@ -45,14 +47,13 @@ import {
   getActionQuickQueue,
   getDeckSummaries,
   getFrontTrackRows,
-  getLatestPublicCardReveal,
   getNextUnfinishedCoalitionSeat,
   getPhasePresentation,
   getPlayerStripSummary,
   getStatusRibbonItems,
   type ContextPanelMode,
 } from './gameUiHelpers.ts';
-import { CrisisCard, DeckStack, LocaleSwitcher, TableSurface, ThemePlate, useTabletopTheme } from './tabletop.tsx';
+import { CrisisCard, DeckBackArt, DeckStack, LocaleSwitcher, TableSurface, ThemePlate, useTabletopTheme } from './tabletop.tsx';
 import type { GameViewState } from './urlState.ts';
 import { WorldMapBoard } from './WorldMapBoard.tsx';
 
@@ -104,7 +105,7 @@ interface CardRevealQueueItem {
   cardId: string;
 }
 
-type CardRevealStage = 'lift' | 'travel' | 'flip' | 'settle';
+type CardRevealStage = 'lift' | 'travel' | 'flip' | 'settle' | 'dismiss';
 
 interface CardRevealOrigin {
   x: number;
@@ -297,10 +298,105 @@ function getRevealActionLabel(deckId: VisibleDeckId) {
     : t('ui.game.resolveCard', 'Resolve');
 }
 
-function getRevealResolutionCopy(deckId: VisibleDeckId) {
-  return deckId === 'system'
-    ? t('ui.game.revealToActive', 'Revealed on the board, then placed in the escalation tray.')
-    : t('ui.game.revealToDiscard', 'Revealed on the board, then moved to discard.');
+function getPrintedDeckTitle(deckId: VisibleDeckId) {
+  switch (deckId) {
+    case 'system':
+      return t('ui.game.systemDeckPrinted', 'System');
+    case 'resistance':
+      return t('ui.game.resistanceDeckPrinted', 'Resistance');
+    case 'crisis':
+      return t('ui.game.crisisDeckPrinted', 'Crisis');
+  }
+}
+
+function formatSignedLabel(value: number, label: string) {
+  return `${value > 0 ? '+' : ''}${formatNumber(value)} ${label}`;
+}
+
+function summarizeCardEffect(effect: Effect, content: CompiledContent) {
+  switch (effect.type) {
+    case 'modify_gaze':
+      return formatSignedLabel(effect.delta, t('ui.game.globalGaze', 'Global Gaze'));
+    case 'modify_war_machine':
+      return formatSignedLabel(effect.delta, t('ui.game.northernWarMachine', 'War Machine'));
+    case 'modify_domain':
+      return typeof effect.domain === 'string' && effect.domain !== 'target_domain'
+        ? formatSignedLabel(effect.delta, localizeDomainField(effect.domain, 'name', content.domains[effect.domain].name))
+        : formatSignedLabel(effect.delta, t('ui.game.domain', 'Domain'));
+    case 'add_extraction':
+      return formatSignedLabel(effect.amount, t('ui.game.extractionTokens', 'Extraction Tokens'));
+    case 'remove_extraction':
+      return formatSignedLabel(effect.amount * -1, t('ui.game.extractionTokens', 'Extraction Tokens'));
+    case 'add_bodies':
+      return formatSignedLabel(effect.amount, t('ui.game.bodies', 'Bodies'));
+    case 'remove_bodies':
+      return formatSignedLabel(effect.amount * -1, t('ui.game.bodies', 'Bodies'));
+    case 'gain_evidence':
+      return formatSignedLabel(effect.amount, t('ui.game.evidence', 'Evidence'));
+    case 'lose_evidence':
+      return formatSignedLabel(effect.amount * -1, t('ui.game.evidence', 'Evidence'));
+    case 'set_defense':
+      return `${t('ui.game.defense', 'Defense')} ${formatNumber(effect.amount)}`;
+    case 'draw_resistance':
+      return formatSignedLabel(effect.count, t('ui.game.resistanceDeckPrinted', 'Resistance'));
+    case 'log':
+      return null;
+  }
+}
+
+function getPersistentModifierChips(persistentModifiers: SystemPersistentModifiers | undefined) {
+  if (!persistentModifiers) {
+    return [];
+  }
+
+  const chips: string[] = [];
+  if (persistentModifiers.campaignTargetDelta) {
+    chips.push(t('ui.game.campaignTargetShift', 'Campaign target +{{count}}', { count: persistentModifiers.campaignTargetDelta }));
+  }
+  if (persistentModifiers.campaignModifierDelta) {
+    chips.push(t('ui.game.campaignRollShift', 'Campaign roll {{count}}', { count: persistentModifiers.campaignModifierDelta }));
+  }
+  if (persistentModifiers.outreachCostDelta) {
+    chips.push(t('ui.game.outreachCostShift', 'Outreach cost +{{count}}', { count: persistentModifiers.outreachCostDelta }));
+  }
+  if (persistentModifiers.resistanceDrawDelta) {
+    chips.push(t('ui.game.resistanceDrawShift', 'Resistance draw {{count}}', { count: persistentModifiers.resistanceDrawDelta }));
+  }
+  if (persistentModifiers.crisisDrawDelta) {
+    chips.push(t('ui.game.crisisDrawShift', 'Crisis draw +{{count}}', { count: persistentModifiers.crisisDrawDelta }));
+  }
+  if (persistentModifiers.crisisExtractionBonus) {
+    chips.push(t('ui.game.crisisExtractionShift', 'Crisis extraction +{{count}}', { count: persistentModifiers.crisisExtractionBonus }));
+  }
+  return chips;
+}
+
+function getRevealSummaryChips(content: CompiledContent, _deckId: VisibleDeckId, cardId: string) {
+  const card = content.cards[cardId];
+  if (!card) {
+    return [];
+  }
+
+  const chips: string[] = [];
+  if (card.deck === 'resistance') {
+    chips.push(card.type === 'support' ? t('ui.game.supportCard', 'Support Card') : t('ui.game.actionCard', 'Action Card'));
+    if (typeof card.campaignBonus === 'number') {
+      chips.push(t('ui.game.campaignBonusChip', 'Campaign +{{count}}', { count: card.campaignBonus }));
+    }
+    if (card.domainBonus) {
+      chips.push(localizeDomainField(card.domainBonus, 'name', content.domains[card.domainBonus].name));
+    }
+  }
+
+  if (card.deck === 'system') {
+    chips.push(t('ui.game.persistentEscalation', 'Persistent escalation'));
+    chips.push(...getPersistentModifierChips(card.persistentModifiers));
+  }
+
+  const effectList = card.deck === 'system' ? card.onReveal : card.effects ?? [];
+  chips.push(...effectList.map((effect) => summarizeCardEffect(effect, content)).filter((chip): chip is string => Boolean(chip)));
+
+  return [...new Set(chips)].slice(0, 3);
 }
 
 function getPhaseInsights(state: EngineState, focusedSeat: number): PhaseInsight[] {
@@ -688,7 +784,6 @@ export function GameScreen({
   const phasePresentation = getPhasePresentation(state.phase);
   const preparedMovePreview = buildIntentPreview(draft, draftAction, state, content, focusedPlayer.seat);
   const latestCampaignRoll = useMemo(() => getLatestCampaignRoll(state), [state]);
-  const latestPublicCardReveal = useMemo(() => getLatestPublicCardReveal(state), [state]);
   const deckSummaries = useMemo(() => getDeckSummaries(state, content), [content, state]);
   const phaseControlHint = getPhaseControlHint(state, focusedPlayer.seat);
 
@@ -1028,7 +1123,6 @@ export function GameScreen({
     <div className="context-stack">
       <section className="context-card">
         <span className="context-eyebrow">{t('ui.game.latestReveal', 'Latest reveal')}</span>
-        <strong>{selectedDeckSummary.label}</strong>
         <p>{selectedDeckId === 'system'
           ? t('ui.game.systemReviewHint', 'Review the latest escalation here, then inspect the active tray for structural pressure already in play.')
           : t('ui.game.drawReviewHint', 'Review the latest reveal here, then inspect the discard pile for earlier cards.')}
@@ -1037,7 +1131,7 @@ export function GameScreen({
           <CrisisCard
             title={selectedDeckLatestCard.title}
             body={selectedDeckLatestCard.body}
-            tag={selectedDeckSummary.label}
+            tag={t('ui.game.latestReveal', 'Latest reveal')}
             emoji={selectedDeckId === 'system' ? '🚩' : selectedDeckId === 'crisis' ? '⚠️' : '🃏'}
           />
         ) : (
@@ -1047,10 +1141,6 @@ export function GameScreen({
 
       <section className="context-card">
         <span className="context-eyebrow">{selectedDeckId === 'system' ? t('ui.game.escalationTray', 'Escalation tray') : t('ui.game.discardPile', 'Discard pile')}</span>
-        <strong>{selectedDeckId === 'system'
-          ? t('ui.game.cardsActive', '{{count}} active', { count: state.activeSystemCardIds.length })
-          : t('ui.game.cardsInDiscard', '{{count}} in discard', { count: selectedDeckSummary.discardCount })}
-        </strong>
         {selectedDeckCards.length === 0 ? (
           <p>{selectedDeckId === 'system'
             ? t('ui.game.noEscalationYet', 'No active system escalations yet.')
@@ -1073,7 +1163,7 @@ export function GameScreen({
     </div>
   ) : null;
 
-  const dismissActiveReveal = useEffectEvent((restoreFocus: boolean) => {
+  const clearRevealTimers = () => {
     if (revealTimerRef.current !== null) {
       window.clearTimeout(revealTimerRef.current);
       revealTimerRef.current = null;
@@ -1086,6 +1176,10 @@ export function GameScreen({
       window.clearTimeout(revealCleanupTimerRef.current);
       revealCleanupTimerRef.current = null;
     }
+  };
+
+  const dismissActiveReveal = useEffectEvent((restoreFocus: boolean) => {
+    clearRevealTimers();
 
     const sourceDeckId = activeCardReveal?.deckId ?? null;
     if (sourceDeckId) {
@@ -1099,6 +1193,20 @@ export function GameScreen({
     if (restoreFocus && sourceDeckId) {
       window.setTimeout(() => deckButtonRefs.current[sourceDeckId]?.focus(), 0);
     }
+  });
+
+  const startRevealDismiss = useEffectEvent((restoreFocus: boolean) => {
+    clearRevealTimers();
+
+    if (motionMode === 'reduced') {
+      dismissActiveReveal(restoreFocus);
+      return;
+    }
+
+    setCardRevealStage('dismiss');
+    revealCleanupTimerRef.current = window.setTimeout(() => {
+      dismissActiveReveal(restoreFocus);
+    }, 420);
   });
 
   const openDeckPanel = (deckId: VisibleDeckId) => {
@@ -1190,7 +1298,7 @@ export function GameScreen({
     if (motionMode === 'reduced') {
       setCardRevealStage('settle');
       if (autoPlayRunning) {
-        revealTimerRef.current = window.setTimeout(() => dismissActiveReveal(false), 320);
+        revealTimerRef.current = window.setTimeout(() => startRevealDismiss(false), 320);
       }
       return;
     }
@@ -1205,7 +1313,7 @@ export function GameScreen({
     revealCleanupTimerRef.current = window.setTimeout(() => {
       setCardRevealStage('settle');
       if (autoPlayRunning) {
-        revealCleanupTimerRef.current = window.setTimeout(() => dismissActiveReveal(false), 360);
+        revealCleanupTimerRef.current = window.setTimeout(() => startRevealDismiss(false), 420);
       }
     }, profile.liftMs + profile.travelMs + profile.flipMs);
   }, [activeCardReveal, audioEnabled, autoPlayRunning, motionMode, state.eventLog]);
@@ -1486,10 +1594,6 @@ export function GameScreen({
 
           <div className="board-map-panel">
             <section className="board-deck-rail" aria-label={t('ui.game.decks', 'Decks')}>
-              <div className="board-deck-rail-head">
-                <strong>{t('ui.game.decks', 'Decks')}</strong>
-                <span>{latestPublicCardReveal ? t('ui.game.drawsVisible', 'Draws reveal on the board before they settle into discard.') : t('ui.game.drawsWaiting', 'Draws will reveal here when the decks move.')}</span>
-              </div>
               <div className="board-deck-rail-grid">
                 {deckSummaries.map((summary) => (
                   <div
@@ -1502,10 +1606,8 @@ export function GameScreen({
                       }}
                       label={summary.label}
                       deckId={summary.deckId}
-                      deckName={summary.label}
+                      deckName={getPrintedDeckTitle(summary.deckId)}
                       drawCount={summary.drawCount}
-                      discardCount={summary.discardCount}
-                      activeCount={summary.activeCount}
                       lowCount={summary.drawCount <= 3}
                       shakeEmpty={summary.drawCount === 0 && selectedDeckId === summary.deckId}
                       onPointerDown={() => {
@@ -1585,9 +1687,8 @@ export function GameScreen({
       {activeCardReveal ? (
         <div className={`deck-reveal-overlay deck-reveal-stage-${cardRevealStage}`.trim()} role="dialog" aria-modal="true" aria-labelledby="deck-reveal-title">
           <div className="deck-reveal-vignette" />
-          <article
-            className={`deck-reveal-card deck-reveal-card-${activeCardReveal.deckId}`.trim()}
-            data-seq={activeCardRevealSeq ?? undefined}
+          <div
+            className="deck-reveal-scene"
             style={{
               ['--reveal-origin-x' as string]: `${activeCardRevealOrigin?.x ?? 0}px`,
               ['--reveal-origin-y' as string]: `${activeCardRevealOrigin?.y ?? 0}px`,
@@ -1596,19 +1697,48 @@ export function GameScreen({
               ['--reveal-ease' as string]: getRevealMotionProfile(activeCardReveal.deckId).ease,
             }}
           >
-            <span className="context-eyebrow">{t('ui.game.drawReveal', 'Draw reveal')}</span>
-            <strong id="deck-reveal-title">{getRevealCopy(content, activeCardReveal.deckId, activeCardReveal.cardId).title}</strong>
-            <p>{getRevealCopy(content, activeCardReveal.deckId, activeCardReveal.cardId).body}</p>
-            <span className="deck-reveal-note">{getRevealResolutionCopy(activeCardReveal.deckId)}</span>
-            <button
-              ref={revealActionButtonRef}
-              type="button"
-              className="reveal-action-button"
-              onClick={() => dismissActiveReveal(true)}
+            <article
+              className={`deck-reveal-card deck-reveal-card-${activeCardReveal.deckId}`.trim()}
+              data-seq={activeCardRevealSeq ?? undefined}
             >
-              {getRevealActionLabel(activeCardReveal.deckId)}
-            </button>
-          </article>
+              <div className="deck-reveal-rotator">
+                <div className="deck-reveal-face deck-reveal-face-back">
+                  <DeckBackArt
+                    deckId={activeCardReveal.deckId}
+                    deckName={getPrintedDeckTitle(activeCardReveal.deckId)}
+                    className="deck-reveal-back-art"
+                  />
+                </div>
+                <div className="deck-reveal-face deck-reveal-face-front">
+                  <header className="deck-reveal-front-head">
+                    <span className="deck-reveal-deck-label">{getPrintedDeckTitle(activeCardReveal.deckId)}</span>
+                    <strong id="deck-reveal-title">{getRevealCopy(content, activeCardReveal.deckId, activeCardReveal.cardId).title}</strong>
+                  </header>
+                  <div className="deck-reveal-illustration" aria-hidden="true">
+                    <span className="deck-reveal-illustration-emblem">{getPrintedDeckTitle(activeCardReveal.deckId)}</span>
+                  </div>
+                  <div className="deck-reveal-body-copy">
+                    <p>{getRevealCopy(content, activeCardReveal.deckId, activeCardReveal.cardId).body}</p>
+                  </div>
+                  <div className="deck-reveal-footer">
+                    <div className="deck-reveal-chip-row" aria-label={t('ui.game.effectSummary', 'Effect summary')}>
+                      {getRevealSummaryChips(content, activeCardReveal.deckId, activeCardReveal.cardId).map((chip) => (
+                        <span key={chip} className="deck-reveal-chip">{chip}</span>
+                      ))}
+                    </div>
+                    <button
+                      ref={revealActionButtonRef}
+                      type="button"
+                      className="reveal-action-button"
+                      onClick={() => startRevealDismiss(true)}
+                    >
+                      {getRevealActionLabel(activeCardReveal.deckId)}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </div>
         </div>
       ) : null}
     </TableSurface>

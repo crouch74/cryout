@@ -236,13 +236,47 @@ export function CivicBoard({ children, className = '' }: HTMLAttributes<HTMLElem
   );
 }
 
+export type TableDeckId = 'system' | 'resistance' | 'crisis';
+
+function getDeckBackGlyph(deckId: TableDeckId) {
+  switch (deckId) {
+    case 'system':
+      return '✣';
+    case 'resistance':
+      return '✶';
+    case 'crisis':
+      return '✦';
+  }
+}
+
+export function DeckBackArt({
+  deckId,
+  deckName,
+  className = '',
+}: {
+  deckId: TableDeckId;
+  deckName: string;
+  className?: string;
+}) {
+  const glyph = getDeckBackGlyph(deckId);
+
+  return (
+    <div className={`deck-back-art deck-back-art-${deckId} ${className}`.trim()} aria-hidden="true">
+      <span className="deck-back-corner deck-back-corner-top">{glyph}</span>
+      <span className="deck-back-corner deck-back-corner-bottom">{glyph}</span>
+      <span className="deck-back-emblem">
+        <span className="deck-back-emblem-mark">{glyph}</span>
+      </span>
+      <span className="deck-back-title" dir="auto">{deckName}</span>
+    </div>
+  );
+}
+
 export const DeckStack = forwardRef<HTMLButtonElement, {
   label: string;
-  deckId: 'system' | 'resistance' | 'crisis';
+  deckId: TableDeckId;
   deckName: string;
   drawCount: number;
-  discardCount?: number;
-  activeCount?: number;
   disabled?: boolean;
   locked?: boolean;
   lowCount?: boolean;
@@ -254,8 +288,6 @@ export const DeckStack = forwardRef<HTMLButtonElement, {
   deckId,
   deckName,
   drawCount,
-  discardCount,
-  activeCount,
   disabled,
   locked,
   lowCount,
@@ -264,6 +296,7 @@ export const DeckStack = forwardRef<HTMLButtonElement, {
   onPointerDown,
 }, ref) => {
   const layers = Array.from({ length: 14 }, (_, index) => index);
+  const tooltipId = `${deckId}-deck-tooltip`;
 
   return (
     <button
@@ -274,6 +307,7 @@ export const DeckStack = forwardRef<HTMLButtonElement, {
       onClick={onClick}
       onPointerDown={onPointerDown}
       aria-label={label}
+      aria-describedby={tooltipId}
       data-deck-id={deckId}
     >
       <div className="deck-stack-physical" aria-hidden="true">
@@ -281,22 +315,11 @@ export const DeckStack = forwardRef<HTMLButtonElement, {
           {layers.map((layer) => (
             <span key={layer} className="deck-stack-layer" style={{ ['--deck-layer' as string]: String(layer) }} />
           ))}
-          <span className="deck-stack-top-card">
-            <span className="deck-stack-corner deck-stack-corner-top">✢</span>
-            <span className="deck-stack-corner deck-stack-corner-bottom">✢</span>
-            <span className="deck-stack-emblem" />
-          </span>
+          <DeckBackArt deckId={deckId} deckName={deckName} className="deck-stack-top-card" />
         </div>
-        <div className={`deck-counter-badge ${lowCount ? 'is-alert' : ''}`.trim()}>
-          <strong dir="ltr">{formatNumber(drawCount)}</strong>
-          <span>{t('ui.game.cardsLabel', 'Cards')}</span>
-        </div>
-      </div>
-      <div className="deck-stack-copy">
-        <strong>{deckName}</strong>
-        <span>{t('ui.decks.cardsRemain', '{{count}} cards remain', { count: drawCount })}</span>
-        {discardCount !== undefined ? <span>{t('ui.game.cardsInDiscard', '{{count}} in discard', { count: discardCount })}</span> : null}
-        {activeCount !== undefined ? <span>{t('ui.game.cardsActive', '{{count}} active', { count: activeCount })}</span> : null}
+        <span id={tooltipId} role="tooltip" className={`deck-stack-tooltip ${lowCount ? 'is-alert' : ''}`.trim()}>
+          {t('ui.decks.cardsRemain', '{{count}} cards remain', { count: drawCount })}
+        </span>
       </div>
       {locked ? <WaxSealLock label={t('ui.game.sealed', 'Sealed')} /> : null}
     </button>
