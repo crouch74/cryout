@@ -239,6 +239,7 @@ export function DeckStack({
   label,
   deckName,
   drawCount,
+  discardCount,
   activeCount,
   disabled,
   locked,
@@ -247,6 +248,7 @@ export function DeckStack({
   label: string;
   deckName: string;
   drawCount: number;
+  discardCount?: number;
   activeCount?: number;
   disabled?: boolean;
   locked?: boolean;
@@ -268,6 +270,7 @@ export function DeckStack({
       <div className="deck-stack-copy">
         <strong>{deckName}</strong>
         <span>{t('ui.decks.cardsRemain', '{{count}} cards remain', { count: drawCount })}</span>
+        {discardCount !== undefined ? <span>{t('ui.game.cardsInDiscard', '{{count}} in discard', { count: discardCount })}</span> : null}
         {activeCount !== undefined ? <span>{t('ui.decks.staged', '{{count}} staged', { count: activeCount })}</span> : null}
       </div>
       {locked ? <WaxSealLock label={t('ui.game.sealed', 'Sealed')} /> : null}

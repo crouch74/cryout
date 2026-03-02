@@ -33,6 +33,7 @@ interface WorldMapBoardProps {
     dieOne: number;
     dieTwo: number;
     success: boolean;
+    rolling: boolean;
   } | null;
 }
 
@@ -419,7 +420,7 @@ export function WorldMapBoard({
 
         {campaignRoll && regionLayouts?.[campaignRoll.regionId] ? (
           <article
-            className={`campaign-roll-overlay ${campaignRoll.success ? 'is-success' : 'is-failure'}`.trim()}
+            className={`campaign-roll-overlay ${campaignRoll.success ? 'is-success' : 'is-failure'} ${campaignRoll.rolling ? 'is-rolling' : ''}`.trim()}
             style={{
               left: `${regionLayouts[campaignRoll.regionId].position.x}px`,
               top: `${regionLayouts[campaignRoll.regionId].position.y}px`,
@@ -427,6 +428,10 @@ export function WorldMapBoard({
             }}
           >
             <span className="campaign-roll-overlay-eyebrow">{t('ui.game.launchCampaign', 'Launch Campaign')}</span>
+            <div className="campaign-roll-overlay-dice">
+              <span>{formatNumber(campaignRoll.dieOne)}</span>
+              <span>{formatNumber(campaignRoll.dieTwo)}</span>
+            </div>
             <strong>{formatNumber(campaignRoll.total)}</strong>
             <span>
               {formatNumber(campaignRoll.dieOne)} + {formatNumber(campaignRoll.dieTwo)} + {formatNumber(campaignRoll.modifier)}

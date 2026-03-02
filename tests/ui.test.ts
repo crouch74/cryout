@@ -16,6 +16,8 @@ import {
   getFrontTrackRows,
   GAME_A11Y_LABELS,
   getActiveCoalitionSeat,
+  getDeckSummaries,
+  getNextUnfinishedCoalitionSeat,
   getPhasePresentation,
   getPhaseProgressSteps,
   getPlayerStripSummary,
@@ -115,6 +117,24 @@ test('active coalition seat advances to the first seat that still has work', () 
   assert.equal(getActiveCoalitionSeat(state.players), 1);
 });
 
+test('deck summaries and next unfinished seat helpers track the visible table state', () => {
+  const content = compileContent(startCommand.rulesetId);
+  const state = initializeGame(startCommand);
+  const summaries = getDeckSummaries(state, content);
+
+  assert.equal(summaries.length, 3);
+  assert.equal(summaries.some((summary) => summary.deckId === 'system'), true);
+  assert.equal(summaries.some((summary) => summary.deckId === 'resistance' && summary.discardCount >= startCommand.playerCount), true);
+
+  state.phase = 'COALITION';
+  state.players[0].actionsRemaining = 0;
+  state.players[0].ready = true;
+  assert.equal(getNextUnfinishedCoalitionSeat(state.players, 0), 1);
+  state.players[1].ready = true;
+  state.players[1].actionsRemaining = 0;
+  assert.equal(getNextUnfinishedCoalitionSeat(state.players, 1), 1);
+});
+
 test('game screen source keeps the compressed board layout contract', () => {
   const source = readFileSync(new URL('../src/mvp/GameScreen.tsx', import.meta.url), 'utf8');
 
@@ -125,6 +145,9 @@ test('game screen source keeps the compressed board layout contract', () => {
   assert.match(source, /PhaseProgress/);
   assert.match(source, /ActionDock/);
   assert.match(source, /ContextPanel/);
+  assert.match(source, /DeckStack/);
+  assert.match(source, /decksContent/);
+  assert.match(source, /getNextUnfinishedCoalitionSeat/);
   assert.match(source, /FrontTrackBar/);
   assert.match(source, /Commit Prepared Moves/);
   assert.match(source, /QueueIntent/);
@@ -148,6 +171,7 @@ test('world map source renders the launch campaign dice overlay on the active bo
   const source = readFileSync(new URL('../src/mvp/WorldMapBoard.tsx', import.meta.url), 'utf8');
 
   assert.match(source, /campaign-roll-overlay/);
+  assert.match(source, /campaign-roll-overlay-dice/);
   assert.match(source, /Launch Campaign/);
   assert.match(source, /campaignRoll/);
   assert.match(source, /board-region-clusters/);

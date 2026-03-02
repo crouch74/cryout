@@ -12,6 +12,7 @@ export function ContextPanel({
   regionContent,
   actionContent,
   ledgerContent,
+  decksContent,
 }: {
   mode: ContextPanelMode;
   open: boolean;
@@ -21,6 +22,7 @@ export function ContextPanel({
   regionContent: ReactNode;
   actionContent: ReactNode;
   ledgerContent: ReactNode;
+  decksContent: ReactNode;
 }) {
   return (
     <aside className={`context-panel ${open ? 'is-open' : ''}`.trim()} role="dialog" aria-modal="false" aria-label={t('ui.app.contextPanel', 'Board context panel')}>
@@ -30,6 +32,7 @@ export function ContextPanel({
             <button type="button" className={mode === 'region' ? 'is-active' : ''} onClick={() => onModeChange('region')}>{t('ui.game.region', 'Region')}</button>
           ) : null}
           <button type="button" className={mode === 'action' ? 'is-active' : ''} onClick={() => onModeChange('action')}>{t('ui.game.action', 'Action')}</button>
+          <button type="button" className={mode === 'decks' ? 'is-active' : ''} onClick={() => onModeChange('decks')}>{t('ui.game.decks', 'Decks')}</button>
           <button type="button" className={mode === 'ledger' ? 'is-active' : ''} onClick={() => onModeChange('ledger')}>
             <Icon type="ledger" size={16} title={t('ui.game.ledger', 'Ledger')} />
             <span>{t('ui.game.ledger', 'Ledger')}</span>
@@ -40,6 +43,7 @@ export function ContextPanel({
       <div className="context-panel-body">
         {mode === 'region' ? regionContent : null}
         {mode === 'action' ? actionContent : null}
+        {mode === 'decks' ? decksContent : null}
         {mode === 'ledger' ? ledgerContent : null}
       </div>
     </aside>

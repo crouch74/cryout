@@ -489,6 +489,15 @@ textarea:focus-visible {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0.14)), #f4ead9;
   color: var(--text-1);
   box-shadow: var(--shadow-lift), var(--shadow-inset);
+  text-align: left;
+  cursor: pointer;
+  transition: transform var(--motion-fast), box-shadow var(--motion-fast), border-color var(--motion-fast);
+}
+
+.deck-stack:hover,
+.deck-stack:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 24px rgba(52, 37, 24, 0.14), var(--shadow-inset);
 }
 
 .deck-stack-cards {

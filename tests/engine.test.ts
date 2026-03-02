@@ -27,6 +27,15 @@ test('same seed produces deterministic system deck order', () => {
   assert.notDeepEqual(stateA.decks.system.drawPile, stateC.decks.system.drawPile);
 });
 
+test('opening resistance draws reveal publicly and move into discard', () => {
+  const state = initializeGame(startCommand);
+  const revealEvents = state.eventLog.filter((event) => event.context?.sourceDeckId === 'resistance' && event.context?.cardReveals?.length);
+
+  assert.equal(state.players.every((player) => player.resistanceHand.length === 0), true);
+  assert.equal(state.decks.resistance.discardPile.length, startCommand.playerCount);
+  assert.equal(revealEvents.length >= startCommand.playerCount, true);
+});
+
 test('phase gating rejects coalition actions during system phase', () => {
   const content = compileContent(startCommand.rulesetId);
   const state = initializeGame(startCommand);
@@ -57,9 +66,12 @@ test('system cards use authored vulnerability to target local harm', () => {
   state.decks.system.drawPile = ['sys_carceral_decree'];
 
   const next = dispatchCommand(state, { type: 'ResolveSystemPhase' }, content);
+  const cardEvent = next.eventLog.findLast((event) => event.sourceId === 'sys_carceral_decree');
 
   assert.equal(next.regions.Levant.extractionTokens, state.regions.Levant.extractionTokens + 1);
   assert.equal(next.phase, 'COALITION');
+  assert.equal(cardEvent?.context?.cardReveals?.[0]?.deckId, 'system');
+  assert.equal(cardEvent?.context?.cardReveals?.[0]?.destination, 'discard');
 });
 
 test('any region reaching six extraction tokens causes immediate defeat', () => {
@@ -131,4 +143,7 @@ test('launch campaign consumes 2d6 of rng and can remove extraction on success',
   assert.equal(next.regions.Congo.extractionTokens <= state.regions.Congo.extractionTokens, true);
   assert.equal(campaignEvent?.context?.targetRegionId, 'Congo');
   assert.equal(campaignEvent?.context?.targetDomainId, 'DyingPlanet');
+  assert.deepEqual(campaignEvent?.context?.roll?.dice.length, 2);
+  assert.equal(campaignEvent?.context?.roll?.actionId, 'launch_campaign');
+  assert.equal(campaignEvent?.context?.roll?.regionId, 'Congo');
 });

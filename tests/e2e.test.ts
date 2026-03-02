@@ -65,10 +65,11 @@ test('room snapshots redact private hands for other seats', () => {
   const seatZero = controller.getRoom(created.roomId, created.seatTokens[0]?.seatToken ?? '') as { state: EngineState; seat: number };
   const seatOne = controller.getRoom(created.roomId, created.seatTokens[1]?.seatToken ?? '') as { state: EngineState; seat: number };
 
-  assert.equal(seatZero.state.players[0]?.resistanceHand.length > 0, true);
+  assert.equal(seatZero.state.players[0]?.resistanceHand.length, 0);
   assert.equal(seatZero.state.players[1]?.resistanceHand.length, 0);
-  assert.equal(seatOne.state.players[1]?.resistanceHand.length > 0, true);
+  assert.equal(seatOne.state.players[1]?.resistanceHand.length, 0);
   assert.equal(seatOne.state.players[0]?.resistanceHand.length, 0);
+  assert.equal(seatZero.state.eventLog.some((event) => event.context?.cardReveals?.[0]?.deckId === 'resistance'), true);
 });
 
 test('room service issues friendly 11-segment room keys', () => {

@@ -248,6 +248,25 @@ export interface DeckState {
   discardPile: string[];
 }
 
+export interface CardRevealEvent {
+  deckId: DeckId;
+  cardId: string;
+  destination: 'discard' | 'hand' | 'active';
+  seat?: number;
+  public: boolean;
+}
+
+export interface RollResolution {
+  actionId: 'launch_campaign';
+  seat: number;
+  regionId: RegionId;
+  domainId: DomainId;
+  dice: [number, number];
+  modifier: number;
+  total: number;
+  success: boolean;
+}
+
 export interface BeaconState {
   id: string;
   active: boolean;
@@ -284,6 +303,9 @@ export interface DomainEvent {
     actingSeat?: number;
     targetRegionId?: RegionId;
     targetDomainId?: DomainId;
+    sourceDeckId?: DeckId;
+    cardReveals?: CardRevealEvent[];
+    roll?: RollResolution;
   };
 }
 

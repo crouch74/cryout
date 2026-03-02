@@ -210,9 +210,28 @@
   line-height: 1;
 }
 
+.game-screen-compressed .campaign-roll-overlay-dice {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.game-screen-compressed .campaign-roll-overlay-dice span {
+  min-width: 22px;
+  padding: 3px 0;
+  border-radius: 6px;
+  background: rgba(83, 62, 35, 0.08);
+  font-family: var(--font-data);
+  font-size: 11px;
+}
+
 .game-screen-compressed .campaign-roll-overlay span:last-child {
   font-family: var(--font-data);
   font-size: 11px;
+}
+
+.game-screen-compressed .campaign-roll-overlay.is-rolling {
+  animation: campaign-roll-wobble 520ms ease-out;
 }
 
 .game-screen-compressed .campaign-roll-overlay.is-success strong {
@@ -221,6 +240,18 @@
 
 .game-screen-compressed .campaign-roll-overlay.is-failure strong {
   color: var(--accent-danger);
+}
+
+@keyframes campaign-roll-wobble {
+  0% {
+    transform: translate(-50%, calc(-100% - 18px)) scale(0.96);
+  }
+  40% {
+    transform: translate(-50%, calc(-100% - 18px)) rotate(-1deg) scale(1.03);
+  }
+  100% {
+    transform: translate(-50%, calc(-100% - 18px)) rotate(0deg) scale(1);
+  }
 }
 
 .game-screen-compressed .board-region-clusters {

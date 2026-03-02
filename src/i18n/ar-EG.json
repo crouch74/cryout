@@ -145,6 +145,10 @@
       "boardStatusRibbon": "شريط حالة البورد",
       "focusedPlayerStrip": "شريط اللاعب الحالي",
       "boardContext": "سياق البورد",
+      "decks": "الرزم",
+      "systemDeck": "رزمة النظام",
+      "resistanceDeck": "رزمة المقاومة",
+      "beaconDeck": "رزمة المنارات",
       "modeLabel": "الوضع",
       "objectiveLabel": "الهدف",
       "objectiveLiberationValue": "١ استخراج/منطقة",
@@ -343,7 +347,17 @@
       "phaseInsightResolutionResolve": "التحركات المُعدّة دلوقتي بتغيّر الجبهات والمناطق والرفاق والشهادات والكروت حسب الأولوية.",
       "phaseInsightCheck": "افهم ليه الجولة انتهت",
       "phaseInsightResolutionCheck": "بعد الحسم، اللعبة بتفحص النصر والخسارة والعُهود السرية وهل تبدأ جولة جديدة.",
-      "cardsChanged": "الكروت اتغيّرت"
+      "cardsChanged": "الكروت اتغيّرت",
+      "cardsInDiscard": "{{count}} في كومة الرمي",
+      "discardPile": "كومة الرمي",
+      "latestReveal": "آخر كشف",
+      "drawReviewHint": "راجع آخر كارت اتكشف هنا، وبعدها بص على كومة الرمي للكروت الأقدم.",
+      "noRevealYet": "لسه مفيش كارت اتكشف للرزمة دي.",
+      "noDiscardYet": "لسه مفيش كروت مترمية.",
+      "drawReveal": "كشف السحب",
+      "revealToDiscard": "اتكشف على البورد وبعدها اتحط في كومة الرمي.",
+      "drawsVisible": "السحب بيظهر على البورد قبل ما يستقر في كومة الرمي.",
+      "drawsWaiting": "السحب هيظهر هنا أول ما الرزم تتحرك."
     },
     "domains": {
       "short": {

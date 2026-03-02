@@ -4,7 +4,9 @@ import {
   getPlayerBodyTotal,
   type ActionDefinition,
   type ActionId,
+  type CardRevealEvent,
   type CompiledContent,
+  type DeckId,
   type DomainEvent,
   type DomainId,
   type EngineState,
@@ -76,7 +78,22 @@ interface EventSourcePresentation {
   label: string;
 }
 
-export type ContextPanelMode = 'region' | 'action' | 'ledger';
+export type ContextPanelMode = 'region' | 'action' | 'ledger' | 'decks';
+
+export interface DeckSummary {
+  deckId: DeckId;
+  label: string;
+  drawCount: number;
+  discardCount: number;
+  activeCount?: number;
+  latestRevealCardId: string | null;
+}
+
+export interface LatestPublicCardReveal {
+  eventSeq: number;
+  revealIndex: number;
+  reveal: CardRevealEvent;
+}
 
 export interface StatusRibbonItem {
   id: 'mode' | 'objective' | 'globalGaze' | 'warMachine' | 'extractionPool' | 'round';
@@ -701,4 +718,59 @@ export function getToastRole(tone: 'info' | 'success' | 'warning' | 'error') {
 
 export function getActiveCoalitionSeat(players: PlayerState[]) {
   return players.find((player) => !player.ready && player.actionsRemaining > 0)?.seat ?? players.at(-1)?.seat ?? 0;
+}
+
+export function getDeckSummaries(state: EngineState, _content: CompiledContent): DeckSummary[] {
+  const latestReveal = getLatestPublicCardReveal(state)?.reveal ?? null;
+  return (['system', 'resistance', 'beacon'] as DeckId[]).map((deckId) => ({
+    deckId,
+    label: {
+      system: t('ui.game.systemDeck', 'System Deck'),
+      resistance: t('ui.game.resistanceDeck', 'Resistance Deck'),
+      beacon: t('ui.game.beaconDeck', 'Beacon Deck'),
+    }[deckId],
+    drawCount: state.decks[deckId].drawPile.length,
+    discardCount: state.decks[deckId].discardPile.length,
+    activeCount: deckId === 'beacon' ? state.activeBeaconIds.length : undefined,
+    latestRevealCardId: latestReveal?.deckId === deckId ? latestReveal.cardId : null,
+  }));
+}
+
+export function getLatestPublicCardReveal(state: EngineState): LatestPublicCardReveal | null {
+  for (let eventIndex = state.eventLog.length - 1; eventIndex >= 0; eventIndex -= 1) {
+    const event = state.eventLog[eventIndex];
+    const reveals = event.context?.cardReveals;
+    if (!reveals?.length) {
+      continue;
+    }
+
+    for (let revealIndex = reveals.length - 1; revealIndex >= 0; revealIndex -= 1) {
+      const reveal = reveals[revealIndex];
+      if (!reveal?.public) {
+        continue;
+      }
+      return { eventSeq: event.seq, revealIndex, reveal };
+    }
+  }
+
+  return null;
+}
+
+export function getNextUnfinishedCoalitionSeat(players: PlayerState[], currentSeat: number) {
+  if (players.every((player) => player.ready)) {
+    return currentSeat;
+  }
+
+  for (let offset = 1; offset <= players.length; offset += 1) {
+    const candidateSeat = (currentSeat + offset) % players.length;
+    const candidate = players[candidateSeat];
+    if (!candidate) {
+      continue;
+    }
+    if (!candidate.ready || candidate.actionsRemaining > 0) {
+      return candidate.seat;
+    }
+  }
+
+  return currentSeat;
 }

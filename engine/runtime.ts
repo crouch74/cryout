@@ -3,6 +3,7 @@ import { createRng, nextInt, shuffle } from './rng.ts';
 import type {
   ActionDefinition,
   ActionId,
+  CardRevealEvent,
   CompiledContent,
   Condition,
   DisabledActionReason,
@@ -18,6 +19,7 @@ import type {
   RegionId,
   RegionSelector,
   ResistanceCardDefinition,
+  RollResolution,
   SeatSelector,
   StartGameCommand,
   StateDelta,
@@ -117,6 +119,30 @@ function addSimpleEvent(
 
 function addRejectedCommandEvent(state: EngineState, command: EngineCommand, reason: string): void {
   addSimpleEvent(state, 'command', command.type, '❌', reason, [command.type]);
+}
+
+function addCardRevealEvent(
+  state: EngineState,
+  reveal: CardRevealEvent,
+  sourceType: DomainEvent['sourceType'],
+  sourceId: string,
+  message: string,
+  causedBy: string[],
+): void {
+  addEvent(
+    state,
+    sourceType,
+    sourceId,
+    '🃏',
+    message,
+    causedBy,
+    [],
+    {
+      actingSeat: reveal.seat,
+      sourceDeckId: reveal.deckId,
+      cardReveals: [reveal],
+    },
+  );
 }
 
 function getSeatTotalBodies(state: EngineState, seat: number) {
@@ -317,20 +343,39 @@ function checkPositiveVictory(state: EngineState, content: CompiledContent): boo
 }
 
 function resolveCardDraws(state: EngineState, seat: number, count: number): EffectTrace {
-  const player = state.players[seat];
-  const before = player.resistanceHand.length;
+  let cardsDrawn = 0;
   for (let index = 0; index < count; index += 1) {
     const cardId = drawCard(state, 'resistance');
-    if (cardId) {
-      player.resistanceHand.push(cardId);
+    if (!cardId) {
+      continue;
     }
+
+    cardsDrawn += 1;
+    moveCardToDiscard(state, 'resistance', cardId);
+    addCardRevealEvent(
+      state,
+      {
+        deckId: 'resistance',
+        cardId,
+        destination: 'discard',
+        seat,
+        public: true,
+      },
+      'card',
+      'draw_resistance',
+      `🃏 Seat ${seat + 1} revealed a resistance card.`,
+      ['draw_resistance'],
+    );
   }
+
   return {
     effectType: 'draw_resistance',
     status: 'executed',
-    message: `Seat ${seat + 1} drew ${player.resistanceHand.length - before} resistance card(s).`,
+    message: `Seat ${seat + 1} revealed ${cardsDrawn} resistance card(s) and moved them to discard.`,
     causedBy: [`seat:${seat}`],
-    deltas: [createDelta('card', `seat:${seat}:hand`, before, player.resistanceHand.length)],
+    deltas: cardsDrawn > 0
+      ? [createDelta('card', `resistance:discard`, state.decks.resistance.discardPile.length - cardsDrawn, state.decks.resistance.discardPile.length)]
+      : [],
   };
 }
 
@@ -579,7 +624,10 @@ function resolveSystemCard(state: EngineState, content: CompiledContent, cardId:
     },
   );
   moveCardToDiscard(state, 'system', cardId);
-  addEvent(state, 'card', card.id, '🂠', `${card.name}: ${card.text}`, [card.id], traces);
+  addEvent(state, 'card', card.id, '🂠', `${card.name}: ${card.text}`, [card.id], traces, {
+    sourceDeckId: 'system',
+    cardReveals: [{ deckId: 'system', cardId, destination: 'discard', public: true }],
+  });
 }
 
 function createInitialPlayers(command: StartGameCommand, content: CompiledContent): PlayerState[] {
@@ -682,7 +730,32 @@ function createInitialState(command: StartGameCommand, content: CompiledContent)
 
   for (const player of state.players) {
     const drawTrace = resolveCardDraws(state, player.seat, 1);
-    addEvent(state, 'system', 'starting_hands', '🃏', `Seat ${player.seat + 1} drew an opening resistance card.`, ['StartGame'], [drawTrace]);
+    addEvent(
+      state,
+      'system',
+      'starting_hands',
+      '🃏',
+      `Seat ${player.seat + 1} revealed an opening resistance card.`,
+      ['StartGame'],
+      [drawTrace],
+      { actingSeat: player.seat, sourceDeckId: 'resistance' },
+    );
+  }
+
+  for (const beaconId of activeBeaconIds) {
+    addCardRevealEvent(
+      state,
+      {
+        deckId: 'beacon',
+        cardId: beaconId,
+        destination: 'active',
+        public: true,
+      },
+      'beacon',
+      beaconId,
+      `${content.beacons[beaconId]?.title ?? beaconId} was activated from the beacon deck.`,
+      ['StartGame', beaconId],
+    );
   }
 
   state.extractionPool = calculateExtractionPool(state);
@@ -980,7 +1053,12 @@ function resolvePlayCard(state: EngineState, content: CompiledContent, seat: num
   );
 }
 
-function resolveLaunchCampaign(state: EngineState, content: CompiledContent, seat: number, intent: QueuedIntent): EffectTrace[] {
+function resolveLaunchCampaign(
+  state: EngineState,
+  content: CompiledContent,
+  seat: number,
+  intent: QueuedIntent,
+): { traces: EffectTrace[]; roll: RollResolution } {
   const regionId = assertExists(intent.regionId, 'Launch Campaign requires region.');
   const domainId = assertExists(intent.domainId, 'Launch Campaign requires domain.');
   const committedBodies = assertExists(intent.bodiesCommitted, 'Launch Campaign requires bodies.');
@@ -1026,6 +1104,16 @@ function resolveLaunchCampaign(state: EngineState, content: CompiledContent, sea
 
   const total = dieOne + dieTwo + modifier;
   const success = total >= 8;
+  const roll: RollResolution = {
+    actionId: 'launch_campaign',
+    seat,
+    regionId,
+    domainId,
+    dice: [dieOne, dieTwo],
+    modifier,
+    total,
+    success,
+  };
   const traces = [...spendTrace];
 
   traces.push({
@@ -1083,12 +1171,17 @@ function resolveLaunchCampaign(state: EngineState, content: CompiledContent, sea
     );
   }
 
-  return traces;
+  return { traces, roll };
 }
 
 function resolveQueuedAction(state: EngineState, content: CompiledContent, seat: number, intent: QueuedIntent) {
   const action = getBaseActionDefinition(content, intent.actionId);
   let traces: EffectTrace[] = [];
+  const eventContext: NonNullable<DomainEvent['context']> = {
+    actingSeat: seat,
+    targetRegionId: intent.regionId,
+    targetDomainId: intent.domainId,
+  };
 
   switch (action.id) {
     case 'organize':
@@ -1097,9 +1190,12 @@ function resolveQueuedAction(state: EngineState, content: CompiledContent, seat:
     case 'investigate':
       traces = resolveInvestigate(state, content, seat, intent);
       break;
-    case 'launch_campaign':
-      traces = resolveLaunchCampaign(state, content, seat, intent);
+    case 'launch_campaign': {
+      const resolution = resolveLaunchCampaign(state, content, seat, intent);
+      traces = resolution.traces;
+      eventContext.roll = resolution.roll;
       break;
+    }
     case 'build_solidarity':
       traces = resolveBuildSolidarity(state, content, seat, intent);
       break;
@@ -1125,11 +1221,7 @@ function resolveQueuedAction(state: EngineState, content: CompiledContent, seat:
     `Seat ${seat + 1} resolved ${action.name}.`,
     [action.id],
     traces,
-    {
-      actingSeat: seat,
-      targetRegionId: intent.regionId,
-      targetDomainId: intent.domainId,
-    },
+    eventContext,
   );
 }
 

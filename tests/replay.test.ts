@@ -43,4 +43,5 @@ test('serialized command log replays to the same snapshot', () => {
   const payload = deserializeGame(serialized);
 
   assert.deepEqual(replayed, payload.snapshot);
+  assert.equal(payload.snapshot.eventLog.some((event) => event.context?.cardReveals?.length), true);
 });

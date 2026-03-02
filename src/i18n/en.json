@@ -145,6 +145,10 @@
       "boardStatusRibbon": "Board status ribbon",
       "focusedPlayerStrip": "Focused player strip",
       "boardContext": "Board context",
+      "decks": "Decks",
+      "systemDeck": "System Deck",
+      "resistanceDeck": "Resistance Deck",
+      "beaconDeck": "Beacon Deck",
       "modeLabel": "Mode",
       "objectiveLabel": "Objective",
       "objectiveLiberationValue": "1 Extraction/region",
@@ -343,7 +347,17 @@
       "phaseInsightResolutionResolve": "Prepared moves now change fronts, regions, comrades, witness, and cards in priority order.",
       "phaseInsightCheck": "Check why the round ends",
       "phaseInsightResolutionCheck": "After resolution, the game checks victory, defeat, solemn charges, and whether a new round begins.",
-      "cardsChanged": "Cards changed"
+      "cardsChanged": "Cards changed",
+      "cardsInDiscard": "{{count}} in discard",
+      "discardPile": "Discard pile",
+      "latestReveal": "Latest reveal",
+      "drawReviewHint": "Review the latest reveal here, then inspect the discard pile for earlier cards.",
+      "noRevealYet": "No card has been revealed for this deck yet.",
+      "noDiscardYet": "No discarded cards yet.",
+      "drawReveal": "Draw reveal",
+      "revealToDiscard": "Revealed on the board, then moved to discard.",
+      "drawsVisible": "Draws reveal on the board before they settle into discard.",
+      "drawsWaiting": "Draws will reveal here when the decks move."
     },
     "domains": {
       "short": {

@@ -39,13 +39,16 @@ import {
   buildIntentPreview,
   getActionDockItems,
   getActionQuickQueue,
+  getDeckSummaries,
   getFrontTrackRows,
+  getLatestPublicCardReveal,
+  getNextUnfinishedCoalitionSeat,
   getPhasePresentation,
   getPlayerStripSummary,
   getStatusRibbonItems,
   type ContextPanelMode,
 } from './gameUiHelpers.ts';
-import { LocaleSwitcher, TableSurface, ThemePlate } from './tabletop.tsx';
+import { CrisisCard, DeckStack, LocaleSwitcher, TableSurface, ThemePlate, useTabletopTheme } from './tabletop.tsx';
 import type { GameViewState } from './urlState.ts';
 import { WorldMapBoard } from './WorldMapBoard.tsx';
 
@@ -87,6 +90,15 @@ interface CampaignRollPresentation {
   dieOne: number;
   dieTwo: number;
   success: boolean;
+  rolling: boolean;
+}
+
+interface CardRevealQueueItem {
+  key: string;
+  eventSeq: number;
+  revealIndex: number;
+  deckId: 'system' | 'resistance' | 'beacon';
+  cardId: string;
 }
 
 interface PhaseInsight {
@@ -157,37 +169,62 @@ function getPhaseControlHint(state: EngineState, focusedSeat: number) {
 function getLatestCampaignRoll(state: EngineState): CampaignRollPresentation | null {
   for (let index = state.eventLog.length - 1; index >= 0; index -= 1) {
     const event = state.eventLog[index];
-    if (event?.sourceId !== 'launch_campaign' || !event.context?.targetRegionId) {
+    const roll = event?.context?.roll;
+    if (!roll) {
       continue;
     }
-
-    const rollTrace = event.trace.find((trace) => trace.effectType === 'launch_campaign');
-    if (!rollTrace) {
-      continue;
-    }
-
-    const match = /Campaign rolled (\d+)\+(\d+)\+(-?\d+) = (\d+)\./.exec(rollTrace.message);
-    if (!match) {
-      continue;
-    }
-
-    const dieOne = Number(match[1]);
-    const dieTwo = Number(match[2]);
-    const modifier = Number(match[3]);
-    const total = Number(match[4]);
 
     return {
       seq: event.seq,
-      regionId: event.context.targetRegionId,
-      total,
-      modifier,
-      dieOne,
-      dieTwo,
-      success: total >= 8,
+      regionId: roll.regionId,
+      total: roll.total,
+      modifier: roll.modifier,
+      dieOne: roll.dice[0],
+      dieTwo: roll.dice[1],
+      success: roll.success,
+      rolling: false,
     };
   }
 
   return null;
+}
+
+function getLatestRevealCardIdForDeck(state: EngineState, deckId: 'system' | 'resistance' | 'beacon') {
+  for (let eventIndex = state.eventLog.length - 1; eventIndex >= 0; eventIndex -= 1) {
+    const reveals = state.eventLog[eventIndex]?.context?.cardReveals;
+    if (!reveals?.length) {
+      continue;
+    }
+
+    for (let revealIndex = reveals.length - 1; revealIndex >= 0; revealIndex -= 1) {
+      const reveal = reveals[revealIndex];
+      if (reveal?.deckId === deckId) {
+        return reveal.cardId;
+      }
+    }
+  }
+
+  return null;
+}
+
+function getRevealCopy(
+  content: CompiledContent,
+  deckId: 'system' | 'resistance' | 'beacon',
+  cardId: string,
+) {
+  if (deckId === 'beacon') {
+    const beacon = content.beacons[cardId];
+    return {
+      title: beacon?.title ?? cardId,
+      body: beacon?.description ?? '',
+    };
+  }
+
+  const card = content.cards[cardId];
+  return {
+    title: localizeCardField(cardId, 'name', card?.name ?? cardId),
+    body: localizeCardField(cardId, 'text', card?.text ?? ''),
+  };
 }
 
 function getPhaseInsights(state: EngineState, focusedSeat: number): PhaseInsight[] {
@@ -384,12 +421,14 @@ export function GameScreen({
   onExportSave,
   authorizedSeat,
 }: GameScreenProps) {
+  const { motionMode } = useTabletopTheme();
   const focusedSeat = authorizedSeat ?? viewState.focusedSeat;
   const focusedPlayer = state.players[focusedSeat] ?? state.players[0];
   const faction = getSeatFaction(state, content, focusedPlayer.seat);
   const [copied, setCopied] = useState(false);
   const [contextOpen, setContextOpen] = useState(false);
   const [contextMode, setContextMode] = useState<ContextPanelMode>('ledger');
+  const [selectedDeckId, setSelectedDeckId] = useState<'system' | 'resistance' | 'beacon'>('system');
   const [draft, setDraft] = useState<DraftState>(() => createDraft('organize'));
   const [showDevPanel, setShowDevPanel] = useState(false);
   const [showDebugSnapshot, setShowDebugSnapshot] = useState(false);
@@ -398,7 +437,16 @@ export function GameScreen({
   const [autoPlayTargetRound, setAutoPlayTargetRound] = useState<number | null>(null);
   const [autoPlayRunning, setAutoPlayRunning] = useState(false);
   const [autoPlayStatus, setAutoPlayStatus] = useState<string | null>(null);
+  const [activeCardRevealSeq, setActiveCardRevealSeq] = useState<number | null>(null);
+  const [activeCardReveal, setActiveCardReveal] = useState<CardRevealQueueItem | null>(null);
+  const [cardRevealStage, setCardRevealStage] = useState<'enter' | 'hold' | 'exit'>('enter');
+  const [animatedCampaignRoll, setAnimatedCampaignRoll] = useState<CampaignRollPresentation | null>(null);
   const autoPlayTimerRef = useRef<number | null>(null);
+  const revealQueueRef = useRef<CardRevealQueueItem[]>([]);
+  const revealSeenRef = useRef(new Set<string>());
+  const revealTimerRef = useRef<number | null>(null);
+  const revealPhaseTimerRef = useRef<number | null>(null);
+  const lastCampaignRollSeqRef = useRef<number | null>(null);
   const selectedRegionId = viewState.regionId;
 
   const draftAction = content.actions[draft.actionId];
@@ -417,6 +465,8 @@ export function GameScreen({
   const phasePresentation = getPhasePresentation(state.phase);
   const preparedMovePreview = buildIntentPreview(draft, draftAction, state, content, focusedPlayer.seat);
   const latestCampaignRoll = useMemo(() => getLatestCampaignRoll(state), [state]);
+  const latestPublicCardReveal = useMemo(() => getLatestPublicCardReveal(state), [state]);
+  const deckSummaries = useMemo(() => getDeckSummaries(state, content), [content, state]);
   const phaseControlHint = getPhaseControlHint(state, focusedPlayer.seat);
 
   const ledgerGroups = useMemo(() => {
@@ -664,11 +714,155 @@ export function GameScreen({
     </div>
   );
 
+  const selectedDeckSummary = deckSummaries.find((summary) => summary.deckId === selectedDeckId) ?? deckSummaries[0];
+  const selectedDeckCards = state.decks[selectedDeckId].discardPile.slice().reverse();
+  const selectedDeckLatestCardId = getLatestRevealCardIdForDeck(state, selectedDeckId);
+  const selectedDeckLatestCard = selectedDeckLatestCardId ? getRevealCopy(content, selectedDeckId, selectedDeckLatestCardId) : null;
+
+  const decksContent = selectedDeckSummary ? (
+    <div className="context-stack">
+      <section className="context-card">
+        <span className="context-eyebrow">{t('ui.game.latestReveal', 'Latest reveal')}</span>
+        <strong>{selectedDeckSummary.label}</strong>
+        <p>{t('ui.game.drawReviewHint', 'Review the latest reveal here, then inspect the discard pile for earlier cards.')}</p>
+        {selectedDeckLatestCard ? (
+          <CrisisCard
+            title={selectedDeckLatestCard.title}
+            body={selectedDeckLatestCard.body}
+            tag={selectedDeckSummary.label}
+            emoji={selectedDeckId === 'beacon' ? '🕯️' : '🃏'}
+          />
+        ) : (
+          <p>{t('ui.game.noRevealYet', 'No card has been revealed for this deck yet.')}</p>
+        )}
+      </section>
+
+      <section className="context-card">
+        <span className="context-eyebrow">{t('ui.game.discardPile', 'Discard pile')}</span>
+        <strong>{t('ui.game.cardsInDiscard', '{{count}} in discard', { count: selectedDeckSummary.discardCount })}</strong>
+        {selectedDeckCards.length === 0 ? (
+          <p>{t('ui.game.noDiscardYet', 'No discarded cards yet.')}</p>
+        ) : (
+          <div className="context-list">
+            {selectedDeckCards.map((cardId, index) => {
+              const revealCopy = getRevealCopy(content, selectedDeckId, cardId);
+              return (
+                <div key={`${selectedDeckId}-${cardId}-${index}`} className="deck-discard-row">
+                  <strong>{revealCopy.title}</strong>
+                  <span>{revealCopy.body}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+    </div>
+  ) : null;
+
+  const openDeckPanel = (deckId: 'system' | 'resistance' | 'beacon') => {
+    setSelectedDeckId(deckId);
+    setContextMode('decks');
+    setContextOpen(true);
+  };
+
+  const handleSetReady = (ready: boolean) => {
+    if (ready) {
+      const nextSeat = getNextUnfinishedCoalitionSeat(state.players, focusedPlayer.seat);
+      onViewStateChange({ focusedSeat: nextSeat });
+    }
+    void onCommand({ type: 'SetReady', seat: focusedPlayer.seat, ready });
+  };
+
   useEffect(() => () => {
     if (autoPlayTimerRef.current !== null) {
       window.clearTimeout(autoPlayTimerRef.current);
     }
+    if (revealTimerRef.current !== null) {
+      window.clearTimeout(revealTimerRef.current);
+    }
+    if (revealPhaseTimerRef.current !== null) {
+      window.clearTimeout(revealPhaseTimerRef.current);
+    }
   }, []);
+
+  useEffect(() => {
+    for (const event of state.eventLog) {
+      const reveals = event.context?.cardReveals ?? [];
+      reveals.forEach((reveal, revealIndex) => {
+        if (!reveal.public) {
+          return;
+        }
+        const key = `${event.seq}:${revealIndex}:${reveal.deckId}:${reveal.cardId}`;
+        if (revealSeenRef.current.has(key)) {
+          return;
+        }
+        revealSeenRef.current.add(key);
+        revealQueueRef.current.push({
+          key,
+          eventSeq: event.seq,
+          revealIndex,
+          deckId: reveal.deckId,
+          cardId: reveal.cardId,
+        });
+      });
+    }
+  }, [state.eventLog]);
+
+  useEffect(() => {
+    if (activeCardReveal || revealQueueRef.current.length === 0) {
+      return;
+    }
+
+    const nextReveal = revealQueueRef.current.shift() ?? null;
+    if (!nextReveal) {
+      return;
+    }
+
+    setSelectedDeckId(nextReveal.deckId);
+    setActiveCardRevealSeq(nextReveal.eventSeq);
+    setActiveCardReveal(nextReveal);
+    setCardRevealStage('enter');
+
+    if (motionMode === 'reduced') {
+      revealTimerRef.current = window.setTimeout(() => {
+        setActiveCardReveal(null);
+        setActiveCardRevealSeq(null);
+      }, 900);
+      return;
+    }
+
+    revealPhaseTimerRef.current = window.setTimeout(() => setCardRevealStage('hold'), 250);
+    revealTimerRef.current = window.setTimeout(() => setCardRevealStage('exit'), 1150);
+    window.setTimeout(() => {
+      setActiveCardReveal(null);
+      setActiveCardRevealSeq(null);
+      setCardRevealStage('enter');
+    }, 1400);
+  }, [activeCardReveal, motionMode, state.eventLog]);
+
+  useEffect(() => {
+    if (!latestCampaignRoll) {
+      return;
+    }
+    if (lastCampaignRollSeqRef.current === latestCampaignRoll.seq) {
+      return;
+    }
+
+    lastCampaignRollSeqRef.current = latestCampaignRoll.seq;
+    if (motionMode === 'reduced') {
+      setAnimatedCampaignRoll(latestCampaignRoll);
+      return;
+    }
+
+    setAnimatedCampaignRoll({ ...latestCampaignRoll, rolling: true });
+    const settled = window.setTimeout(() => {
+      setAnimatedCampaignRoll({ ...latestCampaignRoll, rolling: false });
+    }, 520);
+
+    return () => {
+      window.clearTimeout(settled);
+    };
+  }, [latestCampaignRoll, motionMode]);
 
   useEffect(() => {
     if (surface !== 'local' && autoPlayRunning) {
@@ -855,7 +1049,7 @@ export function GameScreen({
                   type="button"
                   className={`action-dock-submit ${focusedPlayer.ready ? 'is-active' : ''}`.trim()}
                   disabled={focusedPlayer.actionsRemaining > 0}
-                  onClick={() => void onCommand({ type: 'SetReady', seat: focusedPlayer.seat, ready: !focusedPlayer.ready })}
+                  onClick={() => handleSetReady(!focusedPlayer.ready)}
                 >
                   <Icon type="objective" size={18} className="action-dock-submit-icon" />
                   <span>{focusedPlayer.ready ? t('ui.game.seatReady', 'Seat Ready') : t('ui.game.markSeatReady', 'Mark Seat Ready')}</span>
@@ -907,11 +1101,44 @@ export function GameScreen({
           <StatusRibbon items={statusItems} />
 
           <div className="board-map-panel">
+            <section className="board-deck-rail" aria-label={t('ui.game.decks', 'Decks')}>
+              <div className="board-deck-rail-head">
+                <strong>{t('ui.game.decks', 'Decks')}</strong>
+                <span>{latestPublicCardReveal ? t('ui.game.drawsVisible', 'Draws reveal on the board before they settle into discard.') : t('ui.game.drawsWaiting', 'Draws will reveal here when the decks move.')}</span>
+              </div>
+              <div className="board-deck-rail-grid">
+                {deckSummaries.map((summary) => (
+                  <div
+                    key={summary.deckId}
+                    className={`board-deck-stack-shell ${selectedDeckId === summary.deckId ? 'is-selected' : ''}`.trim()}
+                  >
+                    <DeckStack
+                      label={summary.label}
+                      deckName={summary.label}
+                      drawCount={summary.drawCount}
+                      discardCount={summary.discardCount}
+                      activeCount={summary.activeCount}
+                      onClick={() => openDeckPanel(summary.deckId)}
+                    />
+                    {activeCardReveal?.deckId === summary.deckId ? (
+                      <article
+                        className={`board-card-reveal board-card-reveal-${cardRevealStage}`.trim()}
+                        data-seq={activeCardRevealSeq ?? undefined}
+                      >
+                        <span className="context-eyebrow">{t('ui.game.drawReveal', 'Draw reveal')}</span>
+                        <strong>{getRevealCopy(content, activeCardReveal.deckId, activeCardReveal.cardId).title}</strong>
+                        <span>{t('ui.game.revealToDiscard', 'Revealed on the board, then moved to discard.')}</span>
+                      </article>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </section>
             <WorldMapBoard
               state={state}
               content={content}
               selectedRegionId={selectedRegionId}
-              campaignRoll={latestCampaignRoll}
+              campaignRoll={animatedCampaignRoll}
               debugLayout={devMode}
               onSelectRegion={(regionId) => {
                 onViewStateChange({ regionId });
@@ -934,6 +1161,7 @@ export function GameScreen({
             showRegionTab={false}
             regionContent={regionContent}
             actionContent={actionContent}
+            decksContent={decksContent}
             ledgerContent={ledgerContent}
           />
         </aside>
