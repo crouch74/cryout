@@ -217,6 +217,8 @@ test('game screen source keeps the compressed board layout contract', () => {
   assert.match(source, /debugLayout=\{devMode\}/);
   assert.match(source, /advancePhase/);
   assert.match(source, /aria-label=\{phaseActionLabel\}/);
+  assert.match(source, /onPointerDownCapture=\{handleEmptySpacePointerDown\}/);
+  assert.match(source, /suspendHighlights=\{highlightSuspended\}/);
   assert.doesNotMatch(source, /phase-brief-grid/);
   assert.doesNotMatch(source, /whyBoardShifted/);
   assert.doesNotMatch(source, /<footer/);

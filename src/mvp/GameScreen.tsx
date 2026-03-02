@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import {
   getAvailableDomains,
   getAvailableRegions,
@@ -126,6 +126,7 @@ interface VisualDeltaGlyph {
 
 interface VisualDeltaTile {
   id: string;
+  seq: number;
   emoji: string;
   phaseIcon: string;
   glyphs: VisualDeltaGlyph[];
@@ -608,6 +609,7 @@ function getRecentVisualDeltaTiles(state: EngineState, content: CompiledContent)
 
       return {
         id: String(event.seq),
+        seq: event.seq,
         emoji: event.emoji,
         phaseIcon: getPhasePresentation(event.phase).icon,
         glyphs,
@@ -761,6 +763,21 @@ export function GameScreen({
     crisis: null,
   });
   const selectedRegionId = viewState.regionId;
+  const highlightSuspended = Boolean(activeCardReveal);
+  const emptySpaceCloseSelector = [
+    'button',
+    'input',
+    'select',
+    'textarea',
+    'summary',
+    'a[href]',
+    '[role="dialog"]',
+    '.board-region-cluster',
+    '.board-region-sidecard',
+    '.campaign-roll-overlay',
+    '.deck-stack',
+    '.context-card',
+  ].join(', ');
 
   const draftAction = content.actions[draft.actionId];
   const availableCards = focusedPlayer.resistanceHand
@@ -859,7 +876,12 @@ export function GameScreen({
     ? !state.players.every((player) => player.ready)
     : state.phase === 'WIN' || state.phase === 'LOSS' || Boolean(activeCardReveal);
   const phaseInsights = getPhaseInsights(state, focusedPlayer.seat);
-  const visualDeltaTiles = useMemo(() => getRecentVisualDeltaTiles(state, content), [content, state]);
+  const visualDeltaTiles = useMemo(() => {
+    const tiles = getRecentVisualDeltaTiles(state, content);
+    return highlightSuspended && activeCardRevealSeq !== null
+      ? tiles.filter((tile) => tile.seq < activeCardRevealSeq)
+      : tiles;
+  }, [activeCardRevealSeq, content, highlightSuspended, state]);
   const visualTargetSignatures = useMemo(
     () => Object.fromEntries(
       [...new Set(visualDeltaTiles.flatMap((tile) => tile.targetKeys))].map((key) => [
@@ -1210,6 +1232,31 @@ export function GameScreen({
     setContextOpen(true);
   };
 
+  const closeOpenDrawers = useEffectEvent(() => {
+    setContextOpen(false);
+    setShowDevPanel(false);
+    if (selectedRegionId !== null) {
+      onViewStateChange({ regionId: null });
+    }
+  });
+
+  const handleEmptySpacePointerDown = useEffectEvent((event: ReactPointerEvent<HTMLElement>) => {
+    if (activeCardReveal) {
+      return;
+    }
+
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    if (target.closest(emptySpaceCloseSelector)) {
+      return;
+    }
+
+    closeOpenDrawers();
+  });
+
   const handleSetReady = (ready: boolean) => {
     if (ready) {
       const nextSeat = getNextUnfinishedCoalitionSeat(state.players, focusedPlayer.seat);
@@ -1470,7 +1517,10 @@ export function GameScreen({
         </div>
       </header>
 
-      <main className={`game-compression-layout ${contextOpen ? 'is-context-open' : 'is-context-closed'}`.trim()}>
+      <main
+        className={`game-compression-layout ${contextOpen ? 'is-context-open' : 'is-context-closed'}`.trim()}
+        onPointerDownCapture={handleEmptySpacePointerDown}
+      >
         <section className="board-core">
           <div className="board-core-head">
             <div>
@@ -1571,7 +1621,7 @@ export function GameScreen({
             </section>
           ) : null}
 
-          <StatusRibbon items={statusItems} highlightedIds={highlightedStatusItems} />
+          <StatusRibbon items={statusItems} highlightedIds={highlightedStatusItems} suspendHighlights={highlightSuspended} />
           {state.mode === 'SYMBOLIC' && activeBeaconObjectives.length > 0 ? (
             <section className="beacon-objective-strip" aria-label={t('ui.game.beaconObjectives', 'Beacon objectives')}>
               {activeBeaconObjectives.map((beacon) => (
@@ -1595,6 +1645,7 @@ export function GameScreen({
               campaignRoll={animatedCampaignRoll}
               debugLayout={devMode}
               externalHighlightKeys={highlightedMapTargets}
+              suspendHighlights={highlightSuspended}
               onSelectRegion={(regionId) => {
                 onViewStateChange({ regionId });
               }}
@@ -1628,7 +1679,7 @@ export function GameScreen({
             </section>
           </div>
 
-          <FrontTrackBar rows={frontRows} highlightedIds={highlightedFrontRows} />
+          <FrontTrackBar rows={frontRows} highlightedIds={highlightedFrontRows} suspendHighlights={highlightSuspended} />
         </section>
 
         <aside className="board-context-slot" aria-label={t('ui.game.boardContext', 'Board context')}>

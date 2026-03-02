@@ -4,13 +4,21 @@ import type { FrontTrackRow } from './gameUiHelpers.ts';
 import { formatTrackFraction, t, useAppLocale } from '../i18n/index.ts';
 import { useTransientHighlightKeys } from './useTransientHighlights.ts';
 
-export function FrontTrackBar({ rows, highlightedIds }: { rows: FrontTrackRow[]; highlightedIds?: ReadonlySet<string> }) {
+export function FrontTrackBar({
+  rows,
+  highlightedIds,
+  suspendHighlights = false,
+}: {
+  rows: FrontTrackRow[];
+  highlightedIds?: ReadonlySet<string>;
+  suspendHighlights?: boolean;
+}) {
   const { dir } = useAppLocale();
   const rowSignatures = useMemo(
     () => Object.fromEntries(rows.map((row) => [row.id, row.value])),
     [rows],
   );
-  const highlightedRows = useTransientHighlightKeys(rowSignatures, 1800);
+  const highlightedRows = useTransientHighlightKeys(rowSignatures, 2800, suspendHighlights);
 
   return (
     <section className="front-track-bar" aria-label={t('ui.game.domains', 'Domains')}>

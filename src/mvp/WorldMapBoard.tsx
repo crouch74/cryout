@@ -27,6 +27,7 @@ interface WorldMapBoardProps {
   onSelectRegion: (regionId: RegionId) => void;
   debugLayout?: boolean;
   externalHighlightKeys?: ReadonlySet<string>;
+  suspendHighlights?: boolean;
   campaignRoll?: (RollResolution & {
     seq: number;
     dieOne: number;
@@ -115,6 +116,7 @@ export function WorldMapBoard({
   onSelectRegion,
   debugLayout = false,
   externalHighlightKeys,
+  suspendHighlights = false,
   campaignRoll = null,
 }: WorldMapBoardProps) {
   const presentedRoll = campaignRoll
@@ -244,7 +246,7 @@ export function WorldMapBoard({
     ),
     [regionCounts, regionIds],
   );
-  const highlightedRegionKeys = useTransientHighlightKeys(regionChangeSignatures, 1800);
+  const highlightedRegionKeys = useTransientHighlightKeys(regionChangeSignatures, 2800, suspendHighlights);
   const activeHighlightKeys = useMemo(
     () => new Set([...highlightedRegionKeys, ...(externalHighlightKeys ?? new Set<string>())]),
     [externalHighlightKeys, highlightedRegionKeys],

@@ -5,11 +5,16 @@ type HighlightSignature = string | number | boolean | null | undefined;
 export function useTransientHighlightKeys(
   signatures: Readonly<Record<string, HighlightSignature>>,
   durationMs = 1600,
+  suspend = false,
 ) {
   const previousRef = useRef<Readonly<Record<string, HighlightSignature>> | null>(null);
   const [activeKeys, setActiveKeys] = useState<Record<string, number>>({});
 
   useEffect(() => {
+    if (suspend) {
+      return;
+    }
+
     if (!previousRef.current) {
       previousRef.current = signatures;
       return;
@@ -46,7 +51,15 @@ export function useTransientHighlightKeys(
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [durationMs, signatures]);
+  }, [durationMs, signatures, suspend]);
+
+  useEffect(() => {
+    if (!suspend) {
+      return;
+    }
+
+    setActiveKeys({});
+  }, [suspend]);
 
   return useMemo(() => new Set(Object.keys(activeKeys)), [activeKeys]);
 }

@@ -7,17 +7,19 @@ import { useTransientHighlightKeys } from './useTransientHighlights.ts';
 export function StatusRibbon({
   items,
   highlightedIds,
+  suspendHighlights = false,
   utilities,
 }: {
   items: StatusRibbonItem[];
   highlightedIds?: ReadonlySet<string>;
+  suspendHighlights?: boolean;
   utilities?: ReactNode;
 }) {
   const itemSignatures = useMemo(
     () => Object.fromEntries(items.map((item) => [item.id, item.value])),
     [items],
   );
-  const highlightedItems = useTransientHighlightKeys(itemSignatures, 1700);
+  const highlightedItems = useTransientHighlightKeys(itemSignatures, 2800, suspendHighlights);
 
   return (
     <div className="status-ribbon" data-ui="status-ribbon">
