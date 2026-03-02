@@ -111,6 +111,7 @@ body::after {
   content: none;
 }
 
+
 .app-root {
   min-height: 100vh;
   padding: 24px;
@@ -531,8 +532,7 @@ textarea:focus-visible {
 
 .deck-stack-layer {
   transform:
-    translate(calc(var(--deck-layer) * 0.9px), calc((13 - var(--deck-layer)) * 1.1px))
-    rotateZ(calc((var(--deck-layer) - 7) * 0.12deg));
+    translate(calc(var(--deck-layer) * 0.9px), calc((13 - var(--deck-layer)) * 1.1px)) rotateZ(calc((var(--deck-layer) - 7) * 0.12deg));
   border: 1px solid rgba(244, 232, 213, 0.12);
   box-shadow: inset 0 1px 0 rgba(255, 250, 242, 0.08);
   opacity: calc(0.32 + (var(--deck-layer) * 0.02));
@@ -729,10 +729,23 @@ html[dir='rtl'] .deck-back-title {
 }
 
 @keyframes deck-empty-shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-3px); }
-  50% { transform: translateX(3px); }
-  75% { transform: translateX(-2px); }
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-3px);
+  }
+
+  50% {
+    transform: translateX(3px);
+  }
+
+  75% {
+    transform: translateX(-2px);
+  }
 }
 
 .printed-track {
@@ -1459,7 +1472,7 @@ html[dir='rtl'] .printed-track-step:not(:last-child)::after {
   padding: 16px 0;
 }
 
-.debug-panel-section + .debug-panel-section {
+.debug-panel-section+.debug-panel-section {
   border-top: 1px solid var(--line-ink);
 }
 
@@ -1590,6 +1603,7 @@ html[dir='rtl'] .printed-track-step:not(:last-child)::after {
 }
 
 @media (max-width: 1279px) {
+
   .tabletop-layout,
   .home-dossier-grid,
   .guideline-dossier-grid,
@@ -2041,7 +2055,7 @@ body {
   z-index: 0;
 }
 
-.board-world-map > svg {
+.board-world-map>svg {
   width: 100%;
   height: 100%;
   opacity: 0.29;
@@ -2631,7 +2645,7 @@ body {
   gap: 10px;
 }
 
-.setup-stat-ribbon > div {
+.setup-stat-ribbon>div {
   display: grid;
   gap: 4px;
   padding: 12px;
@@ -2655,7 +2669,7 @@ body {
   gap: 12px;
 }
 
-.setup-utility-drawer > summary {
+.setup-utility-drawer>summary {
   cursor: pointer;
   list-style: none;
   padding: 12px 16px;
@@ -2821,6 +2835,7 @@ body {
 }
 
 @media (max-width: 899px) {
+
   .board-top-strip,
   .setup-header,
   .guide-booklet-header,
@@ -3055,7 +3070,7 @@ body {
   transition: background var(--motion-mid), transform var(--motion-mid), border-color var(--motion-mid);
 }
 
-.phase-chip > span:first-child {
+.phase-chip>span:first-child {
   width: 28px;
   height: 28px;
   display: grid;
@@ -3081,7 +3096,7 @@ body {
   transform: translateY(-1px);
 }
 
-.phase-chip.active > span:first-child {
+.phase-chip.active>span:first-child {
   background: var(--urgency-fill);
   color: var(--accent-danger);
 }
@@ -3153,9 +3168,17 @@ body {
 }
 
 @keyframes ledger-pulse {
-  0% { transform: scale(1); }
-  35% { transform: scale(1.04); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+
+  35% {
+    transform: scale(1.04);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 .board-metric-cluster {
@@ -3177,7 +3200,7 @@ body {
   font-style: normal;
 }
 
-.board-world-map > svg {
+.board-world-map>svg {
   opacity: 0.44;
   filter: sepia(0.52) saturate(0.84) contrast(1.02);
 }
@@ -3319,10 +3342,21 @@ body {
   background: var(--seat-ribbon-color);
 }
 
-.seat-ribbon-1 { --seat-ribbon-color: var(--seat-ribbon-1); }
-.seat-ribbon-2 { --seat-ribbon-color: var(--seat-ribbon-2); }
-.seat-ribbon-3 { --seat-ribbon-color: var(--seat-ribbon-3); }
-.seat-ribbon-4 { --seat-ribbon-color: var(--seat-ribbon-4); }
+.seat-ribbon-1 {
+  --seat-ribbon-color: var(--seat-ribbon-1);
+}
+
+.seat-ribbon-2 {
+  --seat-ribbon-color: var(--seat-ribbon-2);
+}
+
+.seat-ribbon-3 {
+  --seat-ribbon-color: var(--seat-ribbon-3);
+}
+
+.seat-ribbon-4 {
+  --seat-ribbon-color: var(--seat-ribbon-4);
+}
 
 .seat-mat[data-urgency='danger'],
 .seat-mat[data-urgency='watch'] {
@@ -3565,6 +3599,7 @@ html[data-contrast='high'] .mission-slip {
 }
 
 @media (max-width: 1180px) {
+
   .command-deck,
   .minutes-header,
   .reference-grid,
@@ -3579,6 +3614,7 @@ html[data-contrast='high'] .mission-slip {
 }
 
 @media (max-width: 899px) {
+
   .phase-progress,
   .domain-front-grid {
     grid-template-columns: 1fr;

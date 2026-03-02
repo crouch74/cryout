@@ -70,7 +70,7 @@
   z-index: 1;
 }
 
-.game-screen-compressed .board-world-map > svg,
+.game-screen-compressed .board-world-map>svg,
 .game-screen-compressed .board-world-map-svg {
   position: absolute;
   top: var(--map-canvas-top);
@@ -90,18 +90,24 @@
   transition: fill 140ms ease, filter 140ms ease, stroke 140ms ease;
 }
 
+.game-screen-compressed .board-world-map-svg .map-region-territory,
+.game-screen-compressed .board-world-map-svg .map-region-territory path {
+  fill: color-mix(in srgb, var(--territory-accent) 25%, transparent);
+  stroke: color-mix(in srgb, var(--territory-accent) 55%, transparent);
+}
+
 .game-screen-compressed .board-world-map-svg .map-region-fill-active,
 .game-screen-compressed .board-world-map-svg .map-region-fill-active path {
-  fill: rgba(179, 138, 43, 0.22);
-  stroke: rgba(255, 245, 222, 0.54);
-  filter: drop-shadow(0 0 8px rgba(179, 138, 43, 0.18));
+  fill: color-mix(in srgb, var(--territory-accent) 45%, transparent);
+  stroke: rgba(255, 245, 222, 0.64);
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--territory-accent) 30%, transparent));
 }
 
 .game-screen-compressed .board-world-map-svg .map-region-fill-hover,
 .game-screen-compressed .board-world-map-svg .map-region-fill-hover path {
-  fill: rgba(38, 77, 132, 0.18);
-  stroke: rgba(255, 245, 222, 0.48);
-  filter: drop-shadow(0 0 9px rgba(38, 77, 132, 0.14));
+  fill: color-mix(in srgb, var(--territory-accent) 35%, transparent);
+  stroke: rgba(255, 245, 222, 0.54);
+  filter: drop-shadow(0 0 9px color-mix(in srgb, var(--territory-accent) 25%, transparent));
 }
 
 .game-screen-compressed .board-world-map-svg text,
@@ -246,9 +252,11 @@
   0% {
     transform: translate(-50%, calc(-100% - 18px)) scale(0.96);
   }
+
   40% {
     transform: translate(-50%, calc(-100% - 18px)) rotate(-1deg) scale(1.03);
   }
+
   100% {
     transform: translate(-50%, calc(-100% - 18px)) rotate(0deg) scale(1);
   }
@@ -431,7 +439,7 @@
 
 .game-screen-compressed .board-region-debug-radius {
   border-radius: 999px;
-  border: 1px dashed rgba(38, 77, 132, 0.45);
+  border: 1px solid rgba(38, 77, 132, 0.1);
   transform: translate(-50%, -50%);
 }
 
@@ -491,6 +499,7 @@
 }
 
 @keyframes map-critical-pulse {
+
   0%,
   100% {
     filter: drop-shadow(0 6px 10px rgba(52, 37, 24, 0.18));
@@ -510,8 +519,7 @@
   45% {
     transform: translate(-50%, -50%) scale(1.05);
     filter:
-      drop-shadow(0 0 0 rgba(52, 37, 24, 0))
-      drop-shadow(0 10px 18px color-mix(in srgb, var(--region-tone) 20%, transparent));
+      drop-shadow(0 0 0 rgba(52, 37, 24, 0)) drop-shadow(0 10px 18px color-mix(in srgb, var(--region-tone) 20%, transparent));
   }
 
   100% {

@@ -216,11 +216,11 @@ export function WorldMapBoard({
       defaultViewport: WORLD_MAP_SVG_METADATA.viewport,
       focusBounds,
       targetAspectRatio,
-      focusBlend: focusRegionIds.length <= 1 ? 0.55 : 0.35,
-      marginXRatio: 0.08,
-      marginYRatio: 0.10,
-      minWidthRatio: 0.78,
-      minHeightRatio: 0.84,
+      focusBlend: focusRegionIds.length <= 1 ? 0.35 : 0.15,
+      marginXRatio: 0.0,
+      marginYRatio: 0.0,
+      minWidthRatio: 1.0,
+      minHeightRatio: 1.0,
     });
   }, [canvasSize.height, canvasSize.width, focusRegionIds, geometry]);
   const mapViewport = mapCamera?.viewport ?? WORLD_MAP_SVG_METADATA.viewport;
@@ -341,13 +341,17 @@ export function WorldMapBoard({
       return;
     }
 
-    const allCoverageIds = new Set(regionIds.flatMap((regionId) => BOARD_REGION_MAP_MANIFEST[regionId].svgCoverage));
-    for (const id of allCoverageIds) {
-      const target = rootSvg.querySelector(`#${id}`);
-      if (!target) {
-        continue;
+    for (const regionId of regionIds) {
+      const manifest = BOARD_REGION_MAP_MANIFEST[regionId];
+      for (const id of manifest.svgCoverage) {
+        const target = rootSvg.querySelector(`#${id}`) as HTMLElement | null;
+        if (!target) {
+          continue;
+        }
+        target.style.setProperty('--territory-accent', manifest.accent);
+        target.classList.add('map-region-territory');
+        target.classList.remove('map-region-fill-active', 'map-region-fill-hover');
       }
-      target.classList.remove('map-region-fill-active', 'map-region-fill-hover');
     }
 
     const activeRegionIds = [selectedRegionId].filter((entry): entry is RegionId => Boolean(entry));
