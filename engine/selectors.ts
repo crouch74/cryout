@@ -83,15 +83,15 @@ export function getVictoryModeSummary(mode: VictoryMode) {
 export function getPhaseSummary(phase: Phase) {
   switch (phase) {
     case 'SYSTEM':
-      return 'Resolve the system strike and military backlash.';
+      return t('ui.game.phaseSummarySystem', 'Resolve the system strike and absorb the backlash.');
     case 'COALITION':
-      return 'Queue two moves per seat, then mark every seat ready.';
+      return t('ui.game.phaseSummaryCoalition', 'Prepare two moves for each seat, then mark the coalition ready.');
     case 'RESOLUTION':
-      return 'Resolve the prepared moves, then check victory and defeat.';
+      return t('ui.game.phaseSummaryResolution', 'Resolve the prepared moves, then reckon with victory or defeat.');
     case 'WIN':
-      return 'The coalition achieved its win condition.';
+      return t('ui.game.phaseSummaryWin', 'The coalition forced open its path to victory.');
     case 'LOSS':
-      return 'The coalition failed the struggle.';
+      return t('ui.game.phaseSummaryLoss', 'The coalition lost this round of the struggle.');
   }
 }
 

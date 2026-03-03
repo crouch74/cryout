@@ -124,20 +124,21 @@
       "RESOLUTION_COPY": "Prepared moves resolve in order. Check the board, then reckon with victory or loss."
     },
     "home": {
-      "eyebrow": "Operational Briefing",
+      "eyebrow": "Campaign Briefing",
       "playerCount": "Player Count",
       "humanPlayerCount": "Human Players",
       "factionSeatCount": "Faction Seats",
       "mode": "Mode",
-      "ruleset": "Scenario Selection",
-      "launch": "Launch",
+      "ruleset": "Scenario",
+      "launch": "Open Table",
       "localTable": "Local Table",
       "roomPlay": "Room Play",
       "roomServiceUrl": "Room Service URL",
-      "roomOfflineOnly": "This build is configured for offline play only.",
-      "roomChecking": "Checking room service...",
-      "roomReachable": "Room service reachable.",
-      "roomUnavailable": "Room service unavailable. Local table still works.",
+      "roomUrlPlaceholder": "http://localhost:3010",
+      "roomOfflineOnly": "This build was cut for offline play only.",
+      "roomChecking": "Checking whether the room service can hold the table...",
+      "roomReachable": "Room service is reachable.",
+      "roomUnavailable": "Room service did not answer. Local play remains available.",
       "startLocal": "Start Local Table",
       "createRoom": "Create Room",
       "loadAutosave": "Load Autosave",
@@ -148,123 +149,15 @@
       "playerSeatGroup": "Player {{seat}}",
       "seat": "Seat {{seat}}",
       "duplicateFactions": "Factions must be unique.",
-      "asymmetricAbilities": "Asymmetric Factions",
-      "rulesBody": "Each seat represents a different faction with distinct mandates, passive bonuses, and specialized weaknesses. Success requires horizontal coordination across all seats.",
+      "asymmetricAbilities": "Distinct Movements",
+      "rulesBody": "Each seat carries a different movement, its own Secret Mandate, and its own limits. Victory depends on horizontal coordination without flattening those differences.",
       "loadSave": "Load Save",
       "utilities": "Utilities",
       "pasteSave": "Paste a serialized save payload here.",
       "regions": "Regions",
       "threat": "Threat",
-      "regionCount": "{{count}} sectors",
-      "threatValue": "Extraction tokens to 6 = defeat"
-    },
-    "legacyLanding": {
-      "subtitle": "The earth refuses to be silent. Lead a global coalition of resistance against exploitation, authoritarianism, and systemic collapse. Your survival depends on the truth and the legacy you leave in the stone.",
-      "beginStruggle": "Begin the Struggle",
-      "learnResistance": "Learn About the Resistance ↓",
-      "coalitionLabel": "The Coalition",
-      "coalitionTitle": "Who Stands With the Earth?",
-      "organizersTitle": "Community Organizers",
-      "organizersBody": "Grassroots leaders building solidarity networks on the ground. They turn local despair into collective power, establishing mutual aid hubs and mobilizing the sumud.",
-      "skillsLabel": " Skills:",
-      "organizersSkills": " Relief efforts, solidarity building, and direct action.",
-      "journalistsTitle": "Investigative Journalists",
-      "journalistsBody": "The eyes that see what the war machine attempts to hide. They document the truth in real-time, turning raw evidence into a global gaze that protects the vulnerable.",
-      "journalistsSkills": " Evidence gathering, truth-seeking, and exposing corruption.",
-      "coreMechanicsLabel": "Core Mechanics",
-      "cycleTitle": "The Cycle of Resistance",
-      "step1Title": "Global Dynamics",
-      "step1Body": "Every round, the global temperature rises and systemic fronts like 'War' and 'Poverty' exert pressure on vulnerable regions.",
-      "step2Title": "Strategic Intentions",
-      "step2Body": "Coordinate your coalition members to commit actions: build relief hubs, gather evidence, or establish mutual aid networks.",
-      "step3Title": "Systemic Resolution",
-      "step3Body": "Resolve your actions against the world state. Success builds the Charter of Dignity; failure leads to burnout or displacement.",
-      "victoryTitle": "Victory: Liberation",
-      "victoryBody": "Establish a critical mass of evidence and solidarity to force a systemic shift and ratify the Global Charter of Dignity.",
-      "chooseScenario": "Choose Your Scenario",
-      "footer": "© 2026 The Stones Are Crying Out. A game of resistance and rebirth.",
-      "readMechanics": "Read About the Game & Mechanics"
-    },
-    "legacyDashboard": {
-      "loadingScenario": "Loading scenario...",
-      "temperatureBand1": "Draw 1 crisis, cascade chance 0%",
-      "temperatureBand2": "Draw 1 crisis, cascade chance 10%",
-      "temperatureBand3": "Draw 2 crisis, cascade chance 25%",
-      "temperatureBand4": "CRITICAL CASCADE",
-      "headerMeta": "ROUND: {{round}} | COALITION OF SEVEN | LOCAL | CLICK TO HOME",
-      "temperature": "Temperature",
-      "civicSpace": "Civic Space",
-      "solidarity": "Solidarity",
-      "greenResistance": "Green Resistance",
-      "greenResistanceDesc": "Protect the lungs of the earth from illegal extraction.",
-      "witnessDignity": "Witness & Dignity",
-      "witnessDignityDesc": "The occupation intensifies in MENA. Global solidarity is our only shield.",
-      "greenRule1": "Guardian Bond: +1 Protection in Amazon",
-      "greenRule2": "Extraction Ban: Strict",
-      "witnessRule1": "Witness Window: +1 Evidence in MENA",
-      "witnessRule2": "Aid Corridor: Locked",
-      "systemicFronts": "Systemic Fronts",
-      "resolveWorldPhase": "Resolve World Phase",
-      "commitCoalitionIntents": "Commit Coalition Intents",
-      "playersSelecting": "Players Selecting...",
-      "endRoundPhase": "End Round Phase",
-      "coalitionStrategicIntent": "Coalition Strategic Intent",
-      "systemTraceLog": "SYSTEM TRACE LOG",
-      "readyLabel": "Ready",
-      "readyForResolve": "READY FOR RESOLVE",
-      "setReady": "SET READY",
-      "less": "less",
-      "more": "more...",
-      "peoplesCharter": "PEOPLE'S CHARTER",
-      "effectTrace": "Effect Trace",
-      "effectModifyTrack": "Modify {{target}} by {{delta}}",
-      "effectAddToken": "Add {{count}} {{tokenType}} to {{region}}",
-      "effectRemoveToken": "Remove {{count}} {{tokenType}} from {{region}}",
-      "effectAddLock": "Add {{lockType}} lock to {{region}}",
-      "effectRemoveLock": "Remove {{lockType}} lock from {{region}}",
-      "effectLog": "Log: {{message}}",
-      "unknownEffect": "Unknown Effect",
-      "global": "global",
-      "regionStatus": "{{region}} STATUS",
-      "vulnerabilities": "Vulnerabilities",
-      "tokensDynamics": "Tokens & Dynamics",
-      "localInstitutions": "Local Institutions",
-      "actionsTargeting": "Actions Targeting {{region}}",
-      "displacement": "Displacement",
-      "disinformation": "Disinformation",
-      "meter": {
-        "pressure": "PRESSURE",
-        "protection": "PROTECTION",
-        "impact": "IMPACT"
-      },
-      "overlays": {
-        "displacement": "Displacement",
-        "disinfo": "Disinfo",
-        "locks": "Locks",
-        "institutions": "Institutions"
-      },
-      "roles": {
-        "organizer": {
-          "name": "Community Organizer",
-          "passive": "Mutual Aid: -1 Solidarity cost for local actions.",
-          "action1Name": "Mutual Aid Network",
-          "action1Desc": "Reduce poverty pressure.",
-          "action2Name": "Protest March",
-          "action2Desc": "Counter disinformation.",
-          "breakthroughName": "General Strike",
-          "breakthroughDesc": "Massive pressure reduction."
-        },
-        "journalist": {
-          "name": "Investigative Journalist",
-          "passive": "Truth Seeker: +1 Evidence when exposing corruption.",
-          "action1Name": "Expose Corruption",
-          "action1Desc": "Increase rights protection.",
-          "action2Name": "Deep Investigation",
-          "action2Desc": "Gain massive Evidence.",
-          "breakthroughName": "Global Expose",
-          "breakthroughDesc": "Massive impact on speech."
-        }
-      }
+      "regionCount": "{{count}} regions",
+      "threatValue": "If any region reaches 6 Extraction Tokens, the coalition loses."
     },
     "app": {
       "contextPanel": "Board context panel",
@@ -295,37 +188,37 @@
       "rulesBrief": "Rules Brief",
       "playerGuide": "Player Guide",
       "coalitionFieldNotes": "Coalition Field Notes",
-      "playerGuideDetail": "Use this as the fast onboard for the cutover ruleset.",
+      "playerGuideDetail": "Use this as the fast onboarding sheet for the current ruleset.",
       "backHome": "Back Home",
       "openTable": "Open Table",
-      "victoryModes": "Victory Modes",
+      "victoryModes": "Paths to Victory",
       "coreThreat": "Core Threat",
-      "coreThreat1": "Extraction Tokens are the center of the board. The system adds them through system cards and intervention.",
-      "coreThreat2": "Any region reaching 6 Extraction Tokens is an immediate loss.",
-      "coreThreat3": "Global Gaze and War Machine shape how dangerous each round becomes.",
+      "coreThreat1": "Extraction Tokens mark where the System is tightening its hold. System cards and interventions keep driving them onto the map.",
+      "coreThreat2": "If any region reaches 6 Extraction Tokens, the struggle breaks there and the coalition loses.",
+      "coreThreat3": "Global Gaze and War Machine decide how much pressure the next round can carry.",
       "universalActions": "Universal Actions",
       "canonicalRegions": "Canonical Regions",
       "roundLoop": "Round Loop",
       "economy": "Economy",
       "beaconsMandates": "Beacons and Secret Mandates",
       "factions": "Factions",
-      "loop1": "System Phase: resolve system cards, backlash, and interventions.",
-      "loop2": "Coalition Phase: queue two moves for each seat, then mark every seat ready.",
-      "loop3": "Resolution Phase: resolve the prepared moves in priority order, then check victory and defeat.",
-      "economy1": "Comrades live in regions and are spent from those regions.",
-      "economy2": "Evidence belongs to seats and powers campaigns, appeals, and support work.",
-      "economy3": "Defense is temporary and only exists to blunt the next system strike.",
-      "beacon1": "Symbolic mode activates three Beacons from a six-card deck.",
-      "beacon2": "Every faction carries a Secret Mandate. Reaching the public win condition without satisfying all Secret Mandates still ends in failure."
+      "loop1": "System Phase: resolve crisis pressure, backlash, and interventions before the coalition can answer.",
+      "loop2": "Coalition Phase: prepare two moves for each seat, then mark every seat ready.",
+      "loop3": "Resolution Phase: resolve prepared moves in priority order, then check victory, defeat, and mandate fallout.",
+      "economy1": "Comrades hold ground in regions and are committed from the places they defend.",
+      "economy2": "Evidence belongs to seats and fuels campaigns, appeals, and the circulation of testimony.",
+      "economy3": "Defense is temporary. It exists only to blunt the next system strike before it clears.",
+      "beacon1": "Symbolic mode reveals three active Beacons from a six-card deck.",
+      "beacon2": "Every faction carries a Secret Mandate. Reaching the public win condition while any mandate fails still ends in defeat."
     },
     "mode": {
       "liberation": "Liberation",
       "symbolic": "Symbolic",
-      "liberationSummary": "End Resolution with every region at 1 Extraction or less.",
-      "symbolicSummary": "Complete all three active Beacons.",
+      "liberationSummary": "Reach the end of Resolution with every region at 1 Extraction Token or fewer.",
+      "symbolicSummary": "Complete all three active Beacons before the symbolic window seals.",
       "liberationProgress": "{{count}} regions already sit at the threshold.",
       "symbolicProgress": "{{count}} of {{total}} active Beacons are complete.",
-      "liberationStatus": "Keep every theatre below the breach line while preserving all Secret Mandates."
+      "liberationStatus": "Keep every region below the breach line while preserving every Secret Mandate."
     },
     "game": {
       "developerTools": "Developer Tools",
@@ -355,6 +248,10 @@
       "objectiveLabel": "Objective",
       "objectiveLiberationValue": "1 Extraction Token/region",
       "objectiveBeaconValue": "{{complete}}/{{total}} Beacons",
+      "currentMode": "Current Mode: {{mode}}",
+      "modeDescLiberation": "In Liberation mode, the coalition must force extraction down in every region without breaking its own movements in the process.",
+      "modeDescSymbolic": "In Symbolic mode, the coalition must align the active Beacons before the symbolic window closes, while still holding back extraction.",
+      "beginStruggle": "Begin the Struggle",
       "gazeLabel": "Gaze",
       "warLabel": "War",
       "poolLabel": "Pool",
@@ -454,6 +351,11 @@
       "closeRound": "Close Round",
       "tableClosed": "Table Closed",
       "phaseLocked": "Phase locked",
+      "phaseSummarySystem": "Resolve the system strike and absorb the backlash.",
+      "phaseSummaryCoalition": "Prepare two moves for each seat, then mark the coalition ready.",
+      "phaseSummaryResolution": "Resolve the prepared moves, then reckon with victory or defeat.",
+      "phaseSummaryWin": "The coalition forced open its path to victory.",
+      "phaseSummaryLoss": "The coalition lost this round of the struggle.",
       "unknownSeat": "Unknown seat",
       "seatAlreadyReady": "Seat already ready",
       "noActionsRemaining": "No moves remaining",
@@ -739,7 +641,7 @@
     "terminal": {
       "eyebrow": "Scenario Outcome",
       "contextHeading": "Context",
-      "feedbackHeading": "Feedback",
+      "feedbackHeading": "Aftermath",
       "finalState": "Final state",
       "reviewLedger": "Review Ledger",
       "exportSave": "Export Save",
@@ -764,24 +666,51 @@
       "reasonSuddenDeath": "The scenario reached sudden death without a decisive victory.",
       "closingVictory": "The victory is real, but incomplete. The System is wounded, not gone.",
       "closingDefeat": "The scenario closes in loss, but the struggle continues beyond this table."
+    },
+    "runtime": {
+      "escalationExtraction": "Extraction spread too far across the map. A structural escalation enters play.",
+      "escalationWarMachine": "War Machine pressure crossed its escalation line. A structural escalation enters play.",
+      "escalationGlobalGaze": "Global Gaze collapsed beneath the pressure line. A structural escalation enters play.",
+      "escalationFailedCampaigns": "Repeated failed campaigns hardened the system. A structural escalation enters play.",
+      "escalationSymbolicRound": "The symbolic window narrowed. A structural escalation enters play.",
+      "lossExtractionBreach": "{{region}} reached {{count}} Extraction Tokens.",
+      "outcomeDefeat": "Defeat",
+      "lossComradesExhausted": "Seat {{seat}} was reduced to 0 Comrades.",
+      "lossMandateFailure": "Public victory was reached, but {{count}} Secret Mandate(s) failed.",
+      "winnerLiberation": "Liberation achieved.",
+      "winnerSymbolic": "The active Beacons aligned.",
+      "outcomeVictory": "Victory",
+      "revealResistanceCard": "🃏 Seat {{seat}} revealed a resistance card.",
+      "drawResistanceSummary": "Seat {{seat}} revealed {{count}} resistance card(s) and moved them to discard.",
+      "startupWithdrawalSummary": "Seat {{seat}} withdrew a startup resistance card.",
+      "traceGlobalGaze": "Global Gaze {{before}} -> {{after}}.",
+      "traceWarMachine": "War Machine {{before}} -> {{after}}.",
+      "traceDomain": "{{domain}} {{before}} -> {{after}}.",
+      "traceComradesExhausted": "A movement seat was reduced to 0 Comrades.",
+      "traceComrades": "Comrades {{before}} -> {{after}}.",
+      "traceNoDomain": "No Domain was selected for this effect.",
+      "traceNoRegion": "No region was selected for this effect.",
+      "traceDrawHandled": "Card draw was resolved by its dedicated trace.",
+      "lossSuddenDeath": "Round {{round}} ended without a decisive victory.",
+      "roundBegins": "Round {{round}} begins."
     }
   },
   "content": {
     "rulesets": {
       "base_design": {
         "name": "Where the Stones Cry Out",
-        "description": "A six-region cooperative struggle against extraction, war, hunger, and erasure.",
-        "introduction": "The coalition is trying to do more than survive. It must break extraction, move Evidence across borders, and keep every movement's Secret Mandate intact long enough to win together."
+        "description": "A six-region cooperative struggle against extraction, militarism, hunger, and erasure.",
+        "introduction": "The coalition is trying to do more than survive. It must break extraction, move Evidence across borders, and keep every movement's Secret Mandate alive long enough to win together."
       },
       "tahrir_square": {
         "name": "2011 — TAHRIR SQUARE",
         "description": "\"For eighteen days, we were free.\"",
-        "introduction": "Players lead the January 25 Revolution — a sprawling, leaderless, digitally-organized uprising that toppled a 30-year dictatorship in 18 days. But the game does not end with Mubarak's fall. It continues through the military transition, the Muslim Brotherhood's election, and the 2013 coup."
+        "introduction": "Players lead the January 25 Revolution: a sprawling, leaderful movement that broke a thirty-year dictatorship in eighteen days. The struggle does not end with Mubarak's fall; it continues through military transition, electoral capture, and the 2013 coup."
       },
       "woman_life_freedom": {
         "name": "2022 — WOMAN, LIFE, FREEDOM",
         "description": "\"For Jina. For freedom. For the women who burn their chains.\"",
-        "introduction": "Following the murder of Jina (Mahsa) Amini by the morality police, an intersectional revolutionary movement erupted across Iran. Led by women and schoolgirls, burning headscarves in the street, the movement shook the foundations of the Islamic Republic."
+        "introduction": "After the morality police killed Jina (Mahsa) Amini, an intersectional revolutionary uprising spread across Iran. Women and schoolgirls moved at its front, burning headscarves in the street and shaking the foundations of the Islamic Republic."
       }
     },
     "domains": {
@@ -1296,6 +1225,34 @@
         "name": "Songbook",
         "text": "+2 on a Stolen Voice campaign."
       },
+      "res_tahrir_cell_phone_video": {
+        "name": "Cell Phone Video",
+        "text": "Gain 2 Evidence. This can also fuel Go Viral."
+      },
+      "res_tahrir_al_jazeera_interview": {
+        "name": "Al Jazeera Interview",
+        "text": "Gain 3 Evidence and raise Global Gaze by 1."
+      },
+      "res_tahrir_facebook_event_page": {
+        "name": "Facebook Event Page",
+        "text": "Add 1 Comrade in Cairo."
+      },
+      "res_tahrir_lawyer_brief": {
+        "name": "Lawyer's Legal Brief",
+        "text": "Add 1 Comrade in Alexandria and advance Patriarchal Grip by 1."
+      },
+      "res_wlf_vpn_network": {
+        "name": "VPN Network",
+        "text": "Gain 2 Evidence and push testimony past the blackout."
+      },
+      "res_wlf_cutting_hair_symbol": {
+        "name": "Cutting Hair Solidarity",
+        "text": "Raise Global Gaze by 2."
+      },
+      "res_wlf_diaspora_protest": {
+        "name": "Diaspora Protest Rally",
+        "text": "Add 2 Comrades in the chosen region."
+      },
       "crisis_military_raid": {
         "name": "Military Raid",
         "text": "A logistics corridor is secured through direct force."
@@ -1411,6 +1368,10 @@
       "crisis_wlf_irgc_deployment": {
         "name": "IRGC Deployment",
         "text": "The Revolutionary Guard steps in. Add Extraction to peripheral regions."
+      },
+      "sys_wlf_hijab_crackdown": {
+        "name": "Hijab Crackdown",
+        "text": "The regime turns compulsory modesty law into a disciplined daily crackdown."
       }
     },
     "scenarios": {

@@ -164,7 +164,7 @@ export function HomeScreen({
                           type="text"
                           value={config.roomUrl}
                           onChange={(event) => onConfigChange({ roomUrl: event.target.value })}
-                          placeholder="http://localhost:3010"
+                          placeholder={t('ui.home.roomUrlPlaceholder', 'http://localhost:3010')}
                         />
                       </label>
                       <p className="room-status-note">

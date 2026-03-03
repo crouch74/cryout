@@ -329,9 +329,9 @@ function summarizeCardEffect(effect: Effect, content: CompiledContent) {
     case 'remove_extraction':
       return formatSignedLabel(effect.amount * -1, t('ui.game.extractionTokens', 'Extraction Tokens'));
     case 'add_bodies':
-      return formatSignedLabel(effect.amount, t('ui.game.bodies', 'Bodies'));
+      return formatSignedLabel(effect.amount, t('ui.game.bodies', 'Comrades'));
     case 'remove_bodies':
-      return formatSignedLabel(effect.amount * -1, t('ui.game.bodies', 'Bodies'));
+      return formatSignedLabel(effect.amount * -1, t('ui.game.bodies', 'Comrades'));
     case 'gain_evidence':
       return formatSignedLabel(effect.amount, t('ui.game.evidence', 'Evidence'));
     case 'lose_evidence':
@@ -552,7 +552,7 @@ function getVisualDeltaGlyph(delta: EngineState['eventLog'][number]['deltas'][nu
           icon: 'bodies',
           value: signedDelta ?? '*',
           tone: 'resource',
-          ariaLabel: `${regionId ? localizeRegionField(regionId, 'name', content.regions[regionId].name) : t('ui.game.bodies', 'Bodies')} ${t('ui.game.bodies', 'Bodies')} ${signedDelta ?? ''}`.trim(),
+          ariaLabel: `${regionId ? localizeRegionField(regionId, 'name', content.regions[regionId].name) : t('ui.game.bodies', 'Comrades')} ${t('ui.game.bodies', 'Comrades')} ${signedDelta ?? ''}`.trim(),
         } satisfies VisualDeltaGlyph,
         targetKeys: [
           ...(regionId ? [`region:${regionId}`, `region:${regionId}:bodies`] : []),
@@ -1564,7 +1564,7 @@ export function GameScreen({
                   <>
                     <div className="dock-queue-summary">
                       <strong>{localizeFactionField(faction.id, 'shortName', faction.shortName)}</strong>
-                      <span>{formatNumber(getPlayerBodyTotal(state, focusedPlayer.seat))} {t('ui.game.bodies', 'Bodies')}</span>
+                      <span>{formatNumber(getPlayerBodyTotal(state, focusedPlayer.seat))} {t('ui.game.bodies', 'Comrades')}</span>
                       <span>{formatNumber(focusedPlayer.evidence)} {t('ui.game.evidence', 'Evidence')}</span>
                       <span>{t('ui.game.queuedCount', '{{count}} queued', { count: focusedPlayer.queuedIntents.length })}</span>
                     </div>

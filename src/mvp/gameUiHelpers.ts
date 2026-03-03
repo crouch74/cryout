@@ -19,6 +19,7 @@ import {
 import {
   formatNumber,
   formatTrackFraction,
+  localizeActionField,
   localizeDomainField,
   localizeFactionField,
   localizeRegionField,
@@ -645,73 +646,13 @@ export function getActionDockItems(state: EngineState, content: CompiledContent,
     const quickQueue = getActionQuickQueue(state, content, seat, action.id);
     return {
       actionId: action.id,
-      label: {
-        organize: t('ui.game.moveOrganize', 'Organize'),
-        investigate: t('ui.game.moveInvestigate', 'Investigate'),
-        launch_campaign: t('ui.game.moveCampaign', 'Campaign'),
-        build_solidarity: t('ui.game.moveSolidarity', 'Solidarity'),
-        smuggle_evidence: t('ui.game.moveSmuggle', 'Smuggle'),
-        international_outreach: t('ui.game.moveOutreach', 'Outreach'),
-        defend: t('ui.game.moveDefend', 'Defend'),
-        play_card: t('ui.game.moveCard', 'Card'),
-        go_viral: t('ui.game.moveViral', 'Go Viral'),
-        expose_regime_lies: t('ui.game.moveExpose', 'Expose Lies'),
-        call_labor_strike: t('ui.game.moveStrike', 'Labor Strike'),
-        coordinate_digital: t('ui.game.moveCoord', 'Coordinate Digital'),
-        burn_veil: t('ui.game.moveBurn', 'Burn Veil'),
-        schoolgirl_network: 'Schoolgirl Network',
-        compose_chant: 'Compose Chant',
-        diaspora_fundraise: 'Diaspora Fundraise',
-        media_blitz: 'Media Blitz',
-        sanctions_push: 'Sanctions Push',
-      }[action.id],
+      label: localizeActionField(action.id, 'name', action.name),
       icon: ACTION_ICONS[action.id],
       disabled: quickQueue.disabled.disabled,
       disabledReason: localizeDisabledReason(quickQueue.disabled),
       quickQueue: quickQueue.quickQueue,
     };
   });
-}
-
-function getActionBenefitLabel(actionId: ActionDefinition['id']) {
-  switch (actionId) {
-    case 'organize':
-      return t('ui.game.comradesReinforce', 'Reinforce a region with fresh comrades.');
-    case 'investigate':
-      return t('ui.game.comradesGather', 'Gather witness and draw new resistance cards.');
-    case 'launch_campaign':
-      return t('ui.game.comradesCampaign', 'Press a vulnerable front with coordinated force.');
-    case 'build_solidarity':
-      return t('ui.game.comradesSolidarity', 'Advance a front without rolling.');
-    case 'smuggle_evidence':
-      return t('ui.game.comradesSmuggle', 'Move witness across seats through a corridor.');
-    case 'international_outreach':
-      return t('ui.game.comradesOutreach', 'Raise global gaze.');
-    case 'defend':
-      return t('ui.game.comradesShield', 'Set a shield against the next strike.');
-    case 'play_card':
-      return t('ui.game.comradesUnleash', 'Unleash a prepared card effect now.');
-    case 'go_viral':
-      return 'Raise Global Gaze by spreading truth.';
-    case 'expose_regime_lies':
-      return 'Reduce War Machine by exposing regime lies.';
-    case 'call_labor_strike':
-      return 'Call a strike to gain bodies.';
-    case 'coordinate_digital':
-      return 'Open a digital re-plan window.';
-    case 'burn_veil':
-      return 'Raise Gaze through symbolic defiance.';
-    case 'schoolgirl_network':
-      return 'Gain evidence and reduce costs.';
-    case 'compose_chant':
-      return 'Create lasting regional morale.';
-    case 'diaspora_fundraise':
-      return 'Gain bodies through international support.';
-    case 'media_blitz':
-      return 'Raise Gaze significantly.';
-    case 'sanctions_push':
-      return 'Reduce War Machine through international pressure.';
-  }
 }
 
 export function buildIntentPreview(
@@ -808,7 +749,7 @@ export function buildIntentPreview(
     id: 'benefit',
     tone: 'benefit',
     label: t('ui.game.outcome', 'Outcome'),
-    value: getActionBenefitLabel(draft.actionId),
+    value: localizeActionField(draft.actionId, 'description', action.description),
   });
 
   if (action.needsCard && draft.cardId) {

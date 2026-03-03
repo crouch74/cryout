@@ -8,6 +8,7 @@ import {
   getSeatDisabledReason,
   getVictoryModeSummary,
   initializeGame,
+  listRulesets,
   type EngineCommand,
 } from '../engine/index.ts';
 import {
@@ -378,9 +379,9 @@ test('route screens point at the cutover guides and setup shell', () => {
   const guidelines = readFileSync(new URL('../src/mvp/GuidelinesScreen.tsx', import.meta.url), 'utf8');
   const playerGuide = readFileSync(new URL('../src/mvp/PlayerGuideScreen.tsx', import.meta.url), 'utf8');
 
-  assert.match(home, /Operational Briefing|Human Players/);
-  assert.match(guidelines, /Victory Modes/);
-  assert.match(playerGuide, /Coalition Field Notes/);
+  assert.match(home, /Campaign Briefing|Human Players/);
+  assert.match(guidelines, /ui\.guide\.victoryModes|Victory Modes/);
+  assert.match(playerGuide, /ui\.guide\.coalitionFieldNotes|Coalition Field Notes/);
 });
 
 test('toast helpers keep live-region metadata and role semantics', () => {
@@ -419,16 +420,70 @@ test('Arabic catalog stays key-complete and localizes canonical mechanic names',
   assert.equal(arUi.game.secretMandate, 'التكليف السري');
 });
 
-test('all shipped base-design cards have localization entries in both catalogs', () => {
-  const content = compileContent('base_design');
+test('catalog parity holds and orphaned legacy sections are removed', () => {
+  const enCatalog = JSON.parse(readFileSync(new URL('../src/i18n/en.json', import.meta.url), 'utf8')) as Record<string, any>;
+  const arCatalog = JSON.parse(readFileSync(new URL('../src/i18n/ar-EG.json', import.meta.url), 'utf8')) as Record<string, any>;
+  const englishKeys = new Set(flattenCatalogKeys(enCatalog));
+  const arabicKeys = new Set(flattenCatalogKeys(arCatalog));
+
+  assert.deepEqual([...englishKeys].filter((key) => !arabicKeys.has(key)), []);
+  assert.deepEqual([...arabicKeys].filter((key) => !englishKeys.has(key)), []);
+  assert.equal('legacyLanding' in enCatalog.ui, false);
+  assert.equal('legacyDashboard' in enCatalog.ui, false);
+  assert.equal('legacyLanding' in arCatalog.ui, false);
+  assert.equal('legacyDashboard' in arCatalog.ui, false);
+});
+
+test('all shipped rulesets and cards have localization entries in both catalogs', () => {
   const enCatalog = JSON.parse(readFileSync(new URL('../src/i18n/en.json', import.meta.url), 'utf8')) as Record<string, any>;
   const arCatalog = JSON.parse(readFileSync(new URL('../src/i18n/ar-EG.json', import.meta.url), 'utf8')) as Record<string, any>;
   const enCards = enCatalog.content.cards as Record<string, unknown>;
   const arCards = arCatalog.content.cards as Record<string, unknown>;
+  const enRulesets = enCatalog.content.rulesets as Record<string, unknown>;
+  const arRulesets = arCatalog.content.rulesets as Record<string, unknown>;
 
-  for (const cardId of Object.keys(content.cards)) {
-    assert.equal(typeof enCards[cardId], 'object', `Missing English card localization for ${cardId}`);
-    assert.equal(typeof arCards[cardId], 'object', `Missing Arabic card localization for ${cardId}`);
+  for (const ruleset of listRulesets()) {
+    assert.equal(typeof enRulesets[ruleset.id], 'object', `Missing English ruleset localization for ${ruleset.id}`);
+    assert.equal(typeof arRulesets[ruleset.id], 'object', `Missing Arabic ruleset localization for ${ruleset.id}`);
+
+    const content = compileContent(ruleset.id);
+    for (const cardId of Object.keys(content.cards)) {
+      assert.equal(typeof enCards[cardId], 'object', `Missing English card localization for ${cardId}`);
+      assert.equal(typeof arCards[cardId], 'object', `Missing Arabic card localization for ${cardId}`);
+    }
+  }
+});
+
+test('known hardcoded localization regressions stay out of UI and engine sources', () => {
+  const files = [
+    '../engine/selectors.ts',
+    '../engine/runtime.ts',
+    '../src/mvp/gameUiHelpers.ts',
+    '../src/mvp/HomeScreen.tsx',
+  ];
+  const bannedLiterals = [
+    'Resolve the system strike and military backlash.',
+    'Queue two moves per seat, then mark every seat ready.',
+    'Resolve the prepared moves, then check victory and defeat.',
+    'The coalition achieved its win condition.',
+    'The coalition failed the struggle.',
+    'No domain selected.',
+    'No region selected.',
+    'Draw handled by helper trace.',
+    'Schoolgirl Network',
+    'Compose Chant',
+    'Diaspora Fundraise',
+    'Media Blitz',
+    'Sanctions Push',
+    'Raise Global Gaze by spreading truth.',
+    'Reduce War Machine through international pressure.',
+  ];
+
+  for (const file of files) {
+    const source = readFileSync(new URL(file, import.meta.url), 'utf8');
+    for (const literal of bannedLiterals) {
+      assert.equal(source.includes(literal), false, `Unexpected hardcoded literal in ${file}: ${literal}`);
+    }
   }
 });
 

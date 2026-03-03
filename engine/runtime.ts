@@ -1,6 +1,6 @@
 import { compileContent } from './content.ts';
 import { createRng, nextInt, shuffle } from './rng.ts';
-import { getRegionLabel, t } from '../src/i18n/index.ts';
+import { getRegionLabel, localizeDomainField, t } from '../src/i18n/index.ts';
 import type {
   ActionDefinition,
   ActionId,
@@ -859,12 +859,16 @@ function applyEffects(state: EngineState, content: CompiledContent, effects: Eff
         const domainId = effect.domain === 'target_domain' ? source.context.targetDomainId : effect.domain;
         if (!domainId) {
           trace.status = 'skipped';
-          trace.message = 'No domain selected.';
+          trace.message = t('ui.runtime.traceNoDomain', 'No Domain was selected for this effect.');
           break;
         }
         const before = state.domains[domainId].progress;
         state.domains[domainId].progress = clamp(state.domains[domainId].progress + effect.delta, effect.clamp ?? { min: 0, max: 12 });
-        trace.message = `${domainId} ${before} -> ${state.domains[domainId].progress}.`;
+        trace.message = t('ui.runtime.traceDomain', '{{domain}} {{before}} -> {{after}}.', {
+          domain: localizeDomainField(domainId, 'name', content.domains[domainId].name),
+          before,
+          after: state.domains[domainId].progress,
+        });
         trace.deltas.push(createDelta('domain', domainId, before, state.domains[domainId].progress));
         break;
       }
@@ -873,7 +877,7 @@ function applyEffects(state: EngineState, content: CompiledContent, effects: Eff
         const regionIds = resolveRegionSelector(state, content, effect.region, source.context);
         if (regionIds.length === 0) {
           trace.status = 'skipped';
-          trace.message = 'No region selected.';
+          trace.message = t('ui.runtime.traceNoRegion', 'No region was selected for this effect.');
           break;
         }
         for (const regionId of regionIds) {
@@ -947,7 +951,7 @@ function applyEffects(state: EngineState, content: CompiledContent, effects: Eff
       case 'draw_resistance': {
         traces.push(resolveCardDraws(state, resolveSeatSelector(effect.seat, source.context), effect.count));
         trace.status = 'skipped';
-        trace.message = 'Draw handled by helper trace.';
+        trace.message = t('ui.runtime.traceDrawHandled', 'Card draw was resolved by its dedicated trace.');
         break;
       }
       case 'modify_hijab': {
@@ -1876,7 +1880,7 @@ export function normalizeEngineState(state: EngineState): EngineState {
           ...event.context,
           cardReveals: event.context.cardReveals?.map((reveal) => ({
             ...reveal,
-            origin: reveal.origin === 'opening_hand' ? 'startup_withdrawal' : (reveal.origin ?? 'other'),
+            origin: (reveal.origin as string | undefined) === 'opening_hand' ? 'startup_withdrawal' : (reveal.origin ?? 'other'),
           })),
           ...(event.context.roll
             ? {

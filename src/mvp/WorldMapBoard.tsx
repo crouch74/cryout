@@ -115,7 +115,7 @@ function getRegionSummaryLabel(regionId: RegionId, state: EngineState, content: 
   return `${localizeRegionField(regionId, 'name', content.regions[regionId].name)}. `
     + `${t('ui.game.extraction', 'Extraction')} ${formatNumber(region.extractionTokens)}. `
     + `${t('ui.game.defense', 'Defense')} ${formatNumber(region.defenseRating)}. `
-    + `${t('ui.game.bodies', 'Bodies')} ${formatNumber(totalBodies)}.`;
+    + `${t('ui.game.bodies', 'Comrades')} ${formatNumber(totalBodies)}.`;
 }
 
 export function WorldMapBoard({
@@ -433,7 +433,7 @@ export function WorldMapBoard({
             </span>
             <span>
               <Icon type="bodies" size={15} />
-              {t('ui.game.bodies', 'Bodies')} {formatNumber(state.players.reduce((sum, p) => sum + (state.regions[cardRegionId]?.bodiesPresent[p.seat] ?? 0), 0))}
+              {t('ui.game.bodies', 'Comrades')} {formatNumber(state.players.reduce((sum, p) => sum + (state.regions[cardRegionId]?.bodiesPresent[p.seat] ?? 0), 0))}
             </span>
           </div>
           <div className="board-region-sidecard-fronts">

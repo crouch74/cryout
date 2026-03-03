@@ -247,8 +247,8 @@ function formatDeltaLabel(delta: StateDelta, content: CompiledContent) {
       const seat = getSeatFromDeltaLabel(delta.label);
       const regionLabel = regionId ? localizeRegionField(regionId, 'name', content.regions[regionId].name) : delta.label;
       return seat === null
-        ? `${regionLabel} · ${t('ui.game.bodies', 'Bodies')}`
-        : `${regionLabel} · ${formatSeatLabel(seat)} · ${t('ui.game.bodies', 'Bodies')}`;
+        ? `${regionLabel} · ${t('ui.game.bodies', 'Comrades')}`
+        : `${regionLabel} · ${formatSeatLabel(seat)} · ${t('ui.game.bodies', 'Comrades')}`;
     }
     case 'evidence': {
       const seat = getSeatFromDeltaLabel(delta.label);
