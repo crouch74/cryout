@@ -26,6 +26,7 @@ export {
   normalizeEngineState,
   replayCommands,
   serializeForReplay,
+  toCompatStructuredEvent,
 } from './adapters/compat/runtime.ts';
 export {
   buildEffectPreview,
@@ -48,6 +49,8 @@ export type {
   ActionId,
   BeaconDefinition,
   BoardRegionMapEntry,
+  CampaignModifierEntry,
+  CampaignResolvedEventPayload,
   CardRevealEvent,
   CompiledContent,
   CrisisCardDefinition,

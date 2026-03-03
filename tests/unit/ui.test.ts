@@ -356,18 +356,32 @@ test('phase progress source keeps the active question-mark help affordance', () 
   assert.match(source, /aria-expanded/);
 });
 
-test('world map source renders the launch campaign dice overlay on the active board', () => {
+test('world map source no longer renders the clipped launch campaign overlay', () => {
   const source = readFileSync(new URL('../../src/game/board/WorldMapBoard.tsx', import.meta.url), 'utf8');
 
-  assert.match(source, /campaign-roll-overlay/);
-  assert.match(source, /campaign-roll-overlay-dice/);
-  assert.match(source, /Launch Campaign/);
-  assert.match(source, /campaignRoll/);
+  assert.doesNotMatch(source, /campaign-roll-overlay/);
+  assert.doesNotMatch(source, /campaignRoll/);
   assert.match(source, /board-region-clusters/);
   assert.match(source, /board-region-token-container/);
   assert.match(source, /data-region-changing/);
   assert.match(source, /data-token-changing/);
   assert.doesNotMatch(source, /createRandom/);
+});
+
+test('campaign result modal source uses the shared dialog surface and gated dismissal', () => {
+  const modalSource = readFileSync(new URL('../../src/game/overlays/CampaignResultModal.tsx', import.meta.url), 'utf8');
+  const diceSource = readFileSync(new URL('../../src/game/overlays/DiceResolutionAnimation.tsx', import.meta.url), 'utf8');
+  const sessionSource = readFileSync(new URL('../../src/game/screens/GameSessionScreen.tsx', import.meta.url), 'utf8');
+  const presenterSource = readFileSync(new URL('../../src/game/presentation/campaignResultPresentation.ts', import.meta.url), 'utf8');
+
+  assert.match(modalSource, /<Modal/);
+  assert.match(modalSource, /dismissEnabled/);
+  assert.match(modalSource, /presentation\.continueLabel/);
+  assert.match(diceSource, /Skip roll animation/);
+  assert.match(diceSource, /kind: '2d6' \| '1d10'/);
+  assert.match(sessionSource, /CampaignResultModal/);
+  assert.match(sessionSource, /campaign-result-animation-complete/);
+  assert.match(presenterSource, /ui\.action\.CAMPAIGN_RESOLVED/);
 });
 
 test('default game view state is simplified for the production shell', () => {

@@ -12,39 +12,19 @@ import type {
   ScenarioCard,
   ScenarioModule,
   SerializedGameEnvelope,
-  StructuredEvent,
 } from '../../../types.ts';
 import { createBaseState } from '../../../validation/state.ts';
-import { buildBalancedSeatOwners, dispatchCommand, getDisabledActionReason, initializeGame, normalizeEngineState, replayCommands, serializeForReplay } from '../runtime.ts';
+import { buildBalancedSeatOwners, dispatchCommand, getDisabledActionReason, initializeGame, normalizeEngineState, replayCommands, serializeForReplay, toCompatStructuredEvent } from '../runtime.ts';
 import { compileContent } from '../content.ts';
 import type {
   ActionDefinition,
   CompiledContent,
-  DomainEvent,
   EngineCommand,
   EngineState,
   StartGameCommand,
 } from '../types.ts';
 
 const LEGACY_PHASE_ORDER = ['SYSTEM', 'COALITION', 'RESOLUTION', 'WIN', 'LOSS'];
-
-function toStructuredEvent(event: DomainEvent): StructuredEvent {
-  return {
-    id: `legacy:${event.seq}`,
-    type: `legacy.${event.sourceType}.${event.sourceId}`,
-    source: event.sourceId,
-    payload: {
-      round: event.round,
-      phase: event.phase,
-      sourceType: event.sourceType,
-      message: event.message,
-      context: (event.context ?? {}) as unknown as import('../../../types.ts').JsonValue,
-    },
-    tags: ['legacy', event.sourceType, event.phase],
-    level: event.emoji === '❌' ? 'warning' : 'info',
-    messageKey: event.sourceId,
-  };
-}
 
 function toScenarioCard(card: CompiledContent['cards'][string]): ScenarioCard {
   return {
@@ -275,7 +255,7 @@ export function projectCompatStateToCore(
       tahrirMartyrCount: legacyState.tahrirMartyrCount,
     },
     log: legacyState.eventLog.map((event) => ({
-      ...toStructuredEvent(event),
+      ...toCompatStructuredEvent(event),
       round: event.round,
       phaseId: event.phase,
     })),
@@ -386,7 +366,7 @@ export function createCompatCommandBridge(): CommandBridge {
       const nextCore = projectCompatStateToCore(nextLegacy, scenario, content);
       const emittedEvents = nextLegacy.eventLog
         .filter((event) => event.seq > previousEventSeq)
-        .map((event) => toStructuredEvent(event));
+        .map((event) => toCompatStructuredEvent(event));
 
       return {
         state: nextCore,

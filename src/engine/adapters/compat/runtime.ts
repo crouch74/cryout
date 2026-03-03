@@ -1,9 +1,12 @@
 import { compileContent } from './content.ts';
 import { createRng, nextInt, shuffle } from './rng.ts';
 import { getRegionLabel, localizeDomainField, t } from '../../../i18n/index.ts';
+import type { JsonValue, StructuredEvent } from '../../types.ts';
 import type {
   ActionDefinition,
   ActionId,
+  CampaignModifierEntry,
+  CampaignResolvedEventPayload,
   CardRevealEvent,
   CompiledContent,
   DeckId,
@@ -66,6 +69,64 @@ interface ApplyEffectSource {
 interface DisabledReasonDetail {
   code: NonNullable<DisabledActionReason['reasonCode']>;
   values?: Record<string, string | number>;
+}
+
+function compactRecord<T extends Record<string, unknown>>(value: T) {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, entry]) => entry !== undefined),
+  ) as T;
+}
+
+function buildCampaignResolvedPayload(
+  event: DomainEvent,
+  roll: RollResolution,
+): CampaignResolvedEventPayload {
+  return compactRecord({
+    eventSeq: event.seq,
+    actionId: roll.actionId,
+    seat: roll.seat,
+    regionId: roll.regionId,
+    domainId: roll.domainId,
+    diceKind: '2d6' as const,
+    dice: roll.dice,
+    modifier: roll.modifier,
+    modifiers: (event.context?.campaignModifiers ?? []) as CampaignModifierEntry[],
+    total: roll.total,
+    target: roll.target,
+    success: roll.success,
+    outcomeBand: roll.outcomeBand,
+    extractionRemoved: roll.extractionRemoved,
+    domainDelta: roll.domainDelta,
+    globalGazeDelta: roll.globalGazeDelta,
+    warMachineDelta: roll.warMachineDelta,
+    committedBodies: event.context?.committedBodies,
+    committedEvidence: event.context?.committedEvidence,
+  });
+}
+
+export function toCompatStructuredEvent(event: DomainEvent): StructuredEvent {
+  const roll = event.context?.roll;
+  const isCampaignResolved = event.sourceType === 'action' && event.sourceId === 'launch_campaign' && roll;
+
+  return {
+    id: `legacy:${event.seq}`,
+    type: isCampaignResolved ? 'ui.action.CAMPAIGN_RESOLVED' : `legacy.${event.sourceType}.${event.sourceId}`,
+    source: event.sourceId,
+    payload: (
+      isCampaignResolved
+        ? buildCampaignResolvedPayload(event, roll)
+        : {
+          round: event.round,
+          phase: event.phase,
+          sourceType: event.sourceType,
+          message: event.message,
+          context: (event.context ?? {}) as unknown as JsonValue,
+        }
+    ) as unknown as Record<string, JsonValue>,
+    tags: isCampaignResolved ? ['legacy', 'action', 'campaign', event.phase] : ['legacy', event.sourceType, event.phase],
+    level: event.emoji === '❌' ? 'warning' : 'info',
+    messageKey: isCampaignResolved ? 'ui.action.CAMPAIGN_RESOLVED' : event.sourceId,
+  };
 }
 
 function cloneState<T>(value: T): T {
@@ -1642,7 +1703,7 @@ function resolveLaunchCampaign(
   content: CompiledContent,
   seat: number,
   intent: QueuedIntent,
-): { traces: EffectTrace[]; roll: RollResolution } {
+): { traces: EffectTrace[]; roll: RollResolution; modifiers: CampaignModifierEntry[] } {
   const regionId = assertExists(intent.regionId, 'Launch Campaign requires region.');
   const domainId = assertExists(intent.domainId, 'Launch Campaign requires domain.');
   const committedBodies = assertExists(intent.bodiesCommitted, 'Launch Campaign requires bodies.');
@@ -1651,6 +1712,7 @@ function resolveLaunchCampaign(
   const faction = getFaction(content, player);
   const support = getCampaignSupportBonus(state, content, seat, intent);
   const pressure = getSystemPersistentModifiers(state, content);
+  const campaignModifiers: CampaignModifierEntry[] = [];
 
   const spendTrace = applyEffects(
     state,
@@ -1676,17 +1738,47 @@ function resolveLaunchCampaign(
 
   const dieOne = rollDie(state, 6);
   const dieTwo = rollDie(state, 6);
-  let modifier = Math.floor(committedBodies / 2) + committedEvidence;
-  modifier += Math.floor(state.globalGaze / 5);
-  modifier -= Math.floor(state.northernWarMachine / 4);
+  let modifier = 0;
+
+  const comradesModifier = Math.floor(committedBodies / 2);
+  if (comradesModifier !== 0) {
+    campaignModifiers.push({ source: 'committed_comrades', value: comradesModifier });
+    modifier += comradesModifier;
+  }
+
+  if (committedEvidence !== 0) {
+    campaignModifiers.push({ source: 'committed_evidence', value: committedEvidence });
+    modifier += committedEvidence;
+  }
+
+  const gazeModifier = Math.floor(state.globalGaze / 5);
+  if (gazeModifier !== 0) {
+    campaignModifiers.push({ source: 'global_gaze', value: gazeModifier });
+    modifier += gazeModifier;
+  }
+
+  const warMachineModifier = -Math.floor(state.northernWarMachine / 4);
+  if (warMachineModifier !== 0) {
+    campaignModifiers.push({ source: 'war_machine', value: warMachineModifier });
+    modifier += warMachineModifier;
+  }
+
   if (regionId === faction.homeRegion) {
+    campaignModifiers.push({ source: 'home_region', value: faction.campaignBonus });
     modifier += faction.campaignBonus;
   }
   if (faction.campaignDomainBonus === domainId) {
+    campaignModifiers.push({ source: 'faction_domain', value: 1 });
     modifier += 1;
   }
-  modifier += support.bonus;
-  modifier += pressure.campaignModifierDelta;
+  if (support.bonus !== 0) {
+    campaignModifiers.push({ source: 'support', value: support.bonus });
+    modifier += support.bonus;
+  }
+  if (pressure.campaignModifierDelta !== 0) {
+    campaignModifiers.push({ source: 'system_pressure', value: pressure.campaignModifierDelta });
+    modifier += pressure.campaignModifierDelta;
+  }
 
   const total = dieOne + dieTwo + modifier;
   const successTarget = BASE_CAMPAIGN_TARGET + pressure.campaignTargetDelta;
@@ -1777,7 +1869,7 @@ function resolveLaunchCampaign(
     );
   }
 
-  return { traces, roll };
+  return { traces, roll, modifiers: campaignModifiers };
 }
 
 function resolveQueuedAction(state: EngineState, content: CompiledContent, seat: number, intent: QueuedIntent) {
@@ -1787,6 +1879,8 @@ function resolveQueuedAction(state: EngineState, content: CompiledContent, seat:
     actingSeat: seat,
     targetRegionId: intent.regionId,
     targetDomainId: intent.domainId,
+    committedBodies: intent.bodiesCommitted,
+    committedEvidence: intent.evidenceCommitted,
     causedBy: [],
   };
 
@@ -1801,6 +1895,7 @@ function resolveQueuedAction(state: EngineState, content: CompiledContent, seat:
       const resolution = resolveLaunchCampaign(state, content, seat, intent);
       traces = resolution.traces;
       eventContext.roll = resolution.roll;
+      eventContext.campaignModifiers = resolution.modifiers;
       break;
     }
     case 'build_solidarity':

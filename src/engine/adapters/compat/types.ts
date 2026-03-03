@@ -390,6 +390,41 @@ export interface RollResolution {
   warMachineDelta: number;
 }
 
+export interface CampaignModifierEntry {
+  source:
+  | 'committed_comrades'
+  | 'committed_evidence'
+  | 'global_gaze'
+  | 'war_machine'
+  | 'home_region'
+  | 'faction_domain'
+  | 'support'
+  | 'system_pressure';
+  value: number;
+}
+
+export interface CampaignResolvedEventPayload {
+  eventSeq: number;
+  actionId: 'launch_campaign';
+  seat: number;
+  regionId: RegionId;
+  domainId: DomainId;
+  diceKind: '2d6';
+  dice: [number, number];
+  modifier: number;
+  modifiers: CampaignModifierEntry[];
+  total: number;
+  target: number;
+  success: boolean;
+  outcomeBand: 'backlash' | 'attention' | 'success' | 'surge';
+  extractionRemoved: number;
+  domainDelta: number;
+  globalGazeDelta: number;
+  warMachineDelta: number;
+  committedBodies?: number;
+  committedEvidence?: number;
+}
+
 export interface BeaconState {
   id: string;
   active: boolean;
@@ -451,6 +486,9 @@ export interface DomainEvent {
     sourceDeckId?: RevealDeckId;
     actionId?: ActionId;
     readyState?: boolean;
+    committedBodies?: number;
+    committedEvidence?: number;
+    campaignModifiers?: CampaignModifierEntry[];
     cardReveals?: CardRevealEvent[];
     roll?: RollResolution;
     causedBy?: string[];

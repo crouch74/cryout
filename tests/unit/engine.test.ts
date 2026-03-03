@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { compileContent, dispatchCommand, initializeGame, listRulesets, type EngineCommand } from '../../src/engine/index.ts';
+import { compileContent, dispatchCommand, initializeGame, listRulesets, toCompatStructuredEvent, type EngineCommand } from '../../src/engine/index.ts';
 import type { DomainEvent, EngineState } from '../../src/engine/index.ts';
 
 const startCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
@@ -334,6 +334,13 @@ test('launch campaign consumes 2d6 of rng and can remove extraction on success',
   assert.equal(campaignEvent?.context?.roll?.regionId, 'Congo');
   assert.equal(campaignEvent?.context?.roll?.target, 8);
   assert.equal(typeof campaignEvent?.context?.roll?.outcomeBand, 'string');
+
+  const structured = campaignEvent ? toCompatStructuredEvent(campaignEvent) : null;
+  assert.equal(structured?.type, 'ui.action.CAMPAIGN_RESOLVED');
+  assert.deepEqual(structured?.payload.dice, campaignEvent?.context?.roll?.dice);
+  assert.equal(structured?.payload.regionId, 'Congo');
+  assert.equal(structured?.payload.domainId, 'DyingPlanet');
+  assert.equal(structured?.payload.diceKind, '2d6');
 });
 
 test('investigate reveal events carry investigate origin', () => {

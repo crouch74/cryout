@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import {
+  toCompatStructuredEvent,
   getAvailableDomains,
   getAvailableRegions,
   getPlayerBodyTotal,
@@ -7,6 +8,7 @@ import {
   getSeatDisabledReason,
   getSeatFaction,
   type ActionId,
+  type CampaignResolvedEventPayload,
   type CompiledContent,
   type DomainId,
   type EngineCommand,
@@ -14,7 +16,6 @@ import {
   type Effect,
   type QueuedIntent,
   type RegionId,
-  type RollResolution,
   type SystemPersistentModifiers,
 } from '../../engine/index.ts';
 import {
@@ -31,6 +32,7 @@ import { ActionDock } from '../panels/ActionDock.tsx';
 import { ContextPanel } from '../panels/ContextPanel.tsx';
 import { playDeckCue, primeDeckAudio } from '../audio/deckSound.ts';
 import { FrontTrackBar } from '../hud/FrontTrackBar.tsx';
+import { CampaignResultModal } from '../overlays/CampaignResultModal.tsx';
 import { GameIntroModal } from '../overlays/GameIntroModal.tsx';
 import { Icon } from '../../ui/icon/Icon.tsx';
 import type { IconType } from '../../ui/icon/iconTypes.ts';
@@ -38,6 +40,7 @@ import { PlayerStrip } from '../hud/PlayerStrip.tsx';
 import { PhaseProgress } from '../hud/PhaseProgress.tsx';
 import { StatusRibbon } from '../hud/StatusRibbon.tsx';
 import { TerminalOutcomeModal } from '../overlays/TerminalOutcomeModal.tsx';
+import { getCampaignResolvedPayload } from '../presentation/campaignResultPresentation.ts';
 import { localizeDisabledReason, presentHistoryEvent } from '../presentation/historyPresentation.ts';
 import { useTransientHighlightKeys } from '../presentation/useTransientHighlights.ts';
 import {
@@ -72,13 +75,6 @@ const VISIBLE_DECK_IDS = ['system', 'resistance', 'crisis'] as const;
 type VisibleDeckId = typeof VISIBLE_DECK_IDS[number];
 
 type DraftState = Omit<QueuedIntent, 'slot'>;
-
-interface CampaignRollPresentation extends RollResolution {
-  seq: number;
-  dieOne: number;
-  dieTwo: number;
-  rolling: boolean;
-}
 
 interface CardRevealQueueItem {
   key: string;
@@ -184,37 +180,10 @@ function getPhaseControlHint(state: EngineState, focusedSeat: number) {
   return t('ui.game.tableClosed', 'Table Closed');
 }
 
-function getLatestCampaignRoll(state: EngineState): CampaignRollPresentation | null {
-  for (let index = state.eventLog.length - 1; index >= 0; index -= 1) {
-    const event = state.eventLog[index];
-    const roll = event?.context?.roll;
-    if (!roll) {
-      continue;
-    }
-
-    return {
-      seq: event.seq,
-      actionId: roll.actionId,
-      seat: roll.seat,
-      regionId: roll.regionId,
-      domainId: roll.domainId,
-      dice: roll.dice,
-      total: roll.total,
-      modifier: roll.modifier,
-      dieOne: roll.dice[0],
-      dieTwo: roll.dice[1],
-      target: roll.target,
-      success: roll.success,
-      outcomeBand: roll.outcomeBand,
-      extractionRemoved: roll.extractionRemoved,
-      domainDelta: roll.domainDelta,
-      globalGazeDelta: roll.globalGazeDelta,
-      warMachineDelta: roll.warMachineDelta,
-      rolling: false,
-    };
-  }
-
-  return null;
+function getCampaignResultEvents(state: EngineState) {
+  return state.eventLog
+    .map((event) => getCampaignResolvedPayload(toCompatStructuredEvent(event)))
+    .filter((event): event is CampaignResolvedEventPayload => Boolean(event));
 }
 
 function getLatestRevealCardIdForDeck(state: EngineState, deckId: VisibleDeckId) {
@@ -640,13 +609,16 @@ export function GameSessionScreen({
   const [activeCardReveal, setActiveCardReveal] = useState<CardRevealQueueItem | null>(null);
   const [cardRevealStage, setCardRevealStage] = useState<CardRevealStage>('lift');
   const [activeCardRevealOrigin, setActiveCardRevealOrigin] = useState<CardRevealOrigin | null>(null);
-  const [animatedCampaignRoll, setAnimatedCampaignRoll] = useState<CampaignRollPresentation | null>(null);
+  const [activeCampaignResult, setActiveCampaignResult] = useState<CampaignResolvedEventPayload | null>(null);
+  const [campaignDismissEnabled, setCampaignDismissEnabled] = useState(false);
   const revealQueueRef = useRef<CardRevealQueueItem[]>([]);
   const revealSeenRef = useRef(new Set<string>());
+  const campaignResultQueueRef = useRef<CampaignResolvedEventPayload[]>([]);
+  const campaignResultSeenRef = useRef(new Set<number>());
+  const campaignResultsHydratedRef = useRef(false);
   const revealTimerRef = useRef<number | null>(null);
   const revealPhaseTimerRef = useRef<number | null>(null);
   const revealCleanupTimerRef = useRef<number | null>(null);
-  const lastCampaignRollSeqRef = useRef<number | null>(null);
   const revealActionButtonRef = useRef<HTMLButtonElement | null>(null);
   const deckButtonRefs = useRef<Record<VisibleDeckId, HTMLButtonElement | null>>({
     system: null,
@@ -654,7 +626,7 @@ export function GameSessionScreen({
     crisis: null,
   });
   const selectedRegionId = viewState.regionId;
-  const highlightSuspended = Boolean(activeCardReveal);
+  const highlightSuspended = Boolean(activeCardReveal || activeCampaignResult);
   const emptySpaceCloseSelector = [
     'button',
     'input',
@@ -665,7 +637,6 @@ export function GameSessionScreen({
     '[role="dialog"]',
     '.board-region-cluster',
     '.board-region-sidecard',
-    '.campaign-roll-overlay',
     '.deck-stack',
     '.context-card',
   ].join(', ');
@@ -688,7 +659,7 @@ export function GameSessionScreen({
   const actionItems = getActionDockItems(state, content, focusedPlayer.seat);
   const phasePresentation = getPhasePresentation(state.phase);
   const preparedMovePreview = buildIntentPreview(draft, draftAction, state, content, focusedPlayer.seat);
-  const latestCampaignRoll = useMemo(() => getLatestCampaignRoll(state), [state]);
+  const campaignResults = useMemo(() => getCampaignResultEvents(state), [state]);
   const deckSummaries = useMemo(() => getDeckSummaries(state, content), [content, state]);
   const phaseControlHint = getPhaseControlHint(state, focusedPlayer.seat);
 
@@ -1277,28 +1248,44 @@ export function GameSessionScreen({
   }, [activeCardReveal, cardRevealStage]);
 
   useEffect(() => {
-    if (!latestCampaignRoll) {
-      return;
-    }
-    if (lastCampaignRollSeqRef.current === latestCampaignRoll.seq) {
-      return;
-    }
-
-    lastCampaignRollSeqRef.current = latestCampaignRoll.seq;
-    if (motionMode === 'reduced') {
-      setAnimatedCampaignRoll(latestCampaignRoll);
+    if (!campaignResultsHydratedRef.current) {
+      campaignResults.forEach((result) => {
+        campaignResultSeenRef.current.add(result.eventSeq);
+      });
+      campaignResultsHydratedRef.current = true;
       return;
     }
 
-    setAnimatedCampaignRoll({ ...latestCampaignRoll, rolling: true });
-    const settled = window.setTimeout(() => {
-      setAnimatedCampaignRoll({ ...latestCampaignRoll, rolling: false });
-    }, 520);
+    for (const result of campaignResults) {
+      if (campaignResultSeenRef.current.has(result.eventSeq)) {
+        continue;
+      }
+      campaignResultSeenRef.current.add(result.eventSeq);
+      campaignResultQueueRef.current.push(result);
+    }
+  }, [campaignResults]);
 
-    return () => {
-      window.clearTimeout(settled);
-    };
-  }, [latestCampaignRoll, motionMode]);
+  useEffect(() => {
+    if (activeCampaignResult || campaignResultQueueRef.current.length === 0) {
+      return;
+    }
+
+    const nextResult = campaignResultQueueRef.current.shift() ?? null;
+    if (!nextResult) {
+      return;
+    }
+
+    setCampaignDismissEnabled(false);
+    setActiveCampaignResult(nextResult);
+  }, [activeCampaignResult, campaignResults]);
+
+  useEffect(() => {
+    if (!activeCampaignResult || activeCampaignResult.dice.length > 0) {
+      return;
+    }
+
+    setCampaignDismissEnabled(true);
+  }, [activeCampaignResult]);
 
   return (
     <TableSurface className={`game-screen game-screen-compressed ${activeCardReveal ? 'is-reveal-active' : ''}`.trim()}>
@@ -1418,7 +1405,6 @@ export function GameSessionScreen({
               state={state}
               content={content}
               selectedRegionId={selectedRegionId}
-              campaignRoll={animatedCampaignRoll}
               externalHighlightKeys={highlightedMapTargets}
               suspendHighlights={highlightSuspended}
               onSelectRegion={(regionId) => {
@@ -1534,6 +1520,29 @@ export function GameSessionScreen({
           </div>
         ) : null
       }
+
+      <CampaignResultModal
+        open={Boolean(activeCampaignResult)}
+        result={activeCampaignResult}
+        content={content}
+        motionMode={motionMode}
+        dismissEnabled={campaignDismissEnabled}
+        onAnimationComplete={() => {
+          setCampaignDismissEnabled((current) => {
+            if (current) {
+              return current;
+            }
+            window.dispatchEvent(new CustomEvent('campaign-result-animation-complete', {
+              detail: { eventSeq: activeCampaignResult?.eventSeq ?? null },
+            }));
+            return true;
+          });
+        }}
+        onRequestClose={() => {
+          setActiveCampaignResult(null);
+          setCampaignDismissEnabled(false);
+        }}
+      />
 
       <TerminalOutcomeModal
         state={state}

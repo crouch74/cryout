@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { getAvailableRegions, type BoardRegionMapEntry, type CompiledContent, type DomainId, type EngineState, type RegionId, type RollResolution } from '../../engine/index.ts';
+import { getAvailableRegions, type BoardRegionMapEntry, type CompiledContent, type DomainId, type EngineState, type RegionId } from '../../engine/index.ts';
 import { formatNumber, localizeDomainField, localizeRegionField, t } from '../../i18n/index.ts';
 import { getRegionDangerState } from '../presentation/gameUiHelpers.ts';
-import { presentRoll } from '../presentation/historyPresentation.ts';
 import { Icon } from '../../ui/icon/Icon.tsx';
 import type { IconType } from '../../ui/icon/iconTypes.ts';
 import {
@@ -22,12 +21,6 @@ interface WorldMapBoardProps {
   onSelectRegion: (regionId: RegionId) => void;
   externalHighlightKeys?: ReadonlySet<string>;
   suspendHighlights?: boolean;
-  campaignRoll?: (RollResolution & {
-    seq: number;
-    dieOne: number;
-    dieTwo: number;
-    rolling: boolean;
-  }) | null;
 }
 
 interface RegionGeometryInfo {
@@ -124,11 +117,7 @@ export function WorldMapBoard({
   onSelectRegion,
   externalHighlightKeys,
   suspendHighlights = false,
-  campaignRoll = null,
 }: WorldMapBoardProps) {
-  const presentedRoll = campaignRoll
-    ? presentRoll({ ...campaignRoll, dice: [campaignRoll.dieOne, campaignRoll.dieTwo] }, content)
-    : null;
   const [hoveredRegionId, setHoveredRegionId] = useState<RegionId | null>(null);
   const [svgMarkup, setSvgMarkup] = useState('');
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
@@ -459,26 +448,6 @@ export function WorldMapBoard({
         }}
       >
         <div ref={svgHostRef} className="board-world-map" aria-hidden="true" />
-
-        {campaignRoll && presentedRoll && regionLayouts?.[campaignRoll.regionId] ? (
-          <article
-            className={`campaign-roll-overlay ${campaignRoll.success ? 'is-success' : 'is-failure'} ${campaignRoll.rolling ? 'is-rolling' : ''}`.trim()}
-            style={{
-              left: `${regionLayouts[campaignRoll.regionId].position.x}px`,
-              top: `${regionLayouts[campaignRoll.regionId].position.y}px`,
-              zIndex: regionLayouts[campaignRoll.regionId].zIndex + 2,
-            }}
-          >
-            <span className="campaign-roll-overlay-eyebrow">{t('ui.game.launchCampaign', 'Launch Campaign')}</span>
-            <div className="campaign-roll-overlay-dice">
-              <span>{formatNumber(campaignRoll.dieOne)}</span>
-              <span>{formatNumber(campaignRoll.dieTwo)}</span>
-            </div>
-            <strong>{formatNumber(campaignRoll.total)}</strong>
-            <span>{presentedRoll.formula}</span>
-            <span>{presentedRoll.outcome}: {presentedRoll.meaning}</span>
-          </article>
-        ) : null}
 
         <div className="board-region-clusters">
           {regionLayouts
