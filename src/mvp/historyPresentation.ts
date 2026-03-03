@@ -255,11 +255,16 @@ function formatDeltaLabel(delta: StateDelta, content: CompiledContent) {
       return seat === null ? t('ui.game.evidence', 'Evidence') : `${formatSeatLabel(seat)} · ${t('ui.game.evidence', 'Evidence')}`;
     }
     case 'card':
-      return {
-        'system:active': t('ui.history.systemEscalations', 'System escalations'),
-        'resistance:discard': t('ui.history.resistanceDiscard', 'Resistance discard'),
-        'crisis:discard': t('ui.history.crisisDiscard', 'Crisis discard'),
-      }[delta.label] ?? t('ui.history.cardsChanged', 'Cards');
+      if (delta.label === 'system:active') {
+        return t('ui.history.systemEscalations', 'System escalations');
+      }
+      if (delta.label === 'resistance:discard') {
+        return t('ui.history.resistanceDiscard', 'Resistance discard');
+      }
+      if (delta.label === 'crisis:discard') {
+        return t('ui.history.crisisDiscard', 'Crisis discard');
+      }
+      return t('ui.history.cardsChanged', 'Cards');
     case 'player':
       return delta.label;
   }

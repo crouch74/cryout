@@ -279,6 +279,95 @@ function renderGlyph(type: IconType) {
           <path d="M12 3v18M3 12h18M5 12a14 14 0 0 1 14 0M5 12a14 14 0 0 0 14 0" fill="none" stroke="#f4ead6" strokeWidth="1.2" opacity="0.8" />
         </>
       );
+    case 'goViral':
+      return (
+        <>
+          <circle cx="8.5" cy="12" r="2.2" fill="currentColor" />
+          <circle cx="15.7" cy="8" r="1.9" fill="currentColor" opacity="0.92" />
+          <circle cx="16.6" cy="16.2" r="1.9" fill="currentColor" opacity="0.92" />
+          <path d="M10.5 11.2 13.8 9M10.7 12.8l4.1 2.4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M18.8 5.7c1 .6 1.8 1.5 2.3 2.5m-1.8 8c1-.6 1.8-1.5 2.3-2.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.86" />
+        </>
+      );
+    case 'exposeLies':
+      return (
+        <>
+          <path d="M4.1 6.2h11.6l4.2 4.3v7.4a2 2 0 0 1-2 2H6.1a2 2 0 0 1-2-2V6.2Z" fill="currentColor" />
+          <path d="M15.7 6.2v4.2h4.2" fill="#f4ead6" opacity="0.75" />
+          <path d="m8.1 15.8 2.1-2.3 1.8 1.7 3.8-4.3" fill="none" stroke="#f4ead6" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" opacity="0.94" />
+          <path d="M8.2 10.2h7.1" stroke="#f4ead6" strokeWidth="1.4" strokeLinecap="round" opacity="0.82" />
+        </>
+      );
+    case 'laborStrike':
+      return (
+        <>
+          <rect x="4.8" y="16.8" width="14.8" height="1.8" rx=".9" fill="currentColor" />
+          <path d="M7.3 15.4V7.2h1.9v8.2H7.3Zm2.8-6.9h8.4a1.5 1.5 0 0 1 1.5 1.5v4.3H10.1V8.5Z" fill="currentColor" opacity="0.94" />
+          <path d="M11.5 10.5h6.1M11.5 12.5h4.1" stroke="#f4ead6" strokeWidth="1.3" strokeLinecap="round" opacity="0.86" />
+        </>
+      );
+    case 'coordinateDigital':
+      return (
+        <>
+          <rect x="4.4" y="5" width="6.4" height="5.2" rx="1.2" fill="currentColor" />
+          <rect x="13.2" y="5" width="6.4" height="5.2" rx="1.2" fill="currentColor" opacity="0.92" />
+          <rect x="8.8" y="14" width="6.4" height="5.2" rx="1.2" fill="currentColor" opacity="0.96" />
+          <path d="M10.7 10.1 12 14m1.3-3.9L12 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <circle cx="7.6" cy="7.6" r=".8" fill="#f4ead6" opacity="0.92" />
+          <circle cx="16.4" cy="7.6" r=".8" fill="#f4ead6" opacity="0.92" />
+          <circle cx="12" cy="16.6" r=".8" fill="#f4ead6" opacity="0.92" />
+        </>
+      );
+    case 'burnVeil':
+      return (
+        <>
+          <path d="M12.8 3.9c1.7 2.1 2.6 3.9 2.6 5.5 0 1.2-.4 2.3-1.2 3.1 2.1.4 3.7 2.3 3.7 4.6 0 2.7-2.2 4.9-4.9 4.9h-2c-2.7 0-4.9-2.2-4.9-4.9 0-2.1 1.3-3.9 3.2-4.5-.5-.7-.8-1.6-.8-2.6 0-1.8 1.1-3.8 3.3-6.1Z" fill="currentColor" />
+          <path d="M12.1 9.1c1.1 1.3 1.6 2.4 1.6 3.4 0 1.3-.8 2.1-2 3 1.8.1 3.1 1.2 3.1 2.8 0 1.2-.9 2.2-2.2 2.2h-1.2c-1.4 0-2.5-1-2.5-2.2 0-1.1.8-2 2-2.6-1-.8-1.5-1.7-1.5-2.8 0-1.2.9-2.5 2.7-3.8Z" fill="#f4ead6" opacity="0.84" />
+        </>
+      );
+    case 'schoolgirlNetwork':
+      return (
+        <>
+          <circle cx="8.4" cy="8.2" r="2.2" fill="currentColor" />
+          <circle cx="15.8" cy="9" r="2.1" fill="currentColor" opacity="0.94" />
+          <path d="M5.7 18.5c.4-2.5 2.1-4.3 4.1-4.3 1.8 0 3.3 1.2 3.9 3.2.7-1.7 2.1-2.8 3.8-2.8 1.5 0 2.9.9 3.7 3.9H5.7Z" fill="currentColor" />
+          <path d="M10.4 11.1h3.3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" opacity="0.86" />
+        </>
+      );
+    case 'composeChant':
+      return (
+        <>
+          <path d="M5.3 6.1h9.5a2 2 0 0 1 2 2v9.2a2 2 0 0 1-2 2H8.7l-3.4 2.3V8.1a2 2 0 0 1 2-2Z" fill="currentColor" />
+          <path d="M9.4 9.7v5.4m2.4-6.6v5.4m2.4-4.2v5.4" stroke="#f4ead6" strokeWidth="1.5" strokeLinecap="round" opacity="0.9" />
+          <path d="M18.2 9.5c.8.3 1.6 1 2 1.9m-2 2.4c.8-.3 1.6-1 2-1.9" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.88" />
+        </>
+      );
+    case 'fundraise':
+      return (
+        <>
+          <ellipse cx="10" cy="7.5" rx="4.8" ry="2.3" fill="currentColor" />
+          <path d="M5.2 7.7v5.3c0 1.7 2.1 3 4.8 3s4.8-1.3 4.8-3V7.7c0 1.7-2.1 3-4.8 3s-4.8-1.3-4.8-3Z" fill="currentColor" opacity="0.94" />
+          <circle cx="16.8" cy="15.8" r="3.1" fill="currentColor" opacity="0.92" />
+          <path d="M16.8 14v3.6M15 15.8h3.6" stroke="#f4ead6" strokeWidth="1.4" strokeLinecap="round" opacity="0.92" />
+        </>
+      );
+    case 'mediaBlitz':
+      return (
+        <>
+          <rect x="4.2" y="8.2" width="7.9" height="7.6" rx="1.6" fill="currentColor" />
+          <path d="M12.1 10.3 17.7 7v10l-5.6-3.3v-3.4Z" fill="currentColor" opacity="0.95" />
+          <path d="M18.8 9.2c1 .7 1.8 1.7 2.2 2.8m-2.2 2.6c1-.7 1.8-1.7 2.2-2.8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.88" />
+        </>
+      );
+    case 'sanctions':
+      return (
+        <>
+          <rect x="4.6" y="6.8" width="10.5" height="8.3" rx="1.5" fill="currentColor" />
+          <path d="M9.8 15.1v2.5c0 1 .8 1.8 1.8 1.8H17" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <circle cx="17.5" cy="17.9" r="3.1" fill="currentColor" opacity="0.94" />
+          <path d="m16.1 16.5 2.8 2.8m0-2.8-2.8 2.8" stroke="#f4ead6" strokeWidth="1.5" strokeLinecap="round" />
+        </>
+      );
   }
 }
 

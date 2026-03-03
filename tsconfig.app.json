@@ -43,8 +43,6 @@
     "content/base_design/**/*.ts"
   ],
   "exclude": [
-    "src/components/**/*",
-    "src/engine/**/*",
     "backend/**/*"
   ]
 }

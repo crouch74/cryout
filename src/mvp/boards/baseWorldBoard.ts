@@ -250,9 +250,11 @@ export const baseWorldBoard: ScenarioBoardDefinition = {
 };
 
 export function getBaseWorldRegionAnchorPathIds(regionId: keyof typeof BASE_WORLD_REGION_SVG_COVERAGE) {
-  return getRenderablePathIds(baseWorldBoard.regions[regionId].anchorCoverage, BASE_WORLD_SVG_COUNTRY_INDEX);
+  const region = baseWorldBoard.regions[regionId];
+  return region ? getRenderablePathIds(region.anchorCoverage, BASE_WORLD_SVG_COUNTRY_INDEX) : [];
 }
 
 export function getBaseWorldRegionInteractionPathIds(regionId: keyof typeof BASE_WORLD_REGION_SVG_COVERAGE) {
-  return getRenderablePathIds(baseWorldBoard.regions[regionId].interactionCoverage, BASE_WORLD_SVG_COUNTRY_INDEX);
+  const region = baseWorldBoard.regions[regionId];
+  return region ? getRenderablePathIds(region.interactionCoverage, BASE_WORLD_SVG_COUNTRY_INDEX) : [];
 }

@@ -498,6 +498,9 @@ export function buildRegionLayouts(input: BuildRegionLayoutsInput) {
     const baseZIndex = zOrdered.length - index;
     layout.zIndex = baseZIndex + (layout.regionId === input.selectedRegionId ? zOrdered.length + 1 : 0);
     const manifestEntry = input.manifest[layout.regionId];
+    if (!manifestEntry) {
+      return;
+    }
     layout.label = {
       x: 0,
       y: -(layout.cluster.height / 2) - Math.abs(manifestEntry.labelOffsetY) - (layout.cluster.scale < 1 ? GRID_STEP : 0),

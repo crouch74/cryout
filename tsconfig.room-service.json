@@ -27,7 +27,6 @@
     "src/mvp/gameUiHelpers.ts"
   ],
   "exclude": [
-    "src/**/*",
-    "backend/**/*"
+    "src/**/*"
   ]
 }

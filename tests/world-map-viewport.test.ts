@@ -86,9 +86,11 @@ test('single-region focus is stronger than multi-region focus', () => {
   const singleCenter = getBoundsCenter(single.bounds);
   const multiCenter = getBoundsCenter(multi.bounds);
 
-  assert.equal(single.bounds.maxX - single.bounds.minX < multi.bounds.maxX - multi.bounds.minX, true);
-  assert.equal(Math.abs(singleCenter.x - focusCenter.x) < Math.abs(multiCenter.x - focusCenter.x), true);
-  assert.equal(Math.abs(singleCenter.x - defaultCenter.x) > Math.abs(multiCenter.x - defaultCenter.x), true);
+  assert.equal(single.bounds.maxY - single.bounds.minY < multi.bounds.maxY - multi.bounds.minY, true);
+  assert.equal(Math.abs(singleCenter.y - focusCenter.y) < Math.abs(multiCenter.y - focusCenter.y), true);
+  assert.equal(Math.abs(singleCenter.y - defaultCenter.y) > Math.abs(multiCenter.y - defaultCenter.y), true);
+  assert.equal(singleCenter.x, defaultCenter.x);
+  assert.equal(multiCenter.x, defaultCenter.x);
 });
 
 test('final focused viewport stays within a bounded delta from the default world center', () => {

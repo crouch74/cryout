@@ -35,6 +35,16 @@ export const ICON_COLORS = {
   home: '#5F8D6D',
   save: '#2D3A64',
   language: '#E3A008',
+  goViral: '#E3A008',
+  exposeLies: '#2D3A64',
+  laborStrike: '#8E2C2C',
+  coordinateDigital: '#2D3A64',
+  burnVeil: '#A32E2E',
+  schoolgirlNetwork: '#8E2C2C',
+  composeChant: '#6E4A7E',
+  fundraise: '#8B6A3D',
+  mediaBlitz: '#5E8D80',
+  sanctions: '#B38A2B',
 } satisfies Record<IconType, string>;
 
 export const ICON_BASE_SHAPES: Partial<Record<IconType, IconBaseShape>> = {

@@ -5,7 +5,7 @@ import type {
   FactionDefinition,
   RegionDefinition,
   RulesetDefinition,
-} from '../../engine/types.ts';
+} from '../../../engine/types.ts';
 import { baseWorldBoard } from '../../../src/mvp/boards/baseWorldBoard.ts';
 import { crisisCards } from '../../base_design/decks/crisisDeck.ts';
 import { resistanceCards } from '../../base_design/decks/resistanceDeck.ts';

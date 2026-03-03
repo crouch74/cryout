@@ -18,8 +18,6 @@ This repo now ships with three major rulebooks/scenarios:
 - **2 global meters**: Global Gaze and Northern War Machine.
 - **Asymmetric factions**: Each with unique passives, weaknesses, and secret mandates.
 
-The previous `witness_dignity` / `green_resistance` scenario line is no longer the shipped game.
-
 ## Game Loop
 
 Each round follows three phases:
@@ -76,5 +74,4 @@ npm run build
 
 - Local autosaves are intentionally versioned to the cutover ruleset and old saves are not forward-compatible.
 - The Node room service is the active multiplayer path.
-- The legacy survival-loop threat deck is archived under `content/base_design/legacy/` for reference only.
-- Legacy prototypes remain in the repo for reference but are not the active product.
+- The shipped repo now contains only the active TypeScript engine, scenario content, and Node room service surfaces.

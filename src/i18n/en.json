@@ -1414,46 +1414,6 @@
       }
     },
     "scenarios": {
-      "witness_dignity": {
-        "name": "Witness & Dignity",
-        "description": "Palestine, Lebanon, and Egypt sit under stacked war, rights, and border pressure while climate accelerates the broader crisis.",
-        "introduction": "A coalition of organizers, journalists, lawyers, and planners works across a narrowing civic landscape to protect civilians, keep truth moving, and build institutions that can outlast the Capture Engine.",
-        "story": "Witness & Dignity keeps Palestine as the moral center of the scenario framing without reducing it to spectacle. The coalition acts under severe pressure, trying to hold open corridors of care, remedy, and testimony across Palestine, Lebanon, and Egypt while climate stress compounds every front.",
-        "dramatization": "The table should feel like an emergency newsroom, a legal triage room, and a mutual-aid corridor all at once. Every gain is fragile. Every delay has a civilian cost. The scenario is written to keep witness, care, and political clarity in the foreground rather than spectacle.",
-        "gameplay": "Witness & Dignity opens under immediate pressure. War, rights, and poverty all threaten to outrun the coalition before long-term institutions can stabilize the map. The strongest line of play is coordinated pacing: protect Palestine from spiraling displacement while building enough evidence and solidarity to unlock charter progress across nearby corridors.",
-        "mechanics": "The scenario rewards public testimony and careful timing. Witness Window cancels the first disinformation placement in a round when the coalition keeps evidence high, while Aid Corridor punishes unchecked war pressure by locking access in Palestine. Expect a tighter, more tactical game with fewer safe turns and heavier emphasis on media, legal, and relief sequencing.",
-        "moralCenter": "Palestine is framed as the moral center: rights-focused, unsensational, and grounded in civilian protection.",
-        "specialRules": {
-          "witness_window": {
-            "label": "Witness Window",
-            "description": "If evidence is at least 3, the first disinfo placement each round is cancelled."
-          },
-          "aid_corridor": {
-            "label": "Aid Corridor",
-            "description": "When WAR pressure reaches 8, Palestine gains an AidAccess lock until Organizer or Lawyer clears it."
-          }
-        }
-      },
-      "green_resistance": {
-        "name": "Green Resistance",
-        "description": "Forest communities face a coordinated extraction surge where climate, energy, and rights pressure reinforce each other.",
-        "introduction": "The coalition shifts toward land defenders, river communities, and movement journalists trying to hold the line across Congo, Sudan, the Sahel, and the wider climate frontier.",
-        "story": "Green Resistance frames frontline environmental defense as a struggle over memory, sovereignty, and survival. Concessions, private security, and disinformation campaigns clear the way for extraction while local communities fight to keep forests, rivers, and energy futures from becoming sacrifice zones.",
-        "dramatization": "This scenario should feel slower, wetter, and more territorial than Witness & Dignity. One turn is a blockade on a logging road, the next a testimony circuit, the next a jury-rigged microgrid keeping a village clinic alive while the smoke closes in.",
-        "gameplay": "Green Resistance begins with more grassroots capacity than the Palestine scenario, but the coalition is spread across more regions and starts with tighter civic space. The challenge is preventing climate and energy escalation from creating a rolling displacement crisis while still investing in culture, legal protection, and long-term infrastructure.",
-        "mechanics": "Root Solidarity turns cultural protection into momentum by generating solidarity at the start of a round once Art & Culture is stabilized. Extraction Spiral punishes ignored climate pressure by pushing fresh displacement into Congo and Sudan before the world phase resolves. The scenario rewards distributed institution-building and punishes leaving ecological fronts to drift.",
-        "moralCenter": "Indigenous land defenders and forest communities are treated as protagonists with agency, not background scenery for a climate disaster story.",
-        "specialRules": {
-          "root_solidarity": {
-            "label": "Root Solidarity",
-            "description": "At the start of a round, if Art & Culture protection is 5+, gain 1 solidarity."
-          },
-          "extraction_spiral": {
-            "label": "Extraction Spiral",
-            "description": "When Climate pressure reaches 7 or more, Congo and Sudan each gain 1 displacement during the world phase."
-          }
-        }
-      },
       "tahrir_square": {
         "name": "2011 — Tahrir Square",
         "description": "For eighteen days, we were free.",

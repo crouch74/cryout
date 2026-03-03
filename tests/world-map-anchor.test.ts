@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import type { RegionId } from '../engine/index.ts';
 import {
-  BOARD_REGION_MAP_MANIFEST,
+  BASE_WORLD_REGION_MAP_MANIFEST,
   getBoardRegionAnchorPathIds,
 } from '../src/mvp/worldMapSvgManifest.ts';
 import {
@@ -19,7 +19,7 @@ function parsePercent(value: string) {
   return Number(value.replace('%', ''));
 }
 
-const BASE_WORLD_REGION_IDS = Object.keys(BOARD_REGION_MAP_MANIFEST) as RegionId[];
+const BASE_WORLD_REGION_IDS = Object.keys(BASE_WORLD_REGION_MAP_MANIFEST) as RegionId[];
 
 test('tokenizePathData keeps commands and scientific notation numbers intact', () => {
   assert.deepEqual(tokenizePathData('M0 0L10.5-2e-1z'), ['M', '0', '0', 'L', '10.5', '-2e-1', 'z']);
@@ -108,7 +108,7 @@ test('computeRegionInteriorAnchorPercentages converts interior points into perce
       Sahel: [],
       Mekong: [],
       Andes: [],
-    },
+    } as unknown as Record<RegionId, string[]>,
   );
 
   assert.equal(Math.abs(parsePercent(anchors.Congo?.x ?? '') - 10) < 0.2, true);
@@ -127,7 +127,7 @@ test('levant anchor coverage removes missing Palestine geometry before pin calcu
 });
 
 test('real world map asset produces bounded interior anchors for every active region', () => {
-  const svgMarkup = readFileSync(new URL('../public/assets/world-map-board.svg', import.meta.url), 'utf8');
+  const svgMarkup = readFileSync(new URL('../public/assets/scenarios/base_design/world-map-board.svg', import.meta.url), 'utf8');
   const regionCoverage = Object.fromEntries(
     BASE_WORLD_REGION_IDS.map((regionId) => [regionId, getBoardRegionAnchorPathIds(regionId)]),
   ) as Record<RegionId, string[]>;
@@ -143,7 +143,7 @@ test('real world map asset produces bounded interior anchors for every active re
 });
 
 test('real world map anchors stay in the same neighborhood as the authored marker fallbacks', () => {
-  const svgMarkup = readFileSync(new URL('../public/assets/world-map-board.svg', import.meta.url), 'utf8');
+  const svgMarkup = readFileSync(new URL('../public/assets/scenarios/base_design/world-map-board.svg', import.meta.url), 'utf8');
   const regionCoverage = Object.fromEntries(
     BASE_WORLD_REGION_IDS.map((regionId) => [regionId, getBoardRegionAnchorPathIds(regionId)]),
   ) as Record<RegionId, string[]>;
@@ -152,28 +152,29 @@ test('real world map anchors stay in the same neighborhood as the authored marke
 
   for (const regionId of BASE_WORLD_REGION_IDS) {
     const computed = anchors[regionId];
-    const fallback = BOARD_REGION_MAP_MANIFEST[regionId].marker;
+    const fallback = BASE_WORLD_REGION_MAP_MANIFEST[regionId]?.marker;
     assert.ok(computed, `${regionId} should have a computed anchor`);
+    assert.ok(fallback, `${regionId} should have a fallback marker`);
     assert.equal(Math.abs(parsePercent(computed.x) - parsePercent(fallback.x)) < 12, true);
     assert.equal(Math.abs(parsePercent(computed.y) - parsePercent(fallback.y)) < 12, true);
   }
 });
 
 test('real world map anchor outputs stay stable for the shipped SVG asset', () => {
-  const svgMarkup = readFileSync(new URL('../public/assets/world-map-board.svg', import.meta.url), 'utf8');
+  const svgMarkup = readFileSync(new URL('../public/assets/scenarios/base_design/world-map-board.svg', import.meta.url), 'utf8');
   const regionCoverage = Object.fromEntries(
     BASE_WORLD_REGION_IDS.map((regionId) => [regionId, getBoardRegionAnchorPathIds(regionId)]),
   ) as Record<RegionId, string[]>;
 
   const anchors = computeRegionInteriorAnchorPercentages(svgMarkup, regionCoverage);
-  const expected: Record<RegionId, { x: number; y: number }> = {
+  const expected = {
     Congo: { x: 55.2381, y: 64.3257 },
     Levant: { x: 59.1196, y: 43.0922 },
     Amazon: { x: 32.7203, y: 69.2497 },
     Sahel: { x: 51.0003, y: 53.8332 },
     Mekong: { x: 79.0297, y: 53.4770 },
     Andes: { x: 28.1893, y: 73.1984 },
-  };
+  } as Record<RegionId, { x: number; y: number }>;
 
   for (const regionId of BASE_WORLD_REGION_IDS) {
     const anchor = anchors[regionId];
@@ -185,8 +186,9 @@ test('real world map anchor outputs stay stable for the shipped SVG asset', () =
 
 test('manifest keeps repaired token anchors aligned to the stable marker baseline', () => {
   for (const regionId of BASE_WORLD_REGION_IDS) {
-    const entry = BOARD_REGION_MAP_MANIFEST[regionId];
+    const entry = BASE_WORLD_REGION_MAP_MANIFEST[regionId];
 
+    assert.ok(entry, `${regionId} should exist in the base-world manifest`);
     assert.ok(entry.tokenAnchor);
     assert.deepEqual(entry.tokenAnchor, entry.marker);
     assert.deepEqual(entry.anchorBias, { x: 0, y: 0 });

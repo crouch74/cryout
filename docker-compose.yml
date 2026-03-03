@@ -19,19 +19,5 @@ services:
     profiles:
       - prod
 
-  backend:
-    build:
-      context: ./backend
-    ports:
-      - "8001:8000"
-    volumes:
-      - ./backend:/app
-      - ./content:/app/content
-    command: uvicorn server:app --host 0.0.0.0 --port 8000 --reload
-    profiles:
-      - dev
-      - prod
-      - all
-
 volumes:
   node_modules:
