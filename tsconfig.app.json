@@ -23,7 +23,13 @@
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+    "baseUrl": ".",
+    "paths": {
+      "@core/*": ["core/*"],
+      "@scenarios/*": ["scenarios/*"],
+      "@engine-legacy/*": ["engine/legacy/*"]
+    }
   },
   "include": [
     "src/main.tsx",
@@ -38,9 +44,12 @@
     "src/mvp/GameScreen.tsx",
     "src/mvp/GuidelinesScreen.tsx",
     "src/mvp/PlayerGuideScreen.tsx",
+    "core/**/*.ts",
+    "scenarios/**/*.ts",
     "engine/**/*.ts",
     "content/index.ts",
-    "content/base_design/**/*.ts"
+    "content/base_design/**/*.ts",
+    "content/scenarios/**/*.ts"
   ],
   "exclude": [
     "backend/**/*"

@@ -20,4 +20,25 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    files: ['core/**/*.ts'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [
+          {
+            group: ['../src/*', '../../src/*', '../../../src/*', 'src/*'],
+            message: 'Core must not depend on UI modules.',
+          },
+          {
+            group: ['../content/*', '../../content/*', '../../../content/*', 'content/*'],
+            message: 'Core must not depend on scenario content packs.',
+          },
+          {
+            group: ['../scenarios/*', '../../scenarios/*', '../../../scenarios/*', 'scenarios/*'],
+            message: 'Core must not import scenario modules directly.',
+          },
+        ],
+      }],
+    },
+  },
 ])

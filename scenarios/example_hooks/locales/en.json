@@ -1,0 +1,4 @@
+{
+  "scenario.example_hooks.name": "Example Hooks Scenario",
+  "scenario.example_hooks.summary": "A minimal scenario that exercises the scenario framework extension points."
+}

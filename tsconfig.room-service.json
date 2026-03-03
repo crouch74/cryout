@@ -14,12 +14,21 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "paths": {
+      "@core/*": ["core/*"],
+      "@scenarios/*": ["scenarios/*"],
+      "@engine-legacy/*": ["engine/legacy/*"]
+    }
   },
   "include": [
+    "core/**/*.ts",
+    "scenarios/**/*.ts",
     "engine/**/*.ts",
     "content/index.ts",
     "content/base_design/**/*.ts",
+    "content/scenarios/**/*.ts",
     "room-service/**/*.ts",
     "tests/**/*.ts",
     "src/mvp/runtime.ts",

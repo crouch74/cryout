@@ -439,6 +439,8 @@ test('all shipped rulesets and cards have localization entries in both catalogs'
   const arCatalog = JSON.parse(readFileSync(new URL('../src/i18n/ar-EG.json', import.meta.url), 'utf8')) as Record<string, any>;
   const enCards = enCatalog.content.cards as Record<string, unknown>;
   const arCards = arCatalog.content.cards as Record<string, unknown>;
+  const enFactions = enCatalog.content.factions as Record<string, unknown>;
+  const arFactions = arCatalog.content.factions as Record<string, unknown>;
   const enRulesets = enCatalog.content.rulesets as Record<string, unknown>;
   const arRulesets = arCatalog.content.rulesets as Record<string, unknown>;
 
@@ -447,6 +449,10 @@ test('all shipped rulesets and cards have localization entries in both catalogs'
     assert.equal(typeof arRulesets[ruleset.id], 'object', `Missing Arabic ruleset localization for ${ruleset.id}`);
 
     const content = compileContent(ruleset.id);
+    for (const factionId of Object.keys(content.factions)) {
+      assert.equal(typeof enFactions[factionId], 'object', `Missing English faction localization for ${factionId}`);
+      assert.equal(typeof arFactions[factionId], 'object', `Missing Arabic faction localization for ${factionId}`);
+    }
     for (const cardId of Object.keys(content.cards)) {
       assert.equal(typeof enCards[cardId], 'object', `Missing English card localization for ${cardId}`);
       assert.equal(typeof arCards[cardId], 'object', `Missing Arabic card localization for ${cardId}`);

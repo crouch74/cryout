@@ -1019,6 +1019,22 @@
         "mandateTitle": "عجلات الإنتاج",
         "mandateDescription": "اخلص والبطن الفاضية ٥ أو أكتر."
       },
+      "independent_journalists": {
+        "name": "الصحفيون المستقلون",
+        "shortName": "الصحفيون",
+        "passive": "التحقيق بيدي +١ أدلة.",
+        "weakness": "الدفاع خارج القاهرة بيحط ١ دفاع أقل.",
+        "mandateTitle": "كلنا خالد سعيد",
+        "mandateDescription": "اخلص والحقيقة المخنوقة ٦ أو أكتر."
+      },
+      "rights_defenders": {
+        "name": "المدافعون عن الحقوق",
+        "shortName": "المدافعون",
+        "passive": "الحملات ضد القبضة الأبوية بتاخد +١.",
+        "weakness": "تهريب الأدلة بينقل ١ أقل.",
+        "mandateTitle": "إنهاء أمن الدولة",
+        "mandateDescription": "اخلص وآلة الحرب ٤ أو أقل."
+      },
       "kurdish_women": {
         "name": "النساء الكرديات",
         "shortName": "الكرديات",

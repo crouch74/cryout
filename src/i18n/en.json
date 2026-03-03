@@ -1019,6 +1019,22 @@
         "mandateTitle": "The Wheels of Production",
         "mandateDescription": "End with Empty Stomach at 5 or more."
       },
+      "independent_journalists": {
+        "name": "Independent Journalists",
+        "shortName": "Journalists",
+        "passive": "Investigate gains +1 Evidence.",
+        "weakness": "Defend outside Cairo sets 1 less Defense.",
+        "mandateTitle": "We Are All Khaled Said",
+        "mandateDescription": "End with Silenced Truth at 6 or more."
+      },
+      "rights_defenders": {
+        "name": "Rights Defenders",
+        "shortName": "Defenders",
+        "passive": "Campaigns against Patriarchal Grip gain +1.",
+        "weakness": "Smuggle Evidence moves 1 less.",
+        "mandateTitle": "End State Security",
+        "mandateDescription": "End with War Machine at 4 or less."
+      },
       "kurdish_women": {
         "name": "Kurdish Women",
         "shortName": "Kurds",
