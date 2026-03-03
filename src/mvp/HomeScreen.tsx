@@ -1,4 +1,4 @@
-import { listRulesets, type FactionId, type VictoryMode } from '../../engine/index.ts';
+import { buildBalancedSeatOwners, listRulesets, type FactionId, type VictoryMode } from '../../engine/index.ts';
 import {
   formatNumber,
   localizeFactionField,
@@ -52,14 +52,28 @@ export function HomeScreen({
   mode = 'home',
 }: HomeScreenProps) {
   const currentRuleset = RULESETS.find((r) => r.id === config.rulesetId) || RULESETS[0];
-  const selectedFactions = currentRuleset.factions.map((faction) => faction.id);
+  const selectedFactions = config.factionIds.length > 0 ? config.factionIds : currentRuleset.factions.map((faction) => faction.id);
+  const playerOptions = Array.from(
+    { length: Math.max(0, currentRuleset.factions.length - 1) },
+    (_, index) => index + 2,
+  ) as Array<2 | 3 | 4>;
+  const seatOwnerIds = config.seatOwnerIds.length === selectedFactions.length
+    ? config.seatOwnerIds
+    : buildBalancedSeatOwners(config.humanPlayerCount, selectedFactions);
+  const factionGroups = Array.from({ length: config.humanPlayerCount }, (_, ownerId) => ({
+    ownerId,
+    factionIds: selectedFactions.filter((_, seat) => seatOwnerIds[seat] === ownerId),
+  }));
 
   const handleRulesetChange = (rulesetId: string) => {
     const nextRuleset = RULESETS.find((r) => r.id === rulesetId) || RULESETS[0];
+    const factionIds = nextRuleset.factions.map((f) => f.id);
+    const humanPlayerCount = nextRuleset.factions.length as 2 | 3 | 4;
     onConfigChange({
       rulesetId,
-      factionIds: nextRuleset.factions.map((f) => f.id),
-      playerCount: nextRuleset.factions.length as 2 | 3 | 4,
+      factionIds,
+      humanPlayerCount,
+      seatOwnerIds: buildBalancedSeatOwners(humanPlayerCount, factionIds),
     });
   };
 
@@ -101,7 +115,8 @@ export function HomeScreen({
                 <h2>{localizeRulesetField(currentRuleset.id, 'name', currentRuleset.name)}</h2>
                 <p>{localizeRulesetField(currentRuleset.id, 'introduction', currentRuleset.introduction)}</p>
                 <div className="setup-stat-ribbon">
-                  <div><span>{t('ui.home.playerCount', 'Player Count')}</span><strong>{formatNumber(config.playerCount)}</strong></div>
+                  <div><span>{t('ui.home.humanPlayerCount', 'Human Players')}</span><strong>{formatNumber(config.humanPlayerCount)}</strong></div>
+                  <div><span>{t('ui.home.factionSeatCount', 'Faction Seats')}</span><strong>{formatNumber(selectedFactions.length)}</strong></div>
                   <div><span>{t('ui.home.mode', 'Mode')}</span><strong>{getModeLabel(config.mode)}</strong></div>
                   <div><span>{t('ui.home.regions', 'Regions')}</span><strong>{t('ui.home.regionCount', '{{count}} sectors', { count: currentRuleset.regions.length })}</strong></div>
                   <div><span>{t('ui.home.threat', 'Threat')}</span><strong>{t('ui.home.threatValue', 'Extraction tokens to 6 = defeat')}</strong></div>
@@ -123,10 +138,23 @@ export function HomeScreen({
                         <option value="SYMBOLIC">{t('ui.mode.symbolic', 'Symbolic')}</option>
                       </select>
                     </label>
-                    <div>
-                      <span>{t('ui.home.playerCount', 'Player Count')}</span>
-                      <strong>{config.playerCount}</strong>
-                    </div>
+                    <label>
+                      <span>{t('ui.home.humanPlayerCount', 'Human Players')}</span>
+                      <select
+                        value={config.humanPlayerCount}
+                        onChange={(event) => {
+                          const humanPlayerCount = Number(event.target.value) as 2 | 3 | 4;
+                          onConfigChange({
+                            humanPlayerCount,
+                            seatOwnerIds: buildBalancedSeatOwners(humanPlayerCount, selectedFactions),
+                          });
+                        }}
+                      >
+                        {playerOptions.map((playerCount) => (
+                          <option key={playerCount} value={playerCount}>{playerCount}</option>
+                        ))}
+                      </select>
+                    </label>
                   </div>
                   {config.surface === 'room' ? (
                     <>
@@ -162,12 +190,12 @@ export function HomeScreen({
                 </PaperSheet>
 
                 <PaperSheet tone="tray">
-                  <span className="engraved-eyebrow">{t('ui.home.factionSeats', 'Faction Seats')}</span>
+                  <span className="engraved-eyebrow">{t('ui.home.factionSeats', 'Faction Distribution')}</span>
                   <div className="seat-placard-grid">
-                    {Array.from({ length: config.playerCount }).map((_, seat) => (
-                      <div key={seat} className="seat-placard">
-                        <span>{t('ui.home.seat', 'Seat {{seat}}', { seat: seat + 1 })}</span>
-                        <strong>{getFactionLabel(selectedFactions[seat])}</strong>
+                    {factionGroups.map((group) => (
+                      <div key={group.ownerId} className="seat-placard">
+                        <span>{t('ui.home.playerSeatGroup', 'Player {{seat}}', { seat: group.ownerId + 1 })}</span>
+                        <strong>{group.factionIds.map((factionId) => getFactionLabel(factionId)).join(', ')}</strong>
                       </div>
                     ))}
                   </div>
@@ -177,7 +205,7 @@ export function HomeScreen({
 
             <PaperSheet tone="note">
               <span className="engraved-eyebrow">{t('ui.home.asymmetricAbilities', 'Asymmetric Factions')}</span>
-              <p>{t('ui.home.rulesBody', 'Each seat represents a different faction with distinct mandates, passive bonuses, and specialized weaknesses. Success requires horizontal coordination across all seats.')}</p>
+              <p>{t('ui.home.rulesBody', 'Each faction remains its own seat with distinct mandates, passive bonuses, and specialized weaknesses. Human players may coordinate multiple seats, but every faction stays in play and every region remains covered.')}</p>
             </PaperSheet>
 
             <details className="setup-utility-drawer">

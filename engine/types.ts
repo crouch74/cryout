@@ -348,6 +348,7 @@ export interface QueuedIntent {
 
 export interface PlayerState {
   seat: number;
+  ownerId: number;
   factionId: FactionId;
   evidence: number;
   actionsRemaining: number;
@@ -475,8 +476,11 @@ export interface StartGameCommand {
   type: 'StartGame';
   rulesetId: string;
   mode: VictoryMode;
-  playerCount: 2 | 3 | 4;
-  factionIds: FactionId[];
+  humanPlayerCount?: 2 | 3 | 4;
+  seatFactionIds?: FactionId[];
+  seatOwnerIds?: number[];
+  playerCount?: 2 | 3 | 4;
+  factionIds?: FactionId[];
   seed: number;
 }
 

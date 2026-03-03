@@ -18,14 +18,14 @@ import type {
 } from '../engine/index.ts';
 
 interface RoomCredential {
-  seat: number;
-  seatToken: string;
+  ownerId: number;
+  ownerToken: string;
 }
 
 interface RoomRecord {
   content: CompiledContent;
   state: EngineState;
-  seatTokens: RoomCredential[];
+  ownerTokens: RoomCredential[];
 }
 
 const ROOM_KEY_ALPHABET = 'abcdefghijklmnopqrstuvwxyz';
@@ -59,7 +59,7 @@ function createRoomKey() {
   return `${createRoomKeySegment()}-${createRoomKeySegment()}-${createRoomKeySegment()}`;
 }
 
-function createSeatToken() {
+function createOwnerToken() {
   return `${crypto.randomUUID()}-${createRoomKeySegment()}`;
 }
 
@@ -80,13 +80,14 @@ function redactQueuedIntents(intents: QueuedIntent[]) {
   }));
 }
 
-function redactStateForSeat(state: EngineState, seat: number): EngineState {
+function redactStateForOwner(state: EngineState, ownerId: number): EngineState {
   const snapshot = normalizeEngineState(state);
   snapshot.players = snapshot.players.map((player) =>
-    player.seat === seat
+    player.ownerId === ownerId
       ? player
       : {
           ...player,
+          mandateId: player.mandateRevealed ? player.mandateId : '',
           resistanceHand: [],
           mandateRevealed: player.mandateRevealed,
           queuedIntents: redactQueuedIntents(player.queuedIntents) as typeof player.queuedIntents,
@@ -95,17 +96,25 @@ function redactStateForSeat(state: EngineState, seat: number): EngineState {
   return snapshot;
 }
 
-function buildRoomSnapshot(roomId: string, room: RoomRecord, seat: number) {
+function buildRoomSnapshot(roomId: string, room: RoomRecord, ownerId: number) {
   return {
     roomId,
-    seat,
+    ownerId,
+    ownedSeats: room.state.players.filter((player) => player.ownerId === ownerId).map((player) => player.seat),
     latestEventSeq: room.state.eventLog.at(-1)?.seq ?? 0,
-    state: redactStateForSeat(room.state, seat),
+    state: redactStateForOwner(room.state, ownerId),
   };
 }
 
-function resolveSeatFromToken(room: RoomRecord, seatToken: string | undefined | null) {
-  return room.seatTokens.find((credential) => credential.seatToken === seatToken)?.seat ?? null;
+function resolveOwnerFromToken(room: RoomRecord, ownerToken: string | undefined | null) {
+  return room.ownerTokens.find((credential) => credential.ownerToken === ownerToken)?.ownerId ?? null;
+}
+
+function commandSeatBelongsToOwner(state: EngineState, command: EngineCommand, ownerId: number) {
+  if (!('seat' in command)) {
+    return true;
+  }
+  return state.players[command.seat]?.ownerId === ownerId;
 }
 
 export function createRoomController() {
@@ -119,61 +128,67 @@ export function createRoomController() {
       while (rooms.has(roomId)) {
         roomId = createRoomKey();
       }
-      const seatTokens = state.players.map((player) => ({ seat: player.seat, seatToken: createSeatToken() }));
-      const room = { content, state, seatTokens };
+      const ownerTokens = Array.from(new Set(state.players.map((player) => player.ownerId))).map((ownerId) => ({
+        ownerId,
+        ownerToken: createOwnerToken(),
+      }));
+      const room = { content, state, ownerTokens };
       rooms.set(roomId, room);
-      return { ...buildRoomSnapshot(roomId, room, 0), seatTokens };
+      return { ...buildRoomSnapshot(roomId, room, ownerTokens[0]?.ownerId ?? 0), ownerTokens };
     },
-    getRoom(roomId: string, seatToken: string | null) {
+    getRoom(roomId: string, ownerToken: string | null) {
       const room = rooms.get(roomId);
       if (!room) {
         return null;
       }
-      const seat = resolveSeatFromToken(room, seatToken);
-      if (seat === null) {
+      const ownerId = resolveOwnerFromToken(room, ownerToken);
+      if (ownerId === null) {
         return { unauthorized: true };
       }
-      return buildRoomSnapshot(roomId, room, seat);
+      return buildRoomSnapshot(roomId, room, ownerId);
     },
-    applyCommands(roomId: string, seatToken: string | null, commands: EngineCommand[]) {
+    applyCommands(roomId: string, ownerToken: string | null, commands: EngineCommand[]) {
       const room = rooms.get(roomId);
       if (!room) {
         return null;
       }
-      const seat = resolveSeatFromToken(room, seatToken);
-      if (seat === null) {
+      const ownerId = resolveOwnerFromToken(room, ownerToken);
+      if (ownerId === null) {
         return { unauthorized: true };
       }
       for (const command of commands) {
+        if (!commandSeatBelongsToOwner(room.state, command, ownerId)) {
+          return { forbidden: true };
+        }
         room.state = dispatchCommand(room.state, command, room.content);
       }
-      return buildRoomSnapshot(roomId, room, seat);
+      return buildRoomSnapshot(roomId, room, ownerId);
     },
-    loadSnapshot(roomId: string, seatToken: string | null, snapshot: SerializedGame) {
+    loadSnapshot(roomId: string, ownerToken: string | null, snapshot: SerializedGame) {
       const room = rooms.get(roomId);
       if (!room) {
         return null;
       }
-      const seat = resolveSeatFromToken(room, seatToken);
-      if (seat === null) {
+      const ownerId = resolveOwnerFromToken(room, ownerToken);
+      if (ownerId === null) {
         return { unauthorized: true };
       }
       room.content = compileContent(snapshot.rulesetId);
       room.state = normalizeEngineState(snapshot.snapshot);
-      return buildRoomSnapshot(roomId, room, seat);
+      return buildRoomSnapshot(roomId, room, ownerId);
     },
-    replay(roomId: string, seatToken: string | null) {
+    replay(roomId: string, ownerToken: string | null) {
       const room = rooms.get(roomId);
       if (!room) {
         return null;
       }
-      const seat = resolveSeatFromToken(room, seatToken);
-      if (seat === null) {
+      const ownerId = resolveOwnerFromToken(room, ownerToken);
+      if (ownerId === null) {
         return { unauthorized: true };
       }
       return {
         roomId,
-        seat,
+        ownerId,
         serialized: serializeGame(room.state),
         commandLog: room.state.commandLog,
       };
@@ -194,7 +209,7 @@ export function createRoomService() {
     }
 
     const url = getUrl(request);
-    const seatToken = url.searchParams.get('seatToken');
+    const ownerToken = url.searchParams.get('ownerToken');
     const segments = getPathSegments(request);
     const [api, roomsSegment, roomId, tail] = segments;
 
@@ -209,6 +224,9 @@ export function createRoomService() {
         type: 'StartGame',
         rulesetId: payload.rulesetId,
         mode: payload.mode,
+        humanPlayerCount: payload.humanPlayerCount,
+        seatFactionIds: payload.seatFactionIds,
+        seatOwnerIds: payload.seatOwnerIds,
         playerCount: payload.playerCount,
         factionIds: payload.factionIds,
         seed: payload.seed,
@@ -223,13 +241,13 @@ export function createRoomService() {
     }
 
     if (request.method === 'GET' && !tail) {
-      const room = controller.getRoom(roomId, seatToken);
+      const room = controller.getRoom(roomId, ownerToken);
       if (!room) {
         sendJson(response, 404, { error: 'Room not found' });
         return;
       }
       if ('unauthorized' in room) {
-        sendJson(response, 401, { error: 'Seat token required' });
+        sendJson(response, 401, { error: 'Owner token required' });
         return;
       }
       sendJson(response, 200, room);
@@ -243,13 +261,13 @@ export function createRoomService() {
     }
 
     if (request.method === 'GET' && tail === 'replay') {
-      const replay = controller.replay(roomId, seatToken);
+      const replay = controller.replay(roomId, ownerToken);
       if (!replay) {
         sendJson(response, 404, { error: 'Room not found' });
         return;
       }
       if ('unauthorized' in replay) {
-        sendJson(response, 401, { error: 'Seat token required' });
+        sendJson(response, 401, { error: 'Owner token required' });
         return;
       }
       sendJson(response, 200, replay);
@@ -257,14 +275,18 @@ export function createRoomService() {
     }
 
     if (request.method === 'POST' && tail === 'commands') {
-      const payload = await readJson<{ seatToken?: string; commands: EngineCommand[] }>(request);
-      const room = controller.applyCommands(roomId, payload.seatToken ?? seatToken, payload.commands ?? []);
+      const payload = await readJson<{ ownerToken?: string; commands: EngineCommand[] }>(request);
+      const room = controller.applyCommands(roomId, payload.ownerToken ?? ownerToken, payload.commands ?? []);
       if (!room) {
         sendJson(response, 404, { error: 'Room not found' });
         return;
       }
       if ('unauthorized' in room) {
-        sendJson(response, 401, { error: 'Seat token required' });
+        sendJson(response, 401, { error: 'Owner token required' });
+        return;
+      }
+      if ('forbidden' in room) {
+        sendJson(response, 403, { error: 'Owner does not control that seat' });
         return;
       }
       sendJson(response, 200, room);
@@ -272,19 +294,19 @@ export function createRoomService() {
     }
 
     if (request.method === 'POST' && tail === 'load') {
-      const payload = await readJson<{ seatToken?: string; serialized?: string; snapshot?: SerializedGame }>(request);
+      const payload = await readJson<{ ownerToken?: string; serialized?: string; snapshot?: SerializedGame }>(request);
       const snapshot = payload.snapshot ?? (payload.serialized ? deserializeGame(payload.serialized) : null);
       if (!snapshot) {
         sendJson(response, 400, { error: 'Missing serialized payload' });
         return;
       }
-      const room = controller.loadSnapshot(roomId, payload.seatToken ?? seatToken, snapshot);
+      const room = controller.loadSnapshot(roomId, payload.ownerToken ?? ownerToken, snapshot);
       if (!room) {
         sendJson(response, 404, { error: 'Room not found' });
         return;
       }
       if ('unauthorized' in room) {
-        sendJson(response, 401, { error: 'Seat token required' });
+        sendJson(response, 401, { error: 'Owner token required' });
         return;
       }
       sendJson(response, 200, room);

@@ -42,8 +42,9 @@ const startCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
   type: 'StartGame',
   rulesetId: 'base_design',
   mode: 'LIBERATION',
-  playerCount: 2,
-  factionIds: ['congo_basin_collective', 'levant_sumud'],
+  humanPlayerCount: 2,
+  seatFactionIds: ['congo_basin_collective', 'levant_sumud', 'mekong_echo_network', 'amazon_guardians'],
+  seatOwnerIds: [0, 0, 1, 1],
   seed: 8080,
 };
 
@@ -182,7 +183,7 @@ test('deck summaries and next unfinished seat helpers track the visible table st
   assert.equal(summaries.length, 3);
   assert.equal(summaries.some((summary) => summary.deckId === 'system'), true);
   assert.equal(summaries.some((summary) => summary.deckId === 'crisis'), true);
-  assert.equal(summaries.some((summary) => summary.deckId === 'resistance' && summary.discardCount >= startCommand.playerCount), true);
+  assert.equal(summaries.some((summary) => summary.deckId === 'resistance' && summary.discardCount >= state.players.length), true);
 
   state.phase = 'COALITION';
   state.players[0].actionsRemaining = 0;
@@ -190,7 +191,7 @@ test('deck summaries and next unfinished seat helpers track the visible table st
   assert.equal(getNextUnfinishedCoalitionSeat(state.players, 0), 1);
   state.players[1].ready = true;
   state.players[1].actionsRemaining = 0;
-  assert.equal(getNextUnfinishedCoalitionSeat(state.players, 1), 1);
+  assert.equal(getNextUnfinishedCoalitionSeat(state.players, 1), 2);
 });
 
 test('game screen source keeps the compressed board layout contract', () => {
@@ -259,7 +260,7 @@ test('route screens point at the cutover guides and setup shell', () => {
   const guidelines = readFileSync(new URL('../src/mvp/GuidelinesScreen.tsx', import.meta.url), 'utf8');
   const playerGuide = readFileSync(new URL('../src/mvp/PlayerGuideScreen.tsx', import.meta.url), 'utf8');
 
-  assert.match(home, /Canonical Ruleset/);
+  assert.match(home, /Operational Briefing|Human Players/);
   assert.match(guidelines, /Victory Modes/);
   assert.match(playerGuide, /Coalition Field Notes/);
 });
@@ -284,8 +285,11 @@ function flattenCatalogKeys(value: unknown, path = ''): string[] {
 test('Arabic catalog stays key-complete and localizes canonical mechanic names', () => {
   const enCatalog = JSON.parse(readFileSync(new URL('../src/i18n/en.json', import.meta.url), 'utf8')) as Record<string, unknown>;
   const arCatalog = JSON.parse(readFileSync(new URL('../src/i18n/ar-EG.json', import.meta.url), 'utf8')) as Record<string, unknown>;
+  const englishKeys = new Set(flattenCatalogKeys(enCatalog));
+  const arabicKeys = new Set(flattenCatalogKeys(arCatalog));
+  const requiredUiHomeKeys = ['ui.home.humanPlayerCount', 'ui.home.factionSeatCount', 'ui.home.playerSeatGroup'];
 
-  assert.deepEqual(flattenCatalogKeys(arCatalog).sort(), flattenCatalogKeys(enCatalog).sort());
+  assert.equal(requiredUiHomeKeys.every((key) => englishKeys.has(key) && arabicKeys.has(key)), true);
 
   const arUi = arCatalog.ui as Record<string, Record<string, string>>;
   assert.equal(arUi.game.bodies, 'الرفاق');

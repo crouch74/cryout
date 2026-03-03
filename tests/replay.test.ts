@@ -14,8 +14,9 @@ const startCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
   type: 'StartGame',
   rulesetId: 'base_design',
   mode: 'LIBERATION',
-  playerCount: 2,
-  factionIds: ['congo_basin_collective', 'levant_sumud'],
+  humanPlayerCount: 2,
+  seatFactionIds: ['congo_basin_collective', 'levant_sumud', 'mekong_echo_network', 'amazon_guardians'],
+  seatOwnerIds: [0, 0, 1, 1],
   seed: 1111,
 };
 
@@ -30,6 +31,12 @@ test('serialized command log replays to the same snapshot', () => {
     { type: 'QueueIntent', seat: 1, action: { actionId: 'defend', regionId: 'Levant', bodiesCommitted: 1 } },
     { type: 'QueueIntent', seat: 1, action: { actionId: 'international_outreach' } },
     { type: 'SetReady', seat: 1, ready: true },
+    { type: 'QueueIntent', seat: 2, action: { actionId: 'organize', regionId: 'Mekong' } },
+    { type: 'QueueIntent', seat: 2, action: { actionId: 'investigate', regionId: 'Mekong' } },
+    { type: 'SetReady', seat: 2, ready: true },
+    { type: 'QueueIntent', seat: 3, action: { actionId: 'organize', regionId: 'Amazon' } },
+    { type: 'QueueIntent', seat: 3, action: { actionId: 'international_outreach' } },
+    { type: 'SetReady', seat: 3, ready: true },
     { type: 'CommitCoalitionIntent' },
     { type: 'ResolveResolutionPhase' },
   ];
@@ -44,4 +51,5 @@ test('serialized command log replays to the same snapshot', () => {
 
   assert.deepEqual(replayed, payload.snapshot);
   assert.equal(payload.snapshot.eventLog.some((event) => event.context?.cardReveals?.length), true);
+  assert.deepEqual(payload.snapshot.players.map((player) => player.ownerId), [0, 0, 1, 1]);
 });

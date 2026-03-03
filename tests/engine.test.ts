@@ -6,16 +6,28 @@ const startCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
   type: 'StartGame',
   rulesetId: 'base_design',
   mode: 'LIBERATION',
-  playerCount: 2,
-  factionIds: ['congo_basin_collective', 'levant_sumud'],
+  humanPlayerCount: 4,
+  seatFactionIds: ['congo_basin_collective', 'levant_sumud', 'mekong_echo_network', 'amazon_guardians'],
+  seatOwnerIds: [0, 1, 2, 3],
+  seed: 4242,
+};
+
+const multiOwnerStartCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
+  type: 'StartGame',
+  rulesetId: 'base_design',
+  mode: 'LIBERATION',
+  humanPlayerCount: 2,
+  seatFactionIds: ['congo_basin_collective', 'levant_sumud', 'mekong_echo_network', 'amazon_guardians'],
+  seatOwnerIds: [0, 0, 1, 1],
   seed: 4242,
 };
 
 test('canonical ruleset registry exposes the design-faithful cutover ruleset', () => {
   const rulesets = listRulesets();
-  assert.equal(rulesets.length, 1);
-  assert.equal(rulesets[0]?.id, 'base_design');
-  assert.equal(rulesets[0]?.regions.length, 6);
+  const baseDesign = rulesets.find((ruleset) => ruleset.id === 'base_design');
+
+  assert.equal(Boolean(baseDesign), true);
+  assert.equal(baseDesign?.regions.length, 6);
 });
 
 test('same seed produces deterministic system deck order', () => {
@@ -34,9 +46,24 @@ test('opening resistance draws reveal publicly and move into discard', () => {
   const revealOrigins = revealEvents.flatMap((event) => event.context?.cardReveals ?? []).map((reveal) => reveal.origin);
 
   assert.equal(state.players.every((player) => player.resistanceHand.length === 0), true);
-  assert.equal(state.decks.resistance.discardPile.length, startCommand.playerCount);
-  assert.equal(revealEvents.length >= startCommand.playerCount, true);
+  assert.equal(state.decks.resistance.discardPile.length, state.players.length);
+  assert.equal(revealEvents.length >= state.players.length, true);
   assert.equal(revealOrigins.every((origin) => origin === 'opening_hand'), true);
+});
+
+test('startup supports fewer human players than faction seats while keeping all factions active', () => {
+  const state = initializeGame(multiOwnerStartCommand);
+
+  assert.equal(state.players.length, 4);
+  assert.deepEqual(state.players.map((player) => player.factionId), multiOwnerStartCommand.seatFactionIds);
+  assert.deepEqual(state.players.map((player) => player.ownerId), [0, 0, 1, 1]);
+});
+
+test('startup rejects ownership maps that leave a human player without a faction seat', () => {
+  assert.throws(
+    () => initializeGame({ ...multiOwnerStartCommand, humanPlayerCount: 3, seatOwnerIds: [0, 0, 2, 2] }),
+    /owner 1 has no assigned factions/i,
+  );
 });
 
 test('phase gating rejects coalition actions during system phase', () => {
@@ -101,6 +128,9 @@ test('liberation victory requires the public win and all active mandates', () =>
   }
   state.northernWarMachine = 5;
   state.domains.DyingPlanet.progress = 2;
+  state.domains.WarMachine.progress = 5;
+  state.domains.SilencedTruth.progress = 5;
+  state.domains.FossilGrip.progress = 5;
 
   const next = dispatchCommand(state, { type: 'ResolveResolutionPhase' }, content);
 
@@ -137,8 +167,10 @@ test('launch campaign consumes 2d6 of rng and can remove extraction on success',
   );
   state.players[0].actionsRemaining = 0;
   state.players[0].ready = true;
-  state.players[1].actionsRemaining = 0;
-  state.players[1].ready = true;
+  for (const player of state.players.slice(1)) {
+    player.actionsRemaining = 0;
+    player.ready = true;
+  }
   const rngCallsBefore = state.rng.calls;
 
   const next = dispatchCommand(state, { type: 'CommitCoalitionIntent' }, content);
@@ -167,8 +199,10 @@ test('investigate reveal events carry investigate origin', () => {
   );
   state.players[0].actionsRemaining = 0;
   state.players[0].ready = true;
-  state.players[1].actionsRemaining = 0;
-  state.players[1].ready = true;
+  for (const player of state.players.slice(1)) {
+    player.actionsRemaining = 0;
+    player.ready = true;
+  }
 
   const next = dispatchCommand(state, { type: 'CommitCoalitionIntent' }, content);
   const investigateEvent = next.eventLog.findLast((event) => event.context?.cardReveals?.[0]?.origin === 'investigate');
@@ -181,8 +215,10 @@ function runCampaignForBand(seed: number, domainId: 'DyingPlanet' | 'WarMachine'
   let state = initializeGame({ ...startCommand, seed });
   state = dispatchCommand(state, { type: 'ResolveSystemPhase' }, content);
   state.players[0].actionsRemaining = 1;
-  state.players[1].actionsRemaining = 0;
-  state.players[1].ready = true;
+  for (const player of state.players.slice(1)) {
+    player.actionsRemaining = 0;
+    player.ready = true;
+  }
   state = dispatchCommand(
     state,
     { type: 'QueueIntent', seat: 0, action: { actionId: 'launch_campaign', regionId: 'Congo', domainId, bodiesCommitted: 1, evidenceCommitted: 0 } },

@@ -126,6 +126,8 @@
     "home": {
       "eyebrow": "Operational Briefing",
       "playerCount": "Player Count",
+      "humanPlayerCount": "Human Players",
+      "factionSeatCount": "Faction Seats",
       "mode": "Mode",
       "ruleset": "Scenario Selection",
       "launch": "Launch",
@@ -143,6 +145,7 @@
       "openRulesBrief": "Open Rules Brief",
       "playerGuide": "Player Guide",
       "factionSeats": "Faction Seats",
+      "playerSeatGroup": "Player {{seat}}",
       "seat": "Seat {{seat}}",
       "duplicateFactions": "Factions must be unique.",
       "asymmetricAbilities": "Asymmetric Factions",

@@ -126,6 +126,8 @@
     "home": {
       "eyebrow": "النسخة المطابقة للتصميم",
       "playerCount": "عدد اللاعبين",
+      "humanPlayerCount": "اللاعبون البشر",
+      "factionSeatCount": "مقاعد الفصائل",
       "mode": "الوضع",
       "ruleset": "القواعد الأساسية",
       "launch": "تشغيل",
@@ -143,6 +145,7 @@
       "openRulesBrief": "افتح ملخص القواعد",
       "playerGuide": "دليل اللاعب",
       "factionSeats": "فصايل المقاعد",
+      "playerSeatGroup": "اللاعب {{seat}}",
       "seat": "المقعد {{seat}}",
       "duplicateFactions": "لازم كل فصيل يبقى مختلف.",
       "replaces": "القواعد دي بدلت",

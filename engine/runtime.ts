@@ -16,6 +16,7 @@ import type {
   EngineCommand,
   EngineState,
   FactionDefinition,
+  FactionId,
   PlayerState,
   QueuedIntent,
   RegionId,
@@ -69,19 +70,80 @@ function cloneState<T>(value: T): T {
   return structuredClone(value);
 }
 
+interface NormalizedStartGameConfig {
+  humanPlayerCount: number;
+  seatFactionIds: FactionId[];
+  seatOwnerIds: number[];
+}
+
+export function buildBalancedSeatOwners(humanPlayerCount: number, factionIds: FactionId[]): number[] {
+  const owners: number[] = [];
+  const baseSeatsPerOwner = Math.floor(factionIds.length / humanPlayerCount);
+  const remainder = factionIds.length % humanPlayerCount;
+
+  for (let ownerId = 0; ownerId < humanPlayerCount; ownerId += 1) {
+    const seatsForOwner = baseSeatsPerOwner + (ownerId < remainder ? 1 : 0);
+    for (let seat = 0; seat < seatsForOwner; seat += 1) {
+      owners.push(ownerId);
+    }
+  }
+
+  return owners.slice(0, factionIds.length);
+}
+
+function normalizeStartGameCommand(command: StartGameCommand): NormalizedStartGameConfig {
+  const seatFactionIds = [...(command.seatFactionIds ?? command.factionIds ?? [])];
+  const humanPlayerCount = command.humanPlayerCount ?? command.playerCount ?? 2;
+  const seatOwnerIds = [...(
+    command.seatOwnerIds
+    ?? (humanPlayerCount === seatFactionIds.length
+      ? seatFactionIds.map((_, seat) => seat)
+      : buildBalancedSeatOwners(humanPlayerCount, seatFactionIds))
+  )];
+
+  return {
+    humanPlayerCount,
+    seatFactionIds,
+    seatOwnerIds,
+  };
+}
+
 function validateStartGameCommand(command: StartGameCommand, content: CompiledContent) {
   const scenarioFactionIds = content.ruleset.factions.map((faction) => faction.id);
+  const { humanPlayerCount, seatFactionIds, seatOwnerIds } = normalizeStartGameCommand(command);
 
-  if (command.playerCount !== command.factionIds.length) {
-    throw new Error(`Scenario startup rejected: playerCount ${command.playerCount} does not match ${command.factionIds.length} faction IDs.`);
+  if (humanPlayerCount < 2) {
+    throw new Error(`Scenario startup rejected: humanPlayerCount ${humanPlayerCount} must be at least 2.`);
   }
-  if (command.playerCount !== scenarioFactionIds.length) {
-    throw new Error(`Scenario startup rejected: ${content.ruleset.id} requires ${scenarioFactionIds.length} seats.`);
+  if (humanPlayerCount > scenarioFactionIds.length) {
+    throw new Error(`Scenario startup rejected: ${content.ruleset.id} supports at most ${scenarioFactionIds.length} human players.`);
   }
-
-  const invalidFactionIds = command.factionIds.filter((factionId) => !scenarioFactionIds.includes(factionId));
+  if (seatFactionIds.length !== scenarioFactionIds.length) {
+    throw new Error(`Scenario startup rejected: ${content.ruleset.id} requires ${scenarioFactionIds.length} faction seats.`);
+  }
+  const invalidFactionIds = seatFactionIds.filter((factionId) => !scenarioFactionIds.includes(factionId));
   if (invalidFactionIds.length > 0) {
     throw new Error(`Scenario startup rejected: unsupported factions ${invalidFactionIds.join(', ')}.`);
+  }
+  const duplicateFactionIds = seatFactionIds.filter((factionId, index) => seatFactionIds.indexOf(factionId) !== index);
+  if (duplicateFactionIds.length > 0) {
+    throw new Error(`Scenario startup rejected: duplicate factions ${Array.from(new Set(duplicateFactionIds)).join(', ')}.`);
+  }
+  const missingFactionIds = scenarioFactionIds.filter((factionId) => !seatFactionIds.includes(factionId));
+  if (missingFactionIds.length > 0) {
+    throw new Error(`Scenario startup rejected: missing factions ${missingFactionIds.join(', ')}.`);
+  }
+  if (seatOwnerIds.length !== seatFactionIds.length) {
+    throw new Error(`Scenario startup rejected: seatOwnerIds length ${seatOwnerIds.length} does not match faction seat count ${seatFactionIds.length}.`);
+  }
+  const invalidOwnerIds = seatOwnerIds.filter((ownerId) => !Number.isInteger(ownerId) || ownerId < 0 || ownerId >= humanPlayerCount);
+  if (invalidOwnerIds.length > 0) {
+    throw new Error(`Scenario startup rejected: invalid owner IDs ${Array.from(new Set(invalidOwnerIds)).join(', ')}.`);
+  }
+  for (let ownerId = 0; ownerId < humanPlayerCount; ownerId += 1) {
+    if (!seatOwnerIds.includes(ownerId)) {
+      throw new Error(`Scenario startup rejected: owner ${ownerId} has no assigned factions.`);
+    }
   }
 }
 
@@ -934,8 +996,11 @@ function resolveSystemEscalation(state: EngineState, content: CompiledContent) {
 }
 
 function createInitialPlayers(command: StartGameCommand, content: CompiledContent): PlayerState[] {
-  return command.factionIds.slice(0, command.playerCount).map((factionId, seat) => ({
+  const { seatFactionIds, seatOwnerIds } = normalizeStartGameCommand(command);
+
+  return seatFactionIds.map((factionId, seat) => ({
     seat,
+    ownerId: seatOwnerIds[seat] ?? seat,
     factionId,
     evidence: 1,
     actionsRemaining: ACTIONS_PER_TURN,
@@ -1613,6 +1678,10 @@ function resolveQueuedAction(state: EngineState, content: CompiledContent, seat:
 export function normalizeEngineState(state: EngineState): EngineState {
   const next = cloneState(state);
   next.extractionPool = calculateExtractionPool(next);
+  next.players = next.players.map((player) => ({
+    ...player,
+    ownerId: player.ownerId ?? player.seat,
+  }));
   next.activeBeaconIds = next.activeBeaconIds ?? [];
   next.activeSystemCardIds = next.activeSystemCardIds ?? [];
   next.usedSystemEscalationTriggers = next.usedSystemEscalationTriggers ?? createDefaultEscalationTriggers();

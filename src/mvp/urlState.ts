@@ -4,8 +4,9 @@ export interface SetupConfig {
   surface: 'local' | 'room';
   rulesetId: string;
   mode: VictoryMode;
-  playerCount: 2 | 3 | 4;
+  humanPlayerCount: 2 | 3 | 4;
   factionIds: FactionId[];
+  seatOwnerIds: number[];
   seed: number;
   roomUrl: string;
 }

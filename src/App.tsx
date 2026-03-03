@@ -1,5 +1,6 @@
 import { useEffect, useEffectEvent, useState } from 'react';
 import {
+  buildBalancedSeatOwners,
   compileContent,
   deserializeGame,
   dispatchCommand,
@@ -9,7 +10,6 @@ import {
   type CompiledContent,
   type EngineCommand,
   type EngineState,
-  type FactionId,
 } from '../engine/index.ts';
 import { LOCALE_STORAGE_KEY, t, useAppLocale } from './i18n/index.ts';
 import { GameScreen } from './mvp/GameScreen.tsx';
@@ -21,16 +21,16 @@ import { buildRuntimeLocation, getRuntimeOptions, parseRuntimeRoute } from './mv
 import { DEFAULT_GAME_VIEW_STATE, type AppRoute, type GameViewState, type SetupConfig } from './mvp/urlState.ts';
 
 interface RoomCredential {
-  seat: number;
-  seatToken: string;
+  ownerId: number;
+  ownerToken: string;
 }
 
 interface ActiveSession {
   surface: 'local' | 'room';
   roomId: string | null;
   roomUrl: string;
-  seatToken: string | null;
-  authorizedSeat: number | null;
+  ownerToken: string | null;
+  authorizedOwnerId: number | null;
   content: CompiledContent;
   state: EngineState;
 }
@@ -45,8 +45,9 @@ const DEFAULT_CONFIG: SetupConfig = {
   surface: 'local',
   rulesetId: DEFAULT_RULESET_ID,
   mode: 'LIBERATION',
-  playerCount: 4,
+  humanPlayerCount: 4,
   factionIds: [],
+  seatOwnerIds: [],
   seed: Math.floor(Date.now() % 1_000_000),
   roomUrl: 'http://localhost:8000',
 };
@@ -57,9 +58,10 @@ function generateSessionSeed() {
   return bytes[0] >>> 0;
 }
 
-function clampPlayerCount(playerCount: number): 2 | 3 | 4 {
-  if (playerCount === 3 || playerCount === 4) {
-    return playerCount;
+function clampHumanPlayerCount(humanPlayerCount: number, factionCount: number): 2 | 3 | 4 {
+  const clamped = Math.max(2, Math.min(4, Math.min(humanPlayerCount, factionCount)));
+  if (clamped === 3 || clamped === 4) {
+    return clamped;
   }
   return 2;
 }
@@ -67,20 +69,28 @@ function clampPlayerCount(playerCount: number): 2 | 3 | 4 {
 function deriveScenarioSeats(rulesetId: string) {
   const ruleset = listRulesets().find((entry) => entry.id === rulesetId) ?? listRulesets()[0];
   const factionIds = ruleset.factions.map((faction) => faction.id);
+  const humanPlayerCount = clampHumanPlayerCount(factionIds.length, factionIds.length);
   return {
     ruleset,
     factionIds,
-    playerCount: clampPlayerCount(factionIds.length),
+    humanPlayerCount,
+    seatOwnerIds: buildBalancedSeatOwners(humanPlayerCount, factionIds),
   };
 }
 
 function applyScenarioDefaults(config: SetupConfig): SetupConfig {
-  const { ruleset, factionIds, playerCount } = deriveScenarioSeats(config.rulesetId);
+  const { ruleset, factionIds } = deriveScenarioSeats(config.rulesetId);
+  const humanPlayerCount = clampHumanPlayerCount(config.humanPlayerCount, factionIds.length);
+  const currentSeatOwnerIds = config.seatOwnerIds ?? [];
+  const hasValidSeatOwners = currentSeatOwnerIds.length === factionIds.length
+    && currentSeatOwnerIds.every((ownerId) => ownerId >= 0 && ownerId < humanPlayerCount)
+    && Array.from({ length: humanPlayerCount }, (_, ownerId) => ownerId).every((ownerId) => currentSeatOwnerIds.includes(ownerId));
   return {
     ...config,
     rulesetId: ruleset.id,
     factionIds,
-    playerCount,
+    humanPlayerCount,
+    seatOwnerIds: hasValidSeatOwners ? currentSeatOwnerIds : buildBalancedSeatOwners(humanPlayerCount, factionIds),
   };
 }
 
@@ -101,13 +111,16 @@ function setRoomCredential(roomId: string, credential: RoomCredential) {
 }
 
 function createConfigFromState(state: EngineState, previous: SetupConfig, surface: SetupConfig['surface']): SetupConfig {
+  const factionIds = state.players.map((player) => player.factionId);
+  const ownerIds = Array.from(new Set(state.players.map((player) => player.ownerId)));
   return applyScenarioDefaults({
     ...previous,
     surface,
     rulesetId: state.rulesetId,
     mode: state.mode,
-    playerCount: clampPlayerCount(state.players.length),
-    factionIds: state.players.map((player) => player.factionId),
+    humanPlayerCount: clampHumanPlayerCount(ownerIds.length, factionIds.length),
+    factionIds,
+    seatOwnerIds: state.players.map((player) => player.ownerId),
     seed: state.seed,
   });
 }
@@ -120,12 +133,13 @@ export default function App() {
   );
   const [route, setRoute] = useState<AppRoute>(initialRoute);
   const [setupConfig, setSetupConfig] = useState<SetupConfig>(() => {
-    const { ruleset, factionIds, playerCount } = deriveScenarioSeats(initialRoute.rulesetId);
+    const { ruleset, factionIds, humanPlayerCount, seatOwnerIds } = deriveScenarioSeats(initialRoute.rulesetId);
     return applyScenarioDefaults({
       ...DEFAULT_CONFIG,
       rulesetId: ruleset.id,
       factionIds,
-      playerCount,
+      humanPlayerCount,
+      seatOwnerIds,
       surface: RUNTIME.forceOfflineOnly ? 'local' : initialRoute.page === 'room' ? 'room' : DEFAULT_CONFIG.surface,
     });
   });
@@ -148,8 +162,9 @@ export default function App() {
       type: 'StartGame',
       rulesetId: nextConfig.rulesetId,
       mode: nextConfig.mode,
-      playerCount: nextConfig.playerCount,
-      factionIds: nextConfig.factionIds,
+      humanPlayerCount: nextConfig.humanPlayerCount,
+      seatFactionIds: nextConfig.factionIds,
+      seatOwnerIds: nextConfig.seatOwnerIds,
       seed: nextConfig.seed,
     });
 
@@ -158,8 +173,8 @@ export default function App() {
       surface: 'local',
       roomId: null,
       roomUrl: nextConfig.roomUrl,
-      seatToken: null,
-      authorizedSeat: null,
+      ownerToken: null,
+      authorizedOwnerId: null,
       content,
       state,
     });
@@ -235,7 +250,7 @@ export default function App() {
       pushToast({
         tone: 'warning',
         title: t('ui.app.roomCredentialMissing', 'Room credential missing'),
-        message: t('ui.app.roomCredentialMissingBody', 'No seat credential was found for this room on this browser. Start from the home screen or recreate the room.'),
+        message: t('ui.app.roomCredentialMissingBody', 'No player credential was found for this room on this browser. Start from the home screen or recreate the room.'),
         dismissAfterMs: 5200,
       });
       setHydrating(false);
@@ -247,11 +262,11 @@ export default function App() {
 
     const restoreRoom = async () => {
       try {
-        const response = await fetch(`${setupConfig.roomUrl}/api/rooms/${initialRoute.roomId}?seatToken=${encodeURIComponent(credential.seatToken)}`);
+        const response = await fetch(`${setupConfig.roomUrl}/api/rooms/${initialRoute.roomId}?ownerToken=${encodeURIComponent(credential.ownerToken)}`);
         if (!response.ok) {
           throw new Error(`Room restore failed with ${response.status}`);
         }
-        const payload = (await response.json()) as { state: EngineState; seat: number };
+        const payload = (await response.json()) as { state: EngineState; ownerId: number };
         if (cancelled) {
           return;
         }
@@ -261,8 +276,8 @@ export default function App() {
           surface: 'room',
           roomId: initialRoute.roomId,
           roomUrl: setupConfig.roomUrl,
-          seatToken: credential.seatToken,
-          authorizedSeat: payload.seat,
+          ownerToken: credential.ownerToken,
+          authorizedOwnerId: payload.ownerId,
           content: compileContent(payload.state.rulesetId),
           state: payload.state,
         });
@@ -290,26 +305,26 @@ export default function App() {
   }, [hydrating, initialRoute.roomId, pushToast, setupConfig]);
 
   useEffect(() => {
-    if (!session || session.surface !== 'room' || !session.roomId || !session.seatToken) {
+    if (!session || session.surface !== 'room' || !session.roomId || !session.ownerToken) {
       return;
     }
 
     const roomId = session.roomId;
     const roomUrl = session.roomUrl;
-    const seatToken = session.seatToken;
+    const ownerToken = session.ownerToken;
 
     const interval = window.setInterval(async () => {
       try {
-        const response = await fetch(`${roomUrl}/api/rooms/${roomId}?seatToken=${encodeURIComponent(seatToken)}`);
+        const response = await fetch(`${roomUrl}/api/rooms/${roomId}?ownerToken=${encodeURIComponent(ownerToken)}`);
         if (!response.ok) {
           throw new Error(`Room poll failed with ${response.status}`);
         }
-        const payload = (await response.json()) as { state: EngineState; seat: number };
+        const payload = (await response.json()) as { state: EngineState; ownerId: number };
         setSession((current) =>
           current && current.surface === 'room'
             ? {
               ...current,
-              authorizedSeat: payload.seat,
+              authorizedOwnerId: payload.ownerId,
               state: payload.state,
             }
             : current,
@@ -360,8 +375,9 @@ export default function App() {
         body: JSON.stringify({
           rulesetId: nextConfig.rulesetId,
           mode: nextConfig.mode,
-          playerCount: nextConfig.playerCount,
-          factionIds: nextConfig.factionIds,
+          humanPlayerCount: nextConfig.humanPlayerCount,
+          seatFactionIds: nextConfig.factionIds,
+          seatOwnerIds: nextConfig.seatOwnerIds,
           seed: nextConfig.seed,
         }),
       });
@@ -372,18 +388,18 @@ export default function App() {
       const payload = (await response.json()) as {
         roomId: string;
         state: EngineState;
-        seatTokens: Array<{ seat: number; seatToken: string }>;
+        ownerTokens: Array<{ ownerId: number; ownerToken: string }>;
       };
 
-      const creatorCredential = payload.seatTokens[0];
+      const creatorCredential = payload.ownerTokens[0];
       setRoomCredential(payload.roomId, creatorCredential);
 
       setSession({
         surface: 'room',
         roomId: payload.roomId,
         roomUrl: nextConfig.roomUrl,
-        seatToken: creatorCredential.seatToken,
-        authorizedSeat: creatorCredential.seat,
+        ownerToken: creatorCredential.ownerToken,
+        authorizedOwnerId: creatorCredential.ownerId,
         content: compileContent(payload.state.rulesetId),
         state: payload.state,
       });
@@ -413,14 +429,14 @@ export default function App() {
       return;
     }
 
-    if (!session.roomId || !session.seatToken) {
+    if (!session.roomId || !session.ownerToken) {
       return;
     }
 
     const response = await fetch(`${session.roomUrl}/api/rooms/${session.roomId}/commands`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ seatToken: session.seatToken, commands: [command] }),
+      body: JSON.stringify({ ownerToken: session.ownerToken, commands: [command] }),
     });
     if (!response.ok) {
       pushToast({
@@ -431,10 +447,10 @@ export default function App() {
       });
       return;
     }
-    const payload = (await response.json()) as { state: EngineState; seat: number };
+    const payload = (await response.json()) as { state: EngineState; ownerId: number };
     setSession((current) =>
       current && current.surface === 'room'
-        ? { ...current, state: payload.state, authorizedSeat: payload.seat }
+        ? { ...current, state: payload.state, authorizedOwnerId: payload.ownerId }
         : current,
     );
   };
@@ -449,8 +465,8 @@ export default function App() {
         surface: 'local',
         roomId: null,
         roomUrl: nextConfig.roomUrl,
-        seatToken: null,
-        authorizedSeat: null,
+        ownerToken: null,
+        authorizedOwnerId: null,
         content: compileContent(payload.rulesetId),
         state: payload.snapshot,
       });
@@ -532,7 +548,7 @@ export default function App() {
             setRoute({ page: 'home', rulesetId: setupConfig.rulesetId, roomId: null });
           }}
           onExportSave={exportSave}
-          authorizedSeat={session.authorizedSeat}
+          authorizedOwnerId={session.authorizedOwnerId}
         />
       ) : route.page === 'guidelines' ? (
         <GuidelinesScreen

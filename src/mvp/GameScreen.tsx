@@ -69,7 +69,7 @@ interface GameScreenProps {
   onToast: (toast: { tone: 'info' | 'success' | 'warning' | 'error'; message: string; title?: string; dismissAfterMs?: number }) => void;
   onBack: () => void;
   onExportSave: (serialized: string) => void;
-  authorizedSeat?: number | null;
+  authorizedOwnerId?: number | null;
 }
 
 const AUTOPLAY_SPEED_DELAYS: Record<AutoPlaySpeedLevel, number> = {
@@ -730,10 +730,14 @@ export function GameScreen({
   onToast,
   onBack,
   onExportSave,
-  authorizedSeat,
+  authorizedOwnerId,
 }: GameScreenProps) {
   const { motionMode } = useTabletopTheme();
-  const focusedSeat = authorizedSeat ?? viewState.focusedSeat;
+  const ownedSeats = authorizedOwnerId === null || authorizedOwnerId === undefined
+    ? state.players.map((player) => player.seat)
+    : state.players.filter((player) => player.ownerId === authorizedOwnerId).map((player) => player.seat);
+  const defaultFocusedSeat = ownedSeats[0] ?? 0;
+  const focusedSeat = ownedSeats.includes(viewState.focusedSeat) ? viewState.focusedSeat : defaultFocusedSeat;
   const focusedPlayer = state.players[focusedSeat] ?? state.players[0];
   const faction = getSeatFaction(state, content, focusedPlayer.seat);
   const [copied, setCopied] = useState(false);
@@ -798,7 +802,9 @@ export function GameScreen({
 
   const statusItems = getStatusRibbonItems(state, content);
   const frontRows = getFrontTrackRows(state, content);
-  const playerSummaries = state.players.map((player) => getPlayerStripSummary(player, content, state));
+  const playerSummaries = state.players
+    .filter((player) => ownedSeats.includes(player.seat))
+    .map((player) => getPlayerStripSummary(player, content, state));
   const actionItems = getActionDockItems(state, content, focusedPlayer.seat);
   const phasePresentation = getPhasePresentation(state.phase);
   const preparedMovePreview = buildIntentPreview(draft, draftAction, state, content, focusedPlayer.seat);

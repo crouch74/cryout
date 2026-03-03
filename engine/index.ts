@@ -1,6 +1,7 @@
 export { compileContent, getRulesetDefinition, listRulesets, listScenarios } from './content.ts';
 export { createRng, nextInt, nextRandom, shuffle } from './rng.ts';
 export {
+  buildBalancedSeatOwners,
   dispatchCommand,
   getDisabledActionReason,
   initializeGame,
