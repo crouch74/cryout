@@ -1,5 +1,13 @@
 import type { RegionId } from '../../engine/index.ts';
-import { BOARD_REGION_MAP_MANIFEST } from './worldMapSvgManifest.ts';
+import { baseWorldBoard } from './boards/baseWorldBoard.ts';
+import { tahrirBoard } from './boards/tahrirBoard.ts';
+import { womanLifeFreedomBoard } from './boards/womanLifeFreedomBoard.ts';
+
+const BOARD_REGION_MAP_MANIFEST = {
+  ...baseWorldBoard.regions,
+  ...tahrirBoard.regions,
+  ...womanLifeFreedomBoard.regions,
+};
 
 export interface BoardRegionBlueprint {
   label: string;

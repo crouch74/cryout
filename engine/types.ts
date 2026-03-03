@@ -240,11 +240,63 @@ export interface ActionDefinition {
   cardType?: ResistanceCardType;
 }
 
+export interface MapViewport {
+  canvasWidth: string;
+  canvasHeight: string;
+  canvasLeft: string;
+  canvasTop: string;
+}
+
+export interface BoardRegionMapEntry {
+  regionId: RegionId;
+  label: string;
+  marker: {
+    x: string;
+    y: string;
+  };
+  tokenAnchor: {
+    x: string;
+    y: string;
+  };
+  anchorBias: {
+    x: number;
+    y: number;
+  };
+  clusterRadius: number;
+  labelOffsetY: number;
+  opticalCenteringByTokenType: Record<'extraction' | 'defense' | 'bodies', { x: number; y: number }>;
+  labelOffset: {
+    x: string;
+    y: string;
+  };
+  tooltipOffset: {
+    x: string;
+    y: string;
+  };
+  territoryTilt: string;
+  accent: string;
+  searchTerms: string[];
+  focusDomains: DomainId[];
+  anchorCoverage: string[];
+  interactionCoverage: string[];
+  svgCoverage: string[];
+  note: string;
+}
+
+export interface ScenarioBoardDefinition {
+  assetPath: string;
+  sourceViewBox: string;
+  viewport: MapViewport;
+  regions: Partial<Record<RegionId, BoardRegionMapEntry>>;
+  svgIdConvention?: string;
+}
+
 export interface RulesetDefinition {
   id: string;
   name: string;
   description: string;
   introduction: string;
+  board: ScenarioBoardDefinition;
   regions: RegionDefinition[];
   domains: DomainDefinition[];
   factions: FactionDefinition[];

@@ -110,7 +110,7 @@ export interface BuildRegionLayoutsInput {
   regionIds: RegionId[];
   selectedRegionId: RegionId | null;
   regionCounts: Record<RegionId, RegionCountSummary>;
-  manifest: Record<RegionId, BoardRegionMapEntry>;
+  manifest: Partial<Record<RegionId, BoardRegionMapEntry>>;
 }
 
 const GRID_STEP = 8;
@@ -399,6 +399,9 @@ export function buildRegionLayouts(input: BuildRegionLayoutsInput) {
   const sizing = getTokenSizing(input.defaultVisibleWorldWidth, input.currentVisibleWorldWidth);
   const layouts = input.regionIds.map((regionId) => {
     const manifestEntry = input.manifest[regionId];
+    if (!manifestEntry) {
+      throw new Error(`Missing board region entry for ${regionId}.`);
+    }
     const counts = input.regionCounts[regionId];
     const baseX = viewport.left + viewport.width * (percentToNumber(manifestEntry.tokenAnchor.x) / 100) + manifestEntry.anchorBias.x;
     const baseY = viewport.top + viewport.height * (percentToNumber(manifestEntry.tokenAnchor.y) / 100) + manifestEntry.anchorBias.y;

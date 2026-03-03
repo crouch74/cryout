@@ -41,19 +41,12 @@ const DEFAULT_RULESET_ID = listRulesets()[0]?.id ?? 'base_design';
 const ROOM_HEALTH_TIMEOUT_MS = 1_500;
 const RUNTIME = getRuntimeOptions();
 
-const DEFAULT_FACTIONS: FactionId[] = [
-  'congo_basin_collective',
-  'levant_sumud',
-  'mekong_echo_network',
-  'amazon_guardians',
-];
-
 const DEFAULT_CONFIG: SetupConfig = {
   surface: 'local',
   rulesetId: DEFAULT_RULESET_ID,
   mode: 'LIBERATION',
-  playerCount: 2,
-  factionIds: DEFAULT_FACTIONS,
+  playerCount: 4,
+  factionIds: [],
   seed: Math.floor(Date.now() % 1_000_000),
   roomUrl: 'http://localhost:8000',
 };
@@ -69,6 +62,26 @@ function clampPlayerCount(playerCount: number): 2 | 3 | 4 {
     return playerCount;
   }
   return 2;
+}
+
+function deriveScenarioSeats(rulesetId: string) {
+  const ruleset = listRulesets().find((entry) => entry.id === rulesetId) ?? listRulesets()[0];
+  const factionIds = ruleset.factions.map((faction) => faction.id);
+  return {
+    ruleset,
+    factionIds,
+    playerCount: clampPlayerCount(factionIds.length),
+  };
+}
+
+function applyScenarioDefaults(config: SetupConfig): SetupConfig {
+  const { ruleset, factionIds, playerCount } = deriveScenarioSeats(config.rulesetId);
+  return {
+    ...config,
+    rulesetId: ruleset.id,
+    factionIds,
+    playerCount,
+  };
 }
 
 function getRoomCredential(roomId: string): RoomCredential | null {
@@ -88,7 +101,7 @@ function setRoomCredential(roomId: string, credential: RoomCredential) {
 }
 
 function createConfigFromState(state: EngineState, previous: SetupConfig, surface: SetupConfig['surface']): SetupConfig {
-  return {
+  return applyScenarioDefaults({
     ...previous,
     surface,
     rulesetId: state.rulesetId,
@@ -96,7 +109,7 @@ function createConfigFromState(state: EngineState, previous: SetupConfig, surfac
     playerCount: clampPlayerCount(state.players.length),
     factionIds: state.players.map((player) => player.factionId),
     seed: state.seed,
-  };
+  });
 }
 
 export default function App() {
@@ -107,13 +120,14 @@ export default function App() {
   );
   const [route, setRoute] = useState<AppRoute>(initialRoute);
   const [setupConfig, setSetupConfig] = useState<SetupConfig>(() => {
-    const ruleset = listRulesets().find(r => r.id === initialRoute.rulesetId) || listRulesets()[0];
-    return {
+    const { ruleset, factionIds, playerCount } = deriveScenarioSeats(initialRoute.rulesetId);
+    return applyScenarioDefaults({
       ...DEFAULT_CONFIG,
       rulesetId: ruleset.id,
-      factionIds: ruleset.factions.slice(0, 4).map(f => f.id),
+      factionIds,
+      playerCount,
       surface: RUNTIME.forceOfflineOnly ? 'local' : initialRoute.page === 'room' ? 'room' : DEFAULT_CONFIG.surface,
-    };
+    });
   });
   const [viewState, setViewState] = useState<GameViewState>(DEFAULT_GAME_VIEW_STATE);
   const [session, setSession] = useState<ActiveSession | null>(null);
@@ -128,27 +142,28 @@ export default function App() {
   });
 
   const startLocalSession = useEffectEvent((config: SetupConfig, reason?: Omit<ToastMessage, 'id'>) => {
-    const content = compileContent(config.rulesetId);
+    const nextConfig = applyScenarioDefaults(config);
+    const content = compileContent(nextConfig.rulesetId);
     const state = initializeGame({
       type: 'StartGame',
-      rulesetId: config.rulesetId,
-      mode: config.mode,
-      playerCount: config.playerCount,
-      factionIds: config.factionIds,
-      seed: config.seed,
+      rulesetId: nextConfig.rulesetId,
+      mode: nextConfig.mode,
+      playerCount: nextConfig.playerCount,
+      factionIds: nextConfig.factionIds,
+      seed: nextConfig.seed,
     });
 
-    setSetupConfig((current) => ({ ...current, ...config, surface: 'local' }));
+    setSetupConfig((current) => applyScenarioDefaults({ ...current, ...nextConfig, surface: 'local' }));
     setSession({
       surface: 'local',
       roomId: null,
-      roomUrl: config.roomUrl,
+      roomUrl: nextConfig.roomUrl,
       seatToken: null,
       authorizedSeat: null,
       content,
       state,
     });
-    setRoute({ page: 'offline', rulesetId: config.rulesetId, roomId: null });
+    setRoute({ page: 'offline', rulesetId: nextConfig.rulesetId, roomId: null });
 
     if (reason) {
       pushToast(reason);
@@ -325,11 +340,11 @@ export default function App() {
   }, [hydrating, route, session, setupConfig.rulesetId]);
 
   const startSession = async (config: SetupConfig) => {
-    const nextConfig = {
+    const nextConfig = applyScenarioDefaults({
       ...config,
       surface: RUNTIME.forceOfflineOnly ? 'local' : config.surface,
       seed: generateSessionSeed(),
-    };
+    });
     setSetupConfig(nextConfig);
     setViewState(DEFAULT_GAME_VIEW_STATE);
 
@@ -535,7 +550,7 @@ export default function App() {
           roomPlayAvailable={roomServiceReachable}
           roomPlayChecking={roomServiceChecking}
           roomPlayDisabledByBuild={RUNTIME.forceOfflineOnly}
-          onConfigChange={(patch) => setSetupConfig((current) => ({ ...current, ...patch }))}
+          onConfigChange={(patch) => setSetupConfig((current) => applyScenarioDefaults({ ...current, ...patch }))}
           onStart={startSession}
           onLoadSave={loadSerialized}
           onLoadAutosave={loadAutosave}

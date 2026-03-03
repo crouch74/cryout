@@ -69,6 +69,22 @@ function cloneState<T>(value: T): T {
   return structuredClone(value);
 }
 
+function validateStartGameCommand(command: StartGameCommand, content: CompiledContent) {
+  const scenarioFactionIds = content.ruleset.factions.map((faction) => faction.id);
+
+  if (command.playerCount !== command.factionIds.length) {
+    throw new Error(`Scenario startup rejected: playerCount ${command.playerCount} does not match ${command.factionIds.length} faction IDs.`);
+  }
+  if (command.playerCount !== scenarioFactionIds.length) {
+    throw new Error(`Scenario startup rejected: ${content.ruleset.id} requires ${scenarioFactionIds.length} seats.`);
+  }
+
+  const invalidFactionIds = command.factionIds.filter((factionId) => !scenarioFactionIds.includes(factionId));
+  if (invalidFactionIds.length > 0) {
+    throw new Error(`Scenario startup rejected: unsupported factions ${invalidFactionIds.join(', ')}.`);
+  }
+}
+
 function clamp(value: number, clampConfig: { min?: number; max?: number }): number {
   let next = value;
   if (clampConfig.min !== undefined) {
@@ -1645,6 +1661,7 @@ export function normalizeEngineState(state: EngineState): EngineState {
 
 export function initializeGame(command: StartGameCommand): EngineState {
   const content = compileContent(command.rulesetId);
+  validateStartGameCommand(command, content);
   return createInitialState(command, content);
 }
 

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { getAvailableRegions, type RegionId } from '../engine/index.ts';
+import type { RegionId } from '../engine/index.ts';
 import {
   BOARD_REGION_MAP_MANIFEST,
   getBoardRegionAnchorPathIds,
@@ -18,6 +18,8 @@ import {
 function parsePercent(value: string) {
   return Number(value.replace('%', ''));
 }
+
+const BASE_WORLD_REGION_IDS = Object.keys(BOARD_REGION_MAP_MANIFEST) as RegionId[];
 
 test('tokenizePathData keeps commands and scientific notation numbers intact', () => {
   assert.deepEqual(tokenizePathData('M0 0L10.5-2e-1z'), ['M', '0', '0', 'L', '10.5', '-2e-1', 'z']);
@@ -127,12 +129,12 @@ test('levant anchor coverage removes missing Palestine geometry before pin calcu
 test('real world map asset produces bounded interior anchors for every active region', () => {
   const svgMarkup = readFileSync(new URL('../public/assets/world-map-board.svg', import.meta.url), 'utf8');
   const regionCoverage = Object.fromEntries(
-    getAvailableRegions().map((regionId) => [regionId, getBoardRegionAnchorPathIds(regionId)]),
+    BASE_WORLD_REGION_IDS.map((regionId) => [regionId, getBoardRegionAnchorPathIds(regionId)]),
   ) as Record<RegionId, string[]>;
 
   const anchors = computeRegionInteriorAnchorPercentages(svgMarkup, regionCoverage);
 
-  for (const regionId of getAvailableRegions()) {
+  for (const regionId of BASE_WORLD_REGION_IDS) {
     const anchor = anchors[regionId];
     assert.ok(anchor, `${regionId} should have a computed anchor`);
     assert.equal(parsePercent(anchor.x) > 0 && parsePercent(anchor.x) < 100, true);
@@ -143,12 +145,12 @@ test('real world map asset produces bounded interior anchors for every active re
 test('real world map anchors stay in the same neighborhood as the authored marker fallbacks', () => {
   const svgMarkup = readFileSync(new URL('../public/assets/world-map-board.svg', import.meta.url), 'utf8');
   const regionCoverage = Object.fromEntries(
-    getAvailableRegions().map((regionId) => [regionId, getBoardRegionAnchorPathIds(regionId)]),
+    BASE_WORLD_REGION_IDS.map((regionId) => [regionId, getBoardRegionAnchorPathIds(regionId)]),
   ) as Record<RegionId, string[]>;
 
   const anchors = computeRegionInteriorAnchorPercentages(svgMarkup, regionCoverage);
 
-  for (const regionId of getAvailableRegions()) {
+  for (const regionId of BASE_WORLD_REGION_IDS) {
     const computed = anchors[regionId];
     const fallback = BOARD_REGION_MAP_MANIFEST[regionId].marker;
     assert.ok(computed, `${regionId} should have a computed anchor`);
@@ -160,7 +162,7 @@ test('real world map anchors stay in the same neighborhood as the authored marke
 test('real world map anchor outputs stay stable for the shipped SVG asset', () => {
   const svgMarkup = readFileSync(new URL('../public/assets/world-map-board.svg', import.meta.url), 'utf8');
   const regionCoverage = Object.fromEntries(
-    getAvailableRegions().map((regionId) => [regionId, getBoardRegionAnchorPathIds(regionId)]),
+    BASE_WORLD_REGION_IDS.map((regionId) => [regionId, getBoardRegionAnchorPathIds(regionId)]),
   ) as Record<RegionId, string[]>;
 
   const anchors = computeRegionInteriorAnchorPercentages(svgMarkup, regionCoverage);
@@ -173,7 +175,7 @@ test('real world map anchor outputs stay stable for the shipped SVG asset', () =
     Andes: { x: 28.1893, y: 73.1984 },
   };
 
-  for (const regionId of getAvailableRegions()) {
+  for (const regionId of BASE_WORLD_REGION_IDS) {
     const anchor = anchors[regionId];
     assert.ok(anchor, `${regionId} should have a computed anchor`);
     assert.equal(Math.abs(parsePercent(anchor.x) - expected[regionId].x) < 0.05, true);
@@ -182,7 +184,7 @@ test('real world map anchor outputs stay stable for the shipped SVG asset', () =
 });
 
 test('manifest keeps repaired token anchors aligned to the stable marker baseline', () => {
-  for (const regionId of getAvailableRegions()) {
+  for (const regionId of BASE_WORLD_REGION_IDS) {
     const entry = BOARD_REGION_MAP_MANIFEST[regionId];
 
     assert.ok(entry.tokenAnchor);

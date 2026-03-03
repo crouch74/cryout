@@ -7,6 +7,7 @@
     "dev": "vite",
     "dev:ui": "vite",
     "dev:rooms": "node --experimental-transform-types room-service/server.ts",
+    "generate:scenario-maps": "node scripts/generate-scenario-maps.mjs",
     "build": "tsc -p tsconfig.app.json && tsc -p tsconfig.room-service.json && vite build",
     "build:pages": "tsc -p tsconfig.app.json && tsc -p tsconfig.room-service.json && vite build --mode pages",
     "lint": "eslint .",

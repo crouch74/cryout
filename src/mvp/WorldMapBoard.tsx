@@ -1,15 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { getAvailableRegions, type CompiledContent, type DomainId, type EngineState, type RegionId, type RollResolution } from '../../engine/index.ts';
+import { getAvailableRegions, type BoardRegionMapEntry, type CompiledContent, type DomainId, type EngineState, type RegionId, type RollResolution } from '../../engine/index.ts';
 import { formatNumber, localizeDomainField, localizeRegionField, t } from '../i18n/index.ts';
 import { getRegionDangerState } from './gameUiHelpers.ts';
 import { presentRoll } from './historyPresentation.ts';
 import { Icon } from './icons/Icon.tsx';
 import type { IconType } from './icons/iconTypes.ts';
-import {
-  BOARD_REGION_MAP_MANIFEST,
-  getBoardRegionInteractionPathIds,
-  WORLD_MAP_SVG_METADATA,
-} from './worldMapSvgManifest.ts';
 import {
   extractSvgGeometry,
   getPathDataForId,
@@ -70,7 +65,11 @@ function getBoundingBox(points: Point[]) {
   return { minX, minY, maxX, maxY };
 }
 
-function getRegionGeometry(svgMarkup: string, content: CompiledContent) {
+function getRegionGeometry(
+  svgMarkup: string,
+  regionIds: RegionId[],
+  boardRegions: Partial<Record<RegionId, BoardRegionMapEntry>>,
+) {
   const geometry = extractSvgGeometry(svgMarkup);
   if (!geometry.viewBox) {
     return {
@@ -80,10 +79,9 @@ function getRegionGeometry(svgMarkup: string, content: CompiledContent) {
   }
 
   const regions: Partial<Record<RegionId, RegionGeometryInfo>> = {};
-  const regionIds = getAvailableRegions(content);
 
   for (const regionId of regionIds) {
-    const manifest = BOARD_REGION_MAP_MANIFEST[regionId];
+    const manifest = boardRegions[regionId];
     if (!manifest) {
       continue;
     }
@@ -139,6 +137,8 @@ export function WorldMapBoard({
   const svgHostRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const regionIds = useMemo(() => getAvailableRegions(content), [content]);
+  const board = content.ruleset.board;
+  const boardRegions = board.regions as Partial<Record<RegionId, BoardRegionMapEntry>>;
   const boardState = useMemo(() => ({
     warCritical: state.northernWarMachine >= 9,
     gazeElevated: state.globalGaze >= 15,
@@ -150,7 +150,7 @@ export function WorldMapBoard({
     let cancelled = false;
 
     const loadSvg = async () => {
-      const response = await fetch(WORLD_MAP_SVG_METADATA.assetPath);
+      const response = await fetch(board.assetPath);
       const markup = await response.text();
       if (!cancelled) {
         setSvgMarkup(markup);
@@ -161,7 +161,7 @@ export function WorldMapBoard({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [board.assetPath]);
 
   useEffect(() => {
     if (!canvasRef.current) {
@@ -186,7 +186,10 @@ export function WorldMapBoard({
     };
   }, []);
 
-  const geometry = useMemo(() => (svgMarkup ? getRegionGeometry(svgMarkup, content) : { viewBox: null, regions: {} }), [svgMarkup, content]);
+  const geometry = useMemo(
+    () => (svgMarkup ? getRegionGeometry(svgMarkup, regionIds, boardRegions) : { viewBox: null, regions: {} }),
+    [boardRegions, regionIds, svgMarkup],
+  );
   const focusRegionIds = useMemo(() => {
     const pressuredRegions = regionIds.filter((regionId) => {
       const region = state.regions[regionId];
@@ -226,7 +229,7 @@ export function WorldMapBoard({
 
     return buildFocusedMapViewport({
       viewBox: geometry.viewBox,
-      defaultViewport: WORLD_MAP_SVG_METADATA.viewport,
+      defaultViewport: board.viewport,
       focusBounds,
       targetAspectRatio,
       focusBlend: focusRegionIds.length <= 1 ? 0.35 : 0.15,
@@ -236,7 +239,7 @@ export function WorldMapBoard({
       minHeightRatio: 1.0,
     });
   }, [canvasSize.height, canvasSize.width, focusRegionIds, geometry]);
-  const mapViewport = mapCamera?.viewport ?? WORLD_MAP_SVG_METADATA.viewport;
+  const mapViewport = mapCamera?.viewport ?? board.viewport;
 
   const regionCounts = useMemo(() => Object.fromEntries(
     regionIds.map((regionId) => {
@@ -282,9 +285,9 @@ export function WorldMapBoard({
       regionIds,
       selectedRegionId,
       regionCounts,
-      manifest: BOARD_REGION_MAP_MANIFEST,
+      manifest: board.regions,
     });
-  }, [canvasSize.height, canvasSize.width, mapCamera, mapViewport, regionCounts, regionIds, selectedRegionId]);
+  }, [board.regions, canvasSize.height, canvasSize.width, mapCamera, mapViewport, regionCounts, regionIds, selectedRegionId]);
 
   useEffect(() => {
     if (!svgHostRef.current || !svgMarkup) {
@@ -301,7 +304,11 @@ export function WorldMapBoard({
     const interactionRegionByPathId = new Map<string, RegionId>();
 
     for (const regionId of regionIds) {
-      for (const id of getBoardRegionInteractionPathIds(regionId)) {
+      const manifest = boardRegions[regionId];
+      if (!manifest) {
+        continue;
+      }
+      for (const id of manifest.interactionCoverage) {
         interactionRegionByPathId.set(id, regionId);
       }
     }
@@ -345,7 +352,7 @@ export function WorldMapBoard({
       rootSvg.removeEventListener('pointerleave', handlePointerLeave);
       rootSvg.removeEventListener('click', handleClick);
     };
-  }, [onSelectRegion, regionIds, svgMarkup]);
+  }, [boardRegions, onSelectRegion, regionIds, svgMarkup]);
 
   useEffect(() => {
     if (!svgHostRef.current || !svgMarkup) {
@@ -358,7 +365,10 @@ export function WorldMapBoard({
     }
 
     for (const regionId of regionIds) {
-      const manifest = BOARD_REGION_MAP_MANIFEST[regionId];
+      const manifest = boardRegions[regionId];
+      if (!manifest) {
+        continue;
+      }
       for (const id of manifest.svgCoverage) {
         const target = rootSvg.querySelector(`#${id}`) as HTMLElement | null;
         if (!target) {
@@ -374,7 +384,11 @@ export function WorldMapBoard({
     const hoverRegionIds = [hoveredRegionId].filter((entry): entry is RegionId => Boolean(entry));
 
     for (const regionId of activeRegionIds) {
-      for (const id of BOARD_REGION_MAP_MANIFEST[regionId].svgCoverage) {
+      const manifest = boardRegions[regionId];
+      if (!manifest) {
+        continue;
+      }
+      for (const id of manifest.svgCoverage) {
         const target = rootSvg.querySelector(`#${id}`);
         if (target) {
           target.classList.add('map-region-fill-active');
@@ -383,14 +397,18 @@ export function WorldMapBoard({
     }
 
     for (const regionId of hoverRegionIds) {
-      for (const id of BOARD_REGION_MAP_MANIFEST[regionId].svgCoverage) {
+      const manifest = boardRegions[regionId];
+      if (!manifest) {
+        continue;
+      }
+      for (const id of manifest.svgCoverage) {
         const target = rootSvg.querySelector(`#${id}`);
         if (target) {
           target.classList.add('map-region-fill-hover');
         }
       }
     }
-  }, [hoveredRegionId, regionIds, selectedRegionId, svgMarkup]);
+  }, [boardRegions, hoveredRegionId, regionIds, selectedRegionId, svgMarkup]);
 
   return (
     <section

@@ -52,20 +52,15 @@ export function HomeScreen({
   mode = 'home',
 }: HomeScreenProps) {
   const currentRuleset = RULESETS.find((r) => r.id === config.rulesetId) || RULESETS[0];
-  const factionOptions = currentRuleset.factions.map((f) => f.id);
-  const selectedFactions = config.factionIds.slice(0, config.playerCount);
-  const hasDuplicateFactions = new Set(selectedFactions).size !== selectedFactions.length;
-
-  const updateFaction = (seat: number, factionId: FactionId) => {
-    const nextFactionIds = config.factionIds.slice();
-    nextFactionIds[seat] = factionId;
-    onConfigChange({ factionIds: nextFactionIds });
-  };
+  const selectedFactions = currentRuleset.factions.map((faction) => faction.id);
 
   const handleRulesetChange = (rulesetId: string) => {
     const nextRuleset = RULESETS.find((r) => r.id === rulesetId) || RULESETS[0];
-    const nextFactionIds = nextRuleset.factions.slice(0, 4).map((f) => f.id);
-    onConfigChange({ rulesetId, factionIds: nextFactionIds });
+    onConfigChange({
+      rulesetId,
+      factionIds: nextRuleset.factions.map((f) => f.id),
+      playerCount: nextRuleset.factions.length as 2 | 3 | 4,
+    });
   };
 
   return (
@@ -128,14 +123,10 @@ export function HomeScreen({
                         <option value="SYMBOLIC">{t('ui.mode.symbolic', 'Symbolic')}</option>
                       </select>
                     </label>
-                    <label>
+                    <div>
                       <span>{t('ui.home.playerCount', 'Player Count')}</span>
-                      <select value={config.playerCount} onChange={(event) => onConfigChange({ playerCount: Number(event.target.value) as 2 | 3 | 4 })}>
-                        <option value={2}>2</option>
-                        <option value={3}>3</option>
-                        <option value={4}>4</option>
-                      </select>
-                    </label>
+                      <strong>{config.playerCount}</strong>
+                    </div>
                   </div>
                   {config.surface === 'room' ? (
                     <>
@@ -162,7 +153,6 @@ export function HomeScreen({
                   <div className="header-action-plates">
                     <ThemePlate
                       label={config.surface === 'local' ? t('ui.home.startLocal', 'Start Local Table') : t('ui.home.createRoom', 'Create Room')}
-                      disabled={hasDuplicateFactions}
                       onClick={() => onStart(config)}
                     />
                     {hasAutosave ? <ThemePlate label={t('ui.home.loadAutosave', 'Load Autosave')} onClick={onLoadAutosave} /> : null}
@@ -175,18 +165,12 @@ export function HomeScreen({
                   <span className="engraved-eyebrow">{t('ui.home.factionSeats', 'Faction Seats')}</span>
                   <div className="seat-placard-grid">
                     {Array.from({ length: config.playerCount }).map((_, seat) => (
-                      <label key={seat} className="seat-placard">
+                      <div key={seat} className="seat-placard">
                         <span>{t('ui.home.seat', 'Seat {{seat}}', { seat: seat + 1 })}</span>
-                        <select value={selectedFactions[seat]} onChange={(event) => updateFaction(seat, event.target.value as FactionId)}>
-                          {factionOptions.map((factionId) => (
-                            <option key={factionId} value={factionId}>{getFactionLabel(factionId)}</option>
-                          ))}
-                        </select>
                         <strong>{getFactionLabel(selectedFactions[seat])}</strong>
-                      </label>
+                      </div>
                     ))}
                   </div>
-                  {hasDuplicateFactions ? <p className="inline-error">{t('ui.home.duplicateFactions', 'Factions must be unique.')}</p> : null}
                 </PaperSheet>
               </section>
             </div>
