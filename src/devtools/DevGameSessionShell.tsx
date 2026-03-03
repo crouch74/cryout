@@ -255,6 +255,7 @@ export default function DevGameSessionShell({
         onToast={onToast}
         onBack={onBack}
         authorizedOwnerId={authorizedOwnerId}
+        autoAdvanceTransientUi={autoPlayRunning}
       />
 
       <button

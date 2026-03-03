@@ -68,6 +68,7 @@ interface GameSessionScreenProps {
   onToast: (toast: { tone: 'info' | 'success' | 'warning' | 'error'; message: string; title?: string; dismissAfterMs?: number }) => void;
   onBack: () => void;
   authorizedOwnerId?: number | null;
+  autoAdvanceTransientUi?: boolean;
 }
 
 const VISIBLE_DECK_IDS = ['system', 'resistance', 'crisis'] as const;
@@ -589,6 +590,7 @@ export function GameSessionScreen({
   onToast,
   onBack,
   authorizedOwnerId,
+  autoAdvanceTransientUi = false,
 }: GameSessionScreenProps) {
   const { motionMode } = useTabletopTheme();
   const ownedSeats = authorizedOwnerId === null || authorizedOwnerId === undefined
@@ -619,6 +621,7 @@ export function GameSessionScreen({
   const revealTimerRef = useRef<number | null>(null);
   const revealPhaseTimerRef = useRef<number | null>(null);
   const revealCleanupTimerRef = useRef<number | null>(null);
+  const autoAdvanceTimerRef = useRef<number | null>(null);
   const revealActionButtonRef = useRef<HTMLButtonElement | null>(null);
   const deckButtonRefs = useRef<Record<VisibleDeckId, HTMLButtonElement | null>>({
     system: null,
@@ -1163,6 +1166,9 @@ export function GameSessionScreen({
     if (revealCleanupTimerRef.current !== null) {
       window.clearTimeout(revealCleanupTimerRef.current);
     }
+    if (autoAdvanceTimerRef.current !== null) {
+      window.clearTimeout(autoAdvanceTimerRef.current);
+    }
   }, []);
 
   useEffect(() => {
@@ -1244,8 +1250,20 @@ export function GameSessionScreen({
       return;
     }
 
+    if (autoAdvanceTransientUi) {
+      autoAdvanceTimerRef.current = window.setTimeout(() => {
+        startRevealDismiss(false);
+      }, motionMode === 'reduced' ? 120 : 260);
+      return () => {
+        if (autoAdvanceTimerRef.current !== null) {
+          window.clearTimeout(autoAdvanceTimerRef.current);
+          autoAdvanceTimerRef.current = null;
+        }
+      };
+    }
+
     revealActionButtonRef.current?.focus();
-  }, [activeCardReveal, cardRevealStage]);
+  }, [activeCardReveal, autoAdvanceTransientUi, cardRevealStage, motionMode]);
 
   useEffect(() => {
     if (!campaignResultsHydratedRef.current) {
@@ -1286,6 +1304,24 @@ export function GameSessionScreen({
 
     setCampaignDismissEnabled(true);
   }, [activeCampaignResult]);
+
+  useEffect(() => {
+    if (!autoAdvanceTransientUi || !activeCampaignResult || !campaignDismissEnabled) {
+      return;
+    }
+
+    autoAdvanceTimerRef.current = window.setTimeout(() => {
+      setActiveCampaignResult(null);
+      setCampaignDismissEnabled(false);
+    }, motionMode === 'reduced' ? 140 : 320);
+
+    return () => {
+      if (autoAdvanceTimerRef.current !== null) {
+        window.clearTimeout(autoAdvanceTimerRef.current);
+        autoAdvanceTimerRef.current = null;
+      }
+    };
+  }, [activeCampaignResult, autoAdvanceTransientUi, campaignDismissEnabled, motionMode]);
 
   return (
     <TableSurface className={`game-screen game-screen-compressed ${activeCardReveal ? 'is-reveal-active' : ''}`.trim()}>
