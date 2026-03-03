@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  getAvailableFronts,
+  getAvailableDomains,
   getAvailableRegions,
   getSeatActions,
   getSeatDisabledReason,
@@ -9,7 +9,7 @@ import {
   type CompiledContent,
   type EngineCommand,
   type EngineState,
-  type FrontId,
+  type DomainId,
   type PlayerState,
   type RegionId,
   type ResourceType,
@@ -73,8 +73,8 @@ export function ActionBoard({
     if (targetKind === 'FRONT') {
       return {
         kind: 'FRONT',
-        frontId: (targets[actionId] as FrontId | undefined) ?? getAvailableFronts()[0],
-      };
+        frontId: (targets[actionId] as DomainId | undefined) ?? getAvailableDomains()[0],
+      } as ActionTarget;
     }
     return { kind: 'NONE' };
   };
@@ -236,11 +236,11 @@ export function ActionBoard({
                 value={targets[readingAction.id] ?? ''}
                 onChange={(event) => setTargets({ ...targets, [readingAction.id]: event.target.value })}
               >
-                {(readingAction.targetKind === 'REGION' ? getAvailableRegions() : getAvailableFronts()).map((option) => (
+                {(readingAction.targetKind === 'REGION' ? getAvailableRegions(content) : getAvailableDomains(content)).map((option) => (
                   <option key={option} value={option}>
                     {readingAction.targetKind === 'REGION'
                       ? getRegionLabel(option as RegionId)
-                      : getFrontLabel(option as FrontId)}
+                      : getFrontLabel(option as DomainId)}
                   </option>
                 ))}
               </select>

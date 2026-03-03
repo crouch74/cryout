@@ -124,10 +124,10 @@
       "RESOLUTION_COPY": "Prepared moves resolve in order. Check the board, then reckon with victory or loss."
     },
     "home": {
-      "eyebrow": "Design-Faithful Cutover",
+      "eyebrow": "Operational Briefing",
       "playerCount": "Player Count",
       "mode": "Mode",
-      "ruleset": "Canonical Ruleset",
+      "ruleset": "Scenario Selection",
       "launch": "Launch",
       "localTable": "Local Table",
       "roomPlay": "Room Play",
@@ -145,14 +145,14 @@
       "factionSeats": "Faction Seats",
       "seat": "Seat {{seat}}",
       "duplicateFactions": "Factions must be unique.",
-      "replaces": "This Ruleset Replaces",
-      "replacesBody": "The product now ships one canonical six-region map, Comrades and Evidence, Global Gaze, War Machine, Extraction Tokens, Secret Mandates, and Liberation or Symbolic victory.",
+      "asymmetricAbilities": "Asymmetric Factions",
+      "rulesBody": "Each seat represents a different faction with distinct mandates, passive bonuses, and specialized weaknesses. Success requires horizontal coordination across all seats.",
       "loadSave": "Load Save",
       "utilities": "Utilities",
       "pasteSave": "Paste a serialized save payload here.",
       "regions": "Regions",
       "threat": "Threat",
-      "sixTheatres": "6 canonical theatres",
+      "regionCount": "{{count}} sectors",
       "threatValue": "Extraction tokens to 6 = defeat"
     },
     "legacyLanding": {
@@ -605,7 +605,10 @@
         "SilencedTruth": "Truth",
         "EmptyStomach": "Hunger",
         "FossilGrip": "Fossil",
-        "StolenVoice": "Voice"
+        "StolenVoice": "Voice",
+        "RevolutionaryWave": "Wave",
+        "PatriarchalGrip": "Patriarchy",
+        "UnfinishedJustice": "Justice"
       }
     },
     "map": {
@@ -736,6 +739,16 @@
         "name": "Where the Stones Cry Out",
         "description": "A six-region cooperative struggle against extraction, war, hunger, and erasure.",
         "introduction": "The coalition is trying to do more than survive. It must break extraction, move Evidence across borders, and keep every movement's Secret Mandate intact long enough to win together."
+      },
+      "tahrir_square": {
+        "name": "2011 — TAHRIR SQUARE",
+        "description": "\"For eighteen days, we were free.\"",
+        "introduction": "Players lead the January 25 Revolution — a sprawling, leaderless, digitally-organized uprising that toppled a 30-year dictatorship in 18 days. But the game does not end with Mubarak's fall. It continues through the military transition, the Muslim Brotherhood's election, and the 2013 coup."
+      },
+      "woman_life_freedom": {
+        "name": "2022 — WOMAN, LIFE, FREEDOM",
+        "description": "\"For Jina. For freedom. For the women who burn their chains.\"",
+        "introduction": "Following the murder of Jina (Mahsa) Amini by the morality police, an intersectional revolutionary movement erupted across Iran. Led by women and schoolgirls, burning headscarves in the street, the movement shook the foundations of the Islamic Republic."
       }
     },
     "domains": {
@@ -766,6 +779,18 @@
       "StolenVoice": {
         "name": "Stolen Voice",
         "description": "Cultural survival, language, art, and memory against erasure."
+      },
+      "RevolutionaryWave": {
+        "name": "Revolutionary Wave",
+        "description": "The momentum, hope, and presence of bodies in the street."
+      },
+      "PatriarchalGrip": {
+        "name": "Patriarchal Grip",
+        "description": "Regime control over bodies, hair, and public life."
+      },
+      "UnfinishedJustice": {
+        "name": "Unfinished Justice",
+        "description": "The demand for structural accountability."
       }
     },
     "fronts": {
@@ -824,6 +849,18 @@
       "StolenVoice": {
         "name": "Stolen Voice",
         "description": "Cultural survival, language, art, and memory against erasure."
+      },
+      "RevolutionaryWave": {
+        "name": "Revolutionary Wave",
+        "description": "The momentum, hope, and presence of bodies in the street."
+      },
+      "PatriarchalGrip": {
+        "name": "Patriarchal Grip",
+        "description": "Regime control over bodies, hair, and public life."
+      },
+      "UnfinishedJustice": {
+        "name": "Unfinished Justice",
+        "description": "The demand for structural accountability."
       }
     },
     "regions": {
@@ -856,6 +893,66 @@
         "name": "The Andes",
         "description": "Highland resistance to debt, lithium extraction, and privatized life.",
         "strapline": "The mountain is priced before it is heard."
+      },
+      "Cairo": {
+        "name": "Cairo",
+        "description": "The center of power, Tahrir Square, the Ministry of Interior.",
+        "strapline": "The center of gravity."
+      },
+      "Alexandria": {
+        "name": "Alexandria",
+        "description": "Industrial hubs, Khaled Said’s neighborhood, dockworker resistance.",
+        "strapline": "Labor, docks, sea."
+      },
+      "NileDelta": {
+        "name": "Nile Delta",
+        "description": "Textile strikes, agricultural density, brutal state security presence.",
+        "strapline": "Agriculture, density."
+      },
+      "UpperEgypt": {
+        "name": "Upper Egypt",
+        "description": "Traditional strongholds, sectarian flashpoints, economic neglect.",
+        "strapline": "Neglect, conservativism."
+      },
+      "Suez": {
+        "name": "Suez",
+        "description": "Militarized zones, early uprisings, intense crackdown.",
+        "strapline": "Militarized industry."
+      },
+      "Sinai": {
+        "name": "Sinai",
+        "description": "Bedouin marginalization, security vacuums, border violence.",
+        "strapline": "Exclusion, security."
+      },
+      "Tehran": {
+        "name": "Tehran",
+        "description": "The capital, universities, Evin prison.",
+        "strapline": "The heart of power."
+      },
+      "Kurdistan": {
+        "name": "Kurdistan",
+        "description": "Jina Amini's home, fierce resistance, heavy militarization.",
+        "strapline": "Jin, Jiyan, Azadi began here."
+      },
+      "Isfahan": {
+        "name": "Isfahan",
+        "description": "Historic city, water protests, schoolgirl resistance.",
+        "strapline": "The dry river."
+      },
+      "Mashhad": {
+        "name": "Mashhad",
+        "description": "Conservative religious center, surprising protests.",
+        "strapline": "The shrine city."
+      },
+      "Khuzestan": {
+        "name": "Khuzestan",
+        "description": "Oil rich, ethnically marginalized, water crises.",
+        "strapline": "The thirsty province."
+      },
+      "Balochistan": {
+        "name": "Balochistan",
+        "description": "Marginalized, Zahedan massacre, Friday protests.",
+        "strapline": "Bloody Friday."
       }
     },
     "regionLabels": {
@@ -873,6 +970,42 @@
       },
       "Yemen": {
         "name": "Yemen"
+      },
+      "Cairo": {
+        "name": "Cairo"
+      },
+      "Alexandria": {
+        "name": "Alexandria"
+      },
+      "NileDelta": {
+        "name": "Nile Delta"
+      },
+      "UpperEgypt": {
+        "name": "Upper Egypt"
+      },
+      "Suez": {
+        "name": "Suez"
+      },
+      "Sinai": {
+        "name": "Sinai"
+      },
+      "Tehran": {
+        "name": "Tehran"
+      },
+      "Kurdistan": {
+        "name": "Kurdistan"
+      },
+      "Isfahan": {
+        "name": "Isfahan"
+      },
+      "Mashhad": {
+        "name": "Mashhad"
+      },
+      "Khuzestan": {
+        "name": "Khuzestan"
+      },
+      "Balochistan": {
+        "name": "Balochistan"
       }
     },
     "factions": {
@@ -907,6 +1040,54 @@
         "weakness": "Smuggle Evidence can move only 1 Evidence at a time.",
         "mandateTitle": "No Green Sacrifice Zone",
         "mandateDescription": "End with the Amazon at 1 or fewer Extraction Tokens and Fossil Grip at 5 or more progress."
+      },
+      "april_6_youth": {
+        "name": "April 6 Youth Movement",
+        "shortName": "April 6",
+        "passive": "The Square: If Cairo has 5+ Comrades, actions there gain +2. Martyrdom: If Comrades lost in Cairo, Revolutionary Wave +1.",
+        "weakness": "Digital shutdown events cost -2 Evidence.",
+        "mandateTitle": "Bread, Freedom, Social Justice",
+        "mandateDescription": "End with Revolutionary Wave at 8 or more."
+      },
+      "labor_movement": {
+        "name": "Independent Labor Unions",
+        "shortName": "Unions",
+        "passive": "Labor Strike actions gain +2 on success.",
+        "weakness": "Campaigns outside industrial zones cost +1 Comrade.",
+        "mandateTitle": "The Wheels of Production",
+        "mandateDescription": "End with Empty Stomach at 5 or more."
+      },
+      "kurdish_women": {
+        "name": "Kurdish Women",
+        "shortName": "Kurds",
+        "passive": "Actions cost 1 less Comrade in Kurdistan.",
+        "weakness": "Targeted heavily by IRGC events.",
+        "mandateTitle": "Jin Jiyan Azadi",
+        "mandateDescription": "End with Patriarchal Grip < 5 and Kurdistan at 1 or fewer Extraction Tokens."
+      },
+      "student_union": {
+        "name": "University Student Union",
+        "shortName": "Students",
+        "passive": "+1 to all Digital Front (Silenced Truth) campaigns.",
+        "weakness": "Actions in Balochistan cost +1 Comrade.",
+        "mandateTitle": "Campus Resistance",
+        "mandateDescription": "Tehran Extraction <= 1 and Silenced Truth >= 6."
+      },
+      "bazaar_strikers": {
+        "name": "Bazaar Strikers",
+        "shortName": "Strikers",
+        "passive": "Labor actions gain +2 on success.",
+        "weakness": "Global Appeal costs +1 Evidence.",
+        "mandateTitle": "Economic Halt",
+        "mandateDescription": "Empty Stomach >= 5."
+      },
+      "male_allies": {
+        "name": "Male Allies",
+        "shortName": "Allies",
+        "passive": "May transfer actions to a female faction without spending Evidence.",
+        "weakness": "Cannot resolve Burn Veil action directly.",
+        "mandateTitle": "Shield the Vanguard",
+        "mandateDescription": "Patriarchal Grip <= 3."
       }
     },
     "actions": {
@@ -941,6 +1122,34 @@
       "play_card": {
         "name": "Play Card",
         "description": "Resolve an action card from hand for direct tactical impact."
+      },
+      "go_viral": {
+        "name": "Go Viral",
+        "description": "Spend 1 Evidence, raise Global Gaze by 1."
+      },
+      "burn_veil": {
+        "name": "Burn Veil",
+        "description": "Raise Global Gaze by 2, lose 1 Comrade."
+      },
+      "schoolgirl_network": {
+        "name": "Schoolgirl Network",
+        "description": "Gain 1 Evidence, next action in region costs 1 less."
+      },
+      "compose_chant": {
+        "name": "Compose Chant",
+        "description": "Spend 1 Evidence, create permanent +1 track modifier in region."
+      },
+      "coordinate_digital": {
+        "name": "Digital Coordination",
+        "description": "Spend 1 Evidence, open the table-wide re-plan window."
+      },
+      "expose_regime_lies": {
+        "name": "Expose Regime Lies",
+        "description": "Spend 2 Evidence, reduce War Machine by 1."
+      },
+      "call_labor_strike": {
+        "name": "Call Labor Strike",
+        "description": "Spend 2 Evidence, roll 1d6. 4+ = gain 2 Comrades."
       }
     },
     "beacons": {
@@ -967,6 +1176,42 @@
       "beacon_andes_charter": {
         "title": "Mountain Charter",
         "description": "Andes at 1 or fewer Extraction Tokens and Gilded Cage at 5 or more."
+      },
+      "beacon_tahrir_18_days": {
+        "title": "The 18 Days",
+        "description": "Cairo at 2 or fewer Extraction Tokens (Tahrir never empty)."
+      },
+      "beacon_tahrir_labor_student": {
+        "title": "Labor-Student Alliance",
+        "description": "Successfully call 3 Labor Strikes (Represented by high Empty Stomach domain)."
+      },
+      "beacon_tahrir_no_military_trials": {
+        "title": "No to Military Trials",
+        "description": "Unfinished Justice remains 0."
+      },
+      "beacon_wlf_global_solidarity": {
+        "title": "Global Solidarity",
+        "description": "Global Gaze at least 12 and Patriarchal Grip at most 4."
+      },
+      "beacon_wlf_no_executions": {
+        "title": "Halt Executions",
+        "description": "War Machine drops to 3 or lower."
+      },
+      "beacon_tahrir_victory": {
+        "title": "Tahrir Victory",
+        "description": "Cairo at 1 or fewer Extraction and Revolutionary Wave at 8 or more."
+      },
+      "beacon_labor_solidarity": {
+        "title": "Labor Solidarity",
+        "description": "Industrial hubs at 1 or fewer Extraction and Empty Stomach at 5 or more."
+      },
+      "beacon_wlf_liberation": {
+        "title": "WLF Liberation",
+        "description": "Kurdistan and Tehran at 1 or fewer Extraction and Patriarchal Grip at 3 or less."
+      },
+      "beacon_digital_truth": {
+        "title": "Digital Truth",
+        "description": "5 regions at 1 or fewer Extraction and Silenced Truth at 8 or more."
       }
     },
     "cards": {
@@ -1081,6 +1326,58 @@
       "sys_counterinsurgency_doctrine": {
         "name": "Counterinsurgency Doctrine Expansion",
         "text": "Evidence circulates more slowly as suppression becomes doctrine."
+      },
+      "crisis_tahrir_central_security": {
+        "name": "Central Security Forces",
+        "text": "Military intervention in Cairo. Add 2 Extraction to Cairo."
+      },
+      "crisis_tahrir_internet_shutdown": {
+        "name": "Internet Shutdown",
+        "text": "The state cuts access. All players lose 1 Evidence."
+      },
+      "crisis_tahrir_camel_battle": {
+        "name": "Camel Battle",
+        "text": "Regime thugs attack Tahrir on horses. Remove Bodies from Cairo. Gain Global Gaze."
+      },
+      "crisis_tahrir_state_tv_lies": {
+        "name": "State TV Lies",
+        "text": "Regime claims protests are foreign agents. Reduce Global Gaze."
+      },
+      "crisis_tahrir_military_trials": {
+        "name": "Military Trials",
+        "text": "Protesters are tried in military courts. Remove Bodies, gain Evidence."
+      },
+      "crisis_tahrir_constitutional_declaration": {
+        "name": "Constitutional Declaration",
+        "text": "Presidency grants itself unlimited power. Add to Unfinished Justice."
+      },
+      "crisis_tahrir_rabaa_massacre": {
+        "name": "Rabaa Massacre",
+        "text": "A brutal crackdown. Gain permanent Global Gaze and add Extraction."
+      },
+      "sys_tahrir_state_of_emergency": {
+        "name": "State of Emergency",
+        "text": "The interior ministry locks down transit."
+      },
+      "crisis_wlf_morality_police_raid": {
+        "name": "Morality Police Raid",
+        "text": "A patrol hits Tehran. Remove Bodies and add Extraction."
+      },
+      "crisis_wlf_internet_blackout": {
+        "name": "Internet Blackout",
+        "text": "The state cuts access. All players lose Evidence. Global Gaze drops."
+      },
+      "crisis_wlf_gas_attacks_on_schools": {
+        "name": "Gas Attacks on Schools",
+        "text": "Retaliation against schoolgirls. War Machine increases."
+      },
+      "crisis_wlf_sham_trials_and_executions": {
+        "name": "Sham Trials and Executions",
+        "text": "Protesters are executed to instill fear. Patriarchal Grip +1."
+      },
+      "crisis_wlf_irgc_deployment": {
+        "name": "IRGC Deployment",
+        "text": "The Revolutionary Guard steps in. Add Extraction to peripheral regions."
       }
     },
     "scenarios": {
@@ -1121,6 +1418,44 @@
           "extraction_spiral": {
             "label": "Extraction Spiral",
             "description": "When Climate pressure reaches 7 or more, Congo and Sudan each gain 1 displacement during the world phase."
+          }
+        }
+      },
+      "tahrir_square": {
+        "name": "2011 — Tahrir Square",
+        "description": "For eighteen days, we were free.",
+        "introduction": "Lead the January 25 Revolution against the security state and its shifting successors.",
+        "story": "The revolution is not a moment, but a field of struggle. From the Square to the factories, the wave tries to topple a deep state.",
+        "dramatization": "Smoke, chants, and the sound of falling monuments. The Square must hold at all costs.",
+        "gameplay": "Maintain Presence in Cairo. If the Square empties, the revolutionary wave recedes. Martyrs surge progress but at high cost.",
+        "moralCenter": "Tahrir is the beating heart; the martyrs are the fuel of continuity.",
+        "specialRules": {
+          "the_square": {
+            "label": "The Square",
+            "description": "If Cairo is empty of comrades for two consecutive rounds, Revolutionary Wave decreases by 1."
+          },
+          "martyrdom": {
+            "label": "Martyrdom",
+            "description": "For every 4 comrades removed from Cairo, Revolutionary Wave increases by 1."
+          }
+        }
+      },
+      "woman_life_freedom": {
+        "name": "2022 — Woman, Life, Freedom",
+        "description": "For Jina. For Freedom.",
+        "introduction": "Lead a female-led uprising against patriarchal rule and security dominance.",
+        "story": "After the death of Mahsa Amini, the streets erupted. Veils burnt, walls spoke, and the vanguard shook the foundations of power.",
+        "dramatization": "Hair in the wind, fire in the streets, and a cry that echoes through prisons.",
+        "gameplay": "Break the patriarchal grip through viral dissent and symbolic defiance. Schoolgirls are your network.",
+        "moralCenter": "Women are the vanguard; their liberation is the liberation of all.",
+        "specialRules": {
+          "hijab_enforcement": {
+            "label": "Hijab Enforcement",
+            "description": "High enforcement regions penalize woman-led movement and organize actions."
+          },
+          "gender_dynamics": {
+            "label": "Gender Dynamics",
+            "description": "Male allies can shield or transfer actions to support female-led factions."
           }
         }
       }

@@ -187,7 +187,56 @@ export const BOARD_REGION_SVG_COVERAGE: Record<RegionId, BoardRegionSvgCoverage>
     searchTerms: ['andes', 'peru', 'bolivia', 'chile', 'highlands', 'lithium'],
     note: 'Use Peru-Bolivia-Chile for the mountain spine. Argentina, Ecuador, Colombia, Paraguay, and Uruguay are nearby reference paths.',
   },
+  Cairo: {
+    regionId: 'Cairo', label: 'Cairo',
+    primary: refs('eg'), nearby: refs('eg'), searchTerms: ['cairo'], note: ''
+  },
+  Alexandria: {
+    regionId: 'Alexandria', label: 'Alexandria',
+    primary: refs('eg'), nearby: refs('eg'), searchTerms: ['alexandria'], note: ''
+  },
+  NileDelta: {
+    regionId: 'NileDelta', label: 'Nile Delta',
+    primary: refs('eg'), nearby: refs('eg'), searchTerms: ['nile'], note: ''
+  },
+  UpperEgypt: {
+    regionId: 'UpperEgypt', label: 'Upper Egypt',
+    primary: refs('eg'), nearby: refs('eg'), searchTerms: ['egypt'], note: ''
+  },
+  Suez: {
+    regionId: 'Suez', label: 'Suez',
+    primary: refs('eg'), nearby: refs('eg'), searchTerms: ['suez'], note: ''
+  },
+  Sinai: {
+    regionId: 'Sinai', label: 'Sinai',
+    primary: refs('eg'), nearby: refs('eg'), searchTerms: ['sinai'], note: ''
+  },
+  Tehran: {
+    regionId: 'Tehran', label: 'Tehran',
+    primary: refs(), nearby: refs(), searchTerms: ['tehran'], note: ''
+  },
+  Kurdistan: {
+    regionId: 'Kurdistan', label: 'Kurdistan',
+    primary: refs(), nearby: refs(), searchTerms: ['kurdistan'], note: ''
+  },
+  Isfahan: {
+    regionId: 'Isfahan', label: 'Isfahan',
+    primary: refs(), nearby: refs(), searchTerms: ['isfahan'], note: ''
+  },
+  Mashhad: {
+    regionId: 'Mashhad', label: 'Mashhad',
+    primary: refs(), nearby: refs(), searchTerms: ['mashhad'], note: ''
+  },
+  Khuzestan: {
+    regionId: 'Khuzestan', label: 'Khuzestan',
+    primary: refs(), nearby: refs(), searchTerms: ['khuzestan'], note: ''
+  },
+  Balochistan: {
+    regionId: 'Balochistan', label: 'Balochistan',
+    primary: refs(), nearby: refs(), searchTerms: ['balochistan'], note: ''
+  },
 };
+
 
 export const BOARD_REGION_MAP_MANIFEST: Record<RegionId, BoardRegionMapEntry> = {
   Congo: {
@@ -334,7 +383,80 @@ export const BOARD_REGION_MAP_MANIFEST: Record<RegionId, BoardRegionMapEntry> = 
     svgCoverage: [...BOARD_REGION_SVG_COVERAGE.Andes.primary, ...BOARD_REGION_SVG_COVERAGE.Andes.nearby].map((entry) => entry.id),
     note: BOARD_REGION_SVG_COVERAGE.Andes.note,
   },
+  Cairo: {
+    regionId: 'Cairo', label: 'Cairo', marker: { x: '620px', y: '340px' }, tokenAnchor: { x: '620px', y: '340px' },
+    anchorBias: { x: 0, y: 0 }, clusterRadius: 72, labelOffsetY: -14, opticalCenteringByTokenType: { extraction: { x: 0, y: -1 }, defense: { x: 0, y: 0 }, bodies: { x: 0, y: 0.5 } },
+    labelOffset: { x: '18px', y: '-18px' }, tooltipOffset: { x: '18px', y: '-208px' }, territoryTilt: '0deg', accent: '#84645f', searchTerms: [], focusDomains: [],
+    anchorCoverage: [], interactionCoverage: [], svgCoverage: [], note: ''
+  },
+  Alexandria: {
+    regionId: 'Alexandria', label: 'Alexandria', marker: { x: '600px', y: '310px' }, tokenAnchor: { x: '600px', y: '310px' },
+    anchorBias: { x: 0, y: 0 }, clusterRadius: 72, labelOffsetY: -14, opticalCenteringByTokenType: { extraction: { x: 0, y: -1 }, defense: { x: 0, y: 0 }, bodies: { x: 0, y: 0.5 } },
+    labelOffset: { x: '18px', y: '-18px' }, tooltipOffset: { x: '18px', y: '-208px' }, territoryTilt: '0deg', accent: '#84645f', searchTerms: [], focusDomains: [],
+    anchorCoverage: [], interactionCoverage: [], svgCoverage: [], note: ''
+  },
+  NileDelta: {
+    regionId: 'NileDelta', label: 'Nile Delta', marker: { x: '615px', y: '325px' }, tokenAnchor: { x: '615px', y: '325px' },
+    anchorBias: { x: 0, y: 0 }, clusterRadius: 72, labelOffsetY: -14, opticalCenteringByTokenType: { extraction: { x: 0, y: -1 }, defense: { x: 0, y: 0 }, bodies: { x: 0, y: 0.5 } },
+    labelOffset: { x: '18px', y: '-18px' }, tooltipOffset: { x: '18px', y: '-208px' }, territoryTilt: '0deg', accent: '#84645f', searchTerms: [], focusDomains: [],
+    anchorCoverage: [], interactionCoverage: [], svgCoverage: [], note: ''
+  },
+  UpperEgypt: {
+    regionId: 'UpperEgypt', label: 'Upper Egypt', marker: { x: '630px', y: '370px' }, tokenAnchor: { x: '630px', y: '370px' },
+    anchorBias: { x: 0, y: 0 }, clusterRadius: 72, labelOffsetY: -14, opticalCenteringByTokenType: { extraction: { x: 0, y: -1 }, defense: { x: 0, y: 0 }, bodies: { x: 0, y: 0.5 } },
+    labelOffset: { x: '18px', y: '-18px' }, tooltipOffset: { x: '18px', y: '-208px' }, territoryTilt: '0deg', accent: '#84645f', searchTerms: [], focusDomains: [],
+    anchorCoverage: [], interactionCoverage: [], svgCoverage: [], note: ''
+  },
+  Suez: {
+    regionId: 'Suez', label: 'Suez', marker: { x: '645px', y: '335px' }, tokenAnchor: { x: '645px', y: '335px' },
+    anchorBias: { x: 0, y: 0 }, clusterRadius: 72, labelOffsetY: -14, opticalCenteringByTokenType: { extraction: { x: 0, y: -1 }, defense: { x: 0, y: 0 }, bodies: { x: 0, y: 0.5 } },
+    labelOffset: { x: '18px', y: '-18px' }, tooltipOffset: { x: '18px', y: '-208px' }, territoryTilt: '0deg', accent: '#84645f', searchTerms: [], focusDomains: [],
+    anchorCoverage: [], interactionCoverage: [], svgCoverage: [], note: ''
+  },
+  Sinai: {
+    regionId: 'Sinai', label: 'Sinai', marker: { x: '660px', y: '340px' }, tokenAnchor: { x: '660px', y: '340px' },
+    anchorBias: { x: 0, y: 0 }, clusterRadius: 72, labelOffsetY: -14, opticalCenteringByTokenType: { extraction: { x: 0, y: -1 }, defense: { x: 0, y: 0 }, bodies: { x: 0, y: 0.5 } },
+    labelOffset: { x: '18px', y: '-18px' }, tooltipOffset: { x: '18px', y: '-208px' }, territoryTilt: '0deg', accent: '#84645f', searchTerms: [], focusDomains: [],
+    anchorCoverage: [], interactionCoverage: [], svgCoverage: [], note: ''
+  },
+  Tehran: {
+    regionId: 'Tehran', label: 'Tehran', marker: { x: '730px', y: '320px' }, tokenAnchor: { x: '730px', y: '320px' },
+    anchorBias: { x: 0, y: 0 }, clusterRadius: 72, labelOffsetY: -14, opticalCenteringByTokenType: { extraction: { x: 0, y: -1 }, defense: { x: 0, y: 0 }, bodies: { x: 0, y: 0.5 } },
+    labelOffset: { x: '18px', y: '-18px' }, tooltipOffset: { x: '18px', y: '-208px' }, territoryTilt: '0deg', accent: '#84645f', searchTerms: [], focusDomains: [],
+    anchorCoverage: [], interactionCoverage: [], svgCoverage: [], note: ''
+  },
+  Kurdistan: {
+    regionId: 'Kurdistan', label: 'Kurdistan', marker: { x: '710px', y: '300px' }, tokenAnchor: { x: '710px', y: '300px' },
+    anchorBias: { x: 0, y: 0 }, clusterRadius: 72, labelOffsetY: -14, opticalCenteringByTokenType: { extraction: { x: 0, y: -1 }, defense: { x: 0, y: 0 }, bodies: { x: 0, y: 0.5 } },
+    labelOffset: { x: '18px', y: '-18px' }, tooltipOffset: { x: '18px', y: '-208px' }, territoryTilt: '0deg', accent: '#84645f', searchTerms: [], focusDomains: [],
+    anchorCoverage: [], interactionCoverage: [], svgCoverage: [], note: ''
+  },
+  Isfahan: {
+    regionId: 'Isfahan', label: 'Isfahan', marker: { x: '745px', y: '330px' }, tokenAnchor: { x: '745px', y: '330px' },
+    anchorBias: { x: 0, y: 0 }, clusterRadius: 72, labelOffsetY: -14, opticalCenteringByTokenType: { extraction: { x: 0, y: -1 }, defense: { x: 0, y: 0 }, bodies: { x: 0, y: 0.5 } },
+    labelOffset: { x: '18px', y: '-18px' }, tooltipOffset: { x: '18px', y: '-208px' }, territoryTilt: '0deg', accent: '#84645f', searchTerms: [], focusDomains: [],
+    anchorCoverage: [], interactionCoverage: [], svgCoverage: [], note: ''
+  },
+  Mashhad: {
+    regionId: 'Mashhad', label: 'Mashhad', marker: { x: '770px', y: '315px' }, tokenAnchor: { x: '770px', y: '315px' },
+    anchorBias: { x: 0, y: 0 }, clusterRadius: 72, labelOffsetY: -14, opticalCenteringByTokenType: { extraction: { x: 0, y: -1 }, defense: { x: 0, y: 0 }, bodies: { x: 0, y: 0.5 } },
+    labelOffset: { x: '18px', y: '-18px' }, tooltipOffset: { x: '18px', y: '-208px' }, territoryTilt: '0deg', accent: '#84645f', searchTerms: [], focusDomains: [],
+    anchorCoverage: [], interactionCoverage: [], svgCoverage: [], note: ''
+  },
+  Khuzestan: {
+    regionId: 'Khuzestan', label: 'Khuzestan', marker: { x: '725px', y: '345px' }, tokenAnchor: { x: '725px', y: '345px' },
+    anchorBias: { x: 0, y: 0 }, clusterRadius: 72, labelOffsetY: -14, opticalCenteringByTokenType: { extraction: { x: 0, y: -1 }, defense: { x: 0, y: 0 }, bodies: { x: 0, y: 0.5 } },
+    labelOffset: { x: '18px', y: '-18px' }, tooltipOffset: { x: '18px', y: '-208px' }, territoryTilt: '0deg', accent: '#84645f', searchTerms: [], focusDomains: [],
+    anchorCoverage: [], interactionCoverage: [], svgCoverage: [], note: ''
+  },
+  Balochistan: {
+    regionId: 'Balochistan', label: 'Balochistan', marker: { x: '760px', y: '360px' }, tokenAnchor: { x: '760px', y: '360px' },
+    anchorBias: { x: 0, y: 0 }, clusterRadius: 72, labelOffsetY: -14, opticalCenteringByTokenType: { extraction: { x: 0, y: -1 }, defense: { x: 0, y: 0 }, bodies: { x: 0, y: 0.5 } },
+    labelOffset: { x: '18px', y: '-18px' }, tooltipOffset: { x: '18px', y: '-208px' }, territoryTilt: '0deg', accent: '#84645f', searchTerms: [], focusDomains: [],
+    anchorCoverage: [], interactionCoverage: [], svgCoverage: [], note: ''
+  },
 };
+
 
 export function getBoardRegionSvgPathIds(regionId: RegionId) {
   return BOARD_REGION_MAP_MANIFEST[regionId].svgCoverage.filter((id) => SVG_COUNTRY_PATH_INDEX[id as keyof typeof SVG_COUNTRY_PATH_INDEX]?.kind !== 'missing');

@@ -195,13 +195,16 @@ const FRONT_FALLBACKS: Record<string, string> = {
   POVERTY: 'Economic Poverty',
   ENERGY: 'Energy Access',
   CULTURE: 'Art & Culture',
+  FossilGrip: 'Fossil Grip',
+  StolenVoice: 'Stolen Voice',
+  RevolutionaryWave: 'Revolutionary Wave',
+  PatriarchalGrip: 'Patriarchal Grip',
+  UnfinishedJustice: 'Unfinished Justice',
   WarMachine: 'War Machine',
   DyingPlanet: 'Dying Planet',
   GildedCage: 'Gilded Cage',
   SilencedTruth: 'Silenced Truth',
   EmptyStomach: 'Empty Stomach',
-  FossilGrip: 'Fossil Grip',
-  StolenVoice: 'Stolen Voice',
 };
 
 const CIVIC_SPACE_FALLBACKS: Record<string, string> = {

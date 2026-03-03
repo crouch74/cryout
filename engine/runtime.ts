@@ -29,7 +29,7 @@ import type {
   SystemPersistentModifiers,
 } from './types.ts';
 
-const REGION_IDS: RegionId[] = ['Congo', 'Levant', 'Amazon', 'Sahel', 'Mekong', 'Andes'];
+
 const ACTIONS_PER_TURN = 2;
 const EXTRACTION_DEFEAT_THRESHOLD = 6;
 const MAX_EXTRACTION_POOL = 36;
@@ -220,7 +220,8 @@ function getSeatTotalBodies(state: EngineState, seat: number) {
 
 function calculateExtractionPool(state: EngineState) {
   const inPlay = Object.values(state.regions).reduce((sum, region) => sum + region.extractionTokens, 0);
-  return Math.max(0, MAX_EXTRACTION_POOL - inPlay);
+  const maxPool = state.rulesetId === 'tahrir_square' || state.rulesetId === 'woman_life_freedom' ? 72 : MAX_EXTRACTION_POOL;
+  return Math.max(0, maxPool - inPlay);
 }
 
 function getTotalExtractionTokens(state: EngineState) {
@@ -337,7 +338,7 @@ function evaluateCondition(
     case 'not':
       return !evaluateCondition(state, content, condition.condition, context);
     case 'every_region_extraction_at_most':
-      return REGION_IDS.every((regionId) => state.regions[regionId].extractionTokens <= condition.count);
+      return (Object.keys(state.regions) as RegionId[]).every((regionId) => state.regions[regionId].extractionTokens <= condition.count);
     case 'all_active_beacons_complete':
       return state.activeBeaconIds.every((beaconId) => state.beacons[beaconId]?.complete);
   }
@@ -357,7 +358,7 @@ function resolveRegionSelector(
     return [selector];
   }
 
-  const candidates = REGION_IDS
+  const candidates = (Object.keys(state.regions) as RegionId[])
     .map((regionId) => ({
       regionId,
       vulnerability: state.regions[regionId].vulnerability[selector.byVulnerability] ?? 0,
@@ -465,7 +466,7 @@ function getNextSystemEscalationTrigger(state: EngineState): SystemEscalationTri
 }
 
 function checkExtractionLoss(state: EngineState) {
-  const breachedRegion = REGION_IDS.find((regionId) => state.regions[regionId].extractionTokens >= EXTRACTION_DEFEAT_THRESHOLD);
+  const breachedRegion = (Object.keys(state.regions) as RegionId[]).find((regionId) => state.regions[regionId].extractionTokens >= EXTRACTION_DEFEAT_THRESHOLD);
   if (!breachedRegion) {
     return false;
   }
@@ -482,7 +483,7 @@ function checkExtractionLoss(state: EngineState) {
 
 function checkPositiveVictory(state: EngineState, content: CompiledContent): boolean {
   const liberationComplete = state.mode === 'LIBERATION'
-    && REGION_IDS.every((regionId) => state.regions[regionId].extractionTokens <= content.ruleset.liberationThreshold);
+    && (Object.keys(state.regions) as RegionId[]).every((regionId) => state.regions[regionId].extractionTokens <= content.ruleset.liberationThreshold);
   const symbolicComplete = state.mode === 'SYMBOLIC'
     && state.activeBeaconIds.every((beaconId) => state.beacons[beaconId]?.complete);
 
@@ -695,12 +696,47 @@ function applyEffects(state: EngineState, content: CompiledContent, effects: Eff
         trace.message = 'Draw handled by helper trace.';
         break;
       }
+      case 'modify_hijab': {
+        const regionIds = resolveRegionSelector(state, content, effect.region, source.context);
+        for (const regionId of regionIds) {
+          const region = state.regions[regionId];
+          const before = region.hijabEnforcement;
+          region.hijabEnforcement = clamp(region.hijabEnforcement + effect.delta, { min: 0, max: 2 });
+          trace.deltas.push(createDelta('hijab', `${regionId}.hijab`, before, region.hijabEnforcement));
+        }
+        break;
+      }
+      case 'open_replanning': {
+        // This is a UI-level signal, but we can log it here.
+        addSimpleEvent(state, 'system', 'replanning', '📡', 'Digital coordination has opened the coalition planning window.', source.causedBy);
+        break;
+      }
       case 'log':
         trace.message = effect.message;
         break;
     }
 
     traces.push(trace);
+  }
+
+  // MARTYRDOM LOGIC (Tahrir Square)
+  if (state.rulesetId === 'tahrir_square' && source.context.actingSeat !== undefined) {
+    const bodiesDelta = traces.filter(t => t.effectType === 'remove_bodies').reduce((sum, t) => {
+      const d = t.deltas.find(d => d.kind === 'bodies' && d.label.includes('Cairo'));
+      if (d && typeof d.before === 'number' && typeof d.after === 'number') {
+        return sum + (d.before - d.after);
+      }
+      return sum;
+    }, 0);
+    if (bodiesDelta > 0) {
+      state.tahrirMartyrCount += bodiesDelta;
+      const waveGain = Math.floor(state.tahrirMartyrCount / 4);
+      if (waveGain > 0) {
+        state.tahrirMartyrCount %= 4;
+        state.domains['RevolutionaryWave'].progress = clamp(state.domains['RevolutionaryWave'].progress + waveGain, { max: 12 });
+        addSimpleEvent(state, 'system', 'martyrdom', '🕯️', `Martyrdom in the Square has strengthened the Revolutionary Wave.`, ['martyrdom']);
+      }
+    }
   }
 
   return traces;
@@ -912,17 +948,43 @@ function createInitialState(command: StartGameCommand, content: CompiledContent)
   }
 
   const regions = Object.fromEntries(
-    REGION_IDS.map((regionId) => [
+    (Object.keys(content.regions) as RegionId[]).map((regionId) => [
       regionId,
       {
         id: regionId,
-        extractionTokens: regionId === 'Levant' || regionId === 'Congo' ? 2 : 1,
-        vulnerability: { ...content.regions[regionId].vulnerability },
+        extractionTokens: 0,
+        vulnerability: content.regions[regionId]?.vulnerability ?? {
+          WarMachine: 0, DyingPlanet: 0, GildedCage: 0, SilencedTruth: 0, EmptyStomach: 0, FossilGrip: 0, StolenVoice: 0,
+          RevolutionaryWave: 0, PatriarchalGrip: 0, UnfinishedJustice: 0
+        },
         defenseRating: 0,
         bodiesPresent: Object.fromEntries(players.map((player) => [player.seat, 0])),
+        hijabEnforcement: 0,
       },
     ]),
   ) as EngineState['regions'];
+
+  // Apply scenario-specific extraction seeds
+  if (command.rulesetId === 'base_design') {
+    regions['Levant'].extractionTokens = 2;
+    regions['Congo'].extractionTokens = 2;
+    regions['Amazon'].extractionTokens = 1;
+    regions['Sahel'].extractionTokens = 1;
+    regions['Mekong'].extractionTokens = 1;
+    regions['Andes'].extractionTokens = 1;
+  } else if (command.rulesetId === 'tahrir_square') {
+    regions['Cairo'].extractionTokens = 2;
+    regions['Alexandria'].extractionTokens = 1;
+    regions['NileDelta'].extractionTokens = 1;
+    regions['Suez'].extractionTokens = 1;
+  } else if (command.rulesetId === 'woman_life_freedom') {
+    regions['Tehran'].extractionTokens = 2;
+    regions['Kurdistan'].extractionTokens = 2;
+    regions['Khuzestan'].extractionTokens = 1;
+    regions['Balochistan'].extractionTokens = 1;
+    // WLF starts with high enforcement
+    for (const r of Object.values(regions)) { r.hijabEnforcement = 2; }
+  }
 
   for (const player of players) {
     const faction = content.factions[player.factionId];
@@ -982,6 +1044,8 @@ function createInitialState(command: StartGameCommand, content: CompiledContent)
     winner: null,
     lossReason: null,
     mandatesResolved: false,
+    tahrirEmptyRounds: 0,
+    tahrirMartyrCount: 0,
   };
 
   for (const player of state.players) {
@@ -1429,9 +1493,9 @@ function resolveLaunchCampaign(
     });
     const backlashEffects: Effect[] = total <= 5
       ? [
-          { type: 'add_extraction', region: regionId, amount: 1 },
-          { type: 'modify_war_machine', delta: 1 },
-        ]
+        { type: 'add_extraction', region: regionId, amount: 1 },
+        { type: 'modify_war_machine', delta: 1 },
+      ]
       : [{ type: 'modify_gaze', delta: 1 }];
     traces.push(
       ...applyEffects(
@@ -1460,6 +1524,7 @@ function resolveQueuedAction(state: EngineState, content: CompiledContent, seat:
     actingSeat: seat,
     targetRegionId: intent.regionId,
     targetDomainId: intent.domainId,
+    causedBy: [],
   };
 
   switch (action.id) {
@@ -1489,6 +1554,31 @@ function resolveQueuedAction(state: EngineState, content: CompiledContent, seat:
       break;
     case 'play_card':
       traces = resolvePlayCard(state, content, seat, intent);
+      break;
+    case 'go_viral':
+      traces = applyEffects(state, content, [{ type: 'lose_evidence', seat, amount: 1 }, { type: 'modify_gaze', delta: 1 }], {
+        sourceType: 'action', sourceId: 'go_viral', emoji: '📱', message: 'Going viral.', causedBy: ['go_viral'], context: eventContext as ResolveContext
+      });
+      break;
+    case 'burn_veil':
+      traces = applyEffects(state, content, [{ type: 'remove_bodies', region: intent.regionId!, seat, amount: 1 }, { type: 'modify_gaze', delta: 2 }], {
+        sourceType: 'action', sourceId: 'burn_veil', emoji: '🔥', message: 'Burning the veil.', causedBy: ['burn_veil'], context: eventContext as ResolveContext
+      });
+      break;
+    case 'schoolgirl_network':
+      traces = applyEffects(state, content, [{ type: 'gain_evidence', seat, amount: 1 }], {
+        sourceType: 'action', sourceId: 'schoolgirl_network', emoji: '🎒', message: 'Schoolgirl network gathered info.', causedBy: ['schoolgirl_network'], context: eventContext as ResolveContext
+      });
+      break;
+    case 'compose_chant':
+      traces = applyEffects(state, content, [{ type: 'lose_evidence', seat, amount: 1 }], {
+        sourceType: 'action', sourceId: 'compose_chant', emoji: '📣', message: 'Composing a chant.', causedBy: ['compose_chant'], context: eventContext as ResolveContext
+      });
+      break;
+    case 'coordinate_digital':
+      traces = applyEffects(state, content, [{ type: 'lose_evidence', seat, amount: 1 }, { type: 'open_replanning' }], {
+        sourceType: 'action', sourceId: 'coordinate_digital', emoji: '🖥️', message: 'Coordinating digitally.', causedBy: ['coordinate_digital'], context: eventContext as ResolveContext
+      });
       break;
   }
 
@@ -1592,6 +1682,7 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
         actionId: command.action.actionId,
         targetRegionId: command.action.regionId,
         targetDomainId: command.action.domainId,
+        causedBy: ['QueueIntent'],
       });
       return next;
     }
@@ -1611,6 +1702,7 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
       player.ready = false;
       addEvent(next, 'command', 'RemoveQueuedIntent', '↩️', `Seat ${command.seat + 1} pulled a queued move.`, ['RemoveQueuedIntent'], [], {
         actingSeat: command.seat,
+        causedBy: ['RemoveQueuedIntent'],
       });
       return next;
     }
@@ -1631,6 +1723,7 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
       player.ready = false;
       addEvent(next, 'command', 'ReorderQueuedIntent', '🔀', `Seat ${command.seat + 1} reordered planned moves.`, ['ReorderQueuedIntent'], [], {
         actingSeat: command.seat,
+        causedBy: ['ReorderQueuedIntent'],
       });
       return next;
     }
@@ -1652,6 +1745,7 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
       addEvent(next, 'command', 'SetReady', command.ready ? '✅' : '⚪', `Seat ${command.seat + 1} is ${command.ready ? 'ready' : 'not ready'}.`, ['SetReady'], [], {
         actingSeat: command.seat,
         readyState: command.ready,
+        causedBy: ['SetReady'],
       });
       return next;
     }
@@ -1701,6 +1795,20 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
         player.actionsRemaining = ACTIONS_PER_TURN;
         player.ready = false;
         player.queuedIntents = [];
+      }
+
+      // THE SQUARE (Tahrir Square)
+      if (next.rulesetId === 'tahrir_square') {
+        const cairoBodies = Object.values(next.regions['Cairo'].bodiesPresent).reduce((a, b) => a + b, 0);
+        if (cairoBodies === 0) {
+          next.tahrirEmptyRounds += 1;
+          if (next.tahrirEmptyRounds >= 2) {
+            next.domains['RevolutionaryWave'].progress = Math.max(0, next.domains['RevolutionaryWave'].progress - 1);
+            addSimpleEvent(next, 'system', 'the_square_empty', '🏚️', 'Tahrir is empty. The Revolutionary Wave recedes.', ['the_square_empty']);
+          }
+        } else {
+          next.tahrirEmptyRounds = 0;
+        }
       }
 
       next.phase = 'COALITION';

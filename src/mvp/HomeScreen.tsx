@@ -23,25 +23,13 @@ interface HomeScreenProps {
   mode?: 'home' | 'offline';
 }
 
-const FACTION_OPTIONS: FactionId[] = [
-  'congo_basin_collective',
-  'levant_sumud',
-  'mekong_echo_network',
-  'amazon_guardians',
-];
-
-const RULESET = listRulesets()[0];
+const RULESETS = listRulesets();
 
 function getFactionLabel(factionId: FactionId) {
   return localizeFactionField(
     factionId,
     'name',
-    {
-      congo_basin_collective: 'Congo Basin Collective',
-      levant_sumud: 'Levant Sumud Front',
-      mekong_echo_network: 'Mekong Echo Network',
-      amazon_guardians: 'Amazon Guardians',
-    }[factionId],
+    factionId,
   );
 }
 
@@ -63,6 +51,8 @@ export function HomeScreen({
   onOpenPlayerGuide,
   mode = 'home',
 }: HomeScreenProps) {
+  const currentRuleset = RULESETS.find((r) => r.id === config.rulesetId) || RULESETS[0];
+  const factionOptions = currentRuleset.factions.map((f) => f.id);
   const selectedFactions = config.factionIds.slice(0, config.playerCount);
   const hasDuplicateFactions = new Set(selectedFactions).size !== selectedFactions.length;
 
@@ -72,17 +62,23 @@ export function HomeScreen({
     onConfigChange({ factionIds: nextFactionIds });
   };
 
+  const handleRulesetChange = (rulesetId: string) => {
+    const nextRuleset = RULESETS.find((r) => r.id === rulesetId) || RULESETS[0];
+    const nextFactionIds = nextRuleset.factions.slice(0, 4).map((f) => f.id);
+    onConfigChange({ rulesetId, factionIds: nextFactionIds });
+  };
+
   return (
     <TableSurface className="home-table setup-table">
       <div className="setup-scene">
         <header className="setup-header">
           <EngravedHeader
-            eyebrow={t('ui.home.eyebrow', 'Design-Faithful Cutover')}
-            title={localizeRulesetField(RULESET?.id ?? 'base_design', 'name', RULESET?.name ?? 'Where the Stones Cry Out')}
+            eyebrow={t('ui.home.eyebrow', 'Operational Briefing')}
+            title={localizeRulesetField(currentRuleset.id, 'name', currentRuleset.name)}
             detail={localizeRulesetField(
-              RULESET?.id ?? 'base_design',
+              currentRuleset.id,
               'description',
-              RULESET?.description ?? 'Six regions. Extraction as the central threat. Bodies and Evidence as the coalition economy.',
+              currentRuleset.description,
             )}
             actions={
               <div className="header-action-plates">
@@ -97,13 +93,22 @@ export function HomeScreen({
           <PaperSheet tone="board" className="setup-feature-board">
             <div className="setup-board-grid">
               <section className="setup-scenario-cover">
-                <span className="engraved-eyebrow">{t('ui.home.ruleset', 'Canonical Ruleset')}</span>
-                <h2>{localizeRulesetField(RULESET?.id ?? 'base_design', 'name', RULESET?.name ?? 'Where the Stones Cry Out')}</h2>
-                <p>{localizeRulesetField(RULESET?.id ?? 'base_design', 'introduction', RULESET?.introduction ?? 'Break extraction instead of merely surviving it.')}</p>
+                <span className="engraved-eyebrow">{t('ui.home.ruleset', 'Scenario Selection')}</span>
+                <select
+                  className="scenario-select-major"
+                  value={config.rulesetId}
+                  onChange={(e) => handleRulesetChange(e.target.value)}
+                >
+                  {RULESETS.map(r => (
+                    <option key={r.id} value={r.id}>{localizeRulesetField(r.id, 'name', r.name)}</option>
+                  ))}
+                </select>
+                <h2>{localizeRulesetField(currentRuleset.id, 'name', currentRuleset.name)}</h2>
+                <p>{localizeRulesetField(currentRuleset.id, 'introduction', currentRuleset.introduction)}</p>
                 <div className="setup-stat-ribbon">
                   <div><span>{t('ui.home.playerCount', 'Player Count')}</span><strong>{formatNumber(config.playerCount)}</strong></div>
                   <div><span>{t('ui.home.mode', 'Mode')}</span><strong>{getModeLabel(config.mode)}</strong></div>
-                  <div><span>{t('ui.home.regions', 'Regions')}</span><strong>{t('ui.home.sixTheatres', '6 canonical theatres')}</strong></div>
+                  <div><span>{t('ui.home.regions', 'Regions')}</span><strong>{t('ui.home.regionCount', '{{count}} sectors', { count: currentRuleset.regions.length })}</strong></div>
                   <div><span>{t('ui.home.threat', 'Threat')}</span><strong>{t('ui.home.threatValue', 'Extraction tokens to 6 = defeat')}</strong></div>
                 </div>
               </section>
@@ -173,7 +178,7 @@ export function HomeScreen({
                       <label key={seat} className="seat-placard">
                         <span>{t('ui.home.seat', 'Seat {{seat}}', { seat: seat + 1 })}</span>
                         <select value={selectedFactions[seat]} onChange={(event) => updateFaction(seat, event.target.value as FactionId)}>
-                          {FACTION_OPTIONS.map((factionId) => (
+                          {factionOptions.map((factionId) => (
                             <option key={factionId} value={factionId}>{getFactionLabel(factionId)}</option>
                           ))}
                         </select>
@@ -187,8 +192,8 @@ export function HomeScreen({
             </div>
 
             <PaperSheet tone="note">
-              <span className="engraved-eyebrow">{t('ui.home.replaces', 'This Ruleset Replaces')}</span>
-              <p>{t('ui.home.replacesBody', 'The product now ships one canonical six-region map, Bodies and Evidence, Global Gaze, War Machine, Extraction Tokens, Secret Mandates, and Liberation or Symbolic victory.')}</p>
+              <span className="engraved-eyebrow">{t('ui.home.asymmetricAbilities', 'Asymmetric Factions')}</span>
+              <p>{t('ui.home.rulesBody', 'Each seat represents a different faction with distinct mandates, passive bonuses, and specialized weaknesses. Success requires horizontal coordination across all seats.')}</p>
             </PaperSheet>
 
             <details className="setup-utility-drawer">

@@ -25,8 +25,24 @@ export type IconType =
   | 'frontHunger'
   | 'frontFossil'
   | 'frontVoice'
+  | 'frontWave'
+  | 'frontPatriarchy'
+  | 'frontJustice'
   | 'ledger'
-  | 'seat';
+  | 'seat'
+  | 'home'
+  | 'save'
+  | 'language'
+  | 'goViral'
+  | 'exposeLies'
+  | 'laborStrike'
+  | 'coordinateDigital'
+  | 'burnVeil'
+  | 'schoolgirlNetwork'
+  | 'composeChant'
+  | 'fundraise'
+  | 'mediaBlitz'
+  | 'sanctions';
 
 export type IconState = 'default' | 'hover' | 'selected' | 'critical' | 'disabled' | 'gain';
 export type IconBaseShape = 'none' | 'circle' | 'hex' | 'diamond' | 'rounded-rect';

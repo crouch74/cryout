@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.10.0] - 2026-03-02
+
+### Added
+- 🏛️ **Scenario Expansion: 2011 — TAHRIR SQUARE** — added the full Egyptian revolution scenario set, including Cairo (The Square), Alexandria, and Suez regions.
+- ✊ **Scenario Expansion: 2022 — WOMAN, LIFE, FREEDOM** — added the Iranian uprising scenario, featuring Tehran, Kurdistan, and specialized Hijab Enforcement mechanics.
+- 🌍 **Expanded Geography** — added 12 new regions across Egypt and Iran for specialized play.
+- 🧬 **Specialized Mechanics** — implemented `The Square` (location-based momentum), `Martyrdom` (sacrifice-to-surge), and `Hijab Enforcement` (regional movement penalty).
+- 📡 **Action Expansion** — 5 new ActionIds (`go_viral`, `burn_veil`, `schoolgirl_network`, `compose_chant`, `coordinate_digital`) to support asymmetric scenario play.
+- 🇸🇦 **Full Arabic Localization (Egyptian)** — completed localization for all new scenarios, factions, and actions in `ar-EG`.
+
+### Changed
+- ⚙️ **Engine Core Advancement** — upgraded `EngineState` and `runtime.ts` to support multi-booklet scenario sets and a shared 18-region pool.
+
 ## [0.9.0] - 2026-03-02
 
 ### Added

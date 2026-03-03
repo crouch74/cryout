@@ -27,8 +27,14 @@ export const ICON_COLORS = {
   frontHunger: '#C9A227',
   frontFossil: '#1F1F1F',
   frontVoice: '#6E4A7E',
+  frontWave: '#5E8D80',
+  frontPatriarchy: '#8E2C2C',
+  frontJustice: '#B38A2B',
   ledger: '#7A4A2E',
   seat: '#C6A75E',
+  home: '#5F8D6D',
+  save: '#2D3A64',
+  language: '#E3A008',
 } satisfies Record<IconType, string>;
 
 export const ICON_BASE_SHAPES: Partial<Record<IconType, IconBaseShape>> = {
@@ -49,4 +55,10 @@ export const ICON_BASE_SHAPES: Partial<Record<IconType, IconBaseShape>> = {
   frontHunger: 'rounded-rect',
   frontFossil: 'rounded-rect',
   frontVoice: 'rounded-rect',
+  frontWave: 'rounded-rect',
+  frontPatriarchy: 'rounded-rect',
+  frontJustice: 'rounded-rect',
+  home: 'circle',
+  save: 'rounded-rect',
+  language: 'circle',
 };

@@ -218,6 +218,29 @@ function renderGlyph(type: IconType) {
           <rect x="8.4" y="12.9" width="4.8" height="1.4" rx=".7" fill="#f4ead6" opacity="0.92" />
         </>
       );
+    case 'frontWave':
+      return (
+        <>
+          <circle cx="12" cy="12" r="7.2" fill="currentColor" />
+          <path d="M6 12c1.5-2 3-2.5 4.5-1.5 1.5 1 3 .5 4.5-1.5M6 15c1.5-2 3-2.5 4.5-1.5 1.5 1 3 .5 4.5-1.5" fill="none" stroke="#f4ead6" strokeWidth="1.6" strokeLinecap="round" opacity="0.88" />
+        </>
+      );
+    case 'frontPatriarchy':
+      return (
+        <>
+          <path d="M12 4.2c-4.4 0-8 3.6-8 8v1.6c0 1.8 1.4 3.2 3.2 3.2h9.6c1.8 0 3.2-1.4 3.2-3.2v-1.6c0-4.4-3.6-8-8-8Z" fill="currentColor" />
+          <path d="M11 8.5h2v6h-2z" fill="#f4ead6" opacity="0.8" />
+          <circle cx="12" cy="16.5" r="1.4" fill="#f4ead6" opacity="0.9" />
+        </>
+      );
+    case 'frontJustice':
+      return (
+        <>
+          <rect x="11" y="4.2" width="2" height="15.6" fill="currentColor" />
+          <path d="M5.8 11.2h12.4l-1.8-3.2c-1.4 0-2.3.8-3.5.8h-1.8c-1.2 0-2.1-.8-3.5-.8l-1.8 3.2Z" fill="currentColor" opacity="0.92" />
+          <path d="M7.6 12.8a4.4 4.4 0 0 0 8.8 0" fill="none" stroke="currentColor" strokeWidth="1.6" />
+        </>
+      );
     case 'ledger':
       return (
         <>
@@ -232,6 +255,28 @@ function renderGlyph(type: IconType) {
         <>
           <circle cx="12" cy="8.3" r="2.7" fill="currentColor" />
           <path d="M6.5 18.8c.6-3.3 2.8-5.3 5.5-5.3s4.9 2 5.5 5.3H6.5Z" fill="currentColor" />
+        </>
+      );
+    case 'home':
+      return (
+        <>
+          <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z" fill="currentColor" />
+          <path d="M9 22V12h6v10" fill="#f4ead6" opacity="0.8" />
+        </>
+      );
+    case 'save':
+      return (
+        <>
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v13a2 2 0 0 1-2 2Z" fill="currentColor" />
+          <rect x="7" y="3" width="8" height="5" rx="1" fill="#f4ead6" opacity="0.8" />
+          <rect x="7" y="12" width="10" height="9" rx="1" fill="#f4ead6" opacity="0.7" />
+        </>
+      );
+    case 'language':
+      return (
+        <>
+          <circle cx="12" cy="12" r="9" fill="currentColor" />
+          <path d="M12 3v18M3 12h18M5 12a14 14 0 0 1 14 0M5 12a14 14 0 0 0 14 0" fill="none" stroke="#f4ead6" strokeWidth="1.2" opacity="0.8" />
         </>
       );
   }

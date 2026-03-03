@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from 'react';
 import { formatNumber, t, useAppLocale } from '../i18n/index.ts';
+import { Icon } from './icons/Icon.tsx';
 
 type ContrastMode = 'default' | 'high';
 type MotionMode = 'full' | 'reduced';
@@ -169,26 +170,29 @@ export function TabletopControls() {
   );
 }
 
-export function LocaleSwitcher() {
+export function LocaleSwitcher({ showLabel = true }: { showLabel?: boolean }) {
   const { changeLocale, locale, localeOptions } = useAppLocale();
 
   return (
-    <label className="locale-switcher">
-      <span className="engraved-eyebrow">{t('ui.language.label', 'Language')}</span>
-      <select
-        value={locale}
-        onChange={(event) => {
-          void changeLocale(event.target.value as typeof locale);
-        }}
-        aria-label={t('ui.language.label', 'Language')}
-      >
-        {localeOptions.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </label>
+    <div className="locale-switcher">
+      {showLabel ? <span className="engraved-eyebrow">{t('ui.language.label', 'Language')}</span> : null}
+      <div className="locale-switcher-select-shell">
+        <Icon type="language" size={16} />
+        <select
+          value={locale}
+          onChange={(event) => {
+            void changeLocale(event.target.value as typeof locale);
+          }}
+          aria-label={t('ui.language.label', 'Language')}
+        >
+          {localeOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
   );
 }
 
@@ -280,6 +284,7 @@ export const DeckStack = forwardRef<HTMLButtonElement, {
   disabled?: boolean;
   locked?: boolean;
   lowCount?: boolean;
+  urgent?: boolean;
   shakeEmpty?: boolean;
   onClick?: () => void;
   onPointerDown?: ButtonHTMLAttributes<HTMLButtonElement>['onPointerDown'];
@@ -291,6 +296,7 @@ export const DeckStack = forwardRef<HTMLButtonElement, {
   disabled,
   locked,
   lowCount,
+  urgent,
   shakeEmpty,
   onClick,
   onPointerDown,
@@ -302,7 +308,7 @@ export const DeckStack = forwardRef<HTMLButtonElement, {
     <button
       ref={ref}
       type="button"
-      className={`deck-stack deck-stack-${deckId} ${locked ? 'is-locked' : ''} ${lowCount ? 'is-low' : ''} ${drawCount === 0 ? 'is-empty' : ''} ${shakeEmpty ? 'is-shaking' : ''}`.trim()}
+      className={`deck-stack deck-stack-${deckId} ${locked ? 'is-locked' : ''} ${lowCount ? 'is-low' : ''} ${urgent ? 'is-urgent' : ''} ${drawCount === 0 ? 'is-empty' : ''} ${shakeEmpty ? 'is-shaking' : ''}`.trim()}
       disabled={disabled}
       onClick={onClick}
       onPointerDown={onPointerDown}
@@ -317,6 +323,7 @@ export const DeckStack = forwardRef<HTMLButtonElement, {
           ))}
           <DeckBackArt deckId={deckId} deckName={deckName} className="deck-stack-top-card" />
         </div>
+        <span className="deck-stack-badge">{formatNumber(drawCount)}</span>
         <span id={tooltipId} role="tooltip" className={`deck-stack-tooltip ${lowCount ? 'is-alert' : ''}`.trim()}>
           {t('ui.decks.cardsRemain', '{{count}} cards remain', { count: drawCount })}
         </span>

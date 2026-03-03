@@ -55,7 +55,7 @@ const DEFAULT_CONFIG: SetupConfig = {
   playerCount: 2,
   factionIds: DEFAULT_FACTIONS,
   seed: Math.floor(Date.now() % 1_000_000),
-  roomUrl: 'http://localhost:3010',
+  roomUrl: 'http://localhost:8000',
 };
 
 function generateSessionSeed() {
@@ -106,11 +106,15 @@ export default function App() {
     parseRuntimeRoute(window.location.pathname, window.location.hash, DEFAULT_RULESET_ID, RUNTIME),
   );
   const [route, setRoute] = useState<AppRoute>(initialRoute);
-  const [setupConfig, setSetupConfig] = useState<SetupConfig>(() => ({
-    ...DEFAULT_CONFIG,
-    rulesetId: initialRoute.rulesetId,
-    surface: RUNTIME.forceOfflineOnly ? 'local' : initialRoute.page === 'room' ? 'room' : DEFAULT_CONFIG.surface,
-  }));
+  const [setupConfig, setSetupConfig] = useState<SetupConfig>(() => {
+    const ruleset = listRulesets().find(r => r.id === initialRoute.rulesetId) || listRulesets()[0];
+    return {
+      ...DEFAULT_CONFIG,
+      rulesetId: ruleset.id,
+      factionIds: ruleset.factions.slice(0, 4).map(f => f.id),
+      surface: RUNTIME.forceOfflineOnly ? 'local' : initialRoute.page === 'room' ? 'room' : DEFAULT_CONFIG.surface,
+    };
+  });
   const [viewState, setViewState] = useState<GameViewState>(DEFAULT_GAME_VIEW_STATE);
   const [session, setSession] = useState<ActiveSession | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);

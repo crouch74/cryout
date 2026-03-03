@@ -72,8 +72,6 @@ interface GameScreenProps {
   authorizedSeat?: number | null;
 }
 
-const DOMAIN_IDS = getAvailableDomains();
-const REGION_IDS = getAvailableRegions();
 const AUTOPLAY_SPEED_DELAYS: Record<AutoPlaySpeedLevel, number> = {
   1: 1800,
   2: 1300,
@@ -143,13 +141,16 @@ const DOMAIN_DELTA_ICONS: Record<DomainId, IconType> = {
   EmptyStomach: 'frontHunger',
   FossilGrip: 'frontFossil',
   StolenVoice: 'frontVoice',
+  RevolutionaryWave: 'frontWave',
+  PatriarchalGrip: 'frontPatriarchy',
+  UnfinishedJustice: 'frontJustice',
 };
 
-function createDraft(actionId: ActionId): DraftState {
+function createDraft(actionId: ActionId, regions: RegionId[], domains: DomainId[]): DraftState {
   return {
     actionId,
-    regionId: REGION_IDS[0],
-    domainId: DOMAIN_IDS[0],
+    regionId: regions[0],
+    domainId: domains[0],
     targetSeat: 1,
     bodiesCommitted: 1,
     evidenceCommitted: 0,
@@ -459,9 +460,10 @@ function getSignedDelta(before: number | string | boolean | null, after: number 
   return `${amount > 0 ? '+' : ''}${formatNumber(amount)}`;
 }
 
-function getRegionIdFromDeltaLabel(label: string): RegionId | null {
+function getRegionIdFromDeltaLabel(label: string, content: CompiledContent): RegionId | null {
+  const regions = getAvailableRegions(content);
   const regionId = label.split('.')[0] ?? '';
-  return REGION_IDS.includes(regionId as RegionId) ? regionId as RegionId : null;
+  return (regions as string[]).includes(regionId) ? regionId as RegionId : null;
 }
 
 function getSeatFromDeltaLabel(label: string) {
@@ -515,7 +517,7 @@ function getVisualDeltaGlyph(delta: EngineState['eventLog'][number]['deltas'][nu
       };
     }
     case 'extraction': {
-      const regionId = getRegionIdFromDeltaLabel(delta.label);
+      const regionId = getRegionIdFromDeltaLabel(delta.label, content);
       return {
         glyph: {
           id: `${delta.kind}:${delta.label}`,
@@ -528,7 +530,7 @@ function getVisualDeltaGlyph(delta: EngineState['eventLog'][number]['deltas'][nu
       };
     }
     case 'defense': {
-      const regionId = getRegionIdFromDeltaLabel(delta.label);
+      const regionId = getRegionIdFromDeltaLabel(delta.label, content);
       return {
         glyph: {
           id: `${delta.kind}:${delta.label}`,
@@ -541,7 +543,7 @@ function getVisualDeltaGlyph(delta: EngineState['eventLog'][number]['deltas'][nu
       };
     }
     case 'bodies': {
-      const regionId = getRegionIdFromDeltaLabel(delta.label);
+      const regionId = getRegionIdFromDeltaLabel(delta.label, content);
       const seat = getSeatFromDeltaLabel(delta.label);
       return {
         glyph: {
@@ -604,7 +606,8 @@ function getRecentVisualDeltaTiles(state: EngineState, content: CompiledContent)
     .map((event) => {
       const glyphEntries = getEventDeltas(event)
         .slice(0, 3)
-        .map((delta) => getVisualDeltaGlyph(delta, content));
+        .map((delta) => getVisualDeltaGlyph(delta, content))
+        .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
       const glyphs = glyphEntries.map((entry) => entry.glyph);
       const targetKeys = [...new Set(glyphEntries.flatMap((entry) => entry.targetKeys))];
 
@@ -637,8 +640,8 @@ function createAutoPlayIntent(
     const card = content.cards[cardId];
     return card?.deck === 'resistance' && (!action.cardType || card.type === action.cardType);
   });
-  const regionCandidates = action.needsRegion ? REGION_IDS : [undefined];
-  const domainCandidates = action.needsDomain ? [...DOMAIN_IDS] : [undefined];
+  const regionCandidates = action.needsRegion ? getAvailableRegions(content) : [undefined];
+  const domainCandidates = action.needsDomain ? getAvailableDomains(content) : [undefined];
   const targetSeatCandidates = action.needsTargetSeat
     ? state.players.filter((candidate) => candidate.seat !== seat).map((candidate) => candidate.seat)
     : [undefined];
@@ -734,10 +737,13 @@ export function GameScreen({
   const focusedPlayer = state.players[focusedSeat] ?? state.players[0];
   const faction = getSeatFaction(state, content, focusedPlayer.seat);
   const [copied, setCopied] = useState(false);
+  const REGION_IDS = useMemo(() => getAvailableRegions(content), [content]);
+  const DOMAIN_IDS = useMemo(() => getAvailableDomains(content), [content]);
+
   const [contextOpen, setContextOpen] = useState(false);
   const [contextMode, setContextMode] = useState<ContextPanelMode>('ledger');
   const [selectedDeckId, setSelectedDeckId] = useState<VisibleDeckId>('system');
-  const [draft, setDraft] = useState<DraftState>(() => createDraft('organize'));
+  const [draft, setDraft] = useState<DraftState>(() => createDraft('organize', REGION_IDS, DOMAIN_IDS));
   const [showDevPanel, setShowDevPanel] = useState(false);
   const [showDebugSnapshot, setShowDebugSnapshot] = useState(false);
   const [autoPlayRounds, setAutoPlayRounds] = useState('1');
@@ -851,7 +857,7 @@ export function GameScreen({
     }
 
     setDraft({
-      ...createDraft(actionId),
+      ...createDraft(actionId, REGION_IDS, DOMAIN_IDS),
       ...quick.draft,
       actionId,
     });
@@ -956,7 +962,7 @@ export function GameScreen({
       <section className="context-card context-form">
         <label>
           <span>{t('ui.game.move', 'Move')}</span>
-          <select value={draft.actionId} onChange={(event) => setDraft(createDraft(event.target.value as DraftState['actionId']))}>
+          <select value={draft.actionId} onChange={(event) => setDraft(createDraft(event.target.value as ActionId, REGION_IDS, DOMAIN_IDS))}>
             {getSeatActions(content).map((action) => (
               <option key={action.id} value={action.id}>
                 {localizeActionField(action.id, 'name', action.name)}
@@ -1522,27 +1528,6 @@ export function GameScreen({
 
   return (
     <TableSurface className={`game-screen game-screen-compressed ${activeCardReveal ? 'is-reveal-active' : ''}`.trim()}>
-      <header className="game-header-shell">
-        <div className="table-utility-bar">
-          <LocaleSwitcher />
-          <ThemePlate
-            label={surface === 'room' && roomId
-              ? t('ui.game.room', 'Room {{roomId}}', { roomId })
-              : t('ui.game.table', 'Table')}
-            onClick={() => { }}
-          />
-          <ThemePlate
-            label={copied ? t('ui.game.saved', 'Saved') : t('ui.game.save', 'Save')}
-            onClick={() => {
-              onExportSave(serializeGame(state));
-              setCopied(true);
-              window.setTimeout(() => setCopied(false), 1200);
-            }}
-          />
-          <ThemePlate label={t('ui.game.backHome', 'Back Home')} onClick={onBack} />
-        </div>
-      </header>
-
       <main
         className={`game-compression-layout ${contextOpen ? 'is-context-open' : 'is-context-closed'}`.trim()}
         onPointerDownCapture={handleEmptySpacePointerDown}
@@ -1614,15 +1599,42 @@ export function GameScreen({
             highlightedIds={highlightedStatusItems}
             suspendHighlights={highlightSuspended}
             utilities={(
-              <button
-                type="button"
-                className="ledger-toggle"
-                onClick={() => { setContextMode('ledger'); setContextOpen(true); }}
-                aria-label={t('ui.game.ledger', 'Ledger')}
-              >
-                <Icon type="ledger" size={20} />
-                <span>{t('ui.game.ledger', 'Ledger')}</span>
-              </button>
+              <div className="status-ribbon-utilities-group">
+                <LocaleSwitcher showLabel={false} />
+                <ThemePlate
+                  label={(
+                    <Icon
+                      type="save"
+                      size={18}
+                      title={copied ? t('ui.game.saved', 'Saved') : t('ui.game.save', 'Save')}
+                    />
+                  )}
+                  onClick={() => {
+                    onExportSave(serializeGame(state));
+                    setCopied(true);
+                    window.setTimeout(() => setCopied(false), 1200);
+                  }}
+                />
+                <ThemePlate
+                  label={(
+                    <Icon
+                      type="home"
+                      size={18}
+                      title={t('ui.game.backHome', 'Back Home')}
+                    />
+                  )}
+                  onClick={onBack}
+                />
+                <button
+                  type="button"
+                  className="ledger-toggle"
+                  onClick={() => { setContextMode('ledger'); setContextOpen(true); }}
+                  aria-label={t('ui.game.ledger', 'Ledger')}
+                >
+                  <Icon type="ledger" size={20} />
+                  <span>{t('ui.game.ledger', 'Ledger')}</span>
+                </button>
+              </div>
             )}
           />
 
@@ -1670,6 +1682,7 @@ export function GameScreen({
                       deckName={getPrintedDeckTitle(summary.deckId)}
                       drawCount={summary.drawCount}
                       lowCount={summary.drawCount <= 3}
+                      urgent={state.phase === 'SYSTEM' && summary.deckId === 'crisis'}
                       shakeEmpty={summary.drawCount === 0 && selectedDeckId === summary.deckId}
                       onPointerDown={() => {
                         void primeDeckAudio();

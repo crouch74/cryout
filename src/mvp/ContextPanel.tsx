@@ -29,10 +29,19 @@ export function ContextPanel({
       <div className="context-panel-header">
         <div className="context-panel-tabs">
           {showRegionTab ? (
-            <button type="button" className={mode === 'region' ? 'is-active' : ''} onClick={() => onModeChange('region')}>{t('ui.game.region', 'Region')}</button>
+            <button type="button" className={mode === 'region' ? 'is-active' : ''} onClick={() => onModeChange('region')}>
+              <Icon type="objective" size={16} title={t('ui.game.region', 'Region')} ariaLabel={t('ui.game.region', 'Region')} />
+              <span>{t('ui.game.region', 'Region')}</span>
+            </button>
           ) : null}
-          <button type="button" className={mode === 'action' ? 'is-active' : ''} onClick={() => onModeChange('action')}>{t('ui.game.action', 'Action')}</button>
-          <button type="button" className={mode === 'decks' ? 'is-active' : ''} onClick={() => onModeChange('decks')}>{t('ui.game.decks', 'Decks')}</button>
+          <button type="button" className={mode === 'action' ? 'is-active' : ''} onClick={() => onModeChange('action')}>
+            <Icon type="organize" size={16} title={t('ui.game.action', 'Action')} ariaLabel={t('ui.game.action', 'Action')} />
+            <span>{t('ui.game.action', 'Action')}</span>
+          </button>
+          <button type="button" className={mode === 'decks' ? 'is-active' : ''} onClick={() => onModeChange('decks')}>
+            <Icon type="playCard" size={16} title={t('ui.game.decks', 'Decks')} ariaLabel={t('ui.game.decks', 'Decks')} />
+            <span>{t('ui.game.decks', 'Decks')}</span>
+          </button>
           <button type="button" className={mode === 'ledger' ? 'is-active' : ''} onClick={() => onModeChange('ledger')}>
             <Icon type="ledger" size={16} title={t('ui.game.ledger', 'Ledger')} />
             <span>{t('ui.game.ledger', 'Ledger')}</span>

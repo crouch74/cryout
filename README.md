@@ -4,17 +4,19 @@ A digital adaptation of the design-faithful six-region cooperative game about re
 
 ## Current Product
 
-This repo now ships the hard-cutover ruleset:
+This repo now ships with three major rulebooks/scenarios:
 
-- 6 canonical regions: Congo, Levant, Amazon, Sahel, Mekong, Andes
-- 7 canonical domains: War Machine, Dying Planet, Gilded Cage, Silenced Truth, Empty Stomach, Fossil Grip, Stolen Voice
-- 2 resources: Bodies and Evidence
-- 2 victory modes: Liberation and Symbolic
-- 1 central threat system: Extraction Tokens
-- 3 live decks: System, Resistance, and Crisis
-- Beacons remain Symbolic-mode objectives, not deck stacks
-- 2 global meters: Global Gaze and Northern War Machine
-- 4 asymmetric factions with secret mandates
+- **Where the Stones Cry Out (Base)**: 6 canonical regions (Congo, Levant, Amazon, Sahel, Mekong, Andes), 7 canonical domains (War Machine through Stolen Voice).
+- **2011 — TAHRIR SQUARE**: 6 Egypt-specific regions (Cairo, Alexandria, Nile Delta, Upper Egypt, Suez, Sinai), featuring **Revolutionary Wave** and **Unfinished Justice** domains, and the **The Square** / **Martyrdom** mechanics.
+- **2022 — WOMAN, LIFE, FREEDOM**: 6 Iran-specific regions (Tehran, Kurdistan, Isfahan, Mashhad, Khuzestan, Balochistan), featuring **Patriarchal Grip** domain and **Hijab Enforcement** / **Gender Dynamics** mechanics.
+
+- **Total Scope**: 18 regions, 10 domains, 13 custom factions.
+- **2 resources**: Bodies and Evidence.
+- **2 victory modes**: Liberation and Symbolic.
+- **1 central threat system**: Extraction Tokens (expanded pool for specialized scenarios).
+- **3 live decks**: System, Resistance, and Crisis.
+- **2 global meters**: Global Gaze and Northern War Machine.
+- **Asymmetric factions**: Each with unique passives, weaknesses, and secret mandates.
 
 The previous `witness_dignity` / `green_resistance` scenario line is no longer the shipped game.
 

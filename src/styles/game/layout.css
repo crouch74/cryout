@@ -996,7 +996,12 @@ html[dir='rtl'] .deck-reveal-deck-label {
 .dock-control-button,
 .context-action-chip,
 .dock-queue-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   min-height: 34px;
+  padding: 0 12px;
   border: 1px solid var(--tile-rim-dark);
   border-radius: 10px;
   background: linear-gradient(180deg, rgba(255, 248, 236, 0.98), rgba(219, 201, 170, 0.88));
@@ -1372,14 +1377,42 @@ html[dir='rtl'] .deck-reveal-deck-label {
 .table-utility-bar .locale-switcher select,
 .table-utility-bar .engraved-plate,
 .status-ribbon-utilities .locale-switcher select,
-.status-ribbon-utilities .engraved-plate {
-  min-height: 36px;
+.status-ribbon-utilities-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-ribbon-utilities-group .locale-switcher-select-shell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.45);
   border-radius: 10px;
+  padding-inline: 4px 0;
   border: 1px solid var(--tile-rim-dark);
-  background:
-    linear-gradient(180deg, rgba(255, 250, 239, 0.96), rgba(223, 207, 178, 0.82)),
-    var(--theme-parchment);
-  box-shadow: var(--tile-shadow), var(--tile-emboss);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.status-ribbon-utilities-group .locale-switcher-select-shell select {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 8px 10px;
+  font-family: var(--font-data);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--theme-ink);
+  cursor: pointer;
+}
+
+.status-ribbon-utilities-group .engraved-plate {
+  min-height: 38px;
+  min-width: 38px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 
@@ -1582,25 +1615,58 @@ html[dir='rtl'] .deck-reveal-deck-label {
   font-weight: 700;
 }
 
-.player-seat-chip strong {
+.player-seat-chip {
+  padding: 4px;
+  min-height: auto;
+}
+
+.seat-chip-frame {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(73, 58, 40, 0.08);
+}
+
+.seat-chip-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.1;
+}
+
+.player-seat-chip .seat-chip-label {
+  font-family: var(--font-data);
+  font-size: 0.62rem;
+  color: var(--text-3);
+  text-transform: uppercase;
+}
+
+.player-seat-chip .seat-chip-name {
   font-family: var(--font-display);
   font-weight: 700;
+  font-size: 0.82rem;
   color: var(--theme-ink);
 }
 
-.player-seat-chip span {
-  font-family: var(--font-data);
-  font-size: 0.78rem;
-  color: var(--text-3);
-}
-
 .player-seat-chip.is-active {
-  border-color: color-mix(in srgb, var(--theme-gaze-gold) 55%, var(--tile-rim-dark));
+  border-color: var(--accent-gold);
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(244, 227, 188, 0.92)),
+    var(--theme-parchment);
   box-shadow:
-    0 0 0 1px rgba(255, 248, 233, 0.75),
-    0 0 0 3px rgba(154, 122, 59, 0.18),
+    0 0 0 1px rgba(255, 250, 240, 0.8),
+    0 0 0 4px color-mix(in srgb, var(--accent-gold) 12%, transparent),
     var(--tile-shadow),
     var(--tile-emboss);
+}
+
+.player-seat-chip.is-active .seat-chip-frame {
+  background: rgba(255, 255, 255, 0.45);
+  border-color: rgba(154, 122, 59, 0.22);
 }
 
 .player-strip-focus {

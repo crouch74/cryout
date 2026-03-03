@@ -49,6 +49,9 @@ const DOMAIN_ICON_BY_ID: Record<DomainId, IconType> = {
   EmptyStomach: 'frontHunger',
   FossilGrip: 'frontFossil',
   StolenVoice: 'frontVoice',
+  RevolutionaryWave: 'frontWave',
+  PatriarchalGrip: 'frontPatriarchy',
+  UnfinishedJustice: 'frontJustice',
 };
 
 function getBoundingBox(points: Point[]) {
@@ -67,7 +70,7 @@ function getBoundingBox(points: Point[]) {
   return { minX, minY, maxX, maxY };
 }
 
-function getRegionGeometry(svgMarkup: string) {
+function getRegionGeometry(svgMarkup: string, content: CompiledContent) {
   const geometry = extractSvgGeometry(svgMarkup);
   if (!geometry.viewBox) {
     return {
@@ -77,9 +80,14 @@ function getRegionGeometry(svgMarkup: string) {
   }
 
   const regions: Partial<Record<RegionId, RegionGeometryInfo>> = {};
+  const regionIds = getAvailableRegions(content);
 
-  for (const regionId of getAvailableRegions()) {
-    const polygons = BOARD_REGION_MAP_MANIFEST[regionId].interactionCoverage
+  for (const regionId of regionIds) {
+    const manifest = BOARD_REGION_MAP_MANIFEST[regionId];
+    if (!manifest) {
+      continue;
+    }
+    const polygons = manifest.interactionCoverage
       .flatMap((id) => getPathDataForId(geometry, id))
       .flatMap((pathData) => parsePathToPolygons(pathData));
 
@@ -102,6 +110,9 @@ function getRegionGeometry(svgMarkup: string) {
 
 function getRegionSummaryLabel(regionId: RegionId, state: EngineState, content: CompiledContent) {
   const region = state.regions[regionId];
+  if (!region) {
+    return localizeRegionField(regionId, 'name', content.regions[regionId]?.name ?? regionId);
+  }
   const totalBodies = state.players.reduce((sum, player) => sum + (region.bodiesPresent[player.seat] ?? 0), 0);
   return `${localizeRegionField(regionId, 'name', content.regions[regionId].name)}. `
     + `${t('ui.game.extraction', 'Extraction')} ${formatNumber(region.extractionTokens)}. `
@@ -127,11 +138,11 @@ export function WorldMapBoard({
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
   const svgHostRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLDivElement | null>(null);
-  const regionIds = getAvailableRegions();
+  const regionIds = useMemo(() => getAvailableRegions(content), [content]);
   const boardState = useMemo(() => ({
     warCritical: state.northernWarMachine >= 9,
     gazeElevated: state.globalGaze >= 15,
-    regionCritical: regionIds.some((regionId) => state.regions[regionId].extractionTokens >= 5),
+    regionCritical: regionIds.some((regionId) => (state.regions[regionId]?.extractionTokens ?? 0) >= 5),
   }), [regionIds, state.globalGaze, state.northernWarMachine, state.regions]);
   const cardRegionId = hoveredRegionId ?? selectedRegionId ?? null;
 
@@ -175,10 +186,11 @@ export function WorldMapBoard({
     };
   }, []);
 
-  const geometry = useMemo(() => (svgMarkup ? getRegionGeometry(svgMarkup) : { viewBox: null, regions: {} }), [svgMarkup]);
+  const geometry = useMemo(() => (svgMarkup ? getRegionGeometry(svgMarkup, content) : { viewBox: null, regions: {} }), [svgMarkup, content]);
   const focusRegionIds = useMemo(() => {
     const pressuredRegions = regionIds.filter((regionId) => {
       const region = state.regions[regionId];
+      if (!region) return false;
       return region.extractionTokens > 0 || region.defenseRating > 0;
     });
     if (pressuredRegions.length > 0) {
@@ -191,6 +203,7 @@ export function WorldMapBoard({
 
     const comradeRegions = regionIds.filter((regionId) => {
       const region = state.regions[regionId];
+      if (!region) return false;
       return state.players.some((player) => (region.bodiesPresent[player.seat] ?? 0) > 0);
     });
 
@@ -228,6 +241,9 @@ export function WorldMapBoard({
   const regionCounts = useMemo(() => Object.fromEntries(
     regionIds.map((regionId) => {
       const region = state.regions[regionId];
+      if (!region) {
+        return [regionId, buildRegionCountSummary(0, 0, 0)];
+      }
       const totalBodies = state.players.reduce((sum, player) => sum + (region.bodiesPresent[player.seat] ?? 0), 0);
       return [regionId, buildRegionCountSummary(region.extractionTokens, region.defenseRating, totalBodies)];
     }),
@@ -391,21 +407,19 @@ export function WorldMapBoard({
           <div className="board-region-sidecard-metrics">
             <span>
               <Icon type="extraction" size={15} />
-              {t('ui.game.extraction', 'Extraction')} {formatNumber(state.regions[cardRegionId].extractionTokens)}
+              {t('ui.game.extraction', 'Extraction')} {formatNumber(state.regions[cardRegionId]?.extractionTokens ?? 0)}
             </span>
             <span>
               <Icon type="defense" size={15} />
-              {t('ui.game.defense', 'Defense')} {formatNumber(state.regions[cardRegionId].defenseRating)}
+              {t('ui.game.defense', 'Defense')} {formatNumber(state.regions[cardRegionId]?.defenseRating ?? 0)}
             </span>
             <span>
               <Icon type="bodies" size={15} />
-              {t('ui.game.bodies', 'Bodies')} {formatNumber(
-                state.players.reduce((sum, player) => sum + (state.regions[cardRegionId].bodiesPresent[player.seat] ?? 0), 0),
-              )}
+              {t('ui.game.bodies', 'Bodies')} {formatNumber(state.players.reduce((sum, p) => sum + (state.regions[cardRegionId]?.bodiesPresent[p.seat] ?? 0), 0))}
             </span>
           </div>
           <div className="board-region-sidecard-fronts">
-            {(Object.entries(state.regions[cardRegionId].vulnerability) as Array<[DomainId, number]>)
+            {(Object.entries(state.regions[cardRegionId]?.vulnerability ?? {}) as Array<[DomainId, number]>)
               .sort((left, right) => right[1] - left[1])
               .slice(0, 3)
               .map(([domainId, value]) => (
@@ -454,9 +468,12 @@ export function WorldMapBoard({
           {regionLayouts
             ? regionIds.map((regionId) => {
               const region = state.regions[regionId];
+              if (!region || !regionLayouts[regionId]) {
+                return null;
+              }
               const danger = getRegionDangerState(region.extractionTokens);
               const layout = regionLayouts[regionId];
-              const label = localizeRegionField(regionId, 'name', content.regions[regionId].name);
+              const label = localizeRegionField(regionId, 'name', content.regions[regionId]?.name ?? regionId);
               const regionChanging = activeHighlightKeys.has(`region:${regionId}`);
 
               return (

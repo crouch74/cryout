@@ -20,12 +20,16 @@ export function PlayerStrip({
           <button
             key={summary.seat}
             type="button"
-            className={`player-seat-chip ${summary.seat === focusedSeat ? 'is-active' : ''}`.trim()}
+            className={`player-seat-chip player-seat-chip-${summary.seat + 1} ${summary.seat === focusedSeat ? 'is-active' : ''}`.trim()}
             onClick={() => onSelectSeat(summary.seat)}
           >
-            <Icon type="seat" size={16} title={t('ui.game.seat', 'Seat {{seat}}', { seat: summary.seat + 1 })} />
-            <span>{t('ui.game.focusSeatAbbrev', 'S{{seat}}', { seat: summary.seat + 1 })}</span>
-            <strong>{summary.shortName}</strong>
+            <div className="seat-chip-frame">
+              <Icon type="seat" size={16} title={t('ui.game.seat', 'Seat {{seat}}', { seat: summary.seat + 1 })} />
+              <div className="seat-chip-info">
+                <span className="seat-chip-label">{t('ui.game.focusSeatAbbrev', 'S{{seat}}', { seat: summary.seat + 1 })}</span>
+                <strong className="seat-chip-name">{summary.shortName}</strong>
+              </div>
+            </div>
           </button>
         ))}
       </div>

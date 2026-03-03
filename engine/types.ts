@@ -8,7 +8,10 @@ export type DomainId =
   | 'SilencedTruth'
   | 'EmptyStomach'
   | 'FossilGrip'
-  | 'StolenVoice';
+  | 'StolenVoice'
+  | 'RevolutionaryWave'
+  | 'PatriarchalGrip'
+  | 'UnfinishedJustice';
 
 export type RegionId =
   | 'Congo'
@@ -16,13 +19,34 @@ export type RegionId =
   | 'Amazon'
   | 'Sahel'
   | 'Mekong'
-  | 'Andes';
+  | 'Andes'
+  | 'Cairo'
+  | 'Alexandria'
+  | 'NileDelta'
+  | 'UpperEgypt'
+  | 'Suez'
+  | 'Sinai'
+  | 'Tehran'
+  | 'Kurdistan'
+  | 'Isfahan'
+  | 'Mashhad'
+  | 'Khuzestan'
+  | 'Balochistan';
 
 export type FactionId =
   | 'congo_basin_collective'
   | 'levant_sumud'
   | 'mekong_echo_network'
-  | 'amazon_guardians';
+  | 'amazon_guardians'
+  | 'april_6_youth'
+  | 'labor_movement'
+  | 'independent_journalists'
+  | 'rights_defenders'
+  | 'kurdish_women'
+  | 'student_union'
+  | 'diaspora_coalition'
+  | 'bazaar_strikers'
+  | 'male_allies';
 
 export type DeckId = 'system' | 'resistance' | 'crisis';
 export type RevealDeckId = DeckId | 'beacon';
@@ -41,7 +65,17 @@ export type ActionId =
   | 'smuggle_evidence'
   | 'international_outreach'
   | 'defend'
-  | 'play_card';
+  | 'play_card'
+  | 'go_viral'
+  | 'expose_regime_lies'
+  | 'call_labor_strike'
+  | 'diaspora_fundraise'
+  | 'media_blitz'
+  | 'sanctions_push'
+  | 'burn_veil'
+  | 'schoolgirl_network'
+  | 'compose_chant'
+  | 'coordinate_digital';
 
 export interface Clamp {
   min?: number;
@@ -65,13 +99,13 @@ export interface RegionDefinition {
 
 export interface ConditionCompareLeft {
   type:
-    | 'global_gaze'
-    | 'northern_war_machine'
-    | 'round'
-    | 'domain_progress'
-    | 'region_extraction'
-    | 'player_evidence'
-    | 'player_total_bodies';
+  | 'global_gaze'
+  | 'northern_war_machine'
+  | 'round'
+  | 'domain_progress'
+  | 'region_extraction'
+  | 'player_evidence'
+  | 'player_total_bodies';
   domain?: DomainId;
   region?: RegionId;
   player?: 'seat_owner' | number;
@@ -79,30 +113,30 @@ export interface ConditionCompareLeft {
 
 export type Condition =
   | {
-      kind: 'compare';
-      left: ConditionCompareLeft;
-      op: '>' | '>=' | '<' | '<=' | '==' | '!=';
-      right: number;
-    }
+    kind: 'compare';
+    left: ConditionCompareLeft;
+    op: '>' | '>=' | '<' | '<=' | '==' | '!=';
+    right: number;
+  }
   | {
-      kind: 'all';
-      conditions: Condition[];
-    }
+    kind: 'all';
+    conditions: Condition[];
+  }
   | {
-      kind: 'any';
-      conditions: Condition[];
-    }
+    kind: 'any';
+    conditions: Condition[];
+  }
   | {
-      kind: 'not';
-      condition: Condition;
-    }
+    kind: 'not';
+    condition: Condition;
+  }
   | {
-      kind: 'every_region_extraction_at_most';
-      count: number;
-    }
+    kind: 'every_region_extraction_at_most';
+    count: number;
+  }
   | {
-      kind: 'all_active_beacons_complete';
-    };
+    kind: 'all_active_beacons_complete';
+  };
 
 export interface MandateDefinition {
   id: string;
@@ -150,6 +184,8 @@ export type Effect =
   | { type: 'lose_evidence'; seat: SeatSelector; amount: number }
   | { type: 'set_defense'; region: RegionSelector; amount: number }
   | { type: 'draw_resistance'; seat: SeatSelector; count: number }
+  | { type: 'modify_hijab'; region: RegionSelector; delta: number }
+  | { type: 'open_replanning' }
   | { type: 'log'; message: string };
 
 export interface ResistanceCardDefinition {
@@ -244,6 +280,7 @@ export interface RegionState {
   vulnerability: Partial<Record<DomainId, number>>;
   defenseRating: number;
   bodiesPresent: Record<number, number>;
+  hijabEnforcement: number;
 }
 
 export interface QueuedIntent {
@@ -307,7 +344,7 @@ export interface BeaconState {
 }
 
 export interface StateDelta {
-  kind: 'track' | 'domain' | 'extraction' | 'bodies' | 'evidence' | 'defense' | 'card' | 'player';
+  kind: 'track' | 'domain' | 'extraction' | 'bodies' | 'evidence' | 'defense' | 'card' | 'player' | 'hijab';
   label: string;
   before: number | string | boolean | null;
   after: number | string | boolean | null;
@@ -341,6 +378,7 @@ export interface DomainEvent {
     readyState?: boolean;
     cardReveals?: CardRevealEvent[];
     roll?: RollResolution;
+    causedBy?: string[];
   };
 }
 
@@ -377,6 +415,8 @@ export interface EngineState {
   winner: string | null;
   lossReason: string | null;
   mandatesResolved: boolean;
+  tahrirEmptyRounds: number;
+  tahrirMartyrCount: number;
 }
 
 export interface StartGameCommand {
@@ -460,22 +500,22 @@ export interface DisabledActionReason {
   actionId: ActionId;
   disabled: boolean;
   reasonCode?:
-    | 'unknown_seat'
-    | 'phase_locked'
-    | 'seat_already_ready'
-    | 'no_actions_remaining'
-    | 'select_region'
-    | 'select_domain'
-    | 'select_another_seat'
-    | 'need_three_bodies'
-    | 'not_enough_evidence'
-    | 'no_evidence_to_move'
-    | 'need_one_body'
-    | 'commit_one_body'
-    | 'not_enough_bodies'
-    | 'support_card_unavailable'
-    | 'action_card_unavailable'
-    | 'select_card';
+  | 'unknown_seat'
+  | 'phase_locked'
+  | 'seat_already_ready'
+  | 'no_actions_remaining'
+  | 'select_region'
+  | 'select_domain'
+  | 'select_another_seat'
+  | 'need_three_bodies'
+  | 'not_enough_evidence'
+  | 'no_evidence_to_move'
+  | 'need_one_body'
+  | 'commit_one_body'
+  | 'not_enough_bodies'
+  | 'support_card_unavailable'
+  | 'action_card_unavailable'
+  | 'select_card';
   reasonValues?: Record<string, string | number>;
   reason?: string;
 }

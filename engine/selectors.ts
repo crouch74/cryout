@@ -6,17 +6,28 @@ import type {
   FactionDefinition,
   Phase,
   PlayerState,
+  DomainId,
   RegionId,
   VictoryMode,
 } from './types.ts';
 import { getDisabledActionReason } from './runtime.ts';
 import { t } from '../src/i18n/index.ts';
 
-export function getAvailableRegions(): RegionId[] {
-  return ['Congo', 'Levant', 'Amazon', 'Sahel', 'Mekong', 'Andes'];
+export function getAvailableRegions(content?: CompiledContent): RegionId[] {
+  if (content) {
+    return Object.keys(content.regions) as RegionId[];
+  }
+  return [
+    'Congo', 'Levant', 'Amazon', 'Sahel', 'Mekong', 'Andes',
+    'Cairo', 'Alexandria', 'NileDelta', 'UpperEgypt', 'Suez', 'Sinai',
+    'Tehran', 'Kurdistan', 'Isfahan', 'Mashhad', 'Khuzestan', 'Balochistan'
+  ];
 }
 
-export function getAvailableDomains() {
+export function getAvailableDomains(content?: CompiledContent) {
+  if (content) {
+    return Object.keys(content.domains) as DomainId[];
+  }
   return [
     'WarMachine',
     'DyingPlanet',
@@ -25,7 +36,10 @@ export function getAvailableDomains() {
     'EmptyStomach',
     'FossilGrip',
     'StolenVoice',
-  ] as const;
+    'RevolutionaryWave',
+    'PatriarchalGrip',
+    'UnfinishedJustice',
+  ] as DomainId[];
 }
 
 export function getSeatActions(content: CompiledContent): ActionDefinition[] {

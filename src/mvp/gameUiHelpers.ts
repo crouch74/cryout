@@ -150,6 +150,9 @@ const DOMAIN_ICONS: Record<DomainId, string> = {
   EmptyStomach: 'Breadline',
   FossilGrip: 'Pipeline',
   StolenVoice: 'Memory',
+  RevolutionaryWave: 'Wave',
+  PatriarchalGrip: 'Patriarchal',
+  UnfinishedJustice: 'Justice',
 };
 
 const DOMAIN_TRACK_ICONS: Record<DomainId, IconType> = {
@@ -160,6 +163,9 @@ const DOMAIN_TRACK_ICONS: Record<DomainId, IconType> = {
   EmptyStomach: 'frontHunger',
   FossilGrip: 'frontFossil',
   StolenVoice: 'frontVoice',
+  RevolutionaryWave: 'frontWave',
+  PatriarchalGrip: 'frontPatriarchy',
+  UnfinishedJustice: 'frontJustice',
 };
 
 const DOMAIN_SHORT_LABELS: Record<DomainId, string> = {
@@ -170,6 +176,9 @@ const DOMAIN_SHORT_LABELS: Record<DomainId, string> = {
   EmptyStomach: 'Hunger',
   FossilGrip: 'Fossil',
   StolenVoice: 'Voice',
+  RevolutionaryWave: 'Wave',
+  PatriarchalGrip: 'Patriarchy',
+  UnfinishedJustice: 'Justice',
 };
 
 const DOMAIN_TRACK_COLORS: Record<DomainId, string> = {
@@ -180,6 +189,9 @@ const DOMAIN_TRACK_COLORS: Record<DomainId, string> = {
   EmptyStomach: '#C9A227',
   FossilGrip: '#1F1F1F',
   StolenVoice: '#6E4A7E',
+  RevolutionaryWave: '#2A9D8F',
+  PatriarchalGrip: '#6B1E1E',
+  UnfinishedJustice: '#4A4E69',
 };
 
 const ACTION_ICONS: Record<ActionId, IconType> = {
@@ -191,6 +203,16 @@ const ACTION_ICONS: Record<ActionId, IconType> = {
   international_outreach: 'internationalOutreach',
   defend: 'defend',
   play_card: 'playCard',
+  go_viral: 'goViral',
+  expose_regime_lies: 'exposeLies',
+  call_labor_strike: 'laborStrike',
+  coordinate_digital: 'coordinateDigital',
+  burn_veil: 'burnVeil',
+  schoolgirl_network: 'schoolgirlNetwork',
+  compose_chant: 'composeChant',
+  diaspora_fundraise: 'fundraise',
+  media_blitz: 'mediaBlitz',
+  sanctions_push: 'sanctions',
 };
 
 const DOMAIN_ACCENTS: Record<DomainId, string> = {
@@ -201,6 +223,9 @@ const DOMAIN_ACCENTS: Record<DomainId, string> = {
   EmptyStomach: 'domain-accent-bread',
   FossilGrip: 'domain-accent-fossil',
   StolenVoice: 'domain-accent-memory',
+  RevolutionaryWave: 'domain-accent-wave',
+  PatriarchalGrip: 'domain-accent-patriarchy',
+  UnfinishedJustice: 'domain-accent-justice',
 };
 
 function clampPercent(value: number, max: number) {
@@ -384,6 +409,51 @@ function getPassiveShorthand(factionId: FactionId) {
         primary: t('ui.game.passiveAmazonPrimary', 'Campaign +1 in Amazon'),
         secondary: t('ui.game.passiveAmazonSecondary', 'Comrades +1 at home'),
       };
+    case 'april_6_youth':
+      return {
+        primary: t('ui.game.passiveApril6Primary', 'Comrades +1 in Cairo'),
+        secondary: t('ui.game.passiveApril6Secondary', 'Campaign +1 in Cairo'),
+      };
+    case 'labor_movement':
+      return {
+        primary: t('ui.game.passiveLaborPrimary', 'Labor bonus +2'),
+        secondary: t('ui.game.passiveLaborSecondary', 'Defense +1'),
+      };
+    case 'independent_journalists':
+      return {
+        primary: t('ui.game.passiveJournalistsPrimary', 'Investigate +1 Evidence'),
+        secondary: t('ui.game.passiveJournalistsSecondary', 'Campaign +1 Truth'),
+      };
+    case 'rights_defenders':
+      return {
+        primary: t('ui.game.passiveDefendersPrimary', 'Campaign +1 Gilded Cage'),
+        secondary: t('ui.game.passiveDefendersSecondary', 'Organize +1'),
+      };
+    case 'kurdish_women':
+      return {
+        primary: t('ui.game.passiveKurdsPrimary', 'Cost -1 in Kurdistan'),
+        secondary: t('ui.game.passiveKurdsSecondary', 'Defense +1'),
+      };
+    case 'student_union':
+      return {
+        primary: t('ui.game.passiveStudentsPrimary', 'Digital +1'),
+        secondary: t('ui.game.passiveStudentsSecondary', 'Investigate +1'),
+      };
+    case 'bazaar_strikers':
+      return {
+        primary: t('ui.game.passiveStrikersPrimary', 'Labor bonus +2'),
+        secondary: t('ui.game.passiveStrikersSecondary', 'Defense +1'),
+      };
+    case 'male_allies':
+      return {
+        primary: t('ui.game.passiveAlliesPrimary', 'Action transfer free'),
+        secondary: t('ui.game.passiveAlliesSecondary', 'Defense +1'),
+      };
+    default:
+      return {
+        primary: '',
+        secondary: '',
+      };
   }
 }
 
@@ -397,6 +467,24 @@ function getMandateLines(factionId: FactionId) {
       return [t('ui.game.mandateMekongLine1', 'Mekong extraction <= 1'), t('ui.game.mandateMekongLine2', 'Truth >= 5')];
     case 'amazon_guardians':
       return [t('ui.game.mandateAmazonLine1', 'Amazon extraction <= 1'), t('ui.game.mandateAmazonLine2', 'Fossil Grip >= 5')];
+    case 'april_6_youth':
+      return [t('ui.game.mandateApril6Line1', 'Cairo extraction <= 1')];
+    case 'labor_movement':
+      return [t('ui.game.mandateLaborLine1', 'Alexandria extraction <= 1'), t('ui.game.mandateLaborLine2', 'Bread >= 5')];
+    case 'independent_journalists':
+      return [t('ui.game.mandateJournalistsLine1', 'Truth >= 6')];
+    case 'rights_defenders':
+      return [t('ui.game.mandateDefendersLine1', 'War Machine <= 4')];
+    case 'kurdish_women':
+      return [t('ui.game.mandateKurdsLine1', 'Patriarchy < 5'), t('ui.game.mandateKurdsLine2', 'Kurdistan extraction <= 1')];
+    case 'student_union':
+      return [t('ui.game.mandateStudentsLine1', 'Tehran extraction <= 1'), t('ui.game.mandateStudentsLine2', 'Truth >= 6')];
+    case 'bazaar_strikers':
+      return [t('ui.game.mandateStrikersLine1', 'Bread >= 5')];
+    case 'male_allies':
+      return [t('ui.game.mandateAlliesLine1', 'Patriarchy <= 3')];
+    default:
+      return [];
   }
 }
 
@@ -566,6 +654,16 @@ export function getActionDockItems(state: EngineState, content: CompiledContent,
         international_outreach: t('ui.game.moveOutreach', 'Outreach'),
         defend: t('ui.game.moveDefend', 'Defend'),
         play_card: t('ui.game.moveCard', 'Card'),
+        go_viral: t('ui.game.moveViral', 'Go Viral'),
+        expose_regime_lies: t('ui.game.moveExpose', 'Expose Lies'),
+        call_labor_strike: t('ui.game.moveStrike', 'Labor Strike'),
+        coordinate_digital: t('ui.game.moveCoord', 'Coordinate Digital'),
+        burn_veil: t('ui.game.moveBurn', 'Burn Veil'),
+        schoolgirl_network: 'Schoolgirl Network',
+        compose_chant: 'Compose Chant',
+        diaspora_fundraise: 'Diaspora Fundraise',
+        media_blitz: 'Media Blitz',
+        sanctions_push: 'Sanctions Push',
       }[action.id],
       icon: ACTION_ICONS[action.id],
       disabled: quickQueue.disabled.disabled,
@@ -593,6 +691,26 @@ function getActionBenefitLabel(actionId: ActionDefinition['id']) {
       return t('ui.game.comradesShield', 'Set a shield against the next strike.');
     case 'play_card':
       return t('ui.game.comradesUnleash', 'Unleash a prepared card effect now.');
+    case 'go_viral':
+      return 'Raise Global Gaze by spreading truth.';
+    case 'expose_regime_lies':
+      return 'Reduce War Machine by exposing regime lies.';
+    case 'call_labor_strike':
+      return 'Call a strike to gain bodies.';
+    case 'coordinate_digital':
+      return 'Open a digital re-plan window.';
+    case 'burn_veil':
+      return 'Raise Gaze through symbolic defiance.';
+    case 'schoolgirl_network':
+      return 'Gain evidence and reduce costs.';
+    case 'compose_chant':
+      return 'Create lasting regional morale.';
+    case 'diaspora_fundraise':
+      return 'Gain bodies through international support.';
+    case 'media_blitz':
+      return 'Raise Gaze significantly.';
+    case 'sanctions_push':
+      return 'Reduce War Machine through international pressure.';
   }
 }
 
@@ -607,20 +725,26 @@ export function buildIntentPreview(
   const region = draft.regionId ? state.regions[draft.regionId] : null;
 
   if (draft.regionId) {
+    const regionDef = content.regions[draft.regionId];
     chips.push({
       id: 'region',
       tone: 'detail',
       label: t('ui.game.region', 'Region'),
-      value: localizeRegionField(draft.regionId, 'name', content.regions[draft.regionId].name),
+      value: regionDef
+        ? localizeRegionField(draft.regionId, 'name', regionDef.name)
+        : t('ui.game.unknownRegion', 'Unknown Region'),
     });
   }
 
   if (draft.domainId) {
+    const domainDef = content.domains[draft.domainId];
     chips.push({
       id: 'domain',
       tone: 'detail',
       label: t('ui.game.front', 'Front'),
-      value: localizeDomainField(draft.domainId, 'name', content.domains[draft.domainId].name),
+      value: domainDef
+        ? localizeDomainField(draft.domainId, 'name', domainDef.name)
+        : t('ui.game.unknownDomain', 'Unknown Domain'),
     });
   }
 
