@@ -26,32 +26,24 @@
     "noUncheckedSideEffectImports": true,
     "baseUrl": ".",
     "paths": {
-      "@core/*": ["core/*"],
-      "@scenarios/*": ["scenarios/*"],
-      "@engine-legacy/*": ["engine/legacy/*"]
+      "@app/*": ["src/app/*"],
+      "@features/*": ["src/features/*"],
+      "@game/*": ["src/game/*"],
+      "@engine/*": ["src/engine/*"],
+      "@scenarios/*": ["src/scenarios/*"],
+      "@ui/*": ["src/ui/*"],
+      "@devtools/*": ["src/devtools/*"],
+      "@i18n/*": ["src/i18n/*"],
+      "@styles/*": ["src/styles/*"],
+      "@assets/*": ["src/assets/*"]
     }
   },
   "include": [
-    "src/main.tsx",
-    "src/App.tsx",
-    "src/i18n/index.ts",
-    "src/mvp/runtime.ts",
-    "src/mvp/urlState.ts",
-    "src/mvp/gameUiHelpers.ts",
-    "src/mvp/ToastStack.tsx",
-    "src/mvp/tabletop.tsx",
-    "src/mvp/HomeScreen.tsx",
-    "src/mvp/GameScreen.tsx",
-    "src/mvp/GuidelinesScreen.tsx",
-    "src/mvp/PlayerGuideScreen.tsx",
-    "core/**/*.ts",
-    "scenarios/**/*.ts",
-    "engine/**/*.ts",
-    "content/index.ts",
-    "content/base_design/**/*.ts",
-    "content/scenarios/**/*.ts"
+    "src/**/*.ts",
+    "src/**/*.tsx"
   ],
   "exclude": [
-    "backend/**/*"
+    "room-service/**/*",
+    "tests/**/*"
   ]
 }

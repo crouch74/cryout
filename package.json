@@ -12,10 +12,10 @@
     "build:pages": "tsc -p tsconfig.app.json && tsc -p tsconfig.room-service.json && vite build --mode pages",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "node --experimental-transform-types --test tests/*.test.ts",
-    "test:engine": "node --experimental-transform-types --test tests/engine.test.ts tests/replay.test.ts",
-    "test:ui": "node --experimental-transform-types --test tests/ui.test.ts",
-    "test:e2e": "node --experimental-transform-types --test tests/e2e.test.ts"
+    "test": "node --experimental-transform-types --test tests/unit/*.test.ts tests/integration/*.test.ts",
+    "test:engine": "node --experimental-transform-types --test tests/unit/engine.test.ts tests/unit/replay.test.ts tests/integration/scenario-framework.test.ts",
+    "test:ui": "node --experimental-transform-types --test tests/unit/ui.test.ts tests/unit/world-map-anchor.test.ts tests/unit/world-map-token-layout.test.ts tests/unit/world-map-viewport.test.ts tests/unit/scenario-map-assets.test.ts tests/integration/permalinks.test.ts tests/unit/runtime.test.ts",
+    "test:e2e": "node --experimental-transform-types --test tests/integration/e2e.test.ts"
   },
   "dependencies": {
     "i18next": "^25.8.13",
@@ -23,7 +23,8 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-i18next": "^16.5.4",
-    "react-router-dom": "^7.13.1"
+    "react-router-dom": "^7.13.1",
+    "zod": "^4.1.13"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

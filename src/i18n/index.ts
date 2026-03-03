@@ -3,7 +3,7 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 import { initReactI18next, useTranslation } from 'react-i18next';
 import enCatalog from './en.json' with { type: 'json' };
 import arEGCatalog from './ar-EG.json' with { type: 'json' };
-import type { ActionDefinition } from '../../engine/types.ts';
+import type { ActionDefinition } from '../engine/index.ts';
 
 type InterpolationValue = string | number;
 export type Locale = 'en' | 'ar-EG';

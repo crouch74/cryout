@@ -3,7 +3,7 @@
 ## Scope
 
 - Locale catalogs: `src/i18n/en.json`, `src/i18n/ar-EG.json`
-- UI and helper layers: `src/mvp/**`
+- UI and helper layers: `src/app/**`, `src/features/**`, `src/game/**`, `src/ui/**`
 - Engine-presented copy: `engine/**`
 - Scenario and card content surfaced through localization lookups
 
@@ -40,9 +40,9 @@
 
 - `engine/selectors.ts`
 - `engine/runtime.ts`
-- `src/mvp/gameUiHelpers.ts`
-- `src/mvp/HomeScreen.tsx`
-- presentation fallbacks in `src/mvp/GameScreen.tsx`, `src/mvp/historyPresentation.ts`, `src/mvp/RegionHoverCard.tsx`, `src/mvp/WorldMapBoard.tsx`, and `src/mvp/PlayerStrip.tsx`
+- `src/game/presentation/gameUiHelpers.ts`
+- `src/features/session-setup/ui/SessionSetupScreen.tsx`
+- presentation fallbacks in `src/game/screens/GameSessionScreen.tsx`, `src/game/presentation/historyPresentation.ts`, `src/game/board/RegionHoverCard.tsx`, `src/game/board/WorldMapBoard.tsx`, and `src/game/hud/PlayerStrip.tsx`
 
 ## Missing Keys Resolved
 

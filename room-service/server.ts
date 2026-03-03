@@ -7,7 +7,7 @@ import {
   initializeGame,
   normalizeEngineState,
   serializeGame,
-} from '../engine/index.ts';
+} from '../src/engine/index.ts';
 import type {
   CompiledContent,
   EngineCommand,
@@ -15,7 +15,13 @@ import type {
   QueuedIntent,
   SerializedGame,
   StartGameCommand,
-} from '../engine/index.ts';
+} from '../src/engine/index.ts';
+import {
+  commandBatchRequestSchema,
+  createRoomRequestSchema,
+  roomLoadRequestSchema,
+} from '../src/features/room-session/api/schemas.ts';
+import { ZodError } from 'zod';
 
 interface RoomCredential {
   ownerId: number;
@@ -47,6 +53,10 @@ async function readJson<T>(request: IncomingMessage): Promise<T> {
   }
   const body = Buffer.concat(chunks).toString('utf8');
   return body ? (JSON.parse(body) as T) : ({} as T);
+}
+
+function sendBadRequest(response: ServerResponse, error: string) {
+  sendJson(response, 400, { error });
 }
 
 function createRoomKeySegment() {
@@ -203,117 +213,119 @@ export function createRoomService() {
   const controller = createRoomController();
 
   return createServer(async (request, response) => {
-    if (request.method === 'OPTIONS') {
-      sendJson(response, 204, {});
-      return;
+    try {
+      if (request.method === 'OPTIONS') {
+        sendJson(response, 204, {});
+        return;
+      }
+
+      const url = getUrl(request);
+      const ownerToken = url.searchParams.get('ownerToken');
+      const segments = getPathSegments(request);
+      const [api, roomsSegment, roomId, tail] = segments;
+
+      if (request.method === 'GET' && api === 'api' && roomsSegment === 'health') {
+        sendJson(response, 200, { status: 'ok', service: 'stones-cutover-room-service' });
+        return;
+      }
+
+      if (request.method === 'POST' && api === 'api' && roomsSegment === 'rooms' && !roomId) {
+        const payload = createRoomRequestSchema.parse(await readJson<StartGameCommand>(request));
+        const snapshot = controller.createRoom(payload);
+        sendJson(response, 201, snapshot);
+        return;
+      }
+
+      if (api !== 'api' || roomsSegment !== 'rooms' || !roomId) {
+        sendJson(response, 404, { error: 'Not found' });
+        return;
+      }
+
+      if (request.method === 'GET' && !tail) {
+        const room = controller.getRoom(roomId, ownerToken);
+        if (!room) {
+          sendJson(response, 404, { error: 'Room not found' });
+          return;
+        }
+        if ('unauthorized' in room) {
+          sendJson(response, 401, { error: 'Owner token required' });
+          return;
+        }
+        sendJson(response, 200, room);
+        return;
+      }
+
+      if (request.method === 'DELETE' && !tail) {
+        controller.deleteRoom(roomId);
+        sendJson(response, 200, { roomId, deleted: true });
+        return;
+      }
+
+      if (request.method === 'GET' && tail === 'replay') {
+        const replay = controller.replay(roomId, ownerToken);
+        if (!replay) {
+          sendJson(response, 404, { error: 'Room not found' });
+          return;
+        }
+        if ('unauthorized' in replay) {
+          sendJson(response, 401, { error: 'Owner token required' });
+          return;
+        }
+        sendJson(response, 200, replay);
+        return;
+      }
+
+      if (request.method === 'POST' && tail === 'commands') {
+        const payload = commandBatchRequestSchema.parse(await readJson<{ ownerToken?: string; commands: EngineCommand[] }>(request));
+        const room = controller.applyCommands(roomId, payload.ownerToken ?? ownerToken, payload.commands);
+        if (!room) {
+          sendJson(response, 404, { error: 'Room not found' });
+          return;
+        }
+        if ('unauthorized' in room) {
+          sendJson(response, 401, { error: 'Owner token required' });
+          return;
+        }
+        if ('forbidden' in room) {
+          sendJson(response, 403, { error: 'Owner does not control that seat' });
+          return;
+        }
+        sendJson(response, 200, room);
+        return;
+      }
+
+      if (request.method === 'POST' && tail === 'load') {
+        const payload = roomLoadRequestSchema.parse(
+          await readJson<{ ownerToken?: string; serialized?: string; snapshot?: SerializedGame }>(request),
+        );
+        const snapshot = payload.snapshot ?? (payload.serialized ? deserializeGame(payload.serialized) : null);
+        if (!snapshot) {
+          sendBadRequest(response, 'Missing serialized payload');
+          return;
+        }
+        const room = controller.loadSnapshot(roomId, payload.ownerToken ?? ownerToken, snapshot);
+        if (!room) {
+          sendJson(response, 404, { error: 'Room not found' });
+          return;
+        }
+        if ('unauthorized' in room) {
+          sendJson(response, 401, { error: 'Owner token required' });
+          return;
+        }
+        sendJson(response, 200, room);
+        return;
+      }
+
+      sendJson(response, 404, { error: 'Route not found' });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        sendBadRequest(response, error.issues[0]?.message ?? 'Invalid request payload');
+        return;
+      }
+
+      console.error('🚨 [RoomService] Request handling failed.', error);
+      sendJson(response, 500, { error: 'Internal server error' });
     }
-
-    const url = getUrl(request);
-    const ownerToken = url.searchParams.get('ownerToken');
-    const segments = getPathSegments(request);
-    const [api, roomsSegment, roomId, tail] = segments;
-
-    if (request.method === 'GET' && api === 'api' && roomsSegment === 'health') {
-      sendJson(response, 200, { status: 'ok', service: 'stones-cutover-room-service' });
-      return;
-    }
-
-    if (request.method === 'POST' && api === 'api' && roomsSegment === 'rooms' && !roomId) {
-      const payload = await readJson<StartGameCommand>(request);
-      const snapshot = controller.createRoom({
-        type: 'StartGame',
-        rulesetId: payload.rulesetId,
-        mode: payload.mode,
-        humanPlayerCount: payload.humanPlayerCount,
-        seatFactionIds: payload.seatFactionIds,
-        seatOwnerIds: payload.seatOwnerIds,
-        playerCount: payload.playerCount,
-        factionIds: payload.factionIds,
-        seed: payload.seed,
-      });
-      sendJson(response, 201, snapshot);
-      return;
-    }
-
-    if (api !== 'api' || roomsSegment !== 'rooms' || !roomId) {
-      sendJson(response, 404, { error: 'Not found' });
-      return;
-    }
-
-    if (request.method === 'GET' && !tail) {
-      const room = controller.getRoom(roomId, ownerToken);
-      if (!room) {
-        sendJson(response, 404, { error: 'Room not found' });
-        return;
-      }
-      if ('unauthorized' in room) {
-        sendJson(response, 401, { error: 'Owner token required' });
-        return;
-      }
-      sendJson(response, 200, room);
-      return;
-    }
-
-    if (request.method === 'DELETE' && !tail) {
-      controller.deleteRoom(roomId);
-      sendJson(response, 200, { roomId, deleted: true });
-      return;
-    }
-
-    if (request.method === 'GET' && tail === 'replay') {
-      const replay = controller.replay(roomId, ownerToken);
-      if (!replay) {
-        sendJson(response, 404, { error: 'Room not found' });
-        return;
-      }
-      if ('unauthorized' in replay) {
-        sendJson(response, 401, { error: 'Owner token required' });
-        return;
-      }
-      sendJson(response, 200, replay);
-      return;
-    }
-
-    if (request.method === 'POST' && tail === 'commands') {
-      const payload = await readJson<{ ownerToken?: string; commands: EngineCommand[] }>(request);
-      const room = controller.applyCommands(roomId, payload.ownerToken ?? ownerToken, payload.commands ?? []);
-      if (!room) {
-        sendJson(response, 404, { error: 'Room not found' });
-        return;
-      }
-      if ('unauthorized' in room) {
-        sendJson(response, 401, { error: 'Owner token required' });
-        return;
-      }
-      if ('forbidden' in room) {
-        sendJson(response, 403, { error: 'Owner does not control that seat' });
-        return;
-      }
-      sendJson(response, 200, room);
-      return;
-    }
-
-    if (request.method === 'POST' && tail === 'load') {
-      const payload = await readJson<{ ownerToken?: string; serialized?: string; snapshot?: SerializedGame }>(request);
-      const snapshot = payload.snapshot ?? (payload.serialized ? deserializeGame(payload.serialized) : null);
-      if (!snapshot) {
-        sendJson(response, 400, { error: 'Missing serialized payload' });
-        return;
-      }
-      const room = controller.loadSnapshot(roomId, payload.ownerToken ?? ownerToken, snapshot);
-      if (!room) {
-        sendJson(response, 404, { error: 'Room not found' });
-        return;
-      }
-      if ('unauthorized' in room) {
-        sendJson(response, 401, { error: 'Owner token required' });
-        return;
-      }
-      sendJson(response, 200, room);
-      return;
-    }
-
-    sendJson(response, 404, { error: 'Route not found' });
   });
 }
 

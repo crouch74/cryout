@@ -1,0 +1,33 @@
+import { createCompatCommandBridge } from '../engine/adapters/compat/legacy/adapter.ts';
+import type { ScenarioMetadata, ScenarioModule } from './types.ts';
+import baseDesignScenario from './base_design/index.ts';
+import tahrirSquareScenario from './tahrir_square/index.ts';
+import womanLifeFreedomScenario from './woman_life_freedom/index.ts';
+
+function withCompatBridge(scenario: ScenarioModule): ScenarioModule {
+  return {
+    ...scenario,
+    behaviors: {
+      ...scenario.behaviors,
+      commandBridge: createCompatCommandBridge(),
+    },
+  };
+}
+
+const SCENARIO_MAP = new Map<string, ScenarioModule>([
+  [baseDesignScenario.metadata.id, withCompatBridge(baseDesignScenario)],
+  [tahrirSquareScenario.metadata.id, withCompatBridge(tahrirSquareScenario)],
+  [womanLifeFreedomScenario.metadata.id, withCompatBridge(womanLifeFreedomScenario)],
+]);
+
+export function getScenarioModule(id: string): ScenarioModule | undefined {
+  return SCENARIO_MAP.get(id);
+}
+
+export function listScenarioModules(): ScenarioModule[] {
+  return Array.from(SCENARIO_MAP.values());
+}
+
+export function listScenarioMetadata(): ScenarioMetadata[] {
+  return listScenarioModules().map((scenario) => scenario.metadata);
+}

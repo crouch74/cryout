@@ -11,9 +11,9 @@ This repo now has two layers:
 
 The old `engine/` surface still exists, but it is now a compatibility facade:
 
-- `engine/legacy/*`
+- `src/engine/adapters/compat/*`
   Deprecated bridge code for the current app, room service, and existing tests.
-- `engine/index.ts`
+- `src/engine/index.ts`
   Re-exports the legacy API plus the new canonical `core/` and `scenarios/` entrypoints.
 
 ## Core Vs Scenario Modules
@@ -74,7 +74,7 @@ scenarios/
   base_design/
   tahrir_square/
   woman_life_freedom/
-  example_hooks/
+  testing/example-hooks/
 
 engine/
   index.ts
@@ -85,7 +85,7 @@ engine/
 
 ### State Model
 
-Implemented in [core/types.ts](/Users/aeid/git_tree/boardgames/The%20stones%20are%20crying%20outt/core/types.ts).
+Implemented in [src/engine/types.ts](/Users/aeid/git_tree/boardgames/The%20stones%20are%20crying%20outt/src/engine/types.ts).
 
 `CoreGameState` is normalized and serializable:
 
@@ -198,7 +198,7 @@ Load order:
 
 ## Scenario Interface
 
-The canonical scenario contract is defined in [core/types.ts](/Users/aeid/git_tree/boardgames/The%20stones%20are%20crying%20outt/core/types.ts) and re-exported by [scenarios/types.ts](/Users/aeid/git_tree/boardgames/The%20stones%20are%20crying%20outt/scenarios/types.ts).
+The canonical scenario contract is defined in [src/engine/types.ts](/Users/aeid/git_tree/boardgames/The%20stones%20are%20crying%20outt/src/engine/types.ts) and re-exported by [src/scenarios/types.ts](/Users/aeid/git_tree/boardgames/The%20stones%20are%20crying%20outt/src/scenarios/types.ts).
 
 ```ts
 export interface ScenarioModule {
@@ -300,7 +300,7 @@ export interface ScenarioModule {
 
 ## How To Create A New Scenario
 
-Use [scenarios/example_hooks/](/Users/aeid/git_tree/boardgames/The%20stones%20are%20crying%20outt/scenarios/example_hooks) as the reference.
+Use [src/scenarios/testing/example-hooks/](/Users/aeid/git_tree/boardgames/The%20stones%20are%20crying%20outt/src/scenarios/testing/example-hooks) as the reference.
 
 Checklist:
 
@@ -327,7 +327,7 @@ If the scenario is still backed by the legacy engine:
 
 ### Add A New Deck And Resolver
 
-From [scenarios/example_hooks/content.ts](/Users/aeid/git_tree/boardgames/The%20stones%20are%20crying%20outt/scenarios/example_hooks/content.ts):
+From [src/scenarios/testing/example-hooks/content.ts](/Users/aeid/git_tree/boardgames/The%20stones%20are%20crying%20outt/src/scenarios/testing/example-hooks/content.ts):
 
 ```ts
 decks: {
@@ -335,7 +335,7 @@ decks: {
 }
 ```
 
-From [scenarios/example_hooks/behaviors.ts](/Users/aeid/git_tree/boardgames/The%20stones%20are%20crying%20outt/scenarios/example_hooks/behaviors.ts):
+From [src/scenarios/testing/example-hooks/behaviors.ts](/Users/aeid/git_tree/boardgames/The%20stones%20are%20crying%20outt/src/scenarios/testing/example-hooks/behaviors.ts):
 
 ```ts
 cardResolvers: {
@@ -350,7 +350,7 @@ cardResolvers: {
 
 ### Define A New Win Condition
 
-From [scenarios/example_hooks/rules.ts](/Users/aeid/git_tree/boardgames/The%20stones%20are%20crying%20outt/scenarios/example_hooks/rules.ts):
+From [src/scenarios/testing/example-hooks/rules.ts](/Users/aeid/git_tree/boardgames/The%20stones%20are%20crying%20outt/src/scenarios/testing/example-hooks/rules.ts):
 
 ```ts
 const winEvaluators: OutcomeEvaluator[] = [
@@ -372,7 +372,7 @@ const winEvaluators: OutcomeEvaluator[] = [
 
 ### Override Action Costs
 
-From [scenarios/example_hooks/rules.ts](/Users/aeid/git_tree/boardgames/The%20stones%20are%20crying%20outt/scenarios/example_hooks/rules.ts):
+From [src/scenarios/testing/example-hooks/rules.ts](/Users/aeid/git_tree/boardgames/The%20stones%20are%20crying%20outt/src/scenarios/testing/example-hooks/rules.ts):
 
 ```ts
 const costCalculators: ActionCostCalculator[] = [
@@ -389,7 +389,7 @@ const costCalculators: ActionCostCalculator[] = [
 
 ### Inject A New Phase
 
-From [scenarios/example_hooks/rules.ts](/Users/aeid/git_tree/boardgames/The%20stones%20are%20crying%20outt/scenarios/example_hooks/rules.ts):
+From [src/scenarios/testing/example-hooks/rules.ts](/Users/aeid/git_tree/boardgames/The%20stones%20are%20crying%20outt/src/scenarios/testing/example-hooks/rules.ts):
 
 ```ts
 phases: [
@@ -403,7 +403,7 @@ phases: [
 
 ### Customize System Step Behavior
 
-From [scenarios/example_hooks/behaviors.ts](/Users/aeid/git_tree/boardgames/The%20stones%20are%20crying%20outt/scenarios/example_hooks/behaviors.ts):
+From [src/scenarios/testing/example-hooks/behaviors.ts](/Users/aeid/git_tree/boardgames/The%20stones%20are%20crying%20outt/src/scenarios/testing/example-hooks/behaviors.ts):
 
 ```ts
 systemTurnScript(state, scenario) {
@@ -428,8 +428,8 @@ systemTurnScript(state, scenario) {
 
 Use:
 
-- [scenarios/example_hooks/locales/en.json](/Users/aeid/git_tree/boardgames/The%20stones%20are%20crying%20outt/scenarios/example_hooks/locales/en.json)
-- [scenarios/example_hooks/ui.ts](/Users/aeid/git_tree/boardgames/The%20stones%20are%20crying%20outt/scenarios/example_hooks/ui.ts)
+- [src/scenarios/testing/example-hooks/locales/en.json](/Users/aeid/git_tree/boardgames/The%20stones%20are%20crying%20outt/src/scenarios/testing/example-hooks/locales/en.json)
+- [src/scenarios/testing/example-hooks/ui.ts](/Users/aeid/git_tree/boardgames/The%20stones%20are%20crying%20outt/src/scenarios/testing/example-hooks/ui.ts)
 
 ```ts
 getLabel(id, fallback) {
@@ -444,7 +444,7 @@ getLabel(id, fallback) {
 
 ### Add A Migration
 
-From [scenarios/example_hooks/migrations.ts](/Users/aeid/git_tree/boardgames/The%20stones%20are%20crying%20outt/scenarios/example_hooks/migrations.ts):
+From [src/scenarios/testing/example-hooks/migrations.ts](/Users/aeid/git_tree/boardgames/The%20stones%20are%20crying%20outt/src/scenarios/testing/example-hooks/migrations.ts):
 
 ```ts
 migrateScenarioState: {
@@ -479,7 +479,7 @@ Recommended test cases:
 - scenario migration mutates scenario state as expected
 - invariant validation catches invalid deck or entity references
 
-For legacy-backed scenarios, add at least:
+For compatibility-backed scenarios, add at least:
 
 - bridge initialization produces projected core state
 - bridge dispatch accepts the current legacy command set
@@ -500,7 +500,7 @@ For legacy-backed scenarios, add at least:
 ### Saves
 
 - New canonical saves use `core/persistence/*`.
-- Legacy engine saves still use `engine/legacy/serializer.ts`.
+- Compatibility saves continue to use `src/engine/adapters/compat/serializer.ts`.
 - Scenario migration runs after core migration.
 - Invariants run after both migrations.
 

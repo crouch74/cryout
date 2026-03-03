@@ -17,25 +17,30 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@core/*": ["core/*"],
-      "@scenarios/*": ["scenarios/*"],
-      "@engine-legacy/*": ["engine/legacy/*"]
+      "@app/*": ["src/app/*"],
+      "@features/*": ["src/features/*"],
+      "@game/*": ["src/game/*"],
+      "@engine/*": ["src/engine/*"],
+      "@scenarios/*": ["src/scenarios/*"],
+      "@ui/*": ["src/ui/*"],
+      "@devtools/*": ["src/devtools/*"],
+      "@i18n/*": ["src/i18n/*"],
+      "@styles/*": ["src/styles/*"],
+      "@assets/*": ["src/assets/*"]
     }
   },
   "include": [
-    "core/**/*.ts",
-    "scenarios/**/*.ts",
-    "engine/**/*.ts",
-    "content/index.ts",
-    "content/base_design/**/*.ts",
-    "content/scenarios/**/*.ts",
-    "room-service/**/*.ts",
-    "tests/**/*.ts",
-    "src/mvp/runtime.ts",
-    "src/mvp/urlState.ts",
-    "src/mvp/gameUiHelpers.ts"
+    "src/engine/**/*.ts",
+    "src/scenarios/**/*.ts",
+    "src/i18n/**/*.ts",
+    "src/features/room-session/**/*.ts",
+    "room-service/**/*.ts"
   ],
   "exclude": [
-    "src/**/*"
+    "src/app/**/*",
+    "src/game/**/*",
+    "src/ui/**/*",
+    "src/devtools/**/*",
+    "tests/**/*"
   ]
 }

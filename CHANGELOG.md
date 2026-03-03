@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [0.10.1] - 2026-03-03
 
 ### Changed
-- 🧹 **Legacy Surface Purge** — removed the abandoned React prototype tree, the obsolete Python MVP backend, dormant content packs, duplicate board assets, and other disconnected repo paths so the checked-in code reflects only the active TypeScript product.
+- 🧹 **Legacy Surface Purge** — removed the abandoned React application tree, the obsolete Python backend, dormant content packs, duplicate board assets, and other disconnected repo paths so the checked-in code reflects only the active TypeScript product.
 - 🗺️ **Board Manifest Consolidation** — unified map manifest coverage across the shipped base, Tahrir Square, and Woman, Life, Freedom boards while keeping the base-world anchor tests pinned to the canonical base asset path.
 - 🧪 **Active Surface Stabilization** — repaired build and test coverage around scenario pack typing, icon registries, history presentation, and world-map layout helpers so the surviving product surface builds and tests cleanly.
 
@@ -119,7 +119,7 @@ All notable changes to this project will be documented in this file.
 
 
 ### Fixed
-- 🛠 Fix `NameError: name 'string' is not defined` in `backend/engine/state.py` (CharterClause model).
+- 🛠 Fix `NameError: name 'string' is not defined` in the removed Python engine service (CharterClause model).
 
 ## [0.2.0] - 2026-03-01
 
@@ -156,8 +156,8 @@ All notable changes to this project will be documented in this file.
 - Design system matching the artistic style guide (color palette, typography)
 
 ### Added
-- MVP rules engine backend (run_world_phase, run_coalition_phase_resolution, run_end_phase).
+- Early rules engine backend (run_world_phase, run_coalition_phase_resolution, run_end_phase).
 - Content loader to load scenarios and base game data from YAML declarative configurations.
 - Data structures for: Cards, Decks, Fronts, Roles with Burnout, Capture Engine decks.
 - UI backend integration: GameDashboard now fetches initial state and sends intents to the FastAPI backend.
-- Seeded deterministic test run capability for testing entire MVP scenario loop.
+- Seeded deterministic test run capability for testing the full scenario loop.

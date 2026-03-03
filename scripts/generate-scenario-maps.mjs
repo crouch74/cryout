@@ -447,9 +447,9 @@ function main() {
     anchorSets.push({ exportName: scenario.markerExport, anchors });
   }
 
-  const anchorModulePath = resolve(ROOT, 'src/mvp/boards/generatedScenarioAnchors.ts');
+  const anchorModulePath = resolve(ROOT, 'src/scenarios/shared/boards/generatedScenarioAnchors.ts');
   writeFileSync(anchorModulePath, renderAnchorModule(anchorSets), 'utf8');
-  console.log('✅ Wrote src/mvp/boards/generatedScenarioAnchors.ts');
+  console.log('✅ Wrote src/scenarios/shared/boards/generatedScenarioAnchors.ts');
 }
 
 main();

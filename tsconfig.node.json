@@ -15,9 +15,16 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@core/*": ["core/*"],
-      "@scenarios/*": ["scenarios/*"],
-      "@engine-legacy/*": ["engine/legacy/*"]
+      "@app/*": ["src/app/*"],
+      "@features/*": ["src/features/*"],
+      "@game/*": ["src/game/*"],
+      "@engine/*": ["src/engine/*"],
+      "@scenarios/*": ["src/scenarios/*"],
+      "@ui/*": ["src/ui/*"],
+      "@devtools/*": ["src/devtools/*"],
+      "@i18n/*": ["src/i18n/*"],
+      "@styles/*": ["src/styles/*"],
+      "@assets/*": ["src/assets/*"]
     },
 
     /* Linting */

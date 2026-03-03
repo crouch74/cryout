@@ -72,6 +72,6 @@ npm run build
 
 ## Notes
 
-- Local autosaves are intentionally versioned to the cutover ruleset and old saves are not forward-compatible.
+- Local autosaves are intentionally versioned to the current ruleset and old saves are not forward-compatible.
 - The Node room service is the active multiplayer path.
 - The shipped repo now contains only the active TypeScript engine, scenario content, and Node room service surfaces.

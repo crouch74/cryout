@@ -8,9 +8,16 @@ export default defineConfig(({ mode }) => ({
   plugins: [react()],
   resolve: {
     alias: {
-      '@core': fileURLToPath(new URL('./core', import.meta.url)),
-      '@scenarios': fileURLToPath(new URL('./scenarios', import.meta.url)),
-      '@engine-legacy': fileURLToPath(new URL('./engine/legacy', import.meta.url)),
+      '@app': fileURLToPath(new URL('./src/app', import.meta.url)),
+      '@features': fileURLToPath(new URL('./src/features', import.meta.url)),
+      '@game': fileURLToPath(new URL('./src/game', import.meta.url)),
+      '@engine': fileURLToPath(new URL('./src/engine', import.meta.url)),
+      '@scenarios': fileURLToPath(new URL('./src/scenarios', import.meta.url)),
+      '@ui': fileURLToPath(new URL('./src/ui', import.meta.url)),
+      '@devtools': fileURLToPath(new URL('./src/devtools', import.meta.url)),
+      '@i18n': fileURLToPath(new URL('./src/i18n', import.meta.url)),
+      '@styles': fileURLToPath(new URL('./src/styles', import.meta.url)),
+      '@assets': fileURLToPath(new URL('./src/assets', import.meta.url)),
     },
   },
 }));
