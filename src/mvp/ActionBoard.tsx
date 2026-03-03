@@ -67,13 +67,13 @@ export function ActionBoard({
     if (targetKind === 'REGION') {
       return {
         kind: 'REGION',
-        regionId: (targets[actionId] as RegionId | undefined) ?? getAvailableRegions()[0],
+        regionId: (targets[actionId] as RegionId | undefined) ?? getAvailableRegions(content)[0],
       };
     }
     if (targetKind === 'FRONT') {
       return {
         kind: 'FRONT',
-        frontId: (targets[actionId] as DomainId | undefined) ?? getAvailableDomains()[0],
+        frontId: (targets[actionId] as DomainId | undefined) ?? getAvailableDomains(content)[0],
       } as ActionTarget;
     }
     return { kind: 'NONE' };

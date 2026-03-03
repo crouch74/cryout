@@ -42,10 +42,10 @@ export const resistanceCards: ResistanceCardDefinition[] = [
         deck: 'resistance',
         type: 'action',
         name: 'Lawyer\'s Legal Brief',
-        text: 'Gain 1 body in Alexandria. Advance Gilded Cage.',
-        domainBonus: 'GildedCage',
+        text: 'Gain 1 body in Alexandria. Advance Patriarchal Grip.',
+        domainBonus: 'PatriarchalGrip',
         effects: [
-            { type: 'modify_domain', domain: 'GildedCage', delta: 1 },
+            { type: 'modify_domain', domain: 'PatriarchalGrip', delta: 1 },
             { type: 'add_bodies', region: 'Alexandria', seat: 'acting_player', amount: 1 }
         ]
     }

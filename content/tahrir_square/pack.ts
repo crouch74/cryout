@@ -15,19 +15,7 @@ const domains: DomainDefinition[] = [
         id: 'WarMachine',
         name: 'State Security',
         description: 'Ministry of Interior, CSF, and the military apparatus.',
-        initialProgress: 2, // Starts at 8 pressure (12-10) meaning 8
-    },
-    {
-        id: 'DyingPlanet',
-        name: 'Dying Planet',
-        description: 'Ecological defense against flood, fire, extraction, and collapse.',
-        initialProgress: 1,
-    },
-    {
-        id: 'GildedCage',
-        name: 'Gilded Cage',
-        description: 'Freedom from carceral control, dispossession, and managed rights.',
-        initialProgress: 0,
+        initialProgress: 2,
     },
     {
         id: 'SilencedTruth',
@@ -39,18 +27,6 @@ const domains: DomainDefinition[] = [
         id: 'EmptyStomach',
         name: 'Bread & Dignity',
         description: 'Labor strikes, bread riots, and economic justice.',
-        initialProgress: 0,
-    },
-    {
-        id: 'FossilGrip',
-        name: 'Fossil Grip',
-        description: 'Energy justice against pipeline rule, sacrifice zones, and fuel empires.',
-        initialProgress: 0,
-    },
-    {
-        id: 'StolenVoice',
-        name: 'Stolen Voice',
-        description: 'Cultural survival, language, art, and memory against erasure.',
         initialProgress: 0,
     },
     {
@@ -86,21 +62,21 @@ const regions: RegionDefinition[] = [
         name: 'Alexandria',
         description: 'Second city, labor movement.',
         strapline: 'The Mediterranean front.',
-        vulnerability: { EmptyStomach: 3, GildedCage: 2, RevolutionaryWave: 2 },
+        vulnerability: { EmptyStomach: 3, SilencedTruth: 2, RevolutionaryWave: 2 },
     },
     {
         id: 'NileDelta',
         name: 'Nile Delta',
         description: 'Dense population, rural organizers.',
         strapline: 'The agricultural heart.',
-        vulnerability: { EmptyStomach: 3, StolenVoice: 2, RevolutionaryWave: 1 },
+        vulnerability: { EmptyStomach: 3, PatriarchalGrip: 2, RevolutionaryWave: 1 },
     },
     {
         id: 'UpperEgypt',
         name: 'Upper Egypt',
         description: 'Neglected, conservative, repressed.',
         strapline: 'The forgotten south.',
-        vulnerability: { GildedCage: 3, WarMachine: 2, UnfinishedJustice: 2 },
+        vulnerability: { RevolutionaryWave: 1, WarMachine: 2, UnfinishedJustice: 2 },
     },
     {
         id: 'Suez',
@@ -114,7 +90,7 @@ const regions: RegionDefinition[] = [
         name: 'Sinai',
         description: 'Militarized, peripheral.',
         strapline: 'A zone of exclusion.',
-        vulnerability: { WarMachine: 3, GildedCage: 3, DyingPlanet: 1 },
+        vulnerability: { WarMachine: 3, UnfinishedJustice: 3, PatriarchalGrip: 1 },
     },
 ];
 
@@ -196,12 +172,12 @@ const factions: FactionDefinition[] = [
         name: 'Rights Defenders',
         shortName: 'Defenders',
         homeRegion: 'Cairo',
-        passive: 'Campaigns against Gilded Cage gain +1.',
+        passive: 'Campaigns against Patriarchal Grip gain +1.',
         weakness: 'Smuggle Evidence moves 1 less.',
         organizeBonus: 1,
         investigateBonus: 0,
         defenseBonus: 0,
-        campaignDomainBonus: 'GildedCage',
+        campaignDomainBonus: 'PatriarchalGrip',
         campaignBonus: 1,
         outreachPenalty: 0,
         mandate: {
