@@ -92,6 +92,7 @@ test('room snapshots reveal private data for all seats owned by the same human p
   assert.equal(ownerOne.state.players[0]?.resistanceHand.length, 0);
   assert.equal(ownerOne.state.players[1]?.resistanceHand.length, 0);
   assert.equal(ownerZero.state.eventLog.some((event) => event.context?.cardReveals?.[0]?.deckId === 'resistance'), true);
+  assert.equal(ownerZero.state.eventLog.some((event) => event.context?.cardReveals?.[0]?.origin === 'startup_withdrawal'), true);
 });
 
 test('room service rejects commands for seats owned by another human player', () => {

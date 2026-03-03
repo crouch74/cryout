@@ -370,7 +370,7 @@ export interface CardRevealEvent {
   destination: 'discard' | 'hand' | 'active';
   seat?: number;
   public: boolean;
-  origin: 'opening_hand' | 'investigate' | 'system_phase' | 'beacon_activation' | 'played_action_card' | 'other';
+  origin: 'startup_withdrawal' | 'investigate' | 'system_phase' | 'beacon_activation' | 'played_action_card' | 'other';
 }
 
 export interface RollResolution {

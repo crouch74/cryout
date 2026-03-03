@@ -714,7 +714,7 @@
       "traceExecuted": "اتنفذ",
       "traceSkipped": "اتتخطى",
       "traceFailed": "فشل",
-      "eventOpeningDraw": "🃏 {{seat}} سحب كارت مقاومة افتتاحي.",
+      "eventStartupWithdrawal": "🃏 {{seat}} سحب كارت مقاومة مسحوب من البداية.",
       "eventInvestigateDraw": "🃏 {{seat}} سحب كارت مقاومة.",
       "eventPlayedCard": "🃏 {{seat}} لعب {{card}}.",
       "eventBeaconActivated": "🕯️ {{card}} بقت منارة نشطة.",

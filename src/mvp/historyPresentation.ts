@@ -384,8 +384,8 @@ function getEventTitle(event: DomainEvent, content: CompiledContent) {
   const reveal = event.context?.cardReveals?.[0];
   if (reveal) {
     const revealCopy = getRevealTitle(content, reveal);
-    if (reveal.origin === 'opening_hand' && typeof reveal.seat === 'number') {
-      return t('ui.history.eventOpeningDraw', '🃏 {{seat}} drew an opening resistance card.', {
+    if (reveal.origin === 'startup_withdrawal' && typeof reveal.seat === 'number') {
+      return t('ui.history.eventStartupWithdrawal', '🃏 {{seat}} withdrew a startup resistance card.', {
         seat: formatSeatLabel(reveal.seat),
       });
     }

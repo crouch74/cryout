@@ -734,6 +734,85 @@ function resolveCardDraws(
   };
 }
 
+function resolveStartupWithdrawal(
+  state: EngineState,
+  content: CompiledContent,
+  seat: number,
+): void {
+  const cardId = drawCard(state, 'resistance');
+  if (!cardId) {
+    return;
+  }
+
+  const card = assertExists(content.cards[cardId], `Missing card ${cardId}.`);
+  if (card.deck !== 'resistance') {
+    throw new Error(`Card ${cardId} is not a resistance card.`);
+  }
+
+  const targetRegionId = getFaction(content, state.players[seat]).homeRegion;
+  const discardBefore = state.decks.resistance.discardPile.length;
+  const traces = (card.effects?.length ?? 0) > 0
+    ? applyEffects(
+      state,
+      content,
+      card.effects ?? [],
+      {
+        sourceType: 'card',
+        sourceId: card.id,
+        emoji: '🃏',
+        message: `${card.name} shaped the opening position.`,
+        causedBy: ['startup_withdrawal', card.id],
+        context: {
+          actingSeat: seat,
+          targetRegionId,
+          causedBy: ['startup_withdrawal', card.id],
+        },
+      },
+    )
+    : [];
+
+  moveCardToDiscard(state, 'resistance', cardId);
+  traces.push({
+    effectType: 'draw_resistance',
+    status: 'executed',
+    message: t('ui.runtime.startupWithdrawalSummary', 'Seat {{seat}} withdrew a startup resistance card.', {
+      seat: seat + 1,
+    }),
+    causedBy: ['startup_withdrawal', card.id],
+    deltas: [createDelta('card', 'resistance:discard', discardBefore, state.decks.resistance.discardPile.length)],
+  });
+
+  addEvent(
+    state,
+    'card',
+    card.id,
+    '🃏',
+    `${card.name}: ${card.text}`,
+    ['StartGame', 'startup_withdrawal', card.id],
+    traces,
+    {
+      actingSeat: seat,
+      targetRegionId,
+      sourceDeckId: 'resistance',
+      cardReveals: [{
+        deckId: 'resistance',
+        cardId,
+        destination: 'discard',
+        seat,
+        public: true,
+        origin: 'startup_withdrawal',
+      }],
+      causedBy: ['startup_withdrawal', card.id],
+    },
+  );
+}
+
+function resolveStartupWithdrawals(state: EngineState, content: CompiledContent) {
+  for (const player of state.players) {
+    resolveStartupWithdrawal(state, content, player.seat);
+  }
+}
+
 function getOutreachCost(state: EngineState, content: CompiledContent, seat: number) {
   const faction = getFaction(content, state.players[seat]);
   const pressure = getSystemPersistentModifiers(state, content);
@@ -1230,9 +1309,7 @@ function createInitialState(command: StartGameCommand, content: CompiledContent)
     tahrirMartyrCount: 0,
   };
 
-  for (const player of state.players) {
-    resolveCardDraws(state, player.seat, 1, 'opening_hand');
-  }
+  resolveStartupWithdrawals(state, content);
 
   for (const beaconId of activeBeaconIds) {
     addSimpleEvent(
@@ -1799,7 +1876,7 @@ export function normalizeEngineState(state: EngineState): EngineState {
           ...event.context,
           cardReveals: event.context.cardReveals?.map((reveal) => ({
             ...reveal,
-            origin: reveal.origin ?? 'other',
+            origin: reveal.origin === 'opening_hand' ? 'startup_withdrawal' : (reveal.origin ?? 'other'),
           })),
           ...(event.context.roll
             ? {

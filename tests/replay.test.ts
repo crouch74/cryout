@@ -51,5 +51,6 @@ test('serialized command log replays to the same snapshot', () => {
 
   assert.deepEqual(replayed, payload.snapshot);
   assert.equal(payload.snapshot.eventLog.some((event) => event.context?.cardReveals?.length), true);
+  assert.equal(payload.snapshot.eventLog.some((event) => event.context?.cardReveals?.[0]?.origin === 'startup_withdrawal'), true);
   assert.deepEqual(payload.snapshot.players.map((player) => player.ownerId), [0, 0, 1, 1]);
 });

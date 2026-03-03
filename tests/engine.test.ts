@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { compileContent, dispatchCommand, initializeGame, listRulesets, type EngineCommand } from '../engine/index.ts';
+import type { DomainEvent, EngineState } from '../engine/index.ts';
 
 const startCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
   type: 'StartGame',
@@ -22,6 +23,46 @@ const multiOwnerStartCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
   seed: 4242,
 };
 
+const tahrirStartCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
+  type: 'StartGame',
+  rulesetId: 'tahrir_square',
+  mode: 'LIBERATION',
+  humanPlayerCount: 4,
+  seatFactionIds: ['april_6_youth', 'labor_movement', 'independent_journalists', 'rights_defenders'],
+  seatOwnerIds: [0, 1, 2, 3],
+  seed: 4242,
+};
+
+const womanLifeFreedomStartCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
+  type: 'StartGame',
+  rulesetId: 'woman_life_freedom',
+  mode: 'LIBERATION',
+  humanPlayerCount: 4,
+  seatFactionIds: ['kurdish_women', 'student_union', 'bazaar_strikers', 'male_allies'],
+  seatOwnerIds: [0, 1, 2, 3],
+  seed: 4242,
+};
+
+function getStartupWithdrawalEvents(state: EngineState) {
+  return state.eventLog.filter((event) => event.context?.cardReveals?.[0]?.origin === 'startup_withdrawal');
+}
+
+function findStartupWithdrawal(
+  command: Extract<EngineCommand, { type: 'StartGame' }>,
+  matcher: (event: DomainEvent, state: EngineState) => boolean,
+  maxSeed = 5000,
+) {
+  for (let seed = 1; seed <= maxSeed; seed += 1) {
+    const state = initializeGame({ ...command, seed });
+    const event = getStartupWithdrawalEvents(state).find((entry) => matcher(entry, state));
+    if (event) {
+      return { seed, state, event };
+    }
+  }
+
+  throw new Error(`Unable to find startup withdrawal within ${maxSeed} seeds.`);
+}
+
 test('canonical ruleset registry exposes the design-faithful cutover ruleset', () => {
   const rulesets = listRulesets();
   const baseDesign = rulesets.find((ruleset) => ruleset.id === 'base_design');
@@ -40,15 +81,71 @@ test('same seed produces deterministic system deck order', () => {
   assert.notDeepEqual(stateA.decks.system.drawPile, stateC.decks.system.drawPile);
 });
 
-test('opening resistance draws reveal publicly and move into discard', () => {
+test('startup resistance withdrawals reveal publicly and move into discard', () => {
   const state = initializeGame(startCommand);
-  const revealEvents = state.eventLog.filter((event) => event.context?.sourceDeckId === 'resistance' && event.context?.cardReveals?.length);
+  const revealEvents = getStartupWithdrawalEvents(state);
   const revealOrigins = revealEvents.flatMap((event) => event.context?.cardReveals ?? []).map((reveal) => reveal.origin);
 
   assert.equal(state.players.every((player) => player.resistanceHand.length === 0), true);
   assert.equal(state.decks.resistance.discardPile.length, state.players.length);
   assert.equal(revealEvents.length >= state.players.length, true);
-  assert.equal(revealOrigins.every((origin) => origin === 'opening_hand'), true);
+  assert.equal(revealOrigins.every((origin) => origin === 'startup_withdrawal'), true);
+});
+
+test('startup withdrawal applies Archive Leak immediately for the owning seat', () => {
+  const { state, event } = findStartupWithdrawal(
+    startCommand,
+    (entry) => entry.context?.actingSeat === 0 && entry.context?.cardReveals?.[0]?.cardId === 'res_archive_leak',
+  );
+
+  assert.equal(state.globalGaze, 6);
+  assert.equal(state.players[0]?.evidence, 2);
+  assert.equal(state.decks.resistance.discardPile.includes('res_archive_leak'), true);
+  assert.equal(event.context?.cardReveals?.[0]?.origin, 'startup_withdrawal');
+});
+
+test('startup withdrawal resolves target-region effects against the owning seat home region', () => {
+  const { state, event } = findStartupWithdrawal(
+    startCommand,
+    (entry) => entry.context?.actingSeat === 0 && entry.context?.cardReveals?.[0]?.cardId === 'res_strike_fund',
+  );
+
+  assert.equal(event.context?.targetRegionId, 'Congo');
+  assert.equal(state.regions.Congo.bodiesPresent[0], 7);
+});
+
+test('startup withdrawal keeps support-only cards as reveal-and-discard only', () => {
+  const { state, event } = findStartupWithdrawal(
+    startCommand,
+    (entry) => entry.context?.actingSeat === 0 && Boolean(entry.context?.cardReveals?.[0]?.cardId?.startsWith('sup_')),
+  );
+
+  assert.equal(state.players[0]?.evidence, 1);
+  assert.equal(event.deltas.length, 1);
+  assert.equal(event.deltas[0]?.kind, 'card');
+  assert.equal(state.decks.resistance.discardPile.includes(event.context?.cardReveals?.[0]?.cardId ?? ''), true);
+});
+
+test('Tahrir startup withdrawal applies effectful resistance cards during setup', () => {
+  const { state, event } = findStartupWithdrawal(
+    tahrirStartCommand,
+    (entry) => entry.context?.actingSeat === 0 && entry.context?.cardReveals?.[0]?.cardId === 'res_tahrir_al_jazeera_interview',
+  );
+
+  assert.equal(state.players[0]?.evidence, 4);
+  assert.equal(state.globalGaze, 6);
+  assert.equal(event.context?.targetRegionId, 'Cairo');
+});
+
+test('Woman, Life, Freedom startup withdrawal applies effectful resistance cards during setup', () => {
+  const { state, event } = findStartupWithdrawal(
+    womanLifeFreedomStartCommand,
+    (entry) => entry.context?.actingSeat === 0 && entry.context?.cardReveals?.[0]?.cardId === 'res_wlf_cutting_hair_symbol',
+  );
+
+  assert.equal(event.deltas.some((delta) => delta.kind === 'track' && delta.label === 'globalGaze' && delta.before === 5 && delta.after === 7), true);
+  assert.equal(state.globalGaze >= 7, true);
+  assert.equal(event.context?.targetRegionId, 'Kurdistan');
 });
 
 test('startup supports fewer human players than faction seats while keeping all factions active', () => {
@@ -356,6 +453,12 @@ test('crisis deck draws once each system phase and twice when Global Gaze is hig
 test('each system escalation trigger can fire only once across the game', () => {
   const content = compileContent(startCommand.rulesetId);
   const state = initializeGame(startCommand);
+  state.regions.Congo.extractionTokens = 2;
+  state.regions.Levant.extractionTokens = 2;
+  state.regions.Amazon.extractionTokens = 1;
+  state.regions.Sahel.extractionTokens = 1;
+  state.regions.Mekong.extractionTokens = 1;
+  state.regions.Andes.extractionTokens = 1;
   state.decks.crisis.drawPile = [];
   state.decks.system.drawPile = ['sys_emergency_powers', 'sys_resource_privatization_wave'];
 

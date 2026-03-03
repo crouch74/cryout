@@ -110,6 +110,48 @@ test('history presenter localizes reveal details and disabled reasons', async ()
   await changeLocale('en');
 });
 
+test('history presenter labels startup withdrawals distinctly from later draws', () => {
+  const content = compileContent(startCommand.rulesetId);
+  const startupEvent: DomainEvent = {
+    seq: 1,
+    round: 1,
+    phase: 'SYSTEM',
+    sourceType: 'card',
+    sourceId: 'res_archive_leak',
+    emoji: '🃏',
+    message: 'Archive Leak: Raise Global Gaze by 1 and gain 1 Evidence.',
+    causedBy: ['StartGame', 'startup_withdrawal', 'res_archive_leak'],
+    deltas: [
+      { kind: 'track', label: 'globalGaze', before: 5, after: 6 },
+      { kind: 'evidence', label: 'seat:0:evidence', before: 1, after: 2 },
+      { kind: 'card', label: 'resistance:discard', before: 0, after: 1 },
+    ],
+    trace: [],
+    context: {
+      actingSeat: 0,
+      targetRegionId: 'Congo',
+      sourceDeckId: 'resistance',
+      cardReveals: [
+        {
+          deckId: 'resistance',
+          cardId: 'res_archive_leak',
+          destination: 'discard',
+          seat: 0,
+          public: true,
+          origin: 'startup_withdrawal',
+        },
+      ],
+    },
+  };
+
+  const presented = presentHistoryEvent(startupEvent, content);
+
+  assert.equal(presented.title, '🃏 Seat 1 withdrew a startup resistance card.');
+  assert.equal(presented.cardReveals[0]?.title, 'Archive Leak');
+  assert.match(presented.cardReveals[0]?.body ?? '', /Global Gaze/);
+  assert.equal(presented.deltas.some((delta) => /Global Gaze/.test(delta.label)), true);
+});
+
 test('selectors expose useful copy for the new ruleset', () => {
   const content = compileContent(startCommand.rulesetId);
   const state = initializeGame(startCommand);

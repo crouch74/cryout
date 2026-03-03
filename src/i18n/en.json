@@ -714,7 +714,7 @@
       "traceExecuted": "Executed",
       "traceSkipped": "Skipped",
       "traceFailed": "Failed",
-      "eventOpeningDraw": "🃏 {{seat}} drew an opening resistance card.",
+      "eventStartupWithdrawal": "🃏 {{seat}} withdrew a startup resistance card.",
       "eventInvestigateDraw": "🃏 {{seat}} drew a resistance card.",
       "eventPlayedCard": "🃏 {{seat}} played {{card}}.",
       "eventBeaconActivated": "🕯️ {{card}} became an active Beacon.",
