@@ -18,7 +18,7 @@ import {
   getLocaleOptions,
   t,
 } from '../src/i18n/index.ts';
-import { localizeDisabledReason, presentHistoryEvent } from '../src/mvp/historyPresentation.ts';
+import { localizeDisabledReason, presentHistoryEvent, presentTerminalOutcome } from '../src/mvp/historyPresentation.ts';
 import type { DomainEvent } from '../engine/index.ts';
 import {
   getActionDockItems,
@@ -220,9 +220,85 @@ test('game screen source keeps the compressed board layout contract', () => {
   assert.match(source, /aria-label=\{phaseActionLabel\}/);
   assert.match(source, /onPointerDownCapture=\{handleEmptySpacePointerDown\}/);
   assert.match(source, /suspendHighlights=\{highlightSuspended\}/);
+  assert.match(source, /TerminalOutcomeModal/);
   assert.doesNotMatch(source, /phase-brief-grid/);
   assert.doesNotMatch(source, /whyBoardShifted/);
   assert.doesNotMatch(source, /<footer/);
+});
+
+test('terminal presenter builds contextual victory and defeat summaries', () => {
+  const content = compileContent(startCommand.rulesetId);
+  const victoryState = initializeGame(startCommand);
+  victoryState.phase = 'WIN';
+  victoryState.terminalOutcome = {
+    kind: 'victory',
+    cause: 'liberation',
+    title: 'Victory',
+    summary: 'Liberation achieved.',
+    round: 4,
+    triggeredByEventSeq: 99,
+  };
+
+  const victory = presentTerminalOutcome(victoryState, content);
+  assert.equal(victory?.title, 'Victory');
+  assert.match(victory?.reasonLabel ?? '', /liberation opening/i);
+  assert.equal(victory?.feedbackLines.some((line) => /Global Gaze/.test(line)), true);
+  assert.equal(victory?.feedbackLines.some((line) => /War Machine/.test(line)), true);
+  assert.equal(victory?.feedbackLines.some((line) => /Extraction Tokens/.test(line)), true);
+  assert.equal(victory?.feedbackLines.some((line) => /Secret Mandate/.test(line)), true);
+
+  const defeatState = initializeGame(startCommand);
+  defeatState.phase = 'LOSS';
+  defeatState.regions.Levant.extractionTokens = 6;
+  defeatState.terminalOutcome = {
+    kind: 'defeat',
+    cause: 'extraction_breach',
+    title: 'Defeat',
+    summary: 'Levant reached 6 Extraction Tokens.',
+    round: 3,
+    triggeredByEventSeq: 55,
+    breachedRegionId: 'Levant',
+  };
+
+  const defeat = presentTerminalOutcome(defeatState, content);
+  assert.equal(defeat?.title, 'Defeat');
+  assert.match(defeat?.reasonLabel ?? '', /Levant/);
+  assert.match(defeat?.reasonLabel ?? '', /6 Extraction Tokens/);
+});
+
+test('terminal presenter names mandate failure explicitly', () => {
+  const content = compileContent(startCommand.rulesetId);
+  const state = initializeGame(startCommand);
+  state.phase = 'LOSS';
+  state.terminalOutcome = {
+    kind: 'defeat',
+    cause: 'mandate_failure',
+    title: 'Defeat',
+    summary: 'Public victory was reached, but 2 Secret Mandates failed.',
+    round: 5,
+    triggeredByEventSeq: 77,
+    failedMandateIds: ['mandate_a', 'mandate_b'],
+    failedMandateSeatIds: [0, 1],
+  };
+
+  const presented = presentTerminalOutcome(state, content);
+
+  assert.match(presented?.reasonLabel ?? '', /Secret Mandates/i);
+  assert.equal(presented?.feedbackLines.some((line) => /Secret Mandate/.test(line)), true);
+});
+
+test('terminal modal source renders canonical final-state labels and actions', () => {
+  const source = readFileSync(new URL('../src/mvp/TerminalOutcomeModal.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /Global Gaze/);
+  assert.match(source, /War Machine/);
+  assert.match(source, /Extraction Tokens/);
+  assert.match(source, /Secret Mandates/);
+  assert.match(source, /Review Ledger/);
+  assert.match(source, /Export Save/);
+  assert.match(source, /Back Home/);
+  assert.match(source, /role="dialog"/);
+  assert.match(source, /aria-modal="true"/);
 });
 
 test('phase progress source keeps the active question-mark help affordance', () => {

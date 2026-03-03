@@ -117,6 +117,8 @@ test('any region reaching six extraction tokens causes immediate defeat', () => 
 
   assert.equal(next.phase, 'LOSS');
   assert.match(next.lossReason ?? '', /Levant/);
+  assert.equal(next.terminalOutcome?.cause, 'extraction_breach');
+  assert.equal(next.terminalOutcome?.breachedRegionId, 'Levant');
 });
 
 test('liberation victory requires the public win and all active mandates', () => {
@@ -136,6 +138,7 @@ test('liberation victory requires the public win and all active mandates', () =>
 
   assert.equal(next.phase, 'WIN');
   assert.match(next.winner ?? '', /Liberation/);
+  assert.equal(next.terminalOutcome?.cause, 'liberation');
 });
 
 test('a failed mandate voids a public liberation win', () => {
@@ -153,6 +156,54 @@ test('a failed mandate voids a public liberation win', () => {
   assert.equal(next.phase, 'LOSS');
   assert.match(next.lossReason ?? '', /Secret Mandate/i);
   assert.equal(next.players.every((player) => player.mandateRevealed), true);
+  assert.equal(next.terminalOutcome?.cause, 'mandate_failure');
+  assert.equal((next.terminalOutcome?.failedMandateIds?.length ?? 0) > 0, true);
+});
+
+test('sudden death writes a terminal defeat summary', () => {
+  const content = compileContent(startCommand.rulesetId);
+  const state = initializeGame(startCommand);
+  state.phase = 'RESOLUTION';
+  state.round = content.ruleset.suddenDeathRound;
+
+  const next = dispatchCommand(state, { type: 'ResolveResolutionPhase' }, content);
+
+  assert.equal(next.phase, 'LOSS');
+  assert.equal(next.terminalOutcome?.cause, 'sudden_death');
+  assert.match(next.lossReason ?? '', new RegExp(String(content.ruleset.suddenDeathRound)));
+});
+
+test('a seat reaching 0 comrades causes immediate defeat', () => {
+  const content = compileContent(startCommand.rulesetId);
+  let state = initializeGame(startCommand);
+  state = dispatchCommand(state, { type: 'ResolveSystemPhase' }, content);
+  state.regions.Congo.bodiesPresent[0] = 1;
+  state.regions.Levant.bodiesPresent[0] = 0;
+  state.regions.Mekong.bodiesPresent[0] = 0;
+  state.regions.Amazon.bodiesPresent[0] = 0;
+
+  const next = dispatchCommand(
+    state,
+    { type: 'QueueIntent', seat: 0, action: { actionId: 'defend', regionId: 'Congo', bodiesCommitted: 1 } },
+    content,
+  );
+
+  const committed = {
+    ...next,
+    players: next.players.map((player, index) => ({
+      ...player,
+      actionsRemaining: 0,
+      ready: true,
+      queuedIntents: index === 0 ? player.queuedIntents : [],
+    })),
+  };
+
+  const resolved = dispatchCommand(committed, { type: 'CommitCoalitionIntent' }, content);
+
+  assert.equal(resolved.phase, 'LOSS');
+  assert.equal(resolved.terminalOutcome?.cause, 'comrades_exhausted');
+  assert.equal(resolved.terminalOutcome?.exhaustedSeat, 0);
+  assert.match(resolved.lossReason ?? '', /0 Comrades/);
 });
 
 test('launch campaign consumes 2d6 of rng and can remove extraction on success', () => {

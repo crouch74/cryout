@@ -39,6 +39,7 @@ import type { IconType } from './icons/iconTypes.ts';
 import { PlayerStrip } from './PlayerStrip.tsx';
 import { PhaseProgress } from './PhaseProgress.tsx';
 import { StatusRibbon } from './StatusRibbon.tsx';
+import { TerminalOutcomeModal } from './TerminalOutcomeModal.tsx';
 import { localizeDisabledReason, presentHistoryEvent } from './historyPresentation.ts';
 import { useTransientHighlightKeys } from './useTransientHighlights.ts';
 import {
@@ -1817,6 +1818,17 @@ export function GameScreen({
           </div>
         ) : null
       }
+
+      <TerminalOutcomeModal
+        state={state}
+        content={content}
+        onReviewLedger={() => {
+          setContextMode('ledger');
+          setContextOpen(true);
+        }}
+        onExportSave={onExportSave}
+        onBack={onBack}
+      />
 
       <GameIntroModal state={state} content={content} />
     </TableSurface >

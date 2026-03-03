@@ -61,6 +61,16 @@ export interface PresentedHistoryEvent {
   traces: PresentedHistoryTrace[];
 }
 
+export interface PresentedTerminalOutcome {
+  eyebrow: string;
+  title: string;
+  summary: string;
+  reasonLabel: string;
+  contextLines: string[];
+  feedbackLines: string[];
+  closingNote: string;
+}
+
 function formatSeatLabel(seat: number) {
   return t('ui.game.seat', 'Seat {{seat}}', { seat: seat + 1 });
 }
@@ -253,6 +263,8 @@ function formatDeltaLabel(delta: StateDelta, content: CompiledContent) {
     case 'player':
       return delta.label;
   }
+
+  return delta.label;
 }
 
 export function presentDelta(delta: StateDelta, content: CompiledContent): PresentedHistoryDelta {
@@ -441,6 +453,8 @@ function getEventTitle(event: DomainEvent, content: CompiledContent) {
       return t('ui.history.eventExtractionBreach', 'A region reached 6 Extraction Tokens.');
     case 'mandate_failure':
       return t('ui.history.eventMandateFailure', 'Public victory failed because Secret Mandates were broken.');
+    case 'comrades_exhausted':
+      return t('ui.history.eventComradesExhausted', 'A movement seat was reduced to 0 Comrades.');
     case 'victory':
       return t('ui.history.eventVictory', 'The coalition achieved victory.');
     case 'sudden_death':
@@ -513,6 +527,9 @@ export function localizeDisabledReason(reason: Pick<DisabledActionReason, 'reaso
 }
 
 export function getTerminalStateLabel(state: EngineState, content: CompiledContent) {
+  if (state.terminalOutcome) {
+    return state.terminalOutcome.summary;
+  }
   let terminalEvent: DomainEvent | null = null;
   for (let index = state.eventLog.length - 1; index >= 0; index -= 1) {
     const event = state.eventLog[index];
@@ -531,4 +548,108 @@ export function getTerminalStateLabel(state: EngineState, content: CompiledConte
     return t('ui.history.eventLoss', 'The coalition lost the struggle.');
   }
   return null;
+}
+
+function getHighestPressureRegion(state: EngineState, content: CompiledContent) {
+  const regions = Object.keys(state.regions) as RegionId[];
+  const highestRegionId = regions.reduce((current, candidate) => {
+    if (!current) {
+      return candidate;
+    }
+    return state.regions[candidate].extractionTokens > state.regions[current].extractionTokens ? candidate : current;
+  }, regions[0]);
+
+  return {
+    regionId: highestRegionId,
+    label: localizeRegionField(highestRegionId, 'name', content.regions[highestRegionId].name),
+    extractionTokens: state.regions[highestRegionId]?.extractionTokens ?? 0,
+  };
+}
+
+function getMandateFeedback(state: EngineState) {
+  if (state.terminalOutcome?.cause === 'mandate_failure') {
+    const failedCount = state.terminalOutcome.failedMandateIds?.length ?? 0;
+    return t('ui.terminal.feedbackMandatesFailed', '{{count}} Secret Mandate(s) failed.', {
+      count: failedCount,
+    });
+  }
+
+  return t('ui.terminal.feedbackMandatesHeld', 'All revealed Secret Mandates held at the close.');
+}
+
+function getCauseReasonLabel(state: EngineState, content: CompiledContent) {
+  const outcome = state.terminalOutcome;
+  if (!outcome) {
+    return state.phase === 'WIN'
+      ? t('ui.history.eventVictory', 'The coalition achieved victory.')
+      : t('ui.history.eventLoss', 'The coalition lost the struggle.');
+  }
+
+  switch (outcome.cause) {
+    case 'liberation':
+      return t('ui.terminal.reasonLiberation', 'The coalition forced a liberation opening before the System could seal every front.');
+    case 'symbolic':
+      return t('ui.terminal.reasonSymbolic', 'The coalition aligned the active Beacons and held enough ground for a symbolic breakthrough.');
+    case 'extraction_breach':
+      return t('ui.terminal.reasonExtractionBreach', '{{region}} reached 6 Extraction Tokens and the breach could not be contained.', {
+        region: outcome.breachedRegionId
+          ? localizeRegionField(outcome.breachedRegionId, 'name', content.regions[outcome.breachedRegionId].name)
+          : t('ui.game.region', 'Region'),
+      });
+    case 'mandate_failure':
+      return t('ui.terminal.reasonMandateFailure', 'A public victory was reached, but Secret Mandates were broken in the final reckoning.');
+    case 'comrades_exhausted':
+      return t('ui.terminal.reasonComradesExhausted', 'One movement seat was reduced to 0 Comrades before the struggle could hold the line.');
+    case 'sudden_death':
+      return t('ui.terminal.reasonSuddenDeath', 'The scenario reached sudden death without a decisive victory.');
+  }
+}
+
+export function presentTerminalOutcome(state: EngineState, content: CompiledContent): PresentedTerminalOutcome | null {
+  if (state.phase !== 'WIN' && state.phase !== 'LOSS') {
+    return null;
+  }
+
+  const outcome = state.terminalOutcome;
+  const highestPressure = getHighestPressureRegion(state, content);
+  const beaconsComplete = state.activeBeaconIds.filter((beaconId) => state.beacons[beaconId]?.complete).length;
+
+  return {
+    eyebrow: t('ui.terminal.eyebrow', 'Scenario Outcome'),
+    title: outcome?.title ?? (state.phase === 'WIN' ? t('ui.runtime.outcomeVictory', 'Victory') : t('ui.runtime.outcomeDefeat', 'Defeat')),
+    summary: outcome?.summary ?? getTerminalStateLabel(state, content) ?? '',
+    reasonLabel: getCauseReasonLabel(state, content),
+    contextLines: [
+      t('ui.terminal.contextRuleset', 'Ruleset: {{ruleset}}', {
+        ruleset: localizeRulesetField(content.ruleset.id, 'name', content.ruleset.name),
+      }),
+      t('ui.terminal.contextRound', 'Round: {{round}}', { round: state.round }),
+      t('ui.terminal.contextMode', 'Mode: {{mode}}', {
+        mode: state.mode === 'SYMBOLIC' ? t('ui.mode.symbolic', 'Symbolic') : t('ui.mode.liberation', 'Liberation'),
+      }),
+      outcome?.cause === 'sudden_death'
+        ? t('ui.terminal.contextSuddenDeath', 'Sudden death threshold: round {{round}}.', {
+          round: content.ruleset.suddenDeathRound,
+        })
+        : getCauseReasonLabel(state, content),
+    ],
+    feedbackLines: [
+      t('ui.terminal.feedbackGaze', 'Global Gaze closed at {{value}}.', { value: formatNumber(state.globalGaze) }),
+      t('ui.terminal.feedbackWarMachine', 'War Machine closed at {{value}}.', { value: formatNumber(state.northernWarMachine) }),
+      t('ui.terminal.feedbackExtraction', '{{region}} carried the heaviest pressure at {{count}} Extraction Tokens.', {
+        region: highestPressure.label,
+        count: formatNumber(highestPressure.extractionTokens),
+      }),
+      getMandateFeedback(state),
+      ...(state.mode === 'SYMBOLIC'
+        ? [t('ui.terminal.feedbackBeacons', 'Completed Beacons: {{count}}/{{total}}.', {
+          count: formatNumber(beaconsComplete),
+          total: formatNumber(state.activeBeaconIds.length),
+        })]
+        : []),
+    ],
+    closingNote: outcome?.kind === 'victory'
+      ? t('ui.terminal.closingVictory', 'The victory is real, but incomplete. The System is wounded, not gone.')
+      : t('ui.terminal.closingDefeat', 'The scenario closes in loss, but the struggle continues beyond this table.'),
+  };
 }

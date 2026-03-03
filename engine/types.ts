@@ -396,6 +396,28 @@ export interface BeaconState {
   complete: boolean;
 }
 
+export type TerminalOutcomeKind = 'victory' | 'defeat';
+export type TerminalOutcomeCause =
+  | 'liberation'
+  | 'symbolic'
+  | 'extraction_breach'
+  | 'mandate_failure'
+  | 'comrades_exhausted'
+  | 'sudden_death';
+
+export interface TerminalOutcomeSummary {
+  kind: TerminalOutcomeKind;
+  cause: TerminalOutcomeCause;
+  title: string;
+  summary: string;
+  round: number;
+  triggeredByEventSeq: number | null;
+  breachedRegionId?: RegionId;
+  failedMandateSeatIds?: number[];
+  failedMandateIds?: string[];
+  exhaustedSeat?: number;
+}
+
 export interface StateDelta {
   kind: 'track' | 'domain' | 'extraction' | 'bodies' | 'evidence' | 'defense' | 'card' | 'player' | 'hijab';
   label: string;
@@ -467,6 +489,7 @@ export interface EngineState {
   eventLog: DomainEvent[];
   winner: string | null;
   lossReason: string | null;
+  terminalOutcome: TerminalOutcomeSummary | null;
   mandatesResolved: boolean;
   tahrirEmptyRounds: number;
   tahrirMartyrCount: number;

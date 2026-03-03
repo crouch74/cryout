@@ -26,6 +26,8 @@ import type {
   SeatSelector,
   StartGameCommand,
   StateDelta,
+  TerminalOutcomeCause,
+  TerminalOutcomeSummary,
   SystemEscalationTriggerId,
   SystemPersistentModifiers,
 } from './types.ts';
@@ -225,6 +227,30 @@ function addSimpleEvent(
   causedBy: string[],
 ): void {
   addEvent(state, sourceType, sourceId, emoji, message, causedBy, []);
+}
+
+function createTerminalOutcome(
+  state: EngineState,
+  kind: TerminalOutcomeSummary['kind'],
+  cause: TerminalOutcomeCause,
+  title: string,
+  summary: string,
+  extras: Partial<Omit<TerminalOutcomeSummary, 'kind' | 'cause' | 'title' | 'summary' | 'round' | 'triggeredByEventSeq'>> = {},
+): TerminalOutcomeSummary {
+  return {
+    kind,
+    cause,
+    title,
+    summary,
+    round: state.round,
+    triggeredByEventSeq: null,
+    ...extras,
+  };
+}
+
+function finalizeTerminalEvent(state: EngineState, outcome: TerminalOutcomeSummary) {
+  outcome.triggeredByEventSeq = state.eventLog.at(-1)?.seq ?? null;
+  state.terminalOutcome = outcome;
 }
 
 function addRejectedCommandEvent(state: EngineState, command: EngineCommand, reason: string): void {
@@ -555,7 +581,44 @@ function checkExtractionLoss(state: EngineState) {
     count: EXTRACTION_DEFEAT_THRESHOLD,
   });
   revealMandates(state);
-  addSimpleEvent(state, 'system', 'extraction_breach', '☠️', state.lossReason, ['extraction_breach']);
+  addSimpleEvent(state, 'system', 'extraction_breach', '☠️', '☠️ Extraction breach ended the struggle.', ['extraction_breach']);
+  finalizeTerminalEvent(
+    state,
+    createTerminalOutcome(
+      state,
+      'defeat',
+      'extraction_breach',
+      t('ui.runtime.outcomeDefeat', 'Defeat'),
+      state.lossReason,
+      { breachedRegionId: breachedRegion },
+    ),
+  );
+  return true;
+}
+
+function checkComradesExhaustedLoss(state: EngineState) {
+  const exhaustedSeat = state.players.find((player) => getSeatTotalBodies(state, player.seat) === 0)?.seat;
+  if (exhaustedSeat === undefined) {
+    return false;
+  }
+
+  state.phase = 'LOSS';
+  state.lossReason = t('ui.runtime.lossComradesExhausted', 'Seat {{seat}} was reduced to 0 Comrades.', {
+    seat: exhaustedSeat + 1,
+  });
+  revealMandates(state);
+  addSimpleEvent(state, 'system', 'comrades_exhausted', '🫂', '🫂 A movement seat was reduced to 0 Comrades.', ['comrades_exhausted']);
+  finalizeTerminalEvent(
+    state,
+    createTerminalOutcome(
+      state,
+      'defeat',
+      'comrades_exhausted',
+      t('ui.runtime.outcomeDefeat', 'Defeat'),
+      state.lossReason,
+      { exhaustedSeat },
+    ),
+  );
   return true;
 }
 
@@ -580,7 +643,21 @@ function checkPositiveVictory(state: EngineState, content: CompiledContent): boo
     state.lossReason = t('ui.runtime.lossMandateFailure', 'Public victory was reached, but {{count}} Secret Mandate(s) failed.', {
       count: failedMandates.length,
     });
-    addSimpleEvent(state, 'mandate', 'mandate_failure', '🕳️', state.lossReason, ['mandate_failure']);
+    addSimpleEvent(state, 'mandate', 'mandate_failure', '🕳️', '🕳️ Secret Mandates fractured the coalition.', ['mandate_failure']);
+    finalizeTerminalEvent(
+      state,
+      createTerminalOutcome(
+        state,
+        'defeat',
+        'mandate_failure',
+        t('ui.runtime.outcomeDefeat', 'Defeat'),
+        state.lossReason,
+        {
+          failedMandateSeatIds: failedMandates.map((player) => player.seat),
+          failedMandateIds: failedMandates.map((player) => getFaction(content, player).mandate.id),
+        },
+      ),
+    );
     return true;
   }
 
@@ -588,7 +665,24 @@ function checkPositiveVictory(state: EngineState, content: CompiledContent): boo
   state.winner = liberationComplete
     ? t('ui.runtime.winnerLiberation', 'Liberation achieved.')
     : t('ui.runtime.winnerSymbolic', 'Symbolic beacons aligned.');
-  addSimpleEvent(state, 'beacon', 'victory', '✨', state.winner, ['victory']);
+  addSimpleEvent(
+    state,
+    'beacon',
+    'victory',
+    '✨',
+    liberationComplete ? '✨ Liberation victory secured.' : '✨ Symbolic victory secured.',
+    ['victory'],
+  );
+  finalizeTerminalEvent(
+    state,
+    createTerminalOutcome(
+      state,
+      'victory',
+      liberationComplete ? 'liberation' : 'symbolic',
+      t('ui.runtime.outcomeVictory', 'Victory'),
+      state.winner,
+    ),
+  );
   return true;
 }
 
@@ -745,6 +839,9 @@ function applyEffects(state: EngineState, content: CompiledContent, effects: Eff
             : Math.max(0, before - effect.amount);
           trace.deltas.push(createDelta('bodies', `${regionId}.seat:${seat}`, before, region.bodiesPresent[seat]));
         }
+        if (effect.type === 'remove_bodies' && checkComradesExhaustedLoss(state)) {
+          trace.message = t('ui.runtime.traceComradesExhausted', 'A movement seat was reduced to 0 Comrades.');
+        }
         break;
       }
       case 'gain_evidence':
@@ -795,6 +892,9 @@ function applyEffects(state: EngineState, content: CompiledContent, effects: Eff
     }
 
     traces.push(trace);
+    if (state.phase === 'LOSS' && state.terminalOutcome?.cause === 'comrades_exhausted') {
+      break;
+    }
   }
 
   // MARTYRDOM LOGIC (Tahrir Square)
@@ -1124,6 +1224,7 @@ function createInitialState(command: StartGameCommand, content: CompiledContent)
     eventLog: [],
     winner: null,
     lossReason: null,
+    terminalOutcome: null,
     mandatesResolved: false,
     tahrirEmptyRounds: 0,
     tahrirMartyrCount: 0,
@@ -1689,6 +1790,7 @@ export function normalizeEngineState(state: EngineState): EngineState {
   next.publicAttentionEvents = next.publicAttentionEvents ?? [];
   next.lastSystemCardIds = next.lastSystemCardIds ?? [];
   next.mandatesResolved = next.mandatesResolved ?? false;
+  next.terminalOutcome = next.terminalOutcome ?? null;
   next.eventLog = (next.eventLog ?? []).map((event) => ({
     ...event,
     ...(event.context
@@ -1858,17 +1960,26 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
           continue;
         }
         resolveCrisisCard(next, content, cardId);
+        if (next.terminalOutcome) {
+          return next;
+        }
         if (checkExtractionLoss(next)) {
           return next;
         }
       }
 
       resolveSystemEscalation(next, content);
+      if (next.terminalOutcome) {
+        return next;
+      }
       if (checkExtractionLoss(next)) {
         return next;
       }
 
       resolveMilitaryIntervention(next, content);
+      if (next.terminalOutcome) {
+        return next;
+      }
       if (checkExtractionLoss(next)) {
         return next;
       }
@@ -1926,6 +2037,9 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
           continue;
         }
         resolveQueuedAction(next, content, seat, intent);
+        if (next.terminalOutcome) {
+          return next;
+        }
         if (checkExtractionLoss(next)) {
           return next;
         }
@@ -1959,7 +2073,17 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
           round: content.ruleset.suddenDeathRound,
         });
         revealMandates(next);
-        addSimpleEvent(next, 'system', 'sudden_death', '⌛', next.lossReason, ['sudden_death']);
+        addSimpleEvent(next, 'system', 'sudden_death', '⌛', '⌛ Sudden death ended the struggle.', ['sudden_death']);
+        finalizeTerminalEvent(
+          next,
+          createTerminalOutcome(
+            next,
+            'defeat',
+            'sudden_death',
+            t('ui.runtime.outcomeDefeat', 'Defeat'),
+            next.lossReason,
+          ),
+        );
         return next;
       }
 
