@@ -77,6 +77,10 @@ test('simulation engine writes NDJSON records and summary with expected coverage
     assert.equal(typeof firstPreDefeat.globalTracks, 'object');
     assert.equal(typeof firstPreDefeat.domains, 'object');
     assert.equal(typeof firstPreDefeat.defeatChecks, 'object');
+    const preDefeatPhases = new Set(preDefeatSnapshots.map((snapshot) => String(snapshot.phase)));
+    const hasPhaseSnapshot = ['system_actions', 'coalition_resolution', 'resolution_checks']
+      .some((phase) => preDefeatPhases.has(phase));
+    assert.equal(hasPhaseSnapshot, true);
 
     assert.equal(Array.isArray(record.roundSnapshots), true);
     assert.equal(Array.isArray(record.timeline), true);

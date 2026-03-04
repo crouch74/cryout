@@ -548,6 +548,8 @@ export function runSingleSimulation(run: PlannedSimulationRun): RunExecutionResu
       break;
     }
 
+    // Capture immediately before dispatching commands that can evaluate defeat.
+    // This preserves pre-check state for collapse analysis without changing runtime rules.
     appendPreDefeatSnapshot(preDefeatSnapshots, state, command, content.ruleset.suddenDeathRound);
     state = dispatchCommand(state, command, content);
     if (command.type === 'ResolveResolutionPhase') {
