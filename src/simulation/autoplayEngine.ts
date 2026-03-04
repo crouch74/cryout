@@ -17,9 +17,11 @@ import {
 } from '../engine/index.ts';
 import { buildStrategyCandidatesForSeat, getStrategyProfile, listStrategyProfiles } from './strategies.ts';
 import { captureRoundSnapshot, convertRoundSnapshotsToTimeline } from './captureRoundSnapshot.ts';
+import { capturePreDefeatSnapshot } from './capturePreDefeatSnapshot.ts';
 import type {
   NormalizedSimulationBatchConfig,
   PlannedSimulationRun,
+  PreDefeatSnapshot,
   RoundSnapshot,
   RunExecutionResult,
   SimulationBatchConfig,
@@ -375,6 +377,7 @@ function buildRunRecord(
   run: PlannedSimulationRun,
   state: EngineState,
   stalled: boolean,
+  preDefeatSnapshots: PreDefeatSnapshot[],
   roundSnapshots: RoundSnapshot[],
 ): SimulationRecord {
   const actionCounts = initializeActionCounts();
@@ -460,6 +463,7 @@ function buildRunRecord(
     resourceStats,
     actionCounts,
     actionCountsExtra,
+    preDefeatSnapshots,
     roundSnapshots: normalizedSnapshots,
     timeline: convertRoundSnapshotsToTimeline(normalizedSnapshots),
   };
@@ -483,6 +487,35 @@ function appendRoundSnapshot(
   roundSnapshots.push(captureRoundSnapshot(state));
 }
 
+function getPreDefeatPhase(command: SimulationCommand): string | null {
+  switch (command.type) {
+    case 'ResolveSystemPhase':
+      return 'system_actions';
+    case 'CommitCoalitionIntent':
+      return 'coalition_resolution';
+    case 'ResolveResolutionPhase':
+      return 'resolution_checks';
+    default:
+      return null;
+  }
+}
+
+function appendPreDefeatSnapshot(
+  preDefeatSnapshots: PreDefeatSnapshot[],
+  state: EngineState,
+  command: SimulationCommand,
+  suddenDeathRound: number,
+) {
+  const phase = getPreDefeatPhase(command);
+  if (!phase) {
+    return;
+  }
+
+  const snapshot = capturePreDefeatSnapshot(state, phase, suddenDeathRound);
+  preDefeatSnapshots.push(snapshot);
+  console.log(`🧠 Pre-defeat snapshot captured round=${snapshot.round} phase=${phase}`);
+}
+
 export function runSingleSimulation(run: PlannedSimulationRun): RunExecutionResult {
   const content = getCompiledContent(run.scenario);
 
@@ -500,6 +533,7 @@ export function runSingleSimulation(run: PlannedSimulationRun): RunExecutionResu
 
   const maxSteps = Math.max(180, content.ruleset.suddenDeathRound * 10);
   let stalled = false;
+  const preDefeatSnapshots: PreDefeatSnapshot[] = [];
   const roundSnapshots: RoundSnapshot[] = [];
   const snapshotLimitReached = { value: false };
 
@@ -514,6 +548,7 @@ export function runSingleSimulation(run: PlannedSimulationRun): RunExecutionResu
       break;
     }
 
+    appendPreDefeatSnapshot(preDefeatSnapshots, state, command, content.ruleset.suddenDeathRound);
     state = dispatchCommand(state, command, content);
     if (command.type === 'ResolveResolutionPhase') {
       appendRoundSnapshot(run, roundSnapshots, state, snapshotLimitReached);
@@ -524,7 +559,13 @@ export function runSingleSimulation(run: PlannedSimulationRun): RunExecutionResu
     stalled = true;
   }
 
-  const record = buildRunRecord(run, state, stalled, roundSnapshots);
+  if (preDefeatSnapshots.length === 0) {
+    const fallback = capturePreDefeatSnapshot(state, 'simulation_end', content.ruleset.suddenDeathRound);
+    preDefeatSnapshots.push(fallback);
+    console.log(`🧠 Pre-defeat snapshot captured round=${fallback.round} phase=simulation_end`);
+  }
+
+  const record = buildRunRecord(run, state, stalled, preDefeatSnapshots, roundSnapshots);
   return {
     record,
     terminalCommandLogLength: state.commandLog.length,

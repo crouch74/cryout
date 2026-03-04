@@ -65,6 +65,20 @@ test('simulation engine writes NDJSON records and summary with expected coverage
       assert.equal(mandateFailure, true);
     }
 
+    assert.equal(Array.isArray(record.preDefeatSnapshots), true);
+    const preDefeatSnapshots = record.preDefeatSnapshots as Array<Record<string, unknown>>;
+    assert.equal(preDefeatSnapshots.length >= 1, true);
+    const firstPreDefeat = preDefeatSnapshots[0] ?? {};
+    assert.equal(typeof firstPreDefeat.round, 'number');
+    assert.equal(typeof firstPreDefeat.phase, 'string');
+    assert.equal(typeof firstPreDefeat.resources, 'object');
+    assert.equal(typeof firstPreDefeat.seats, 'object');
+    assert.equal(typeof firstPreDefeat.fronts, 'object');
+    assert.equal(typeof firstPreDefeat.globalTracks, 'object');
+    assert.equal(typeof firstPreDefeat.domains, 'object');
+    assert.equal(typeof firstPreDefeat.defeatChecks, 'object');
+
+    assert.equal(Array.isArray(record.roundSnapshots), true);
     assert.equal(Array.isArray(record.timeline), true);
     assert.equal(typeof record.finalState, 'object');
     assert.equal(typeof record.campaignStats, 'object');

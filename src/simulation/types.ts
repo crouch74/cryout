@@ -133,6 +133,45 @@ export interface RoundSnapshot {
   };
 }
 
+export interface PreDefeatSnapshot {
+  round: number;
+  phase: string;
+  resources: {
+    bodiesRemaining: number;
+    evidenceRemaining: number;
+  };
+  seats: Array<{
+    seatId: string;
+    bodies: number;
+    evidence: number;
+  }>;
+  fronts: Record<string, {
+    extraction: number;
+    comradesTotal: number;
+  }>;
+  globalTracks: {
+    globalGaze: number;
+    warMachine: number;
+  };
+  domains: {
+    WarMachine?: number;
+    DyingPlanet?: number;
+    GildedCage?: number;
+    SilencedTruth?: number;
+    EmptyStomach?: number;
+    FossilGrip?: number;
+    StolenVoice?: number;
+    RevolutionaryWave?: number;
+    PatriarchalGrip?: number;
+    UnfinishedJustice?: number;
+  };
+  defeatChecks: {
+    comradesExhausted: boolean;
+    extractionBreach: boolean;
+    suddenDeath: boolean;
+  };
+}
+
 export interface SimulationRecord {
   simulationId: string;
   scenario: string;
@@ -186,6 +225,7 @@ export interface SimulationRecord {
     defend: number;
   };
   actionCountsExtra: Record<string, number>;
+  preDefeatSnapshots: PreDefeatSnapshot[];
   roundSnapshots: RoundSnapshot[];
   // Backward compatibility for analyzers that still consume timeline.
   timeline?: Array<{
