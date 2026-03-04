@@ -1,21 +1,14 @@
 import { useEffect, useState } from 'react';
 import {
-  getAvailableDomains,
-  getAvailableRegions,
-  getSeatActions,
-  getSeatDisabledReason,
-  type ActionId,
   type CompiledContent,
-  type DomainId,
   type EngineCommand,
   type EngineState,
-  type QueuedIntent,
-  type RegionId,
 } from '../engine/index.ts';
 import { t } from '../i18n/index.ts';
 import { GameSessionScreen } from '../game/screens/GameSessionScreen.tsx';
 import { DebugOverlay, type AutoPlaySpeedLevel } from './panels/DebugPanel.tsx';
 import type { SessionViewport } from '../features/session-setup/model/sessionTypes.ts';
+import { getAutoPlayLogMessage, getAutoPlaySelectionPreview, selectAutoPlayDecision } from './autoPlaySelector.ts';
 
 interface DevGameSessionShellProps {
   surface: 'local' | 'room';
@@ -39,100 +32,6 @@ const AUTOPLAY_SPEED_DELAYS: Record<AutoPlaySpeedLevel, number> = {
 };
 
 const TERMINAL_PHASES: EngineState['phase'][] = ['WIN', 'LOSS'];
-
-function createAutoPlayIntent(
-  state: EngineState,
-  content: CompiledContent,
-  seat: number,
-  actionId: ActionId,
-): Omit<QueuedIntent, 'slot'> | null {
-  const action = content.actions[actionId];
-  const player = state.players[seat];
-  if (!action || !player) {
-    return null;
-  }
-
-  const compatibleCardId = player.resistanceHand.find((cardId) => {
-    const card = content.cards[cardId];
-    return card?.deck === 'resistance' && (!action.cardType || card.type === action.cardType);
-  });
-  const regionCandidates = action.needsRegion ? getAvailableRegions(content) : [undefined];
-  const domainCandidates = action.needsDomain ? getAvailableDomains(content) : [undefined];
-  const targetSeatCandidates = action.needsTargetSeat
-    ? state.players.filter((candidate) => candidate.seat !== seat).map((candidate) => candidate.seat)
-    : [undefined];
-
-  for (const regionId of regionCandidates) {
-    const bodiesInRegion = regionId ? state.regions[regionId].bodiesPresent[seat] ?? 0 : 0;
-    const maxBodies = action.needsBodies ? Math.max(1, bodiesInRegion) : 1;
-    const bodyCandidates = action.needsBodies
-      ? Array.from({ length: maxBodies }, (_, index) => index + 1)
-      : [undefined];
-    const evidenceCandidates = action.needsEvidence
-      ? Array.from({ length: Math.max(player.evidence, 0) + 1 }, (_, index) => index)
-      : [undefined];
-
-    for (const domainId of domainCandidates) {
-      for (const targetSeat of targetSeatCandidates) {
-        for (const bodiesCommitted of bodyCandidates) {
-          for (const evidenceCommitted of evidenceCandidates) {
-            const intent: Omit<QueuedIntent, 'slot'> = {
-              actionId,
-              regionId: regionId as RegionId | undefined,
-              domainId: domainId as DomainId | undefined,
-              targetSeat,
-              bodiesCommitted,
-              evidenceCommitted,
-              cardId: action.needsCard ? compatibleCardId : undefined,
-            };
-            const disabledReason = getSeatDisabledReason(state, content, seat, intent);
-            if (!disabledReason.disabled) {
-              return intent;
-            }
-          }
-        }
-      }
-    }
-  }
-
-  return null;
-}
-
-function getNextAutoPlayCommand(state: EngineState, content: CompiledContent): EngineCommand | null {
-  if (state.phase === 'SYSTEM') {
-    return { type: 'ResolveSystemPhase' };
-  }
-
-  if (state.phase === 'COALITION') {
-    for (const player of state.players) {
-      if (player.actionsRemaining > 0) {
-        for (const action of getSeatActions(content)) {
-          const intent = createAutoPlayIntent(state, content, player.seat, action.id);
-          if (intent) {
-            return {
-              type: 'QueueIntent',
-              seat: player.seat,
-              action: intent,
-            };
-          }
-        }
-        return null;
-      }
-
-      if (!player.ready) {
-        return { type: 'SetReady', seat: player.seat, ready: true };
-      }
-    }
-
-    return { type: 'CommitCoalitionIntent' };
-  }
-
-  if (state.phase === 'RESOLUTION') {
-    return { type: 'ResolveResolutionPhase' };
-  }
-
-  return null;
-}
 
 export default function DevGameSessionShell({
   surface,
@@ -189,15 +88,32 @@ export default function DevGameSessionShell({
       return;
     }
 
-    const command = getNextAutoPlayCommand(state, content);
-    if (!command) {
+    const selection = selectAutoPlayDecision(state, content);
+    if (!selection) {
       stopAutoPlay(t('ui.debug.autoplayNoCommand', 'Autoplay found no legal command and stopped.'));
       return;
     }
 
     const timer = window.setTimeout(() => {
-      console.log(`🎲 [DevPanel] Autoplay dispatching ${command.type} during ${state.phase}.`);
-      void Promise.resolve(onCommand(command)).catch((error) => {
+      if (selection.command.type === 'QueueIntent') {
+        onViewStateChange({
+          focusedSeat: selection.command.seat,
+          regionId: selection.command.action.regionId ?? null,
+        });
+      }
+
+      const preview = getAutoPlaySelectionPreview(state, content, selection);
+      if (preview) {
+        onToast({
+          tone: 'info',
+          title: preview.title,
+          message: preview.message,
+          dismissAfterMs: 1400,
+        });
+      }
+
+      console.log(getAutoPlayLogMessage(state, content, selection));
+      void Promise.resolve(onCommand(selection.command)).catch((error) => {
         console.error('🧪 [DevPanel] Autoplay command failed.', error);
         setAutoPlayRunning(false);
         setAutoPlayTargetRound(null);
@@ -208,7 +124,7 @@ export default function DevGameSessionShell({
     return () => {
       window.clearTimeout(timer);
     };
-  }, [autoPlayRunning, autoPlaySpeed, autoPlayTargetRound, content, onCommand, state]);
+  }, [autoPlayRunning, autoPlaySpeed, autoPlayTargetRound, content, onCommand, onToast, onViewStateChange, state]);
 
   const handleAutoPlayStart = () => {
     if (surface !== 'local') {

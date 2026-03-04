@@ -1326,6 +1326,24 @@ export function GameSessionScreen({
   }, [activeCampaignResult]);
 
   useEffect(() => {
+    if (!autoAdvanceTransientUi || !activeCampaignResult || campaignDismissEnabled) {
+      return;
+    }
+
+    const autoDismissArmDelay = motionMode === 'reduced' ? 120 : 980;
+    autoAdvanceTimerRef.current = window.setTimeout(() => {
+      setCampaignDismissEnabled(true);
+    }, autoDismissArmDelay);
+
+    return () => {
+      if (autoAdvanceTimerRef.current !== null) {
+        window.clearTimeout(autoAdvanceTimerRef.current);
+        autoAdvanceTimerRef.current = null;
+      }
+    };
+  }, [activeCampaignResult, autoAdvanceTransientUi, campaignDismissEnabled, motionMode]);
+
+  useEffect(() => {
     if (!autoAdvanceTransientUi || !activeCampaignResult || !campaignDismissEnabled) {
       return;
     }
