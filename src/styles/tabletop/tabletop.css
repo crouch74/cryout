@@ -1605,6 +1605,98 @@ html[dir='rtl'] .printed-track-step:not(:last-child)::after {
   color: var(--text-2);
 }
 
+.debug-subsection {
+  display: grid;
+  gap: 10px;
+}
+
+.debug-command-list,
+.debug-data-list,
+.debug-scroll-list {
+  display: grid;
+  gap: 10px;
+}
+
+.debug-command-list {
+  max-height: 240px;
+  overflow: auto;
+}
+
+.debug-command-chip {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  justify-items: start;
+  gap: 10px;
+  text-align: left;
+}
+
+.debug-command-chip.is-active {
+  border-color: rgba(70, 118, 154, 0.44);
+  background: rgba(59, 90, 118, 0.12);
+}
+
+.debug-data-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.debug-data-card,
+.debug-event-card {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(73, 60, 46, 0.16);
+  background: rgba(255, 255, 255, 0.44);
+}
+
+.debug-event-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.debug-event-card p {
+  margin: 0;
+}
+
+.debug-scroll-list {
+  max-height: 280px;
+  overflow: auto;
+}
+
+.debug-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(73, 60, 46, 0.2);
+  background: rgba(255, 255, 255, 0.6);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.debug-chip-pass {
+  border-color: rgba(70, 137, 91, 0.3);
+  background: rgba(94, 179, 118, 0.14);
+}
+
+.debug-chip-warn {
+  border-color: rgba(170, 125, 55, 0.34);
+  background: rgba(232, 186, 96, 0.16);
+}
+
+.debug-chip-fail {
+  border-color: rgba(160, 65, 65, 0.32);
+  background: rgba(198, 79, 79, 0.14);
+}
+
 .paper-modal-shell {
   position: fixed;
   inset: 0;
@@ -1791,6 +1883,10 @@ html[dir='rtl'] .printed-track-step:not(:last-child)::after {
 
   .debug-panel-form,
   .debug-panel-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .debug-data-list {
     grid-template-columns: 1fr;
   }
 }

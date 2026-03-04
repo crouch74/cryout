@@ -232,7 +232,10 @@ function pushReason(reasons: string[], condition: boolean, reason: string) {
 }
 
 function hasCompatibleSupportCard(state: EngineState, content: CompiledContent, seat: number) {
-  return state.players[seat]?.resistanceHand.some((cardId) => content.cards[cardId]?.type === 'support') ?? false;
+  return state.players[seat]?.resistanceHand.some((cardId) => {
+    const card = content.cards[cardId];
+    return card?.deck === 'resistance' && card.type === 'support';
+  }) ?? false;
 }
 
 function hasMeaningfulCardEffects(card: ResistanceCardDefinition | undefined) {
@@ -352,9 +355,10 @@ function scoreActionSpecificAdjustments(
     }
     case 'play_card': {
       const card = action.cardId ? content.cards[action.cardId] : undefined;
-      const effectCount = Math.min(18, (card?.effects?.length ?? 0) * 6);
+      const actionCard = card?.deck === 'resistance' && card.type === 'action' ? card : undefined;
+      const effectCount = Math.min(18, (actionCard?.effects?.length ?? 0) * 6);
       candidate.score += effectCount;
-      if (hasMeaningfulCardEffects(card)) {
+      if (hasMeaningfulCardEffects(actionCard)) {
         candidate.score += 10;
         reasons.push('impactful card');
       }
@@ -599,7 +603,7 @@ function getSeatLabel(player: PlayerState | undefined, content: CompiledContent)
   return localizeFactionField(faction.id, 'shortName', faction.shortName);
 }
 
-function describeQueueIntent(state: EngineState, content: CompiledContent, candidate: AutoPlayCandidate) {
+function describeQueueIntent(content: CompiledContent, candidate: AutoPlayCandidate) {
   const action = content.actions[candidate.action.actionId];
   const seatLabel = candidate.seat + 1;
   const regionLabel = candidate.action.regionId ? ` in ${candidate.action.regionId}` : '';
@@ -609,7 +613,7 @@ function describeQueueIntent(state: EngineState, content: CompiledContent, candi
 
 export function getAutoPlayLogMessage(state: EngineState, content: CompiledContent, selection: AutoPlaySelection) {
   if (selection.command.type === 'QueueIntent' && selection.candidate) {
-    return describeQueueIntent(state, content, selection.candidate);
+    return describeQueueIntent(content, selection.candidate);
   }
 
   return `🎲 [DevPanel] Autoplay dispatching ${selection.command.type} during ${state.phase}.`;
