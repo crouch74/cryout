@@ -5,6 +5,7 @@ import { Icon } from '../../ui/icon/Icon.tsx';
 import { PaperSheet } from '../../ui/layout/tabletop.tsx';
 
 interface TerminalOutcomeModalProps {
+  open?: boolean;
   state: EngineState;
   content: CompiledContent;
   onReviewLedger: () => void;
@@ -12,11 +13,16 @@ interface TerminalOutcomeModalProps {
 }
 
 export function TerminalOutcomeModal({
+  open = true,
   state,
   content,
   onReviewLedger,
   onBack,
 }: TerminalOutcomeModalProps) {
+  if (!open) {
+    return null;
+  }
+
   const outcome = presentTerminalOutcome(state, content);
   if (!outcome) {
     return null;

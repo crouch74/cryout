@@ -324,6 +324,7 @@
   position: fixed;
   inset: 0;
   z-index: 50;
+  isolation: isolate;
   display: grid;
   place-items: center;
   pointer-events: auto;
@@ -333,10 +334,12 @@
 .deck-reveal-vignette {
   position: absolute;
   inset: 0;
+  z-index: 0;
   background:
     radial-gradient(circle at center, rgba(0, 0, 0, 0.04) 0 12%, rgba(0, 0, 0, 0.44) 72%, rgba(0, 0, 0, 0.62) 100%),
     rgba(20, 13, 8, 0.42);
   backdrop-filter: saturate(0.72) brightness(0.72);
+  pointer-events: none;
 }
 
 .deck-reveal-scene {
@@ -357,6 +360,7 @@
   aspect-ratio: 63 / 88;
   transform-origin: center center;
   transform-style: preserve-3d;
+  z-index: 2;
   opacity: 0;
   filter: drop-shadow(0 28px 38px rgba(14, 9, 6, 0.32));
   will-change: transform;
@@ -2084,6 +2088,10 @@ html[dir='rtl'] .deck-reveal-deck-label {
   border: 1.5px solid currentColor;
   border-radius: 2px;
   opacity: 0.6;
+}
+
+.phase-progress-nav .dock-control-button.is-play-button:disabled::after {
+  content: none;
 }
 
 .action-dock-button:disabled .ui-icon,

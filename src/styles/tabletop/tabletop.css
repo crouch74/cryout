@@ -4835,3 +4835,259 @@ html[lang='ar-EG'] .home-table .seat-assembly-faction {
     linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.08)),
     color-mix(in srgb, var(--paper-elevated) 94%, var(--color-surface-tint) 6%);
 }
+
+
+/* --- Flat Coalition Visual Pass (migrated from former cosmetic-pass.css) --- */
+/*
+  Global cosmetic pass: enforce a flatter, denser visual language
+  across gameplay surfaces and shared interactive elements.
+*/
+
+:root {
+  --cosmetic-radius-card: 4px;
+  --cosmetic-radius-control: 4px;
+  --cosmetic-border: color-mix(in srgb, var(--color-border) 48%, transparent);
+  --cosmetic-surface-base: color-mix(in srgb, var(--color-surface) 88%, #bfa178 12%);
+  --cosmetic-surface-elevated: color-mix(in srgb, var(--color-surface-elevated) 90%, #efe2cc 10%);
+  --cosmetic-surface-muted: color-mix(in srgb, var(--color-surface) 82%, #d7c09b 18%);
+  --cosmetic-primary-bg: #3a271b;
+  --cosmetic-primary-bg-disabled: #5a4637;
+  --cosmetic-primary-fg: #f7eedf;
+  --cosmetic-primary-fg-disabled: #f2e7d6;
+}
+
+/* Keep a restrained board background so the table still reads as a play surface */
+body,
+.app-root {
+  background-color: var(--cosmetic-surface-base) !important;
+}
+
+.table-surface,
+.table-surface-paper,
+.game-screen.game-screen-compressed,
+.tabletop-game {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--cosmetic-surface-base) 88%, #8d6848 12%),
+      color-mix(in srgb, var(--cosmetic-surface-base) 95%, #f4ecdf 5%)
+    ) !important;
+}
+
+.table-surface-paper::before,
+.game-screen.game-screen-compressed::before,
+.game-screen.game-screen-compressed::after,
+.paper-sheet::before,
+.shell-panel::before,
+.shell-card::before,
+.engraved-plate::before,
+.theme-plate::before,
+.mini-plate::before,
+.board-edge-action::before,
+.play-area-nav button::before,
+.mobile-tray-dock button::before,
+.guide-nav-item::before,
+.secondary-button::before,
+.primary-button::before {
+  content: none !important;
+}
+
+/* Main surfaces */
+.game-screen .paper-sheet,
+.game-screen .shell-card,
+.game-screen .shell-panel,
+.game-screen .tier-c-panel,
+.game-screen .board-map-panel,
+.game-screen .board-map-shell,
+.game-screen .front-track-bar,
+.game-screen .status-ribbon,
+.game-screen .visual-delta-strip,
+.game-screen .beacon-objective-strip,
+.game-screen .context-panel,
+.game-screen .board-drawer-shell,
+.game-screen .board-deck-drawer .paper-sheet,
+.game-screen .paper-sheet-board,
+.game-screen .paper-sheet-mat,
+.game-screen .paper-sheet-tray,
+.game-screen .paper-sheet-docket,
+.game-screen .paper-sheet-slip,
+.game-screen .paper-sheet-booklet,
+.overlay-drawer,
+.overlay-trace-drawer,
+.debug-panel,
+.modal-card,
+.paper-modal-card,
+.campaign-result-modal,
+.campaign-result-panel,
+.minutes-toast,
+.toast {
+  border: 1px solid var(--cosmetic-border) !important;
+  border-radius: var(--cosmetic-radius-card) !important;
+  box-shadow: none !important;
+  background-image: none !important;
+  background-color: var(--cosmetic-surface-elevated) !important;
+}
+
+/* Secondary cards/chips/buttons */
+.game-screen .status-pill,
+.game-screen .deck-pill,
+.game-screen .tabletop-region-trigger,
+.game-screen .board-region-sidecard,
+.game-screen .action-dock,
+.game-screen .action-dock-button,
+.game-screen .dock-control-button,
+.game-screen .context-panel-tabs button,
+.game-screen .context-panel-close,
+.game-screen .drawer-close-button,
+.game-screen .overlay-action-card,
+.game-screen .modal-vote-actions .engraved-plate,
+.game-screen .modal-option-grid .engraved-plate,
+.game-screen .dev-panel-toggle,
+.game-screen .debug-chip,
+.game-screen .region-tooltip-ledger,
+.game-screen .visual-delta-tile,
+.game-screen .printed-track-step,
+.game-screen .printed-track-step.is-active,
+.game-screen .printed-track-step.is-complete,
+.game-screen .program-rail-card,
+.game-screen .front-rail-chip,
+.game-screen .board-resolve-well {
+  border: 1px solid var(--cosmetic-border) !important;
+  border-radius: var(--cosmetic-radius-card) !important;
+  box-shadow: none !important;
+  background-image: none !important;
+  background-color: var(--cosmetic-surface-muted) !important;
+}
+
+/* Global radius clamp for lingering rounded cards/panels */
+.game-screen :is(
+  [class*='card'],
+  [class*='panel'],
+  [class*='sheet'],
+  [class*='tray'],
+  [class*='docket'],
+  [class*='drawer'],
+  [class*='modal']
+):not([class*='token']):not([class*='badge']):not([class*='marker']) {
+  border-radius: var(--cosmetic-radius-card) !important;
+}
+
+/* Controls */
+.game-screen button,
+.game-screen select,
+.game-screen input,
+.game-screen textarea,
+.modal-card button,
+.modal-card select,
+.overlay-drawer button,
+.debug-panel button,
+.debug-panel select,
+.debug-panel input,
+.debug-panel textarea,
+.toast-dismiss-button,
+.drawer-close-button {
+  border-radius: var(--cosmetic-radius-control) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+/* Primary actions: readable, flat, high contrast */
+.game-screen .primary-button,
+.game-screen .engraved-plate-primary,
+.game-screen .action-dock-submit,
+.game-screen .dock-control-button.is-play-button,
+.modal-card .primary-button,
+.modal-card .engraved-plate-primary {
+  background: var(--cosmetic-primary-bg) !important;
+  color: var(--cosmetic-primary-fg) !important;
+  border: 1px solid color-mix(in srgb, #24170f 78%, #ffffff 22%) !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+.game-screen .primary-button .ui-icon,
+.game-screen .engraved-plate-primary .ui-icon,
+.game-screen .action-dock-submit .ui-icon,
+.game-screen .dock-control-button.is-play-button .ui-icon,
+.modal-card .primary-button .ui-icon,
+.modal-card .engraved-plate-primary .ui-icon {
+  color: currentColor !important;
+  opacity: 0.96 !important;
+  filter: none !important;
+}
+
+/* Disabled text legibility */
+.game-screen .primary-button:disabled,
+.game-screen .engraved-plate-primary:disabled,
+.game-screen .action-dock-submit:disabled,
+.game-screen .dock-control-button.is-play-button:disabled,
+.modal-card .primary-button:disabled,
+.modal-card .engraved-plate-primary:disabled {
+  background: var(--cosmetic-primary-bg-disabled) !important;
+  color: var(--cosmetic-primary-fg-disabled) !important;
+  border-color: color-mix(in srgb, #2d1f15 62%, #ffffff 38%) !important;
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+.game-screen .primary-button:disabled .ui-icon,
+.game-screen .engraved-plate-primary:disabled .ui-icon,
+.game-screen .action-dock-submit:disabled .ui-icon,
+.game-screen .dock-control-button.is-play-button:disabled .ui-icon,
+.modal-card .primary-button:disabled .ui-icon,
+.modal-card .engraved-plate-primary:disabled .ui-icon {
+  opacity: 0.92 !important;
+}
+
+/* Neutral disabled non-primary controls should remain readable too */
+.game-screen .action-dock-button:disabled,
+.game-screen .dock-control-button:disabled,
+.game-screen .context-action-chip:disabled,
+.game-screen .engraved-plate:disabled,
+.game-screen .mini-plate:disabled,
+.game-screen .board-edge-action:disabled {
+  color: color-mix(in srgb, var(--color-text-primary) 76%, #ffffff 24%) !important;
+  opacity: 0.82 !important;
+  filter: none !important;
+}
+
+/* Remove lift motion */
+.game-screen-compressed .board-region-cluster:hover,
+.game-screen-compressed .board-region-cluster:focus-visible,
+.game-screen .context-panel-tabs button:hover,
+.game-screen .context-panel-close:hover,
+.game-screen .overlay-action-card:hover,
+.game-screen .action-dock-button:hover,
+.game-screen .dock-control-button:hover,
+.game-screen .dev-panel-toggle:hover,
+.game-screen .primary-button:hover,
+.game-screen .secondary-button:hover,
+.game-screen .engraved-plate:hover,
+.game-screen .mini-plate:hover,
+.game-screen .board-edge-action:hover,
+.modal-card .primary-button:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Map tokens and labels: keep crisp without glow */
+.game-screen-compressed .board-region-token,
+.game-screen-compressed .board-region-overflow-badge,
+.game-screen-compressed .board-region-label,
+.game-screen-compressed .region-map-anchor,
+.game-screen-compressed .region-map-piece-cluster,
+.game-screen .ui-icon {
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+/* Arabic typography stays compact */
+html[lang='ar-EG'] .game-screen .panel-heading,
+html[lang='ar-EG'] .game-screen .status-pill,
+html[lang='ar-EG'] .game-screen .context-panel,
+html[lang='ar-EG'] .game-screen .toast,
+html[lang='ar-EG'] .game-screen .minutes-toast {
+  letter-spacing: 0 !important;
+}
+

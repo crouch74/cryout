@@ -631,6 +631,7 @@ export function GameSessionScreen({
   const [activeCampaignResult, setActiveCampaignResult] = useState<CampaignResolvedEventPayload | null>(null);
   const [campaignDismissEnabled, setCampaignDismissEnabled] = useState(false);
   const [introDismissed, setIntroDismissed] = useState(false);
+  const [terminalOutcomeHidden, setTerminalOutcomeHidden] = useState(false);
   const [startupMandateDismissed, setStartupMandateDismissed] = useState(false);
   const [mandateModalOpen, setMandateModalOpen] = useState(false);
   const revealQueueRef = useRef<CardRevealQueueItem[]>([]);
@@ -1350,6 +1351,12 @@ export function GameSessionScreen({
   }, [activeCampaignResult, campaignResults]);
 
   useEffect(() => {
+    if (state.phase !== 'WIN' && state.phase !== 'LOSS') {
+      setTerminalOutcomeHidden(false);
+    }
+  }, [state.phase]);
+
+  useEffect(() => {
     if (!activeCampaignResult || activeCampaignResult.dice.length > 0) {
       return;
     }
@@ -1659,9 +1666,11 @@ export function GameSessionScreen({
       />
 
       <TerminalOutcomeModal
+        open={!terminalOutcomeHidden}
         state={state}
         content={content}
         onReviewLedger={() => {
+          setTerminalOutcomeHidden(true);
           setContextMode('ledger');
           setContextOpen(true);
         }}

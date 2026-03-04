@@ -10,9 +10,11 @@ import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { useThemeSettings } from '../../app/providers/ThemeProvider.tsx';
 import {
   DialogContent,
+  DialogDescription,
   DialogOverlay,
   DialogPortal,
   DialogRoot,
+  DialogTitle,
 } from '../primitives/index.ts';
 import { getModalRoot } from './ModalRoot.tsx';
 
@@ -26,6 +28,8 @@ interface ModalProps {
   children: ReactNode;
   className?: string;
   shellClassName?: string;
+  a11yTitle?: string;
+  a11yDescription?: string;
 }
 
 export function Modal({
@@ -38,9 +42,16 @@ export function Modal({
   children,
   className = '',
   shellClassName = '',
+  a11yTitle,
+  a11yDescription,
 }: ModalProps) {
   const generatedTitleId = useId();
-  const resolvedTitleId = titleId ?? generatedTitleId;
+  const generatedDescriptionId = useId();
+  const hiddenTitleId = `${generatedTitleId}-radix-title`;
+  const resolvedTitleId = titleId
+    ? `${hiddenTitleId} ${titleId}`
+    : hiddenTitleId;
+  const resolvedDescriptionId = describedById ?? (a11yDescription ? generatedDescriptionId : undefined);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
   const { motionMode } = useThemeSettings();
@@ -97,7 +108,7 @@ export function Modal({
               forceMount
               asChild
               aria-labelledby={resolvedTitleId}
-              aria-describedby={describedById}
+              aria-describedby={resolvedDescriptionId}
               onOpenAutoFocus={(event) => {
                 if (initialFocusRef?.current) {
                   event.preventDefault();
@@ -131,6 +142,14 @@ export function Modal({
                 exit={canAnimate ? { opacity: 0, y: 10, scale: 0.98 } : undefined}
                 transition={canAnimate ? { duration: 0.2, ease: [0.18, 0.85, 0.24, 1] } : undefined}
               >
+                <DialogTitle id={hiddenTitleId} className="visually-hidden">
+                  {a11yTitle ?? 'Dialog'}
+                </DialogTitle>
+                {!describedById && a11yDescription ? (
+                  <DialogDescription id={generatedDescriptionId} className="visually-hidden">
+                    {a11yDescription}
+                  </DialogDescription>
+                ) : null}
                 {children}
               </m.div>
             </DialogContent>

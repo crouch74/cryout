@@ -52,6 +52,8 @@ export function CampaignResultModal({
       initialFocusRef={dismissEnabled ? continueButtonRef : undefined}
       shellClassName="campaign-result-shell"
       className="campaign-result-modal"
+      a11yTitle={presentation.title}
+      a11yDescription={presentation.description}
     >
       <PaperSheet tone="folio" className="campaign-result-sheet" aria-label={presentation.a11yLabel}>
         <header className="campaign-result-header">
