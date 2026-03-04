@@ -435,6 +435,37 @@ test('route screens point at the production guides and setup shell', () => {
   assert.match(playerGuide, /ui\.guide\.coalitionFieldNotes|Coalition Field Notes/);
 });
 
+test('homepage source keeps hero hierarchy, utility strip, and dominant launch action', () => {
+  const home = readFileSync(new URL('../../src/features/session-setup/ui/SessionSetupScreen.tsx', import.meta.url), 'utf8');
+  const homeCss = readFileSync(new URL('../../src/styles/shell/home.css', import.meta.url), 'utf8');
+
+  assert.match(home, /setup-hero-band/);
+  assert.match(home, /setup-utility-strip/);
+  assert.match(home, /LocaleSwitcher showLabel=\{false\} compact/);
+  assert.doesNotMatch(home, /TabletopControls compact/);
+  assert.doesNotMatch(home, /heroTitle/);
+  assert.doesNotMatch(home, /heroSubline/);
+  assert.match(home, /variant="primary"/);
+  assert.match(home, /size="lg"/);
+  assert.match(homeCss, /home-primary-action/);
+  assert.match(homeCss, /setup-utility-strip/);
+});
+
+test('utility icons use Lucide while custom icon pack keeps core concept glyphs', () => {
+  const tabletop = readFileSync(new URL('../../src/ui/layout/tabletop.tsx', import.meta.url), 'utf8');
+  const contextPanel = readFileSync(new URL('../../src/game/panels/ContextPanel.tsx', import.meta.url), 'utf8');
+  const iconPack = readFileSync(new URL('../../src/ui/icon/Icon.tsx', import.meta.url), 'utf8');
+
+  assert.match(tabletop, /from 'lucide-react'/);
+  assert.match(contextPanel, /from 'lucide-react'/);
+  assert.match(tabletop, /DropdownMenuRoot/);
+  assert.match(tabletop, /locale-icon-trigger/);
+  assert.match(iconPack, /case 'crisis'/);
+  assert.match(iconPack, /case 'extraction'/);
+  assert.match(iconPack, /case 'evidence'/);
+  assert.match(iconPack, /case 'comrades'/);
+});
+
 test('toast helpers keep live-region metadata and role semantics', () => {
   assert.equal(GAME_A11Y_LABELS.liveUpdates, 'Live game updates');
   assert.equal(getToastRole('success'), 'status');

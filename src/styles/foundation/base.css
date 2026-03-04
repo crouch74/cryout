@@ -13,11 +13,12 @@ body {
   font-family: var(--font-body);
   font-size: var(--type-2);
   line-height: var(--line-height-copy);
-  color: var(--text-1);
+  color: var(--color-text-primary);
   background:
-    radial-gradient(circle at top left, var(--scenario-glow-a), transparent 20%),
-    radial-gradient(circle at 85% 20%, var(--scenario-glow-b), transparent 22%),
-    linear-gradient(155deg, #04080e 0%, #07090c 44%, #0a0e14 100%);
+    radial-gradient(120% 90% at 50% 0%, var(--color-background-wash), transparent 65%),
+    radial-gradient(circle at top left, var(--scenario-glow-a), transparent 28%),
+    radial-gradient(circle at 85% 16%, var(--scenario-glow-b), transparent 30%),
+    linear-gradient(150deg, color-mix(in srgb, var(--color-background) 86%, #121212 14%) 0%, var(--color-background) 54%, color-mix(in srgb, var(--color-background) 92%, #ffffff 8%) 100%);
   background-attachment: fixed;
 }
 
@@ -26,33 +27,25 @@ html[dir='rtl'] .app-root {
   direction: rtl;
 }
 
-/* Tactical grid overlay */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-  background-size: 24px 24px;
-  mask-image: radial-gradient(circle at center, black 38%, transparent 100%);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.86' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23grain)' opacity='0.36'/%3E%3C/svg%3E");
+  opacity: var(--board-grain-opacity);
+  mix-blend-mode: multiply;
 }
 
-/* CRT scanline overlay — subtle intelligence-briefing texture */
 body::after {
   content: '';
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  background: repeating-linear-gradient(0deg,
-      transparent,
-      transparent 2px,
-      rgba(0, 0, 0, 0.06) 2px,
-      rgba(0, 0, 0, 0.06) 4px);
-  opacity: 0.5;
+  background: radial-gradient(130% 100% at 50% 45%, transparent 44%, rgba(12, 9, 7, 0.18) 100%);
+  opacity: 0.9;
 }
 
 a,

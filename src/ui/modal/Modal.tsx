@@ -3,11 +3,17 @@ import {
   useId,
   useRef,
   useState,
-  type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
   type RefObject,
 } from 'react';
-import { createPortal } from 'react-dom';
+import { LazyMotion, domAnimation, m } from 'framer-motion';
+import { useThemeSettings } from '../../app/providers/ThemeProvider.tsx';
+import {
+  DialogContent,
+  DialogOverlay,
+  DialogPortal,
+  DialogRoot,
+} from '../primitives/index.ts';
 import { getModalRoot } from './ModalRoot.tsx';
 
 interface ModalProps {
@@ -20,24 +26,6 @@ interface ModalProps {
   children: ReactNode;
   className?: string;
   shellClassName?: string;
-}
-
-const FOCUSABLE_SELECTOR = [
-  'a[href]',
-  'button:not([disabled])',
-  'input:not([disabled])',
-  'select:not([disabled])',
-  'textarea:not([disabled])',
-  '[tabindex]:not([tabindex="-1"])',
-].join(', ');
-
-function getFocusableElements(node: HTMLElement | null) {
-  if (!node) {
-    return [];
-  }
-
-  return Array.from(node.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
-    .filter((element) => !element.hasAttribute('disabled') && element.getAttribute('aria-hidden') !== 'true');
 }
 
 export function Modal({
@@ -53,9 +41,9 @@ export function Modal({
 }: ModalProps) {
   const generatedTitleId = useId();
   const resolvedTitleId = titleId ?? generatedTitleId;
-  const modalRef = useRef<HTMLDivElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
+  const { motionMode } = useThemeSettings();
 
   useEffect(() => {
     setPortalRoot(getModalRoot());
@@ -67,96 +55,88 @@ export function Modal({
     }
 
     previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const focusTarget = initialFocusRef?.current ?? modalRef.current;
-    window.setTimeout(() => {
-      focusTarget?.focus();
-    }, 0);
-
-    return () => {
-      previousFocusRef.current?.focus?.();
-    };
-  }, [initialFocusRef, open]);
+  }, [open]);
 
   useEffect(() => {
-    if (!open) {
+    if (open) {
       return;
     }
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        if (!dismissEnabled || !onRequestClose) {
-          return;
-        }
-        event.preventDefault();
-        onRequestClose();
-        return;
-      }
+    previousFocusRef.current?.focus?.();
+  }, [open]);
 
-      if (event.key !== 'Tab') {
-        return;
-      }
-
-      const focusable = getFocusableElements(modalRef.current);
-      if (focusable.length === 0) {
-        event.preventDefault();
-        modalRef.current?.focus();
-        return;
-      }
-
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      const activeElement = document.activeElement;
-
-      if (event.shiftKey && activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [dismissEnabled, onRequestClose, open]);
-
-  if (!open || !portalRoot) {
+  if (!portalRoot) {
     return null;
   }
 
-  const handleBackdropKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'Escape' && dismissEnabled && onRequestClose) {
-      event.preventDefault();
-      onRequestClose();
-    }
-  };
+  const canAnimate = motionMode !== 'reduced';
 
-  return createPortal(
-    <div
-      className={`modal-shell ${shellClassName}`.trim()}
-      role="presentation"
-      onPointerDown={(event) => {
-        if (event.target !== event.currentTarget || !dismissEnabled || !onRequestClose) {
-          return;
+  return (
+    <DialogRoot
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen && dismissEnabled && onRequestClose) {
+          onRequestClose();
         }
-        onRequestClose();
       }}
-      onKeyDown={handleBackdropKeyDown}
     >
-      <div
-        ref={modalRef}
-        className={`modal-card ${className}`.trim()}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={resolvedTitleId}
-        aria-describedby={describedById}
-        tabIndex={-1}
-      >
-        {children}
-      </div>
-    </div>,
-    portalRoot,
+      <DialogPortal container={portalRoot} forceMount>
+        {open ? (
+          <LazyMotion features={domAnimation}>
+            <DialogOverlay asChild forceMount>
+              <m.div
+                className={`modal-shell ${shellClassName}`.trim()}
+                role="presentation"
+                initial={canAnimate ? { opacity: 0 } : false}
+                animate={{ opacity: 1 }}
+                exit={canAnimate ? { opacity: 0 } : undefined}
+                transition={canAnimate ? { duration: 0.16, ease: [0.2, 0.8, 0.2, 1] } : undefined}
+              />
+            </DialogOverlay>
+            <DialogContent
+              forceMount
+              asChild
+              aria-labelledby={resolvedTitleId}
+              aria-describedby={describedById}
+              onOpenAutoFocus={(event) => {
+                if (initialFocusRef?.current) {
+                  event.preventDefault();
+                  initialFocusRef.current.focus();
+                }
+              }}
+              onEscapeKeyDown={(event) => {
+                if (!dismissEnabled) {
+                  event.preventDefault();
+                }
+              }}
+              onInteractOutside={(event) => {
+                if (!dismissEnabled) {
+                  event.preventDefault();
+                }
+              }}
+              onPointerDownOutside={(event) => {
+                if (!dismissEnabled) {
+                  event.preventDefault();
+                }
+              }}
+              onCloseAutoFocus={(event) => {
+                event.preventDefault();
+              }}
+            >
+              <m.div
+                className={`modal-card ${className}`.trim()}
+                tabIndex={-1}
+                initial={canAnimate ? { opacity: 0, y: 10, scale: 0.98 } : false}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={canAnimate ? { opacity: 0, y: 10, scale: 0.98 } : undefined}
+                transition={canAnimate ? { duration: 0.2, ease: [0.18, 0.85, 0.24, 1] } : undefined}
+              >
+                {children}
+              </m.div>
+            </DialogContent>
+          </LazyMotion>
+        ) : null}
+      </DialogPortal>
+    </DialogRoot>
   );
 }

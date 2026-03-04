@@ -39,7 +39,7 @@ const domains: DomainDefinition[] = [
     {
         id: 'PatriarchalGrip',
         name: 'Patriarchal Grip',
-        description: 'Regime control over bodies and lives.',
+        description: 'Regime control over people, identity, and public life.',
         initialProgress: 0,
     },
     {
@@ -101,8 +101,8 @@ const factions: FactionDefinition[] = [
         name: 'April 6 Youth Movement',
         shortName: 'April 6',
         homeRegion: 'Cairo',
-        passive: 'Organize gains +1 Body in Cairo.',
-        weakness: 'Defend actions in Upper Egypt cost +1 Body.',
+        passive: 'Organize gains +1 Comrade in Cairo.',
+        weakness: 'Defend actions in Upper Egypt cost +1 Comrade.',
         organizeBonus: 1,
         investigateBonus: 0,
         defenseBonus: 0,
@@ -223,7 +223,7 @@ const actions: ActionDefinition[] = [
     {
         id: 'organize',
         name: 'Organize',
-        description: 'Roll 1d6 Bodies into a region, plus pressure bonuses where extraction is already entrenched.',
+        description: 'Roll 1d6 Comrades into a region, plus pressure bonuses where extraction is already entrenched.',
         resolvePriority: 100,
         needsRegion: true,
     },
@@ -237,7 +237,7 @@ const actions: ActionDefinition[] = [
     {
         id: 'launch_campaign',
         name: 'Launch Campaign',
-        description: 'Commit Bodies and Evidence to a 2d6 campaign against a Domain in a region.',
+        description: 'Commit Comrades and Evidence to a 2d6 campaign against a Domain in a region.',
         resolvePriority: 500,
         needsRegion: true,
         needsDomain: true,
@@ -249,7 +249,7 @@ const actions: ActionDefinition[] = [
     {
         id: 'build_solidarity',
         name: 'Build Solidarity',
-        description: 'Spend 3 Bodies in-region to advance a Domain without a roll.',
+        description: 'Spend 3 Comrades in-region to advance a Domain without a roll.',
         resolvePriority: 300,
         needsRegion: true,
         needsDomain: true,
@@ -265,7 +265,7 @@ const actions: ActionDefinition[] = [
     {
         id: 'defend',
         name: 'Defend',
-        description: 'Convert Bodies into a one-round Defense Rating against the next intervention.',
+        description: 'Convert Comrades into a one-round Defense Rating against the next intervention.',
         resolvePriority: 260,
         needsRegion: true,
         needsBodies: true,
@@ -296,7 +296,7 @@ const actions: ActionDefinition[] = [
     {
         id: 'call_labor_strike',
         name: 'Call Labor Strike',
-        description: 'Spend 2 Evidence, roll 1d6. 4+ = gain 2 Bodies.',
+        description: 'Spend 2 Evidence, roll 1d6. 4+ = gain 2 Comrades.',
         resolvePriority: 200,
         needsEvidence: true,
         needsRegion: true,

@@ -26,7 +26,7 @@ export const crisisCards: CrisisCardDefinition[] = [
         id: 'crisis_tahrir_camel_battle',
         deck: 'crisis',
         name: 'Camel Battle',
-        text: 'Regime thugs attack Tahrir on horses. Remove 3 Bodies from Cairo. Gain +2 Global Gaze (outrage).',
+        text: 'Regime thugs attack Tahrir on horses. Remove 3 Comrades from Cairo. Gain +2 Global Gaze (outrage).',
         effects: [
             { type: 'remove_bodies', region: 'Cairo', seat: 0, amount: 1 },
             { type: 'remove_bodies', region: 'Cairo', seat: 1, amount: 1 },
@@ -47,7 +47,7 @@ export const crisisCards: CrisisCardDefinition[] = [
         id: 'crisis_tahrir_military_trials',
         deck: 'crisis',
         name: 'Military Trials',
-        text: 'Remove 1 Body from Cairo (civilian tried). Add 1 Evidence (outrage).',
+        text: 'Remove 1 Comrade from Cairo (civilian tried). Add 1 Evidence (outrage).',
         effects: [
             { type: 'remove_bodies', region: 'Cairo', seat: 0, amount: 1 },
             { type: 'gain_evidence', seat: 0, amount: 1 },

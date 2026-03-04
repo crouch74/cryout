@@ -1,11 +1,16 @@
-import { useEffect, useId, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useId, useRef } from 'react';
 import type { CampaignResolvedEventPayload, CompiledContent } from '../../engine/index.ts';
 import { presentCampaignResult } from '../presentation/campaignResultPresentation.ts';
 import { DiceResolutionAnimation } from './DiceResolutionAnimation.tsx';
 import { Modal } from '../../ui/modal/Modal.tsx';
 import { PaperSheet } from '../../ui/layout/tabletop.tsx';
-import { getModalRoot } from '../../ui/modal/ModalRoot.tsx';
+import {
+  TooltipContent,
+  TooltipPortal,
+  TooltipProvider,
+  TooltipRoot,
+  TooltipTrigger,
+} from '../../ui/primitives/index.ts';
 
 interface CampaignResultModalProps {
   open: boolean;
@@ -30,38 +35,6 @@ export function CampaignResultModal({
   const titleId = useId();
   const equationTooltipId = useId();
   const continueButtonRef = useRef<HTMLButtonElement | null>(null);
-  const equationHelpButtonRef = useRef<HTMLButtonElement | null>(null);
-  const [tooltipOpen, setTooltipOpen] = useState(false);
-  const [tooltipStyle, setTooltipStyle] = useState<{ top: number; left: number } | null>(null);
-  const tooltipRoot = getModalRoot();
-
-  useEffect(() => {
-    if (!tooltipOpen || !equationHelpButtonRef.current) {
-      return;
-    }
-
-    const updatePosition = () => {
-      const rect = equationHelpButtonRef.current?.getBoundingClientRect();
-      if (!rect) {
-        return;
-      }
-
-      const tooltipWidth = Math.min(360, window.innerWidth - 32);
-      const centeredLeft = rect.left + (rect.width / 2) - (tooltipWidth / 2);
-      const left = Math.max(16, Math.min(centeredLeft, window.innerWidth - tooltipWidth - 16));
-      const top = Math.min(rect.bottom + 10, window.innerHeight - 16);
-      setTooltipStyle({ top, left });
-    };
-
-    updatePosition();
-    window.addEventListener('resize', updatePosition);
-    window.addEventListener('scroll', updatePosition, true);
-
-    return () => {
-      window.removeEventListener('resize', updatePosition);
-      window.removeEventListener('scroll', updatePosition, true);
-    };
-  }, [tooltipOpen]);
 
   if (!result) {
     return null;
@@ -108,19 +81,33 @@ export function CampaignResultModal({
               <div className="campaign-result-equation-header">
                 <span className="engraved-eyebrow">{presentation.equationLabel}</span>
                 <span className="campaign-result-tooltip-anchor">
-                  <button
-                    ref={equationHelpButtonRef}
-                    type="button"
-                    className="campaign-result-tooltip-trigger"
-                    aria-describedby={equationTooltipId}
-                    aria-label={presentation.equationHelpLabel}
-                    onMouseEnter={() => setTooltipOpen(true)}
-                    onMouseLeave={() => setTooltipOpen(false)}
-                    onFocus={() => setTooltipOpen(true)}
-                    onBlur={() => setTooltipOpen(false)}
-                  >
-                    {presentation.equationHelpGlyph}
-                  </button>
+                  <TooltipProvider delayDuration={100}>
+                    <TooltipRoot>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="campaign-result-tooltip-trigger"
+                          aria-describedby={equationTooltipId}
+                          aria-label={presentation.equationHelpLabel}
+                        >
+                          {presentation.equationHelpGlyph}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipPortal>
+                        <TooltipContent
+                          id={equationTooltipId}
+                          side="top"
+                          align="center"
+                          sideOffset={8}
+                          className="campaign-result-tooltip"
+                        >
+                          <strong>{presentation.equationLabel}</strong>
+                          <span>{presentation.equationGeneralExplanation}</span>
+                          <span>{presentation.equationSpecificExplanation}</span>
+                        </TooltipContent>
+                      </TooltipPortal>
+                    </TooltipRoot>
+                  </TooltipProvider>
                 </span>
               </div>
               <strong className="campaign-result-equation" aria-label={presentation.equationSummary}>
@@ -180,25 +167,6 @@ export function CampaignResultModal({
           </button>
         </div>
       </PaperSheet>
-      {tooltipOpen && tooltipStyle && tooltipRoot
-        ? createPortal(
-          <div
-            id={equationTooltipId}
-            role="tooltip"
-            className="campaign-result-tooltip is-overlay"
-            style={{
-              top: `${tooltipStyle.top}px`,
-              left: `${tooltipStyle.left}px`,
-              width: `min(360px, calc(100vw - 32px))`,
-            }}
-          >
-            <strong>{presentation.equationLabel}</strong>
-            <span>{presentation.equationGeneralExplanation}</span>
-            <span>{presentation.equationSpecificExplanation}</span>
-          </div>,
-          tooltipRoot,
-        )
-        : null}
     </Modal>
   );
 }

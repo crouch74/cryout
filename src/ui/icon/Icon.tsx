@@ -15,12 +15,21 @@ interface IconProps {
 function renderGlyph(type: IconType) {
   switch (type) {
     case 'bodies':
+    case 'comrades':
       return (
         <>
           <circle cx="8.4" cy="8.5" r="2.4" fill="currentColor" />
           <circle cx="15.9" cy="9.5" r="2.3" fill="currentColor" opacity="0.96" />
           <path d="M4.9 18.8c.4-3 2.8-5 6-5s5.5 2 5.9 5H4.9Z" fill="currentColor" />
           <path d="M12.2 18.8c.3-2.3 2.1-3.9 4.4-3.9 1.8 0 3.4 1 4 3.9h-8.4Z" fill="currentColor" opacity="0.88" />
+        </>
+      );
+    case 'crisis':
+      return (
+        <>
+          <path d="M12 4.2 20 19.2H4L12 4.2Z" fill="currentColor" />
+          <rect x="11.1" y="9.2" width="1.8" height="5.8" rx=".9" fill="#f4ead6" opacity="0.92" />
+          <circle cx="12" cy="16.9" r="1.05" fill="#f4ead6" opacity="0.96" />
         </>
       );
     case 'close':

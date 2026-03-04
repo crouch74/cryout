@@ -22,6 +22,7 @@ import {
   formatNumber,
   localizeActionField,
   localizeBeaconField,
+  localizeCardField,
   localizeDomainField,
   localizeFactionField,
   localizeRegionField,
@@ -1115,6 +1116,7 @@ export function GameSessionScreen({
                 cardId,
                 destination: selectedDeckId === 'system' ? 'active' : 'discard',
                 public: true,
+                origin: 'other',
               });
               return (
                 <div key={`${selectedDeckId}-${cardId}-${index}`} className="deck-discard-row">

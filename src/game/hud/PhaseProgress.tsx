@@ -1,9 +1,10 @@
 import type { Phase } from '../../engine/index.ts';
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useId, useMemo, useState, type ReactNode } from 'react';
 import { t } from '../../i18n/index.ts';
 import { getPhaseProgressSteps } from '../presentation/gameUiHelpers.ts';
 import { PrintedTrack } from '../../ui/layout/tabletop.tsx';
 import { useTransientHighlightKeys } from '../presentation/useTransientHighlights.ts';
+import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from '../../ui/primitives/index.ts';
 
 interface PhaseProgressProps {
   phase: Phase;
@@ -20,32 +21,6 @@ export function PhaseProgress({ phase, activeContent, activeHint, activeHelpCont
   const isAdvancing = highlightedKeys.has('phase');
   const [helpOpen, setHelpOpen] = useState(false);
   const helpId = useId();
-  const helpRef = useRef<HTMLSpanElement | null>(null);
-
-  useEffect(() => {
-    if (!helpOpen) {
-      return;
-    }
-
-    const handlePointerDown = (event: PointerEvent) => {
-      if (!helpRef.current?.contains(event.target as Node)) {
-        setHelpOpen(false);
-      }
-    };
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setHelpOpen(false);
-      }
-    };
-
-    window.addEventListener('pointerdown', handlePointerDown);
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('pointerdown', handlePointerDown);
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [helpOpen]);
 
   return (
     <nav className={`phase-progress-nav ${isAdvancing ? 'is-advancing' : ''}`.trim()} aria-label={t('ui.game.turnProgress', 'Turn progress')}>
@@ -60,39 +35,36 @@ export function PhaseProgress({ phase, activeContent, activeHint, activeHelpCont
               <span className="phase-progress-label-shell">
                 <span>{t(`ui.phases.${step}`, step)}</span>
                 {isActive && activeHelpContent ? (
-                  <span
-                    ref={helpRef}
-                    className={`phase-help-anchor ${helpOpen ? 'is-open' : ''}`.trim()}
-                    onMouseEnter={() => setHelpOpen(true)}
-                    onMouseLeave={() => setHelpOpen(false)}
-                    onFocus={() => setHelpOpen(true)}
-                    onBlur={(event) => {
-                      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-                        setHelpOpen(false);
-                      }
-                    }}
-                  >
-                    <button
-                      type="button"
-                      className="phase-help-trigger"
-                      aria-expanded={helpOpen}
-                      aria-controls={helpId}
-                      aria-label={t('ui.game.phaseHelp', 'Phase details')}
-                      title={t('ui.game.phaseHelp', 'Phase details')}
-                      onClick={() => setHelpOpen((current) => !current)}
-                    >
-                      {t('ui.game.phaseHelpGlyph', '?')}
-                    </button>
-                    <span
-                      id={helpId}
-                      role="tooltip"
-                      className={`phase-progress-help-tooltip phase-progress-help-popover ${helpOpen ? 'is-open' : ''}`.trim()}
-                    >
-                      <strong>{t(`ui.phases.${step}`, step)}</strong>
-                      {activeHelpContent}
-                      {activeHint ? <span>{activeHint}</span> : null}
+                  <PopoverRoot open={helpOpen} onOpenChange={setHelpOpen}>
+                    <span className={`phase-help-anchor ${helpOpen ? 'is-open' : ''}`.trim()}>
+                      <PopoverTrigger asChild>
+                        <button
+                          type="button"
+                          className="phase-help-trigger"
+                          aria-expanded={helpOpen}
+                          aria-controls={helpId}
+                          aria-label={t('ui.game.phaseHelp', 'Phase details')}
+                          title={t('ui.game.phaseHelp', 'Phase details')}
+                        >
+                          {t('ui.game.phaseHelpGlyph', '?')}
+                        </button>
+                      </PopoverTrigger>
                     </span>
-                  </span>
+                    <PopoverPortal>
+                      <PopoverContent
+                        id={helpId}
+                        role="tooltip"
+                        align="start"
+                        side="bottom"
+                        sideOffset={8}
+                        className="phase-progress-help-tooltip phase-progress-help-popover"
+                      >
+                        <strong>{t(`ui.phases.${step}`, step)}</strong>
+                        {activeHelpContent}
+                        {activeHint ? <span>{activeHint}</span> : null}
+                      </PopoverContent>
+                    </PopoverPortal>
+                  </PopoverRoot>
                 ) : null}
               </span>
             ),

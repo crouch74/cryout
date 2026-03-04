@@ -4,7 +4,6 @@ import {
   localizeCardField,
   localizeFactionField,
   localizeRegionField,
-  t,
 } from '../../i18n/index.ts';
 
 export interface PresentedRevealCopy {

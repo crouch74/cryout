@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
+import { Copy } from 'lucide-react';
 import { listRulesets, type FactionId } from '../../../engine/index.ts';
 import { formatNumber, localizeFactionField, localizeRulesetField, t } from '../../../i18n/index.ts';
 import type { RoomLobbySnapshot } from '../api/schemas.ts';
-import { Icon } from '../../../ui/icon/Icon.tsx';
 import { EngravedHeader, LocaleSwitcher, PaperSheet, TableSurface, ThemePlate } from '../../../ui/layout/tabletop.tsx';
 
 interface RoomLobbyScreenProps {
@@ -79,7 +79,7 @@ export function RoomLobbyScreen({
                     aria-label={t('ui.room.copyRoomLink', 'Copy Room Link')}
                     title={t('ui.room.copyRoomLink', 'Copy Room Link')}
                   >
-                    <Icon type="copy" size={15} />
+                    <Copy size={15} aria-hidden="true" />
                   </button>
                 </div>
               </div>

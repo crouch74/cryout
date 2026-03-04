@@ -57,7 +57,7 @@ const domains: DomainDefinition[] = [
     {
         id: 'PatriarchalGrip',
         name: 'Patriarchal Grip',
-        description: 'Regime control over bodies, hair, and public life.',
+        description: 'Regime control over people, hair, and public life.',
         initialProgress: 0,
     }
 ];
@@ -113,7 +113,7 @@ const factions: FactionDefinition[] = [
         name: 'Kurdish Women',
         shortName: 'Kurds',
         homeRegion: 'Kurdistan',
-        passive: 'Actions cost 1 less Body in Kurdistan. Provide heavy combat resistance offset.',
+        passive: 'Actions cost 1 less Comrade in Kurdistan. Provide heavy combat resistance offset.',
         weakness: 'Targeted heavily by IRGC (War Machine events).',
         organizeBonus: 1,
         investigateBonus: 0,
@@ -139,7 +139,7 @@ const factions: FactionDefinition[] = [
         shortName: 'Students',
         homeRegion: 'Tehran',
         passive: '+1 to all Digital Front (SilencedTruth) campaigns.',
-        weakness: 'Defend actions in Balochistan cost +1 Body.',
+        weakness: 'Defend actions in Balochistan cost +1 Comrade.',
         organizeBonus: 0,
         investigateBonus: 1,
         defenseBonus: 0,
@@ -231,7 +231,7 @@ const actions: ActionDefinition[] = [
     {
         id: 'organize',
         name: 'Organize',
-        description: 'Roll 1d6 Bodies into a region.',
+        description: 'Roll 1d6 Comrades into a region.',
         resolvePriority: 100,
         needsRegion: true,
     },
@@ -245,7 +245,7 @@ const actions: ActionDefinition[] = [
     {
         id: 'launch_campaign',
         name: 'Launch Campaign',
-        description: 'Commit Bodies and Evidence to a 2d6 campaign against a Domain.',
+        description: 'Commit Comrades and Evidence to a 2d6 campaign against a Domain.',
         resolvePriority: 500,
         needsRegion: true,
         needsDomain: true,
@@ -257,7 +257,7 @@ const actions: ActionDefinition[] = [
     {
         id: 'build_solidarity',
         name: 'Build Solidarity',
-        description: 'Spend 3 Bodies in-region to advance a Domain without a roll.',
+        description: 'Spend 3 Comrades in-region to advance a Domain without a roll.',
         resolvePriority: 300,
         needsRegion: true,
         needsDomain: true,
@@ -273,7 +273,7 @@ const actions: ActionDefinition[] = [
     {
         id: 'defend',
         name: 'Defend',
-        description: 'Convert Bodies into Defense Rating.',
+        description: 'Convert Comrades into Defense Rating.',
         resolvePriority: 260,
         needsRegion: true,
         needsBodies: true,
@@ -290,7 +290,7 @@ const actions: ActionDefinition[] = [
     {
         id: 'burn_veil',
         name: 'Burn Veil',
-        description: 'Raise Global Gaze by 2, lose 1 Body.',
+        description: 'Raise Global Gaze by 2, lose 1 Comrade.',
         resolvePriority: 200,
         needsRegion: true,
     },

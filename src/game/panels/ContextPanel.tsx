@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { X } from 'lucide-react';
 import { Icon } from '../../ui/icon/Icon.tsx';
 import type { ContextPanelMode } from '../presentation/gameUiHelpers.ts';
 import { t } from '../../i18n/index.ts';
@@ -54,7 +55,7 @@ export function ContextPanel({
           aria-label={t('ui.game.close', 'Close')}
           title={t('ui.game.close', 'Close')}
         >
-          <Icon type="close" size={16} ariaLabel={t('ui.game.close', 'Close')} />
+          <X size={16} aria-label={t('ui.game.close', 'Close')} />
         </button>
       </div>
       <div className="context-panel-body">

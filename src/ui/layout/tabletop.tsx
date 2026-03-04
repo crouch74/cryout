@@ -4,9 +4,20 @@ import {
   type HTMLAttributes,
   type ReactNode,
 } from 'react';
+import { Check, ChevronDown, Contrast, Languages, Sparkles } from 'lucide-react';
 import { useThemeSettings } from '../../app/providers/ThemeProvider.tsx';
 import { formatNumber, t, useAppLocale } from '../../i18n/index.ts';
-import { Icon } from '../icon/Icon.tsx';
+import {
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuPortal,
+  DropdownMenuRoot,
+  DropdownMenuTrigger,
+  TabsContent,
+  TabsList,
+  TabsRoot,
+  TabsTrigger,
+} from '../primitives/index.ts';
 
 export function useTabletopTheme() {
   return useThemeSettings();
@@ -64,18 +75,27 @@ export function ThemePlate({
   label,
   active,
   disabled,
+  variant = 'default',
+  size = 'md',
+  className = '',
+  ariaLabel,
   onClick,
 }: {
   label: ReactNode;
   active?: boolean;
   disabled?: boolean;
+  variant?: 'default' | 'primary' | 'quiet' | 'utility';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+  ariaLabel?: string;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
-      className={`engraved-plate ${active ? 'is-active' : ''}`.trim()}
+      className={`engraved-plate engraved-plate-${variant} engraved-plate-${size} ${active ? 'is-active' : ''} ${className}`.trim()}
       disabled={disabled}
+      aria-label={ariaLabel}
       onClick={onClick}
     >
       {label}
@@ -83,33 +103,106 @@ export function ThemePlate({
   );
 }
 
-export function TabletopControls() {
+export function TabletopControls({ compact = false }: { compact?: boolean }) {
   const { contrastMode, motionMode, setContrastMode, setMotionMode } = useTabletopTheme();
+  const contrastLabel = contrastMode === 'high'
+    ? t('ui.accessibility.standardContrast', 'Standard Contrast')
+    : t('ui.accessibility.highContrast', 'High Contrast');
+  const motionLabel = motionMode === 'reduced'
+    ? t('ui.accessibility.fullMotion', 'Full Motion')
+    : t('ui.accessibility.reducedMotion', 'Reduced Motion');
 
   return (
-    <div className="tabletop-controls" aria-label={t('ui.accessibility.controls', 'Tabletop accessibility controls')}>
+    <div className={`tabletop-controls ${compact ? 'is-compact' : ''}`.trim()} aria-label={t('ui.accessibility.controls', 'Tabletop accessibility controls')}>
       <ThemePlate
-        label={contrastMode === 'high' ? t('ui.accessibility.standardContrast', 'Standard Contrast') : t('ui.accessibility.highContrast', 'High Contrast')}
+        label={
+          compact
+            ? <Contrast size={14} aria-hidden="true" />
+            : (
+              <span className="plate-label-with-icon">
+                <Contrast size={14} aria-hidden="true" />
+                <span>{contrastLabel}</span>
+              </span>
+            )
+        }
         active={contrastMode === 'high'}
+        ariaLabel={contrastLabel}
+        size={compact ? 'sm' : 'md'}
+        variant="utility"
         onClick={() => setContrastMode(contrastMode === 'high' ? 'default' : 'high')}
       />
       <ThemePlate
-        label={motionMode === 'reduced' ? t('ui.accessibility.fullMotion', 'Full Motion') : t('ui.accessibility.reducedMotion', 'Reduced Motion')}
+        label={
+          compact
+            ? <Sparkles size={14} aria-hidden="true" />
+            : (
+              <span className="plate-label-with-icon">
+                <Sparkles size={14} aria-hidden="true" />
+                <span>{motionLabel}</span>
+              </span>
+            )
+        }
         active={motionMode === 'reduced'}
+        ariaLabel={motionLabel}
+        size={compact ? 'sm' : 'md'}
+        variant="utility"
         onClick={() => setMotionMode(motionMode === 'reduced' ? 'full' : 'reduced')}
       />
     </div>
   );
 }
 
-export function LocaleSwitcher({ showLabel = true }: { showLabel?: boolean }) {
+export function LocaleSwitcher({ showLabel = true, compact = false }: { showLabel?: boolean; compact?: boolean }) {
   const { changeLocale, locale, localeOptions } = useAppLocale();
+  const currentLocaleLabel = localeOptions.find((option) => option.value === locale)?.label ?? locale;
+
+  if (compact) {
+    return (
+      <div className="locale-switcher is-compact is-icon-trigger">
+        <DropdownMenuRoot>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="locale-icon-trigger"
+              aria-label={t('ui.language.label', 'Language')}
+              title={currentLocaleLabel}
+            >
+              <Languages size={16} aria-hidden="true" />
+              <ChevronDown size={14} aria-hidden="true" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuPortal>
+            <DropdownMenuContent
+              className="locale-dropdown-menu"
+              align="end"
+              side="bottom"
+              sideOffset={8}
+            >
+              {localeOptions.map((option) => (
+                <DropdownMenuItem
+                  key={option.value}
+                  className="locale-dropdown-item"
+                  data-active={option.value === locale ? 'true' : 'false'}
+                  onSelect={() => {
+                    void changeLocale(option.value as typeof locale);
+                  }}
+                >
+                  <span>{option.label}</span>
+                  {option.value === locale ? <Check size={14} aria-hidden="true" /> : null}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenuPortal>
+        </DropdownMenuRoot>
+      </div>
+    );
+  }
 
   return (
     <div className="locale-switcher">
       {showLabel ? <span className="engraved-eyebrow">{t('ui.language.label', 'Language')}</span> : null}
       <div className="locale-switcher-select-shell">
-        <Icon type="language" size={16} />
+        <Languages size={16} aria-hidden="true" />
         <select
           value={locale}
           onChange={(event) => {
@@ -143,21 +236,22 @@ export function DocumentFolio<T extends string>({
 }) {
   return (
     <PaperSheet tone="folio" className="document-folio">
-      <div className="folio-tabs" role="tablist" aria-label={title}>
-        {sections.map((section) => (
-          <button
-            key={section.id}
-            type="button"
-            role="tab"
-            aria-selected={activeId === section.id}
-            className={`folio-tab ${activeId === section.id ? 'is-active' : ''}`}
-            onClick={() => onSelect(section.id)}
-          >
-            {section.label}
-          </button>
-        ))}
-      </div>
-      <div className="folio-page">{children}</div>
+      <TabsRoot value={activeId} onValueChange={(value) => onSelect(value as T)}>
+        <TabsList className="folio-tabs" aria-label={title}>
+          {sections.map((section) => (
+            <TabsTrigger
+              key={section.id}
+              value={section.id}
+              className={`folio-tab ${activeId === section.id ? 'is-active' : ''}`}
+            >
+              {section.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        <TabsContent value={activeId} className="folio-page">
+          {children}
+        </TabsContent>
+      </TabsRoot>
     </PaperSheet>
   );
 }

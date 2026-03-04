@@ -39,7 +39,7 @@ export function PlayerGuideScreen({ onBackHome }: PlayerGuideScreenProps) {
 
           <PaperSheet tone="tray">
             <span className="engraved-eyebrow">{t('ui.guide.economy', 'Economy')}</span>
-            <p>{t('ui.guide.economy1', 'Bodies live in regions and are spent from those regions.')}</p>
+            <p>{t('ui.guide.economy1', 'Comrades hold ground in regions and are committed from those regions.')}</p>
             <p>{t('ui.guide.economy2', 'Evidence belongs to seats and powers campaigns, appeals, and support work.')}</p>
             <p>{t('ui.guide.economy3', 'Defense is temporary and only exists to blunt the next system strike.')}</p>
           </PaperSheet>

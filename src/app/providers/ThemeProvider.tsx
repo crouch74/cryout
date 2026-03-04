@@ -6,6 +6,13 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import {
+  applyThemeVariables,
+  getScenarioOverlayForRuleset,
+  resolveTheme,
+  type ScenarioOverlayId,
+  type ThemeDefinition,
+} from '../../theme/index.ts';
 
 export type ContrastMode = 'default' | 'high';
 export type MotionMode = 'full' | 'reduced';
@@ -15,10 +22,15 @@ interface ThemeContextValue {
   motionMode: MotionMode;
   setContrastMode: (mode: ContrastMode) => void;
   setMotionMode: (mode: MotionMode) => void;
+  activeRulesetId: string;
+  activeTheme: ThemeDefinition;
+  activeOverlayId: ScenarioOverlayId | null;
+  setActiveRulesetId: (rulesetId: string) => void;
 }
 
 const CONTRAST_KEY = 'stones-tabletop-contrast';
 const MOTION_KEY = 'stones-tabletop-motion';
+const DEFAULT_RULESET_ID = 'base_design';
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
@@ -47,6 +59,15 @@ function getInitialContrastMode(): ContrastMode {
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [contrastMode, setContrastMode] = useState<ContrastMode>(getInitialContrastMode);
   const [motionMode, setMotionMode] = useState<MotionMode>(getInitialMotionMode);
+  const [activeRulesetId, setActiveRulesetId] = useState(DEFAULT_RULESET_ID);
+  const activeOverlayId = useMemo(
+    () => getScenarioOverlayForRuleset(activeRulesetId),
+    [activeRulesetId],
+  );
+  const activeTheme = useMemo(
+    () => resolveTheme(activeOverlayId),
+    [activeOverlayId],
+  );
 
   useEffect(() => {
     document.documentElement.dataset.contrast = contrastMode;
@@ -58,9 +79,22 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     window.localStorage.setItem(MOTION_KEY, motionMode);
   }, [motionMode]);
 
+  useEffect(() => {
+    applyThemeVariables(activeTheme, activeOverlayId);
+  }, [activeOverlayId, activeTheme]);
+
   const value = useMemo(
-    () => ({ contrastMode, motionMode, setContrastMode, setMotionMode }),
-    [contrastMode, motionMode],
+    () => ({
+      contrastMode,
+      motionMode,
+      setContrastMode,
+      setMotionMode,
+      activeRulesetId,
+      activeTheme,
+      activeOverlayId,
+      setActiveRulesetId,
+    }),
+    [activeOverlayId, activeRulesetId, activeTheme, contrastMode, motionMode],
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

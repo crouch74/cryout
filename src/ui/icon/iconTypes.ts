@@ -1,5 +1,7 @@
 export type IconType =
   | 'bodies'
+  | 'comrades'
+  | 'crisis'
   | 'close'
   | 'copy'
   | 'evidence'

@@ -153,7 +153,7 @@ const factions: FactionDefinition[] = [
         name: 'Rural Organizing Committees',
         shortName: 'Rural Committees',
         homeRegion: 'SaharaSouth',
-        passive: 'Organize gains +1 Body in Sahara South and Build Solidarity costs 1 fewer Body there.',
+        passive: 'Organize gains +1 Comrade in Sahara South and Build Solidarity costs 1 fewer Comrade there.',
         weakness: 'Military intervention in Sahara South removes 1 extra Comrade.',
         organizeBonus: 1,
         investigateBonus: 0,
@@ -179,7 +179,7 @@ const factions: FactionDefinition[] = [
         name: 'Border Solidarity Networks',
         shortName: 'Border Networks',
         homeRegion: 'TunisianBorder',
-        passive: 'Smuggle Evidence can move up to 2 Evidence and Cross-Border Supply gains +1 Body.',
+        passive: 'Smuggle Evidence can move up to 2 Evidence and Cross-Border Supply gains +1 Comrade.',
         weakness: 'Border Closure effects hit this seat first when multiple seats are valid.',
         organizeBonus: 0,
         investigateBonus: 1,
@@ -242,7 +242,7 @@ const actions: ActionDefinition[] = [
     {
         id: 'organize',
         name: 'Organize',
-        description: 'Roll 1d6 Bodies into a region, with movement bonuses at home.',
+        description: 'Roll 1d6 Comrades into a region, with movement bonuses at home.',
         resolvePriority: 100,
         needsRegion: true,
     },
@@ -256,7 +256,7 @@ const actions: ActionDefinition[] = [
     {
         id: 'launch_campaign',
         name: 'Launch Campaign',
-        description: 'Commit Bodies and Evidence to a 2d6 campaign against a Domain in a region.',
+        description: 'Commit Comrades and Evidence to a 2d6 campaign against a Domain in a region.',
         resolvePriority: 500,
         needsRegion: true,
         needsDomain: true,
@@ -268,7 +268,7 @@ const actions: ActionDefinition[] = [
     {
         id: 'build_solidarity',
         name: 'Build Solidarity',
-        description: 'Spend 3 Bodies in-region to advance a Domain without a roll.',
+        description: 'Spend 3 Comrades in-region to advance a Domain without a roll.',
         resolvePriority: 300,
         needsRegion: true,
         needsDomain: true,
@@ -290,7 +290,7 @@ const actions: ActionDefinition[] = [
     {
         id: 'defend',
         name: 'Defend',
-        description: 'Convert Bodies into a one-round Defense Rating against the next intervention.',
+        description: 'Convert Comrades into a one-round Defense Rating against the next intervention.',
         resolvePriority: 260,
         needsRegion: true,
         needsBodies: true,

@@ -9,6 +9,8 @@
     },
     "accessibility": {
       "controls": "Tabletop accessibility controls",
+      "contrast": "Contrast",
+      "motion": "Motion",
       "standardContrast": "Standard Contrast",
       "highContrast": "High Contrast",
       "fullMotion": "Full Motion",
@@ -131,6 +133,8 @@
     },
     "home": {
       "eyebrow": "Campaign Briefing",
+      "heroTitle": "Where the Stones Cry Out",
+      "heroSubline": "At this table, every gain is costly and every silence serves the system.",
       "playerCount": "Player Count",
       "humanPlayerCount": "Human Players",
       "factionSeatCount": "Faction Seats",
@@ -143,8 +147,8 @@
       "roomChecking": "Checking whether the room service can hold the table...",
       "roomReachable": "Room service is reachable.",
       "roomUnavailable": "Room service did not answer. Local play remains available.",
-      "startLocal": "Start Local Table",
-      "createRoom": "Create Room",
+      "startLocal": "Begin Local Session",
+      "createRoom": "Open Room Session",
       "loadAutosave": "Load Autosave",
       "rulesBrief": "Rules Brief",
       "openRulesBrief": "Open Rules Brief",
@@ -154,7 +158,7 @@
       "seat": "Seat {{seat}}",
       "duplicateFactions": "Factions must be unique.",
       "asymmetricAbilities": "Distinct Movements",
-      "rulesBody": "Each seat carries a different movement, its own limits, and its own role in the coalition. Room play preserves Secret Mandates for private coordination; local tables keep every objective in the open.",
+      "rulesBody": "Each seat carries a movement with distinct pressure, costs, and strategic obligations. Coordinate together without erasing the tension between collective survival and private mandates.",
       "loadSave": "Load Save",
       "utilities": "Utilities",
       "pasteSave": "Paste a serialized save payload here.",
@@ -861,11 +865,11 @@
       },
       "RevolutionaryWave": {
         "name": "Revolutionary Wave",
-        "description": "The momentum, hope, and presence of bodies in the street."
+        "description": "The momentum, hope, and collective presence of people in the streets."
       },
       "PatriarchalGrip": {
         "name": "Patriarchal Grip",
-        "description": "Regime control over bodies, hair, and public life."
+        "description": "Regime control over people, hair, and public life."
       },
       "UnfinishedJustice": {
         "name": "Unfinished Justice",
@@ -931,11 +935,11 @@
       },
       "RevolutionaryWave": {
         "name": "Revolutionary Wave",
-        "description": "The momentum, hope, and presence of bodies in the street."
+        "description": "The momentum, hope, and collective presence of people in the streets."
       },
       "PatriarchalGrip": {
         "name": "Patriarchal Grip",
-        "description": "Regime control over bodies, hair, and public life."
+        "description": "Regime control over people, hair, and public life."
       },
       "UnfinishedJustice": {
         "name": "Unfinished Justice",
@@ -1552,7 +1556,7 @@
       },
       "crisis_tahrir_camel_battle": {
         "name": "Camel Battle",
-        "text": "Regime thugs attack Tahrir on horses. Remove Bodies from Cairo. Gain Global Gaze."
+        "text": "Regime thugs attack Tahrir on horses. Remove Comrades from Cairo. Gain Global Gaze."
       },
       "crisis_tahrir_state_tv_lies": {
         "name": "State TV Lies",
@@ -1560,7 +1564,7 @@
       },
       "crisis_tahrir_military_trials": {
         "name": "Military Trials",
-        "text": "Protesters are tried in military courts. Remove Bodies, gain Evidence."
+        "text": "Protesters are tried in military courts. Remove Comrades, gain Evidence."
       },
       "crisis_tahrir_constitutional_declaration": {
         "name": "Constitutional Declaration",
@@ -1576,7 +1580,7 @@
       },
       "crisis_wlf_morality_police_raid": {
         "name": "Morality Police Raid",
-        "text": "A patrol hits Tehran. Remove Bodies and add Extraction."
+        "text": "A patrol hits Tehran. Remove Comrades and add Extraction."
       },
       "crisis_wlf_internet_blackout": {
         "name": "Internet Blackout",

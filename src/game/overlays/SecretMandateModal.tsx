@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { X } from 'lucide-react';
 import { getMandateStatus, getSeatFaction, type CompiledContent, type EngineState } from '../../engine/index.ts';
 import { localizeFactionField, localizeRulesetField, localizeScenarioField, t } from '../../i18n/index.ts';
-import { Icon } from '../../ui/icon/Icon.tsx';
 
 type MandateRevealStage =
   | 'sealed'
@@ -55,32 +55,32 @@ export function SecretMandateModal({
     [content.ruleset.id, content.ruleset.introduction],
   );
 
-  const clearOpenStageTimers = () => {
+  const clearOpenStageTimers = useCallback(() => {
     openStageTimersRef.current.forEach((timer) => window.clearTimeout(timer));
     openStageTimersRef.current = [];
-  };
+  }, []);
 
-  const clearReverseStageTimers = () => {
+  const clearReverseStageTimers = useCallback(() => {
     reverseStageTimersRef.current.forEach((timer) => window.clearTimeout(timer));
     reverseStageTimersRef.current = [];
-  };
+  }, []);
 
-  const clearAutoAdvanceTimer = () => {
+  const clearAutoAdvanceTimer = useCallback(() => {
     if (autoAdvanceTimerRef.current !== null) {
       window.clearTimeout(autoAdvanceTimerRef.current);
       autoAdvanceTimerRef.current = null;
     }
-  };
+  }, []);
 
-  const finishRevealImmediately = () => {
+  const finishRevealImmediately = useCallback(() => {
     clearAutoAdvanceTimer();
     clearOpenStageTimers();
     clearReverseStageTimers();
     setStage('revealed');
     setDismissEnabled(true);
-  };
+  }, [clearAutoAdvanceTimer, clearOpenStageTimers, clearReverseStageTimers]);
 
-  const startReverseSequence = () => {
+  const startReverseSequence = useCallback(() => {
     if (motionMode === 'reduced') {
       onRequestClose();
       return;
@@ -103,7 +103,15 @@ export function SecretMandateModal({
         onRequestClose();
       }, 700),
     ];
-  };
+  }, [clearAutoAdvanceTimer, clearOpenStageTimers, clearReverseStageTimers, motionMode, onRequestClose]);
+
+  const dismissReveal = useCallback(() => {
+    if (!dismissEnabled) {
+      return;
+    }
+
+    startReverseSequence();
+  }, [dismissEnabled, startReverseSequence]);
 
   useEffect(() => {
     if (!open) {
@@ -145,7 +153,7 @@ export function SecretMandateModal({
     return () => {
       clearOpenStageTimers();
     };
-  }, [motionMode, open, seat]);
+  }, [clearAutoAdvanceTimer, clearOpenStageTimers, clearReverseStageTimers, motionMode, open, seat]);
 
   useEffect(() => {
     if (!open || stage !== 'revealed') {
@@ -179,7 +187,7 @@ export function SecretMandateModal({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [dismissEnabled, open]);
+  }, [dismissEnabled, dismissReveal, finishRevealImmediately, open]);
 
   useEffect(() => {
     if (!open || !autoAdvance || !dismissEnabled) {
@@ -193,21 +201,13 @@ export function SecretMandateModal({
     return () => {
       clearAutoAdvanceTimer();
     };
-  }, [autoAdvance, dismissEnabled, motionMode, onRequestClose, open]);
+  }, [autoAdvance, clearAutoAdvanceTimer, dismissEnabled, motionMode, open, startReverseSequence]);
 
   useEffect(() => () => {
     clearAutoAdvanceTimer();
     clearOpenStageTimers();
     clearReverseStageTimers();
-  }, []);
-
-  const dismissReveal = () => {
-    if (!dismissEnabled) {
-      return;
-    }
-
-    startReverseSequence();
-  };
+  }, [clearAutoAdvanceTimer, clearOpenStageTimers, clearReverseStageTimers]);
 
   const revealVisible = stage === 'revealed';
   const contentVisible = stage === 'unfolding' || stage === 'revealed';
@@ -361,7 +361,7 @@ export function SecretMandateModal({
                 disabled={!dismissEnabled}
                 tabIndex={dismissEnabled ? 0 : -1}
               >
-                <Icon type="close" size={16} ariaLabel={t('ui.game.close', 'Close')} />
+                <X size={16} aria-label={t('ui.game.close', 'Close')} />
               </button>
             </header>
             <span className="engraved-eyebrow mandate-letter-copy">

@@ -1,0 +1,19 @@
+import type { ScenarioOverlayId } from './types.ts';
+
+const SCENARIO_THEME_MAP: Record<string, ScenarioOverlayId> = {
+  base_design: 'burnt-earth-resistance',
+  tahrir_square: 'night-map-escalation',
+  woman_life_freedom: 'dossier-of-the-disappeared',
+  algerian_war_of_independence: 'desert-horizon',
+};
+
+export function getScenarioOverlayForRuleset(rulesetId: string): ScenarioOverlayId | null {
+  return SCENARIO_THEME_MAP[rulesetId] ?? null;
+}
+
+export function listScenarioThemeMappings() {
+  return Object.entries(SCENARIO_THEME_MAP).map(([rulesetId, overlayId]) => ({
+    rulesetId,
+    overlayId,
+  }));
+}

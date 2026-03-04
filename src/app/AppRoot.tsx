@@ -23,6 +23,7 @@ import { PlayerGuideScreen } from '../features/player-guide/ui/PlayerGuideScreen
 import { RoomLobbyScreen } from '../features/room-session/ui/RoomLobbyScreen.tsx';
 import { buildAppPath, type AppRoute } from './router/pathState.ts';
 import { parseRuntimeRoute, type AppRuntimeOptions } from './router/runtime.ts';
+import { useThemeSettings } from './providers/ThemeProvider.tsx';
 import {
   parseCreateRoomResponse,
   parseJoinRoomResponse,
@@ -183,6 +184,7 @@ function buildActiveRoomSession(snapshot: RoomActiveSnapshot, ownerToken: string
 
 export default function AppRoot({ runtime }: { runtime: AppRuntimeOptions }) {
   const { locale, dir } = useAppLocale();
+  const { setActiveRulesetId } = useThemeSettings();
   const location = useLocation();
   const navigate = useNavigate();
   const route = useMemo(
@@ -207,6 +209,17 @@ export default function AppRoot({ runtime }: { runtime: AppRuntimeOptions }) {
   const [hydrating, setHydrating] = useState(route.page === 'room' && Boolean(route.roomId));
   const [roomServiceReachable, setRoomServiceReachable] = useState<boolean>(runtime.forceOfflineOnly ? false : true);
   const [roomServiceChecking, setRoomServiceChecking] = useState(false);
+  const activeRulesetId = useMemo(() => {
+    if (!session) {
+      return setupDraft.rulesetId;
+    }
+
+    if (session.surface === 'room' && session.roomPhase === 'LOBBY') {
+      return session.lobby.config.rulesetId;
+    }
+
+    return session.state.rulesetId;
+  }, [session, setupDraft.rulesetId]);
 
   const pushToast = useCallback((toast: ToastDraft) => {
     const id = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -260,6 +273,10 @@ export default function AppRoot({ runtime }: { runtime: AppRuntimeOptions }) {
     document.documentElement.lang = locale;
     document.documentElement.dir = dir;
   }, [dir, locale]);
+
+  useEffect(() => {
+    setActiveRulesetId(activeRulesetId);
+  }, [activeRulesetId, setActiveRulesetId]);
 
   useEffect(() => {
     if (!session || session.surface !== 'local') {

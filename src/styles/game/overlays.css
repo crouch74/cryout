@@ -1077,8 +1077,9 @@
 }
 
 .campaign-result-tooltip {
-  position: fixed;
+  position: relative;
   z-index: 90;
+  max-width: min(360px, calc(100vw - 32px));
   display: grid;
   gap: 8px;
   padding: 12px 14px;
@@ -1090,6 +1091,8 @@
   box-shadow: 0 16px 36px rgba(41, 29, 20, 0.22);
   color: var(--theme-ink);
   pointer-events: none;
+  transform-origin: var(--radix-tooltip-content-transform-origin);
+  animation: campaign-tooltip-in 140ms var(--motion-ease-standard);
 }
 
 .campaign-result-tooltip strong,
@@ -1097,6 +1100,34 @@
   margin: 0;
   font-size: 0.88rem;
   line-height: 1.45;
+}
+
+.campaign-result-tooltip[data-state='closed'] {
+  animation: campaign-tooltip-out 100ms var(--motion-ease-standard);
+}
+
+@keyframes campaign-tooltip-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes campaign-tooltip-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
 }
 
 html[dir='rtl'] .campaign-result-equation-header {

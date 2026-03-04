@@ -285,7 +285,7 @@ function getTraceTitle(trace: EffectTrace, content: CompiledContent) {
       return t('ui.history.removeExtraction', 'Remove Extraction Tokens');
     case 'add_bodies':
     case 'remove_bodies':
-      return t('ui.history.modifyBodies', 'Modify Bodies');
+      return t('ui.history.modifyBodies', 'Modify Comrades');
     case 'gain_evidence':
     case 'lose_evidence':
       return t('ui.history.modifyEvidence', 'Modify Evidence');
@@ -501,7 +501,7 @@ export function localizeDisabledReason(reason: Pick<DisabledActionReason, 'reaso
     case 'need_one_body':
       return t('ui.game.needOneBody', 'Need 1 Comrade in region');
     case 'commit_one_body':
-      return t('ui.game.commitOneBody', 'Commit at least 1 body');
+      return t('ui.game.commitOneBody', 'Commit at least 1 Comrade');
     case 'not_enough_bodies':
       return t('ui.game.notEnoughBodies', 'Not enough Comrades in region');
     case 'support_card_unavailable':

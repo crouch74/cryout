@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
+import { X } from 'lucide-react';
 import { t } from '../../i18n/index.ts';
 import { getToastRole } from '../../game/presentation/gameUiHelpers.ts';
-import { Icon } from '../icon/Icon.tsx';
 
 export interface ToastDraft {
   tone: 'info' | 'success' | 'warning' | 'error';
@@ -55,7 +55,7 @@ export function ToastStack({ toasts, onDismiss }: ToastStackProps) {
             aria-label={t('ui.toast.dismissNotification', 'Dismiss notification')}
             title={t('ui.toast.dismissNotification', 'Dismiss notification')}
           >
-            <Icon type="close" size={14} ariaLabel={t('ui.toast.dismissNotification', 'Dismiss notification')} />
+            <X size={14} aria-label={t('ui.toast.dismissNotification', 'Dismiss notification')} />
           </button>
         </article>
       ))}

@@ -2219,9 +2219,7 @@ html[dir='rtl'] .phase-progress-nav .dock-control-button.is-play-button .ui-icon
 }
 
 .phase-progress-help-tooltip {
-  position: absolute;
-  inset-inline-start: 0;
-  top: calc(100% + 10px);
+  position: relative;
   z-index: 12;
   display: grid;
   gap: 4px;
@@ -2234,14 +2232,12 @@ html[dir='rtl'] .phase-progress-nav .dock-control-button.is-play-button .ui-icon
     var(--theme-parchment);
   box-shadow: 0 12px 22px rgba(52, 37, 24, 0.14);
   color: var(--theme-ink);
-  opacity: 0;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transform-origin: var(--radix-popover-content-transform-origin);
+  transition: box-shadow var(--motion-mid);
   pointer-events: none;
-  transform: translateY(-4px) scale(0.98);
-  transition:
-    opacity var(--motion-fast),
-    transform var(--motion-fast),
-    box-shadow var(--motion-mid);
-  pointer-events: none;
+  animation: phase-help-popover-in 140ms var(--motion-ease-standard);
 }
 
 .phase-progress-help-popover {
@@ -2255,16 +2251,13 @@ html[dir='rtl'] .phase-progress-help-popover {
 }
 
 .phase-help-anchor.is-open .phase-progress-help-popover {
-  opacity: 1;
-  transform: translateY(0) scale(1);
   box-shadow: 0 16px 28px rgba(52, 37, 24, 0.18);
-  pointer-events: auto;
 }
 
 .phase-progress-help-tooltip::before {
   content: '';
   position: absolute;
-  inset-inline-start: 10px;
+  inset-inline-start: 14px;
   top: -6px;
   width: 12px;
   height: 12px;
@@ -2282,6 +2275,18 @@ html[dir='rtl'] .phase-progress-help-popover {
 html[dir='rtl'] .phase-progress-help-popover::before {
   inset-inline-start: 10px;
   inset-inline-end: auto;
+}
+
+@keyframes phase-help-popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .phase-progress-help-tooltip strong {

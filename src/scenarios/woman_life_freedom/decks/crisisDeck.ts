@@ -5,7 +5,7 @@ export const crisisCards: CrisisCardDefinition[] = [
         id: 'crisis_wlf_morality_police_raid',
         deck: 'crisis',
         name: 'Morality Police Raid',
-        text: 'A patrol hits Tehran. Remove 1 Body and add 1 Extraction to Tehran.',
+        text: 'A patrol hits Tehran. Remove 1 Comrade and add 1 Extraction to Tehran.',
         effects: [
             { type: 'remove_bodies', region: 'Tehran', seat: 0, amount: 1 },
             { type: 'remove_bodies', region: 'Tehran', seat: 1, amount: 1 },
@@ -28,7 +28,7 @@ export const crisisCards: CrisisCardDefinition[] = [
         id: 'crisis_wlf_gas_attacks_on_schools',
         deck: 'crisis',
         name: 'Gas Attacks on Schools',
-        text: 'Retaliation against schoolgirls. Remove 1 Body from Kurdistan and Isfahan. War Machine increases by 1.',
+        text: 'Retaliation against schoolgirls. Remove 1 Comrade from Kurdistan and Isfahan. War Machine increases by 1.',
         effects: [
             { type: 'remove_bodies', region: 'Kurdistan', seat: 0, amount: 1 },
             { type: 'remove_bodies', region: 'Isfahan', seat: 0, amount: 1 },
