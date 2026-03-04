@@ -1,6 +1,5 @@
 import type {
   ActionId,
-  CardRevealEvent,
   CompiledContent,
   DisabledActionReason,
   DomainEvent,
@@ -14,13 +13,12 @@ import type {
 import {
   formatNumber,
   localizeActionField,
-  localizeBeaconField,
-  localizeCardField,
   localizeDomainField,
   localizeRegionField,
   localizeRulesetField,
   t,
 } from '../../i18n/index.ts';
+import { presentRevealCopy } from './cardRevealPresentation.ts';
 
 export interface PresentedHistoryCardReveal {
   key: string;
@@ -73,22 +71,6 @@ export interface PresentedTerminalOutcome {
 
 function formatSeatLabel(seat: number) {
   return t('ui.game.seat', 'Seat {{seat}}', { seat: seat + 1 });
-}
-
-function getRevealTitle(content: CompiledContent, reveal: CardRevealEvent) {
-  if (reveal.deckId === 'beacon') {
-    const beacon = content.beacons[reveal.cardId];
-    return {
-      title: localizeBeaconField(reveal.cardId, 'title', beacon?.title ?? reveal.cardId),
-      body: localizeBeaconField(reveal.cardId, 'description', beacon?.description ?? ''),
-    };
-  }
-
-  const card = content.cards[reveal.cardId];
-  return {
-    title: localizeCardField(reveal.cardId, 'name', card?.name ?? reveal.cardId),
-    body: localizeCardField(reveal.cardId, 'text', card?.text ?? ''),
-  };
 }
 
 export function getRevealDeckLabel(deckId: RevealDeckId) {
@@ -355,9 +337,9 @@ export function presentTrace(trace: EffectTrace, content: CompiledContent): Pres
   };
 }
 
-function presentCardReveals(event: DomainEvent, content: CompiledContent): PresentedHistoryCardReveal[] {
+function presentCardReveals(event: DomainEvent, content: CompiledContent, state?: EngineState): PresentedHistoryCardReveal[] {
   return (event.context?.cardReveals ?? []).map((reveal, index) => {
-    const copy = getRevealTitle(content, reveal);
+    const copy = presentRevealCopy(reveal, content, event, state);
     return {
       key: `${event.seq}:${index}:${reveal.deckId}:${reveal.cardId}`,
       deckLabel: getRevealDeckLabel(reveal.deckId),
@@ -385,7 +367,7 @@ function getEventContextLabel(event: DomainEvent, content: CompiledContent) {
 function getEventTitle(event: DomainEvent, content: CompiledContent) {
   const reveal = event.context?.cardReveals?.[0];
   if (reveal) {
-    const revealCopy = getRevealTitle(content, reveal);
+    const revealCopy = presentRevealCopy(reveal, content, event);
     if (reveal.origin === 'startup_withdrawal' && typeof reveal.seat === 'number') {
       return t('ui.history.eventStartupWithdrawal', '🃏 {{seat}} withdrew a startup resistance card.', {
         seat: formatSeatLabel(reveal.seat),
@@ -482,12 +464,12 @@ function getEventTitle(event: DomainEvent, content: CompiledContent) {
   return event.message;
 }
 
-export function presentHistoryEvent(event: DomainEvent, content: CompiledContent): PresentedHistoryEvent {
+export function presentHistoryEvent(event: DomainEvent, content: CompiledContent, state?: EngineState): PresentedHistoryEvent {
   return {
     title: getEventTitle(event, content),
     sourceLabel: getEventSourceLabel(event.sourceType),
     contextLabel: getEventContextLabel(event, content),
-    cardReveals: presentCardReveals(event, content),
+    cardReveals: presentCardReveals(event, content, state),
     roll: event.context?.roll ? presentRoll(event.context.roll, content) : null,
     deltas: event.deltas.map((delta) => presentDelta(delta, content)),
     traces: event.trace.map((trace) => presentTrace(trace, content)),

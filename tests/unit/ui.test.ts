@@ -96,16 +96,21 @@ test('history presenter localizes reveal details and disabled reasons', async ()
   };
 
   await changeLocale('en');
-  const english = presentHistoryEvent(revealEvent, content);
+  const state = initializeGame(startCommand);
+  const english = presentHistoryEvent(revealEvent, content, state);
   assert.equal(english.title, '🃏 Seat 1 drew a resistance card.');
   assert.equal(english.cardReveals[0]?.title, 'Archive Leak');
   assert.match(english.cardReveals[0]?.body ?? '', /Global Gaze/);
+  assert.doesNotMatch(english.cardReveals[0]?.body ?? '', /Affected region\(s\):/);
+  assert.doesNotMatch(english.cardReveals[0]?.body ?? '', /Affected faction\(s\):/);
   assert.equal(localizeDisabledReason({ reasonCode: 'need_three_bodies' }), 'Need 3 Comrades in region');
 
   await changeLocale('ar-EG');
-  const arabic = presentHistoryEvent(revealEvent, content);
+  const arabic = presentHistoryEvent(revealEvent, content, state);
   assert.match(arabic.title, /المقعد/);
   assert.match(arabic.cardReveals[0]?.body ?? '', /النظرة العالمية/);
+  assert.doesNotMatch(arabic.cardReveals[0]?.body ?? '', /المنطقة أو المناطق المتأثرة/);
+  assert.doesNotMatch(arabic.cardReveals[0]?.body ?? '', /الفصيل أو الفصائل المتأثرة/);
   assert.match(localizeDisabledReason({ reasonCode: 'need_three_bodies' }) ?? '', /الرفاق/);
 
   await changeLocale('en');

@@ -5,7 +5,7 @@ export const systemCards: SystemCardDefinition[] = [
     id: 'sys_emergency_powers',
     deck: 'system',
     name: 'Emergency Powers Enacted',
-    text: 'Exception is written into ordinary rule. Campaigns face a higher bar from here forward.',
+    text: 'Raise War Machine by 1, add 1 Extraction Token to the region most vulnerable to Gilded Cage, and increase future campaign targets by 1.',
     onReveal: [
       { type: 'modify_war_machine', delta: 1 },
       { type: 'add_extraction', region: { byVulnerability: 'GildedCage' }, amount: 1 },
@@ -16,7 +16,7 @@ export const systemCards: SystemCardDefinition[] = [
     id: 'sys_resource_privatization_wave',
     deck: 'system',
     name: 'Resource Privatization Wave',
-    text: 'Every new crisis becomes another pretext to deepen the carve-up.',
+    text: 'Lower Global Gaze by 1, add 1 Extraction Token to the region most vulnerable to Empty Stomach, and future crisis extraction gains increase by 1.',
     onReveal: [
       { type: 'modify_gaze', delta: -1 },
       { type: 'add_extraction', region: { byVulnerability: 'EmptyStomach' }, amount: 1 },
@@ -27,7 +27,7 @@ export const systemCards: SystemCardDefinition[] = [
     id: 'sys_militarized_infrastructure',
     deck: 'system',
     name: 'Militarized Infrastructure',
-    text: 'Roads, ports, and corridors become permanent security architecture.',
+    text: 'Raise War Machine by 1, add 1 Extraction Token to the region most vulnerable to War Machine, and draw 1 extra crisis card during future system pressure.',
     onReveal: [
       { type: 'modify_war_machine', delta: 1 },
       { type: 'add_extraction', region: { byVulnerability: 'WarMachine' }, amount: 1 },
@@ -38,7 +38,7 @@ export const systemCards: SystemCardDefinition[] = [
     id: 'sys_surveillance_normalization',
     deck: 'system',
     name: 'Surveillance Normalization',
-    text: 'Every campaign now moves through denser fog and better targeting.',
+    text: 'Lower Global Gaze by 1, add 1 Extraction Token to the region most vulnerable to Silenced Truth, and give future campaigns -1 total modifier.',
     onReveal: [
       { type: 'modify_gaze', delta: -1 },
       { type: 'add_extraction', region: { byVulnerability: 'SilencedTruth' }, amount: 1 },
@@ -49,7 +49,7 @@ export const systemCards: SystemCardDefinition[] = [
     id: 'sys_structural_adjustment_program',
     deck: 'system',
     name: 'Structural Adjustment Program',
-    text: 'Appeals to the outside now cost more because every concession is monetized.',
+    text: 'Lower Global Gaze by 1, add 1 Extraction Token to the region most vulnerable to Empty Stomach, and increase Global Appeal cost by 1 Evidence.',
     onReveal: [
       { type: 'modify_gaze', delta: -1 },
       { type: 'add_extraction', region: { byVulnerability: 'EmptyStomach' }, amount: 1 },
@@ -60,7 +60,7 @@ export const systemCards: SystemCardDefinition[] = [
     id: 'sys_counterinsurgency_doctrine',
     deck: 'system',
     name: 'Counterinsurgency Doctrine Expansion',
-    text: 'Evidence circulates more slowly as suppression becomes doctrine.',
+    text: 'Raise War Machine by 1, add 1 Extraction Token to the region most vulnerable to War Machine, and reduce future investigate draws by 1.',
     onReveal: [
       { type: 'modify_war_machine', delta: 1 },
       { type: 'add_extraction', region: { byVulnerability: 'WarMachine' }, amount: 1 },

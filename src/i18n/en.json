@@ -19,6 +19,12 @@
       "cardsRemain": "{{count}} cards remain",
       "staged": "{{count}} staged"
     },
+    "cardReveal": {
+      "affectedRegions": "Affected region(s): {{regions}}.",
+      "affectedFactions": "Affected faction(s): {{factions}}.",
+      "affectedRegionsShort": "Region",
+      "affectedFactionsShort": "Faction"
+    },
     "notes": {
       "archived": "{{count}} archived"
     },

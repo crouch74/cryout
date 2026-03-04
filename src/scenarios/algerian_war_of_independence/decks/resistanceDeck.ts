@@ -6,7 +6,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     deck: 'resistance',
     type: 'action',
     name: 'Urban Cell Network',
-    text: 'Neighborhood cells move witness, shelter, and clandestine coordination.',
+    text: 'Acting faction gains 1 Evidence and adds 1 Comrade to the target region.',
     effects: [
       { type: 'gain_evidence', seat: 'acting_player', amount: 1 },
       { type: 'add_bodies', region: 'target_region', seat: 'acting_player', amount: 1 },
@@ -17,7 +17,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     deck: 'resistance',
     type: 'support',
     name: 'Mountain Guerrilla Offensive',
-    text: '+2 on a campaign launched from the mountains or toward colonial army pressure.',
+    text: 'Acting faction gets +2 on a campaign launched in Kabylie Mountains.',
     campaignBonus: 2,
     regionBonus: 'KabylieMountains',
   },
@@ -26,7 +26,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     deck: 'resistance',
     type: 'action',
     name: 'International Student Solidarity',
-    text: 'Student networks force the struggle into international discourse.',
+    text: 'Acting faction raises Global Gaze by 2 and gains 1 Evidence.',
     effects: [
       { type: 'modify_gaze', delta: 2 },
       { type: 'gain_evidence', seat: 'acting_player', amount: 1 },
@@ -37,7 +37,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     deck: 'resistance',
     type: 'action',
     name: 'Labor Strike',
-    text: 'Workers disrupt colonial commerce and settler confidence.',
+    text: 'Advance Empty Stomach by 1 and add 1 Comrade to Oran for the acting faction.',
     effects: [
       { type: 'modify_domain', domain: 'EmptyStomach', delta: 1 },
       { type: 'add_bodies', region: 'Oran', seat: 'acting_player', amount: 1 },
@@ -48,7 +48,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     deck: 'resistance',
     type: 'support',
     name: 'Cultural Resistance Campaign',
-    text: '+1 on campaigns that preserve memory, witness, and political legitimacy.',
+    text: 'Acting faction gets +1 on a Silenced Truth campaign.',
     campaignBonus: 1,
     domainBonus: 'SilencedTruth',
   },
@@ -57,7 +57,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     deck: 'resistance',
     type: 'action',
     name: 'Underground Printing Press',
-    text: 'Pamphlets, testimony, and clandestine news circulate despite censorship.',
+    text: 'Acting faction gains 2 Evidence and raises Global Gaze by 1.',
     effects: [
       { type: 'gain_evidence', seat: 'acting_player', amount: 2 },
       { type: 'modify_gaze', delta: 1 },
@@ -68,7 +68,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     deck: 'resistance',
     type: 'action',
     name: 'Mass Funeral Mobilization',
-    text: 'Collective mourning strengthens determination and shared purpose.',
+    text: 'Add 2 Comrades to Algiers for the acting faction and advance Revolutionary Wave by 1.',
     effects: [
       { type: 'add_bodies', region: 'Algiers', seat: 'acting_player', amount: 2 },
       { type: 'modify_domain', domain: 'RevolutionaryWave', delta: 1 },
@@ -79,7 +79,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     deck: 'resistance',
     type: 'action',
     name: 'Negotiation Delegation',
-    text: 'Movement delegates force the question of colonial abuse into formal forums.',
+    text: 'Acting faction raises Global Gaze by 1 and gains 1 Evidence.',
     effects: [
       { type: 'modify_gaze', delta: 1 },
       { type: 'gain_evidence', seat: 'acting_player', amount: 1 },
@@ -90,7 +90,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     deck: 'resistance',
     type: 'action',
     name: 'Cross-Border Supply',
-    text: 'Border routes keep the movement materially alive.',
+    text: 'Add 2 Comrades to Tunisian Border for the acting faction and gain 1 Evidence.',
     effects: [
       { type: 'add_bodies', region: 'TunisianBorder', seat: 'acting_player', amount: 2 },
       { type: 'gain_evidence', seat: 'acting_player', amount: 1 },
@@ -101,7 +101,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     deck: 'resistance',
     type: 'action',
     name: 'Prison Solidarity Network',
-    text: 'Families and clandestine networks keep prisoners politically present.',
+    text: 'Reduce Gilded Cage by 1 and give the acting faction 1 Evidence.',
     effects: [
       { type: 'modify_domain', domain: 'GildedCage', delta: -1 },
       { type: 'gain_evidence', seat: 'acting_player', amount: 1 },
@@ -112,7 +112,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     deck: 'resistance',
     type: 'support',
     name: 'Ceasefire Proposal',
-    text: '+1 on campaigns that reduce colonial impunity or open negotiation space.',
+    text: 'Acting faction gets +1 on an Unfinished Justice campaign.',
     campaignBonus: 1,
     domainBonus: 'UnfinishedJustice',
   },
@@ -121,7 +121,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     deck: 'resistance',
     type: 'action',
     name: 'Grassroots Education',
-    text: 'Political education binds scattered struggle into collective strategy.',
+    text: 'Advance Revolutionary Wave by 1 and give the acting faction 1 Evidence.',
     effects: [
       { type: 'modify_domain', domain: 'RevolutionaryWave', delta: 1 },
       { type: 'gain_evidence', seat: 'acting_player', amount: 1 },

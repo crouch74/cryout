@@ -6,7 +6,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
         deck: 'resistance',
         type: 'support',
         name: 'Cell Phone Video',
-        text: '+2 Evidence. May be used to Go Viral.',
+        text: 'Acting faction gains 2 Evidence. May be used on Silenced Truth campaigns or to Go Viral.',
         domainBonus: 'SilencedTruth',
         campaignBonus: 1,
         effects: [
@@ -18,7 +18,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
         deck: 'resistance',
         type: 'support',
         name: 'Al Jazeera Interview',
-        text: '+3 Evidence. Raises Global Gaze by 1 automatically.',
+        text: 'Acting faction gains 3 Evidence and raises Global Gaze by 1.',
         domainBonus: 'SilencedTruth',
         campaignBonus: 1,
         effects: [
@@ -31,7 +31,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
         deck: 'resistance',
         type: 'action',
         name: 'Facebook Event Page',
-        text: 'Gain +1 Body in Cairo.',
+        text: 'Add 1 Comrade to Cairo for the acting faction.',
         regionBonus: 'Cairo',
         effects: [
             { type: 'add_bodies', region: 'Cairo', seat: 'acting_player', amount: 1 }
@@ -42,7 +42,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
         deck: 'resistance',
         type: 'action',
         name: 'Lawyer\'s Legal Brief',
-        text: 'Gain 1 body in Alexandria. Advance Patriarchal Grip.',
+        text: 'Add 1 Comrade to Alexandria for the acting faction and advance Patriarchal Grip by 1.',
         domainBonus: 'PatriarchalGrip',
         effects: [
             { type: 'modify_domain', domain: 'PatriarchalGrip', delta: 1 },

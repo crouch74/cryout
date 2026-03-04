@@ -19,6 +19,12 @@
       "cardsRemain": "فاضل {{count}} كارت",
       "staged": "{{count}} متجهزين"
     },
+    "cardReveal": {
+      "affectedRegions": "المنطقة أو المناطق المتأثرة: {{regions}}.",
+      "affectedFactions": "الفصيل أو الفصائل المتأثرة: {{factions}}.",
+      "affectedRegionsShort": "المنطقة",
+      "affectedFactionsShort": "الفصيل"
+    },
     "notes": {
       "archived": "{{count}} متأرشف"
     },
@@ -1410,7 +1416,7 @@
       },
       "res_strike_fund": {
         "name": "صندوق إضراب",
-        "text": "ضيف ٣ الرفاق للمنطقة المستهدفة."
+        "text": "أضف ٣ رفاق إلى المنطقة المستهدفة."
       },
       "res_lawyers_brief": {
         "name": "مذكرة المحامين",

@@ -22,7 +22,6 @@ import {
   formatNumber,
   localizeActionField,
   localizeBeaconField,
-  localizeCardField,
   localizeDomainField,
   localizeFactionField,
   localizeRegionField,
@@ -30,7 +29,6 @@ import {
 } from '../../i18n/index.ts';
 import { ActionDock } from '../panels/ActionDock.tsx';
 import { ContextPanel } from '../panels/ContextPanel.tsx';
-import { playDeckCue, primeDeckAudio } from '../audio/deckSound.ts';
 import { FrontTrackBar } from '../hud/FrontTrackBar.tsx';
 import { CampaignResultModal } from '../overlays/CampaignResultModal.tsx';
 import { GameIntroModal } from '../overlays/GameIntroModal.tsx';
@@ -42,6 +40,7 @@ import { PhaseProgress } from '../hud/PhaseProgress.tsx';
 import { StatusRibbon } from '../hud/StatusRibbon.tsx';
 import { TerminalOutcomeModal } from '../overlays/TerminalOutcomeModal.tsx';
 import { getCampaignResolvedPayload } from '../presentation/campaignResultPresentation.ts';
+import { presentRevealCopy } from '../presentation/cardRevealPresentation.ts';
 import { localizeDisabledReason, presentHistoryEvent } from '../presentation/historyPresentation.ts';
 import { useTransientHighlightKeys } from '../presentation/useTransientHighlights.ts';
 import {
@@ -188,7 +187,7 @@ function getCampaignResultEvents(state: EngineState) {
     .filter((event): event is CampaignResolvedEventPayload => Boolean(event));
 }
 
-function getLatestRevealCardIdForDeck(state: EngineState, deckId: VisibleDeckId) {
+function getLatestRevealForDeck(state: EngineState, deckId: VisibleDeckId) {
   for (let eventIndex = state.eventLog.length - 1; eventIndex >= 0; eventIndex -= 1) {
     const reveals = state.eventLog[eventIndex]?.context?.cardReveals;
     if (!reveals?.length) {
@@ -198,7 +197,10 @@ function getLatestRevealCardIdForDeck(state: EngineState, deckId: VisibleDeckId)
     for (let revealIndex = reveals.length - 1; revealIndex >= 0; revealIndex -= 1) {
       const reveal = reveals[revealIndex];
       if (reveal?.deckId === deckId) {
-        return reveal.cardId;
+        return {
+          event: state.eventLog[eventIndex],
+          reveal,
+        };
       }
     }
   }
@@ -206,16 +208,27 @@ function getLatestRevealCardIdForDeck(state: EngineState, deckId: VisibleDeckId)
   return null;
 }
 
+function getQueuedRevealDetails(state: EngineState, item: CardRevealQueueItem | null) {
+  if (!item) {
+    return null;
+  }
+
+  const event = state.eventLog.find((entry) => entry.seq === item.eventSeq);
+  const reveal = event?.context?.cardReveals?.[item.revealIndex];
+  if (!event || !reveal) {
+    return null;
+  }
+
+  return { event, reveal };
+}
+
 function getRevealCopy(
+  state: EngineState,
   content: CompiledContent,
-  _deckId: VisibleDeckId,
-  cardId: string,
+  reveal: NonNullable<ReturnType<typeof getLatestRevealForDeck>>['reveal'],
+  event?: NonNullable<ReturnType<typeof getLatestRevealForDeck>>['event'],
 ) {
-  const card = content.cards[cardId];
-  return {
-    title: localizeCardField(cardId, 'name', card?.name ?? cardId),
-    body: localizeCardField(cardId, 'text', card?.text ?? ''),
-  };
+  return presentRevealCopy(reveal, content, event, state);
 }
 
 function getRevealMotionProfile(deckId: VisibleDeckId) {
@@ -577,7 +590,7 @@ function getRecentVisualDeltaTiles(state: EngineState, content: CompiledContent)
         emoji: event.emoji,
         phaseIcon: getPhasePresentation(event.phase).icon,
         glyphs,
-        ariaLabel: `${presentHistoryEvent(event, content).title}. ${glyphs.map((glyph) => glyph.ariaLabel).join('. ')}`.trim(),
+        ariaLabel: `${presentHistoryEvent(event, content, state).title}. ${glyphs.map((glyph) => glyph.ariaLabel).join('. ')}`.trim(),
         targetKeys,
       };
     })
@@ -787,7 +800,6 @@ export function GameSessionScreen({
   const phaseActionLabel = state.phase === 'SYSTEM'
     ? t('ui.game.playSystemPhase', 'Play System')
     : getActionButtonLabel(state.phase);
-  const audioEnabled = true;
   const highlightedStatusItems = useMemo(
     () => new Set(statusItems.map((item) => item.id).filter((itemId) => liveVisualTargets.has(itemId))),
     [liveVisualTargets, statusItems],
@@ -986,7 +998,7 @@ export function GameSessionScreen({
           <strong>{group.title}</strong>
           <div className="context-list">
             {group.events.map((event) => {
-              const presented = presentHistoryEvent(event, content);
+              const presented = presentHistoryEvent(event, content, state);
               return (
                 <article key={event.seq} className="context-card context-history-card">
                   <span className="context-eyebrow">{presented.sourceLabel}</span>
@@ -1039,8 +1051,28 @@ export function GameSessionScreen({
   const selectedDeckCards = selectedDeckId === 'system'
     ? state.activeSystemCardIds.slice().reverse()
     : state.decks[selectedDeckId].discardPile.slice().reverse();
-  const selectedDeckLatestCardId = getLatestRevealCardIdForDeck(state, selectedDeckId);
-  const selectedDeckLatestCard = selectedDeckLatestCardId ? getRevealCopy(content, selectedDeckId, selectedDeckLatestCardId) : null;
+  const selectedDeckLatestReveal = getLatestRevealForDeck(state, selectedDeckId);
+  const selectedDeckLatestCard = selectedDeckLatestReveal
+    ? getRevealCopy(state, content, selectedDeckLatestReveal.reveal, selectedDeckLatestReveal.event)
+    : null;
+  const activeRevealDetails = getQueuedRevealDetails(state, activeCardReveal);
+  const activeRevealCopy = activeCardReveal
+    ? getRevealCopy(
+      state,
+      content,
+      activeRevealDetails?.reveal ?? {
+        deckId: activeCardReveal.deckId,
+        cardId: activeCardReveal.cardId,
+        destination: activeCardReveal.deckId === 'system' ? 'active' : 'discard',
+        public: true,
+        origin: 'other',
+      },
+      activeRevealDetails?.event,
+    )
+    : null;
+  const activeRevealHeadline = activeRevealCopy
+    ? activeRevealCopy.impactedRegions[0] ?? activeRevealCopy.impactedFactions[0] ?? activeRevealCopy.title
+    : '';
   const activeBeaconObjectives = state.activeBeaconIds.map((beaconId) => ({
     id: beaconId,
     title: localizeBeaconField(beaconId, 'title', content.beacons[beaconId]?.title ?? beaconId),
@@ -1078,7 +1110,12 @@ export function GameSessionScreen({
         ) : (
           <div className={`context-list ${selectedDeckId === 'system' ? 'deck-tray-list' : 'deck-discard-list'}`.trim()}>
             {selectedDeckCards.map((cardId, index) => {
-              const revealCopy = getRevealCopy(content, selectedDeckId, cardId);
+              const revealCopy = getRevealCopy(state, content, {
+                deckId: selectedDeckId,
+                cardId,
+                destination: selectedDeckId === 'system' ? 'active' : 'discard',
+                public: true,
+              });
               return (
                 <div key={`${selectedDeckId}-${cardId}-${index}`} className="deck-discard-row">
                   <strong>{revealCopy.title}</strong>
@@ -1111,9 +1148,6 @@ export function GameSessionScreen({
     clearRevealTimers();
 
     const sourceDeckId = activeCardReveal?.deckId ?? null;
-    if (sourceDeckId) {
-      playDeckCue(sourceDeckId === 'system' ? 'resolveSystem' : sourceDeckId === 'crisis' ? 'resolveCrisis' : 'settle', sourceDeckId, audioEnabled);
-    }
     setActiveCardReveal(null);
     setActiveCardRevealSeq(null);
     setActiveCardRevealOrigin(null);
@@ -1245,9 +1279,6 @@ export function GameSessionScreen({
         y: window.innerHeight * 0.3,
         rotation,
       });
-    void primeDeckAudio();
-    playDeckCue('lift', nextReveal.deckId, audioEnabled);
-
     if (motionMode === 'reduced') {
       setCardRevealStage('settle');
       return;
@@ -1258,12 +1289,11 @@ export function GameSessionScreen({
     }, profile.liftMs);
     revealTimerRef.current = window.setTimeout(() => {
       setCardRevealStage('flip');
-      playDeckCue('flip', nextReveal.deckId, audioEnabled);
     }, profile.liftMs + profile.travelMs);
     revealCleanupTimerRef.current = window.setTimeout(() => {
       setCardRevealStage('settle');
     }, profile.liftMs + profile.travelMs + profile.flipMs);
-  }, [activeCardReveal, audioEnabled, motionMode, revealQueueBlocked, state.eventLog]);
+  }, [activeCardReveal, motionMode, revealQueueBlocked, state.eventLog]);
 
   useEffect(() => {
     if (cardRevealStage !== 'settle' || !activeCardReveal) {
@@ -1515,10 +1545,6 @@ export function GameSessionScreen({
                       lowCount={summary.drawCount <= 3}
                       urgent={state.phase === 'SYSTEM' && summary.deckId === 'crisis'}
                       shakeEmpty={summary.drawCount === 0 && selectedDeckId === summary.deckId}
-                      onPointerDown={() => {
-                        void primeDeckAudio();
-                        playDeckCue('press', summary.deckId, audioEnabled);
-                      }}
                       onClick={() => openDeckPanel(summary.deckId)}
                     />
                   </div>
@@ -1576,13 +1602,13 @@ export function GameSessionScreen({
                   <div className="deck-reveal-face deck-reveal-face-front">
                     <header className="deck-reveal-front-head">
                       <span className="deck-reveal-deck-label">{getPrintedDeckTitle(activeCardReveal.deckId)}</span>
-                      <strong id="deck-reveal-title">{getRevealCopy(content, activeCardReveal.deckId, activeCardReveal.cardId).title}</strong>
+                      <strong id="deck-reveal-title">{activeRevealHeadline}</strong>
                     </header>
-                    <div className="deck-reveal-illustration" aria-hidden="true">
-                      <span className="deck-reveal-illustration-emblem">{getPrintedDeckTitle(activeCardReveal.deckId)}</span>
+                    <div className="deck-reveal-illustration">
+                      <span className="deck-reveal-illustration-title">{activeRevealCopy?.title ?? getPrintedDeckTitle(activeCardReveal.deckId)}</span>
                     </div>
                     <div className="deck-reveal-body-copy">
-                      <p>{getRevealCopy(content, activeCardReveal.deckId, activeCardReveal.cardId).body}</p>
+                      <p>{activeRevealCopy?.body}</p>
                     </div>
                     <div className="deck-reveal-footer">
                       <div className="deck-reveal-chip-row" aria-label={t('ui.game.effectSummary', 'Effect summary')}>

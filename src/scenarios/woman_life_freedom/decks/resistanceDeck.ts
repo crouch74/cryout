@@ -6,7 +6,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
         deck: 'resistance',
         type: 'support',
         name: 'VPN Network',
-        text: '+2 Evidence. Ignore internet blackout penalties.',
+        text: 'Acting faction gains 2 Evidence. This support helps against Silenced Truth pressure and internet blackout penalties.',
         domainBonus: 'SilencedTruth',
         campaignBonus: 1,
         effects: [
@@ -18,7 +18,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
         deck: 'resistance',
         type: 'action',
         name: 'Cutting Hair Solidarity',
-        text: 'Raise Global Gaze by 2 instantly.',
+        text: 'Raise Global Gaze by 2 for the coalition.',
         effects: [
             { type: 'modify_gaze', delta: 2 }
         ]
@@ -28,7 +28,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
         deck: 'resistance',
         type: 'action',
         name: 'Diaspora Protest Rally',
-        text: 'Gain +2 Bodies in any one region.',
+        text: 'Add 2 Comrades to the target region for the acting faction.',
         effects: [
             { type: 'add_bodies', region: 'target_region', seat: 'acting_player', amount: 2 }
         ]
