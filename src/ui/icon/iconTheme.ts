@@ -3,6 +3,7 @@ import type { IconBaseShape, IconType } from './iconTypes.ts';
 export const ICON_COLORS = {
   bodies: '#8E2C2C',
   close: '#5E4630',
+  copy: '#7A4A2E',
   evidence: '#2E355F',
   defense: '#5F8D6D',
   extraction: '#1F1F1F',

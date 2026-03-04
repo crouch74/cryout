@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { listRulesets, type FactionId } from '../../../engine/index.ts';
 import { formatNumber, localizeFactionField, localizeRulesetField, t } from '../../../i18n/index.ts';
 import type { RoomLobbySnapshot } from '../api/schemas.ts';
+import { Icon } from '../../../ui/icon/Icon.tsx';
 import { EngravedHeader, LocaleSwitcher, PaperSheet, TableSurface, ThemePlate } from '../../../ui/layout/tabletop.tsx';
 
 interface RoomLobbyScreenProps {
@@ -68,9 +69,19 @@ export function RoomLobbyScreen({
               <span className="engraved-eyebrow">{t('ui.room.roomCode', 'Room Code')}</span>
               <h2>{roomId}</h2>
               <p>{t('ui.room.shareRoom', 'Share this room link with the coalition so each player can claim their own slot.')}</p>
-              <div className="room-lobby-link">{shareUrl}</div>
-              <div className="header-action-plates">
-                <ThemePlate label={t('ui.room.copyRoomLink', 'Copy Room Link')} onClick={() => onCopyRoomLink(shareUrl)} />
+              <div className="room-lobby-link-row">
+                <div className="room-lobby-link">
+                  <span className="room-lobby-link-text">{shareUrl}</span>
+                  <button
+                    type="button"
+                    className="room-lobby-link-copy"
+                    onClick={() => onCopyRoomLink(shareUrl)}
+                    aria-label={t('ui.room.copyRoomLink', 'Copy Room Link')}
+                    title={t('ui.room.copyRoomLink', 'Copy Room Link')}
+                  >
+                    <Icon type="copy" size={15} />
+                  </button>
+                </div>
               </div>
               <div className="setup-stat-ribbon room-lobby-ribbon">
                 <div><span>{t('ui.home.humanPlayerCount', 'Human Players')}</span><strong>{formatNumber(snapshot.config.humanPlayerCount)}</strong></div>

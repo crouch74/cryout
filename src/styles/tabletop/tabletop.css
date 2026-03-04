@@ -1447,6 +1447,18 @@ html[dir='rtl'] .printed-track-step:not(:last-child)::after {
   box-shadow: var(--shadow-paper), var(--shadow-inset);
 }
 
+.toast-dismiss-button {
+  min-width: 34px;
+  width: 34px;
+  min-height: 34px;
+  height: 34px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
 .evidence-drawer,
 .debug-ledger {
   position: fixed;

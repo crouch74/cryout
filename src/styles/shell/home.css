@@ -251,12 +251,50 @@ html[dir='rtl'] .scenario-select-major {
 }
 
 .room-lobby-link {
-  padding: 14px 16px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: 14px 54px 14px 16px;
   border: 1px dashed var(--accent-primary);
   border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.06);
   font-family: var(--font-mono);
   word-break: break-all;
+}
+
+.room-lobby-link-row {
+  display: block;
+}
+
+.room-lobby-link-text {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.room-lobby-link-copy {
+  position: absolute;
+  inset-inline-end: 10px;
+  top: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid rgba(83, 70, 56, 0.22);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.18)),
+    #efe2c7;
+  box-shadow: 0 6px 18px rgba(66, 47, 30, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  color: var(--text-1);
+  transform: translateY(-50%);
+}
+
+.room-lobby-link-copy:hover,
+.room-lobby-link-copy:focus-visible {
+  transform: translateY(calc(-50% - 1px));
 }
 
 .room-lobby-note,

@@ -15,7 +15,7 @@ import {
 import { LOCALE_STORAGE_KEY, t, useAppLocale } from '../i18n/index.ts';
 import { LoadingScreen } from './shell/LoadingScreen.tsx';
 import { AppLayout } from './shell/AppLayout.tsx';
-import { ToastStack, type ToastMessage } from '../ui/feedback/ToastStack.tsx';
+import { ToastStack, type ToastDraft, type ToastMessage } from '../ui/feedback/ToastStack.tsx';
 import { GameSessionScreen } from '../game/screens/GameSessionScreen.tsx';
 import { GuidelinesScreen } from '../features/rules-brief/ui/RulesBriefScreen.tsx';
 import { SessionSetupScreen } from '../features/session-setup/ui/SessionSetupScreen.tsx';
@@ -208,9 +208,9 @@ export default function AppRoot({ runtime }: { runtime: AppRuntimeOptions }) {
   const [roomServiceReachable, setRoomServiceReachable] = useState<boolean>(runtime.forceOfflineOnly ? false : true);
   const [roomServiceChecking, setRoomServiceChecking] = useState(false);
 
-  const pushToast = useCallback((toast: Omit<ToastMessage, 'id'>) => {
+  const pushToast = useCallback((toast: ToastDraft) => {
     const id = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    setToasts((current) => [...current, { ...toast, id }]);
+    setToasts((current) => [...current, { ...toast, id, createdAt: Date.now(), dismissAfterMs: toast.dismissAfterMs ?? 5000 }]);
   }, []);
 
   const replaceRoute = useCallback((nextRoute: AppRoute) => {
@@ -224,7 +224,7 @@ export default function AppRoot({ runtime }: { runtime: AppRuntimeOptions }) {
     replaceRoute({ page, roomId, rulesetId: route.rulesetId });
   }, [replaceRoute, route.rulesetId]);
 
-  const startLocalSession = useCallback((draft: SessionSetupDraft, reason?: Omit<ToastMessage, 'id'>) => {
+  const startLocalSession = useCallback((draft: SessionSetupDraft, reason?: ToastDraft) => {
     const nextDraft = applyScenarioDefaults(draft);
     const content = compileContent(nextDraft.rulesetId);
     const state = initializeGame({

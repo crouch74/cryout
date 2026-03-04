@@ -29,6 +29,14 @@ function renderGlyph(type: IconType) {
           <path d="m7.7 7.7 8.6 8.6m0-8.6-8.6 8.6" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" />
         </>
       );
+    case 'copy':
+      return (
+        <>
+          <rect x="8.4" y="6.2" width="10.2" height="12.2" rx="2" fill="currentColor" opacity="0.94" />
+          <rect x="5.2" y="9.4" width="10.2" height="10.8" rx="1.9" fill="none" stroke="currentColor" strokeWidth="1.8" />
+          <path d="M11 3.9h4.5a2.1 2.1 0 0 1 2.1 2.1v1.7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.74" />
+        </>
+      );
     case 'evidence':
       return (
         <>
@@ -95,11 +103,10 @@ function renderGlyph(type: IconType) {
     case 'mandate':
       return (
         <>
-          <path d="M6.4 4.8h9.7l3.5 3.7v9.8a2 2 0 0 1-2 2H6.4a2 2 0 0 1-2-2V6.8a2 2 0 0 1 2-2Z" fill="currentColor" />
-          <path d="M16.1 4.8v3.7h3.5" fill="#f4ead6" opacity="0.76" />
-          <circle cx="12" cy="14" r="2.2" fill="#f4ead6" opacity="0.95" />
-          <path d="m12 16.1 1.7 2.3 1-.9-.5-2.2H9.8l-.5 2.2 1 .9 1.7-2.3Z" fill="#f4ead6" opacity="0.9" />
-          <path d="M8.7 9.2h5.3" stroke="#f4ead6" strokeWidth="1.3" strokeLinecap="round" opacity="0.82" />
+          <path d="M4.6 7.1h14.8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4.6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Z" fill="currentColor" />
+          <path d="m4.4 8 7.6 5.8L19.6 8" fill="none" stroke="#f4ead6" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" opacity="0.92" />
+          <path d="m4.8 18.2 5.6-5.1m8.8 5.1-5.6-5.1" fill="none" stroke="#f4ead6" strokeWidth="1.5" strokeLinecap="round" opacity="0.68" />
+          <circle cx="12" cy="13.3" r="1.7" fill="#f4ead6" opacity="0.96" />
         </>
       );
     case 'objective':

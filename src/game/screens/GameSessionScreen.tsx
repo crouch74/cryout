@@ -3,7 +3,6 @@ import {
   toCompatStructuredEvent,
   getAvailableDomains,
   getAvailableRegions,
-  getMandateStatus,
   getPlayerBodyTotal,
   getSeatActions,
   getSeatDisabledReason,
@@ -35,6 +34,7 @@ import { playDeckCue, primeDeckAudio } from '../audio/deckSound.ts';
 import { FrontTrackBar } from '../hud/FrontTrackBar.tsx';
 import { CampaignResultModal } from '../overlays/CampaignResultModal.tsx';
 import { GameIntroModal } from '../overlays/GameIntroModal.tsx';
+import { SecretMandateModal } from '../overlays/SecretMandateModal.tsx';
 import { Icon } from '../../ui/icon/Icon.tsx';
 import type { IconType } from '../../ui/icon/iconTypes.ts';
 import { PlayerStrip } from '../hud/PlayerStrip.tsx';
@@ -616,6 +616,9 @@ export function GameSessionScreen({
   const [activeCardRevealOrigin, setActiveCardRevealOrigin] = useState<CardRevealOrigin | null>(null);
   const [activeCampaignResult, setActiveCampaignResult] = useState<CampaignResolvedEventPayload | null>(null);
   const [campaignDismissEnabled, setCampaignDismissEnabled] = useState(false);
+  const [introDismissed, setIntroDismissed] = useState(false);
+  const [startupMandateDismissed, setStartupMandateDismissed] = useState(false);
+  const [mandateModalOpen, setMandateModalOpen] = useState(false);
   const revealQueueRef = useRef<CardRevealQueueItem[]>([]);
   const revealSeenRef = useRef(new Set<string>());
   const campaignResultQueueRef = useRef<CampaignResolvedEventPayload[]>([]);
@@ -632,7 +635,21 @@ export function GameSessionScreen({
     crisis: null,
   });
   const selectedRegionId = viewState.regionId;
-  const highlightSuspended = Boolean(activeCardReveal || activeCampaignResult);
+  const isGameStart = state.round === 1 && state.commandLog.length === 1;
+  const startupMandateSeat = ownedSeats[0] ?? 0;
+  const startupMandatePlayer = state.players[startupMandateSeat];
+  const introOpen = isGameStart && !introDismissed;
+  const startupMandateOpen = Boolean(
+    isGameStart
+    && state.secretMandatesEnabled
+    && !introOpen
+    && !startupMandateDismissed
+    && startupMandatePlayer
+    && startupMandatePlayer.mandateId,
+  );
+  const activeMandateSeat = mandateModalOpen ? focusedPlayer.seat : startupMandateSeat;
+  const revealQueueBlocked = introOpen || startupMandateOpen || mandateModalOpen || Boolean(activeCampaignResult);
+  const highlightSuspended = Boolean(activeCardReveal || activeCampaignResult || introOpen || startupMandateOpen || mandateModalOpen);
   const emptySpaceCloseSelector = [
     'button',
     'input',
@@ -1018,30 +1035,6 @@ export function GameSessionScreen({
     </div>
   );
 
-  const mandateContent = state.secretMandatesEnabled ? (
-    <div className="context-stack">
-      <section className="context-card">
-        <span className="context-eyebrow">{t('ui.game.secretMandate', 'Secret Mandate')}</span>
-        <strong>{localizeFactionField(faction.id, 'mandateTitle', getMandateStatus(state, content, focusedPlayer.seat).title)}</strong>
-        <p>{localizeFactionField(faction.id, 'mandateDescription', getMandateStatus(state, content, focusedPlayer.seat).description)}</p>
-      </section>
-      <section className="context-card">
-        <span className="context-eyebrow">{t('ui.game.mandateStatus', 'Mandate Status')}</span>
-        <strong>
-          {focusedPlayer.mandateRevealed
-            ? t('ui.game.mandateRevealed', 'Revealed in the final reckoning')
-            : t('ui.game.mandatePrivate', 'Visible only to this seat owner')}
-        </strong>
-        <p>
-          {t(
-            'ui.game.mandatePanelBody',
-            'This objective remains private during room play. The coalition still shares the full board, history, Global Gaze, War Machine, and public card reveals.',
-          )}
-        </p>
-      </section>
-    </div>
-  ) : null;
-
   const selectedDeckSummary = deckSummaries.find((summary) => summary.deckId === selectedDeckId) ?? deckSummaries[0];
   const selectedDeckCards = selectedDeckId === 'system'
     ? state.activeSystemCardIds.slice().reverse()
@@ -1222,7 +1215,7 @@ export function GameSessionScreen({
   }, [state.eventLog]);
 
   useEffect(() => {
-    if (activeCardReveal || revealQueueRef.current.length === 0) {
+    if (revealQueueBlocked || activeCardReveal || revealQueueRef.current.length === 0) {
       return;
     }
 
@@ -1270,7 +1263,7 @@ export function GameSessionScreen({
     revealCleanupTimerRef.current = window.setTimeout(() => {
       setCardRevealStage('settle');
     }, profile.liftMs + profile.travelMs + profile.flipMs);
-  }, [activeCardReveal, audioEnabled, motionMode, state.eventLog]);
+  }, [activeCardReveal, audioEnabled, motionMode, revealQueueBlocked, state.eventLog]);
 
   useEffect(() => {
     if (cardRevealStage !== 'settle' || !activeCardReveal) {
@@ -1439,12 +1432,12 @@ export function GameSessionScreen({
                   <button
                     type="button"
                     className="ledger-toggle ledger-toggle-mandate"
-                    onClick={() => { setContextMode('mandate'); setContextOpen(true); }}
+                    onClick={() => setMandateModalOpen(true)}
                     aria-label={t('ui.game.openSecretMandate', 'Open Secret Mandate')}
                     title={t('ui.game.openSecretMandate', 'Open Secret Mandate')}
                   >
                     <Icon type="mandate" size={20} />
-                    <span>{t('ui.game.viewMandate', 'Your Mandate')}</span>
+                    <span>{t('ui.game.viewMandate', 'Mandate Letter')}</span>
                   </button>
                 ) : null}
                 <button
@@ -1532,7 +1525,6 @@ export function GameSessionScreen({
             regionContent={regionContent}
             actionContent={actionContent}
             decksContent={decksContent}
-            mandateContent={mandateContent}
             ledgerContent={ledgerContent}
           />
         </aside>
@@ -1630,7 +1622,28 @@ export function GameSessionScreen({
         onBack={onBack}
       />
 
-      <GameIntroModal state={state} content={content} />
+      <SecretMandateModal
+        open={startupMandateOpen || mandateModalOpen}
+        state={state}
+        content={content}
+        seat={activeMandateSeat}
+        startupReveal={startupMandateOpen}
+        motionMode={motionMode}
+        autoAdvance={autoAdvanceTransientUi}
+        onRequestClose={() => {
+          if (startupMandateOpen) {
+            setStartupMandateDismissed(true);
+          }
+          setMandateModalOpen(false);
+        }}
+      />
+
+      <GameIntroModal
+        open={introOpen}
+        state={state}
+        content={content}
+        onDismiss={() => setIntroDismissed(true)}
+      />
     </TableSurface >
   );
 }

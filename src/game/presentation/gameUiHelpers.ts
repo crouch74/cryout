@@ -81,7 +81,7 @@ interface EventSourcePresentation {
   label: string;
 }
 
-export type ContextPanelMode = 'region' | 'action' | 'ledger' | 'decks' | 'mandate';
+export type ContextPanelMode = 'region' | 'action' | 'ledger' | 'decks';
 
 export interface DeckSummary {
   deckId: DeckId;

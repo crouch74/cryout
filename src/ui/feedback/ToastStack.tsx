@@ -1,13 +1,18 @@
 import { useEffect } from 'react';
 import { t } from '../../i18n/index.ts';
 import { getToastRole } from '../../game/presentation/gameUiHelpers.ts';
+import { Icon } from '../icon/Icon.tsx';
 
-export interface ToastMessage {
-  id: string;
+export interface ToastDraft {
   tone: 'info' | 'success' | 'warning' | 'error';
   message: string;
   title?: string;
   dismissAfterMs?: number;
+}
+
+export interface ToastMessage extends ToastDraft {
+  id: string;
+  createdAt: number;
 }
 
 interface ToastStackProps {
@@ -18,7 +23,10 @@ interface ToastStackProps {
 export function ToastStack({ toasts, onDismiss }: ToastStackProps) {
   useEffect(() => {
     const timers = toasts.map((toast) =>
-      window.setTimeout(() => onDismiss(toast.id), toast.dismissAfterMs ?? 3200),
+      window.setTimeout(
+        () => onDismiss(toast.id),
+        Math.max(0, (toast.createdAt + (toast.dismissAfterMs ?? 5000)) - Date.now()),
+      ),
     );
 
     return () => {
@@ -42,11 +50,12 @@ export function ToastStack({ toasts, onDismiss }: ToastStackProps) {
           </div>
           <button
             type="button"
-            className="mini-plate"
+            className="mini-plate toast-dismiss-button"
             onClick={() => onDismiss(toast.id)}
             aria-label={t('ui.toast.dismissNotification', 'Dismiss notification')}
+            title={t('ui.toast.dismissNotification', 'Dismiss notification')}
           >
-            {t('ui.regionDrawer.close', 'Close')}
+            <Icon type="close" size={14} ariaLabel={t('ui.toast.dismissNotification', 'Dismiss notification')} />
           </button>
         </article>
       ))}

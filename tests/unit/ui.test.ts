@@ -268,11 +268,15 @@ test('game session screen source keeps the compressed board layout contract', ()
   assert.match(source, /onPointerDownCapture=\{handleEmptySpacePointerDown\}/);
   assert.match(source, /suspendHighlights=\{highlightSuspended\}/);
   assert.match(source, /TerminalOutcomeModal/);
+  assert.match(source, /SecretMandateModal/);
+  assert.match(source, /startupMandateOpen/);
+  assert.match(source, /revealQueueBlocked/);
   assert.doesNotMatch(source, /DebugOverlay/);
   assert.doesNotMatch(source, /autoPlay/);
   assert.doesNotMatch(source, /debugLayout/);
   assert.doesNotMatch(source, /phase-brief-grid/);
   assert.doesNotMatch(source, /whyBoardShifted/);
+  assert.doesNotMatch(source, /setContextMode\('mandate'\)/);
   assert.doesNotMatch(source, /<footer/);
 });
 
@@ -387,6 +391,19 @@ test('campaign result modal source uses the shared dialog surface and gated dism
   assert.match(sessionSource, /CampaignResultModal/);
   assert.match(sessionSource, /campaign-result-animation-complete/);
   assert.match(presenterSource, /ui\.action\.CAMPAIGN_RESOLVED/);
+});
+
+test('secret mandate modal source uses an envelope reveal and startup sequence', () => {
+  const modalSource = readFileSync(new URL('../../src/game/overlays/SecretMandateModal.tsx', import.meta.url), 'utf8');
+  const sessionSource = readFileSync(new URL('../../src/game/screens/GameSessionScreen.tsx', import.meta.url), 'utf8');
+
+  assert.match(modalSource, /mandate-envelope/);
+  assert.match(modalSource, /mandate-letter-sheet/);
+  assert.match(modalSource, /localizeScenarioField/);
+  assert.match(sessionSource, /startupMandateDismissed/);
+  assert.match(sessionSource, /mandateModalOpen/);
+  assert.match(sessionSource, /GameIntroModal/);
+  assert.match(sessionSource, /SecretMandateModal/);
 });
 
 test('default game view state is simplified for the production shell', () => {
