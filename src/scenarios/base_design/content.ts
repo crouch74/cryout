@@ -368,6 +368,18 @@ export const compatRuleset: RulesetDefinition = {
   systemCards,
   liberationThreshold: 1,
   suddenDeathRound: 12,
+  setup: {
+    globalGaze: 5,
+    northernWarMachine: 7,
+    extractionSeeds: {
+      Levant: 2,
+      Congo: 2,
+      Amazon: 1,
+      Sahel: 1,
+      Mekong: 1,
+      Andes: 1,
+    },
+  },
 };
 
 export {

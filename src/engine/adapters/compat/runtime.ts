@@ -64,6 +64,7 @@ interface ApplyEffectSource {
   causedBy: string[];
   context: ResolveContext;
   crisisExtractionBonus?: number;
+  suppressScenarioHooks?: boolean;
 }
 
 interface DisabledReasonDetail {
@@ -383,10 +384,18 @@ function getSeatTotalBodies(state: EngineState, seat: number) {
   return Object.values(state.regions).reduce((sum, region) => sum + (region.bodiesPresent[seat] ?? 0), 0);
 }
 
-function calculateExtractionPool(state: EngineState) {
+function getRulesetSetup(content: CompiledContent) {
+  return content.ruleset.setup;
+}
+
+function calculateExtractionPool(state: EngineState, content: CompiledContent = compileContent(state.rulesetId)) {
   const inPlay = Object.values(state.regions).reduce((sum, region) => sum + region.extractionTokens, 0);
-  const maxPool = state.rulesetId === 'tahrir_square' || state.rulesetId === 'woman_life_freedom' ? 72 : MAX_EXTRACTION_POOL;
+  const maxPool = getRulesetSetup(content)?.extractionPool ?? MAX_EXTRACTION_POOL;
   return Math.max(0, maxPool - inPlay);
+}
+
+function getCustomTrackState(state: EngineState, trackId: string) {
+  return state.customTracks[trackId];
 }
 
 function getTotalExtractionTokens(state: EngineState) {
@@ -426,6 +435,10 @@ function getSystemPersistentModifiers(state: EngineState, content: CompiledConte
     totals.resistanceDrawDelta += modifiers.resistanceDrawDelta ?? 0;
     totals.crisisDrawDelta += modifiers.crisisDrawDelta ?? 0;
     totals.crisisExtractionBonus += modifiers.crisisExtractionBonus ?? 0;
+  }
+
+  if (state.scenarioFlags.stateOfEmergencyNationwide) {
+    totals.campaignTargetDelta += 1;
   }
 
   return totals;
@@ -492,6 +505,12 @@ function evaluateCondition(
           break;
         case 'player_total_bodies':
           left = getSeatTotalBodies(state, resolveSeatSelector(condition.left.player ?? 'seat_owner', context));
+          break;
+        case 'custom_track':
+          left = getCustomTrackState(state, assertExists(condition.left.track, 'Missing track on compare ref.'))?.value ?? 0;
+          break;
+        case 'scenario_flag':
+          left = state.scenarioFlags[assertExists(condition.left.flag, 'Missing flag on compare ref.')] ? 1 : 0;
           break;
       }
       return compareValues(left, condition.right, condition.op);
@@ -575,6 +594,195 @@ function updateBeaconCompletion(state: EngineState, content: CompiledContent) {
     const beacon = content.beacons[beaconId];
     state.beacons[beaconId].complete = evaluateCondition(state, content, beacon.condition, { causedBy: [beaconId] });
   }
+}
+
+function appendScenarioTrackTrace(
+  traces: EffectTrace[],
+  trackId: string,
+  before: number,
+  after: number,
+  causedBy: string[],
+  message: string,
+) {
+  traces.push({
+    effectType: 'modify_custom_track',
+    status: 'executed',
+    message,
+    causedBy,
+    deltas: [createDelta('track', trackId, before, after)],
+  });
+}
+
+function processScenarioThresholdRules(state: EngineState, content: CompiledContent, causedBy: string[]) {
+  const rules = content.ruleset.scenarioHooks?.thresholdRules ?? [];
+
+  for (const rule of rules) {
+    const track = getCustomTrackState(state, rule.trackId);
+    if (!track || track.value < rule.threshold) {
+      continue;
+    }
+
+    const thresholdKey = `${rule.trackId}:${rule.threshold}`;
+    if (rule.once && state.triggeredScenarioThresholds[thresholdKey]) {
+      continue;
+    }
+
+    if (rule.once) {
+      state.triggeredScenarioThresholds[thresholdKey] = true;
+    }
+
+    const traces = applyEffects(
+      state,
+      content,
+      rule.effects,
+      {
+        sourceType: 'system',
+        sourceId: `threshold_${rule.trackId}_${rule.threshold}`,
+        emoji: '🚩',
+        message: `${rule.trackId} crossed ${rule.threshold}.`,
+        causedBy: [...causedBy, thresholdKey],
+        context: { causedBy: [...causedBy, thresholdKey] },
+        suppressScenarioHooks: true,
+      },
+    );
+
+    addEvent(
+      state,
+      'system',
+      `threshold_${rule.trackId}_${rule.threshold}`,
+      '🚩',
+      `${rule.trackId} crossed ${rule.threshold}.`,
+      [...causedBy, thresholdKey],
+      traces,
+    );
+  }
+}
+
+function processScenarioRoundPenalty(state: EngineState, content: CompiledContent) {
+  const penalty = content.ruleset.scenarioHooks?.maxTrackRoundPenalty;
+  if (!penalty) {
+    return;
+  }
+
+  const track = getCustomTrackState(state, penalty.trackId);
+  if (!track || track.value < track.max) {
+    return;
+  }
+
+  const targetedRegion = Object.values(state.regions)
+    .map((region) => ({
+      regionId: region.id,
+      bodies: Object.entries(region.bodiesPresent).map(([seat, amount]) => ({ seat: Number(seat), amount })).sort((left, right) => right.amount - left.amount),
+      totalBodies: Object.values(region.bodiesPresent).reduce((sum, amount) => sum + amount, 0),
+    }))
+    .sort((left, right) => right.totalBodies - left.totalBodies)[0];
+
+  const targetRegionId = targetedRegion?.totalBodies ? targetedRegion.regionId : undefined;
+  const actingSeat = targetedRegion?.bodies[0]?.amount ? targetedRegion.bodies[0].seat : undefined;
+
+  const traces = applyEffects(
+    state,
+    content,
+    penalty.effects,
+    {
+      sourceType: 'system',
+      sourceId: `round_penalty_${penalty.trackId}`,
+      emoji: '☠️',
+      message: `${penalty.trackId} is at maximum pressure.`,
+      causedBy: ['round_penalty', penalty.trackId],
+      context: { actingSeat, targetRegionId, causedBy: ['round_penalty', penalty.trackId] },
+      suppressScenarioHooks: true,
+    },
+  );
+
+  addEvent(
+    state,
+    'system',
+    `round_penalty_${penalty.trackId}`,
+    '☠️',
+    `${penalty.trackId} is at maximum pressure.`,
+    ['round_penalty', penalty.trackId],
+    traces,
+  );
+}
+
+function applyScenarioPostEffects(
+  state: EngineState,
+  content: CompiledContent,
+  traces: EffectTrace[],
+  source: ApplyEffectSource,
+) {
+  if (source.suppressScenarioHooks) {
+    return;
+  }
+
+  const hooks = content.ruleset.scenarioHooks;
+  if (!hooks) {
+    return;
+  }
+
+  if (hooks.evidenceGainRaisesRepression && state.customTracks.repression_cycle) {
+    const evidenceRaised = traces.some((trace) => trace.deltas.some((delta) => delta.kind === 'evidence'
+      && typeof delta.before === 'number'
+      && typeof delta.after === 'number'
+      && delta.after > delta.before));
+    if (evidenceRaised) {
+      const track = state.customTracks.repression_cycle;
+      const before = track.value;
+      track.value = clamp(track.value + (hooks.evidenceGainRepressionDelta ?? 1), { min: track.min, max: track.max });
+      if (track.value !== before) {
+        appendScenarioTrackTrace(
+          traces,
+          'repression_cycle',
+          before,
+          track.value,
+          [...source.causedBy, 'repression_cycle'],
+          '🚨 Repression rose in response to new Evidence.',
+        );
+      }
+    }
+  }
+
+  if (
+    source.sourceId === 'launch_campaign_success'
+    && source.context.targetRegionId
+    && hooks.urbanCampaignRegions?.includes(source.context.targetRegionId)
+    && (hooks.successfulUrbanCampaignWarMachineDelta ?? 0) !== 0
+  ) {
+    const before = state.northernWarMachine;
+    state.northernWarMachine = clamp(
+      state.northernWarMachine + (hooks.successfulUrbanCampaignWarMachineDelta ?? 0),
+      { min: 0, max: 12 },
+    );
+    if (state.northernWarMachine !== before) {
+      traces.push({
+        effectType: 'modify_war_machine',
+        status: 'executed',
+        message: '🚩 Urban operations escalated the War Machine.',
+        causedBy: [...source.causedBy, 'urban_operations'],
+        deltas: [createDelta('track', 'northernWarMachine', before, state.northernWarMachine)],
+      });
+    }
+  }
+
+  if (
+    source.sourceType === 'card'
+    && state.scenarioFlags.tortureExposed
+    && !state.scenarioFlags.tribunalAcknowledged
+    && state.globalGaze >= 15
+    && ['crs_alg_international_press_leak', 'res_alg_negotiation_delegation', 'crs_alg_evian_talks'].includes(source.sourceId)
+  ) {
+    state.scenarioFlags.tribunalAcknowledged = true;
+    traces.push({
+      effectType: 'set_scenario_flag',
+      status: 'executed',
+      message: '⚖️ International scrutiny acknowledged colonial abuses.',
+      causedBy: [...source.causedBy, 'tribunalAcknowledged'],
+      deltas: [createDelta('track', 'scenarioFlag:tribunalAcknowledged', false, true)],
+    });
+  }
+
+  processScenarioThresholdRules(state, content, source.causedBy);
 }
 
 function getSystemEscalationTriggerMessage(triggerId: SystemEscalationTriggerId) {
@@ -684,10 +892,20 @@ function checkComradesExhaustedLoss(state: EngineState) {
 }
 
 function checkPositiveVictory(state: EngineState, content: CompiledContent): boolean {
+  const liberationCondition = content.ruleset.victoryConditions?.liberation;
+  const symbolicCondition = content.ruleset.victoryConditions?.symbolic;
   const liberationComplete = state.mode === 'LIBERATION'
-    && (Object.keys(state.regions) as RegionId[]).every((regionId) => state.regions[regionId].extractionTokens <= content.ruleset.liberationThreshold);
+    && (
+      liberationCondition
+        ? evaluateCondition(state, content, liberationCondition, { causedBy: ['victory', 'liberation'] })
+        : (Object.keys(state.regions) as RegionId[]).every((regionId) => state.regions[regionId].extractionTokens <= content.ruleset.liberationThreshold)
+    );
   const symbolicComplete = state.mode === 'SYMBOLIC'
-    && state.activeBeaconIds.every((beaconId) => state.beacons[beaconId]?.complete);
+    && (
+      symbolicCondition
+        ? evaluateCondition(state, content, symbolicCondition, { causedBy: ['victory', 'symbolic'] })
+        : state.activeBeaconIds.every((beaconId) => state.beacons[beaconId]?.complete)
+    );
 
   if (!liberationComplete && !symbolicComplete) {
     return false;
@@ -828,6 +1046,7 @@ function resolveStartupWithdrawal(
           targetRegionId,
           causedBy: ['startup_withdrawal', card.id],
         },
+        suppressScenarioHooks: true,
       },
     )
     : [];
@@ -933,6 +1152,19 @@ function applyEffects(state: EngineState, content: CompiledContent, effects: Eff
         trace.deltas.push(createDelta('domain', domainId, before, state.domains[domainId].progress));
         break;
       }
+      case 'modify_custom_track': {
+        const track = getCustomTrackState(state, effect.trackId);
+        if (!track) {
+          trace.status = 'skipped';
+          trace.message = `Missing custom track ${effect.trackId}.`;
+          break;
+        }
+        const before = track.value;
+        track.value = clamp(track.value + effect.delta, effect.clamp ?? { min: track.min, max: track.max });
+        trace.message = `${effect.trackId} ${before} -> ${track.value}.`;
+        trace.deltas.push(createDelta('track', effect.trackId, before, track.value));
+        break;
+      }
       case 'add_extraction':
       case 'remove_extraction': {
         const regionIds = resolveRegionSelector(state, content, effect.region, source.context);
@@ -968,7 +1200,7 @@ function applyEffects(state: EngineState, content: CompiledContent, effects: Eff
             );
           }
         }
-        state.extractionPool = calculateExtractionPool(state);
+        state.extractionPool = calculateExtractionPool(state, content);
         break;
       }
       case 'add_bodies':
@@ -1025,6 +1257,12 @@ function applyEffects(state: EngineState, content: CompiledContent, effects: Eff
         }
         break;
       }
+      case 'set_scenario_flag': {
+        const before = state.scenarioFlags[effect.flag] ?? false;
+        state.scenarioFlags[effect.flag] = effect.value;
+        trace.deltas.push(createDelta('track', `scenarioFlag:${effect.flag}`, before, effect.value));
+        break;
+      }
       case 'open_replanning': {
         // This is a UI-level signal, but we can log it here.
         addSimpleEvent(state, 'system', 'replanning', '📡', 'Digital coordination has opened the coalition planning window.', source.causedBy);
@@ -1060,6 +1298,8 @@ function applyEffects(state: EngineState, content: CompiledContent, effects: Eff
       }
     }
   }
+
+  applyScenarioPostEffects(state, content, traces, source);
 
   return traces;
 }
@@ -1259,6 +1499,7 @@ function createInitialPlayers(command: StartGameCommand, content: CompiledConten
 function createInitialState(command: StartGameCommand, content: CompiledContent): EngineState {
   let rng = createRng(command.seed);
   const players = createInitialPlayers(command, content);
+  const setup = getRulesetSetup(content);
 
   const decks = {
     system: { drawPile: [] as string[], discardPile: [] as string[] },
@@ -1289,26 +1530,15 @@ function createInitialState(command: StartGameCommand, content: CompiledContent)
     ]),
   ) as EngineState['regions'];
 
-  // Apply scenario-specific extraction seeds
-  if (command.rulesetId === 'base_design') {
-    regions['Levant'].extractionTokens = 2;
-    regions['Congo'].extractionTokens = 2;
-    regions['Amazon'].extractionTokens = 1;
-    regions['Sahel'].extractionTokens = 1;
-    regions['Mekong'].extractionTokens = 1;
-    regions['Andes'].extractionTokens = 1;
-  } else if (command.rulesetId === 'tahrir_square') {
-    regions['Cairo'].extractionTokens = 2;
-    regions['Alexandria'].extractionTokens = 1;
-    regions['NileDelta'].extractionTokens = 1;
-    regions['Suez'].extractionTokens = 1;
-  } else if (command.rulesetId === 'woman_life_freedom') {
-    regions['Tehran'].extractionTokens = 2;
-    regions['Kurdistan'].extractionTokens = 2;
-    regions['Khuzestan'].extractionTokens = 1;
-    regions['Balochistan'].extractionTokens = 1;
-    // WLF starts with high enforcement
-    for (const r of Object.values(regions)) { r.hijabEnforcement = 2; }
+  for (const [regionId, extractionTokens] of Object.entries(setup?.extractionSeeds ?? {})) {
+    if (regions[regionId as RegionId]) {
+      regions[regionId as RegionId].extractionTokens = extractionTokens ?? 0;
+    }
+  }
+  for (const [regionId, enforcement] of Object.entries(setup?.regionHijabEnforcement ?? {})) {
+    if (regions[regionId as RegionId]) {
+      regions[regionId as RegionId].hijabEnforcement = enforcement ?? 0;
+    }
   }
 
   for (const player of players) {
@@ -1349,8 +1579,20 @@ function createInitialState(command: StartGameCommand, content: CompiledContent)
     round: 1,
     phase: 'SYSTEM',
     extractionPool: 0,
-    globalGaze: 5,
-    northernWarMachine: 7,
+    globalGaze: setup?.globalGaze ?? 5,
+    northernWarMachine: setup?.northernWarMachine ?? 7,
+    customTracks: Object.fromEntries(
+      (content.ruleset.customTracks ?? []).map((track) => [
+        track.id,
+        {
+          id: track.id,
+          value: track.initialValue,
+          min: track.min,
+          max: track.max,
+          thresholds: track.thresholds,
+        },
+      ]),
+    ),
     domains: Object.fromEntries(
       Object.values(content.domains).map((domain) => [domain.id, { id: domain.id, progress: domain.initialProgress }]),
     ) as EngineState['domains'],
@@ -1372,6 +1614,8 @@ function createInitialState(command: StartGameCommand, content: CompiledContent)
     mandatesResolved: false,
     tahrirEmptyRounds: 0,
     tahrirMartyrCount: 0,
+    scenarioFlags: Object.fromEntries((content.ruleset.scenarioFlags ?? []).map((flag) => [flag, false])),
+    triggeredScenarioThresholds: {},
   };
 
   resolveStartupWithdrawals(state, content);
@@ -1387,7 +1631,7 @@ function createInitialState(command: StartGameCommand, content: CompiledContent)
     );
   }
 
-  state.extractionPool = calculateExtractionPool(state);
+  state.extractionPool = calculateExtractionPool(state, content);
   updateBeaconCompletion(state, content);
   addSimpleEvent(state, 'system', 'game_start', '🌍', `${content.ruleset.name} begins in ${state.mode} mode.`, ['StartGame']);
   return state;
@@ -1959,6 +2203,7 @@ export function normalizeEngineState(state: EngineState): EngineState {
     ...player,
     ownerId: player.ownerId ?? player.seat,
   }));
+  next.customTracks = next.customTracks ?? {};
   next.activeBeaconIds = next.activeBeaconIds ?? [];
   next.activeSystemCardIds = next.activeSystemCardIds ?? [];
   next.usedSystemEscalationTriggers = next.usedSystemEscalationTriggers ?? createDefaultEscalationTriggers();
@@ -1967,6 +2212,8 @@ export function normalizeEngineState(state: EngineState): EngineState {
   next.lastSystemCardIds = next.lastSystemCardIds ?? [];
   next.mandatesResolved = next.mandatesResolved ?? false;
   next.terminalOutcome = next.terminalOutcome ?? null;
+  next.scenarioFlags = next.scenarioFlags ?? {};
+  next.triggeredScenarioThresholds = next.triggeredScenarioThresholds ?? {};
   next.eventLog = (next.eventLog ?? []).map((event) => ({
     ...event,
     ...(event.context
@@ -2121,6 +2368,10 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
 
       next.lastSystemCardIds = [];
       next.publicAttentionEvents = [];
+      processScenarioRoundPenalty(next, content);
+      if (next.terminalOutcome) {
+        return next;
+      }
       const pressure = getSystemPersistentModifiers(next, content);
       const drawCount = Math.max(1, 1 + (next.globalGaze >= 10 ? 1 : 0) + pressure.crisisDrawDelta);
       if (next.globalGaze >= 10) {

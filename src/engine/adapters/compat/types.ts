@@ -31,7 +31,13 @@ export type RegionId =
   | 'Isfahan'
   | 'Mashhad'
   | 'Khuzestan'
-  | 'Balochistan';
+  | 'Balochistan'
+  | 'Algiers'
+  | 'KabylieMountains'
+  | 'Oran'
+  | 'SaharaSouth'
+  | 'TunisianBorder'
+  | 'FrenchMetropoleInfluence';
 
 export type FactionId =
   | 'congo_basin_collective'
@@ -46,7 +52,11 @@ export type FactionId =
   | 'student_union'
   | 'diaspora_coalition'
   | 'bazaar_strikers'
-  | 'male_allies';
+  | 'male_allies'
+  | 'fln_urban_cells'
+  | 'kabyle_maquis'
+  | 'rural_organizing_committees'
+  | 'border_solidarity_networks';
 
 export type DeckId = 'system' | 'resistance' | 'crisis';
 export type RevealDeckId = DeckId | 'beacon';
@@ -105,10 +115,14 @@ export interface ConditionCompareLeft {
   | 'domain_progress'
   | 'region_extraction'
   | 'player_evidence'
-  | 'player_total_bodies';
+  | 'player_total_bodies'
+  | 'custom_track'
+  | 'scenario_flag';
   domain?: DomainId;
   region?: RegionId;
   player?: 'seat_owner' | number;
+  track?: string;
+  flag?: string;
 }
 
 export type Condition =
@@ -176,6 +190,7 @@ export type Effect =
   | { type: 'modify_gaze'; delta: number; clamp?: Clamp }
   | { type: 'modify_war_machine'; delta: number; clamp?: Clamp }
   | { type: 'modify_domain'; domain: DomainSelector; delta: number; clamp?: Clamp }
+  | { type: 'modify_custom_track'; trackId: string; delta: number; clamp?: Clamp }
   | { type: 'add_extraction'; region: RegionSelector; amount: number }
   | { type: 'remove_extraction'; region: RegionSelector; amount: number }
   | { type: 'add_bodies'; region: RegionSelector; seat: SeatSelector; amount: number }
@@ -185,6 +200,7 @@ export type Effect =
   | { type: 'set_defense'; region: RegionSelector; amount: number }
   | { type: 'draw_resistance'; seat: SeatSelector; count: number }
   | { type: 'modify_hijab'; region: RegionSelector; delta: number }
+  | { type: 'set_scenario_flag'; flag: string; value: boolean }
   | { type: 'open_replanning' }
   | { type: 'log'; message: string };
 
@@ -307,6 +323,48 @@ export interface RulesetDefinition {
   systemCards: SystemCardDefinition[];
   liberationThreshold: number;
   suddenDeathRound: number;
+  setup?: {
+    globalGaze: number;
+    northernWarMachine: number;
+    extractionPool?: number;
+    extractionSeeds: Partial<Record<RegionId, number>>;
+    regionHijabEnforcement?: Partial<Record<RegionId, number>>;
+  };
+  customTracks?: Array<{
+    id: string;
+    name: string;
+    description: string;
+    initialValue: number;
+    min: number;
+    max: number;
+    thresholds: number[];
+  }>;
+  specialRules?: Array<{
+    id: string;
+    label: string;
+    description: string;
+  }>;
+  scenarioFlags?: string[];
+  scenarioHooks?: {
+    evidenceGainRaisesRepression?: boolean;
+    evidenceGainRepressionDelta?: number;
+    urbanCampaignRegions?: RegionId[];
+    successfulUrbanCampaignWarMachineDelta?: number;
+    thresholdRules?: Array<{
+      trackId: string;
+      threshold: number;
+      once: boolean;
+      effects: Effect[];
+    }>;
+    maxTrackRoundPenalty?: {
+      trackId: string;
+      effects: Effect[];
+    };
+  };
+  victoryConditions?: {
+    liberation?: Condition;
+    symbolic?: Condition;
+  };
 }
 
 export interface CompiledContent {
@@ -512,6 +570,13 @@ export interface EngineState {
   extractionPool: number;
   globalGaze: number;
   northernWarMachine: number;
+  customTracks: Record<string, {
+    id: string;
+    value: number;
+    min: number;
+    max: number;
+    thresholds: number[];
+  }>;
   domains: Record<DomainId, DomainState>;
   regions: Record<RegionId, RegionState>;
   players: PlayerState[];
@@ -531,6 +596,8 @@ export interface EngineState {
   mandatesResolved: boolean;
   tahrirEmptyRounds: number;
   tahrirMartyrCount: number;
+  scenarioFlags: Record<string, boolean>;
+  triggeredScenarioThresholds: Record<string, boolean>;
 }
 
 export interface StartGameCommand {

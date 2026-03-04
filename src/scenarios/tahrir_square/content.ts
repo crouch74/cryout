@@ -326,6 +326,17 @@ export const compatRuleset: RulesetDefinition = {
     systemCards,
     liberationThreshold: 1,
     suddenDeathRound: 12, // (FULL — through coup)
+    setup: {
+        globalGaze: 5,
+        northernWarMachine: 7,
+        extractionPool: 72,
+        extractionSeeds: {
+            Cairo: 2,
+            Alexandria: 1,
+            NileDelta: 1,
+            Suez: 1,
+        },
+    },
 };
 
 export {

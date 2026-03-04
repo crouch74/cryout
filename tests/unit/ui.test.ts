@@ -476,6 +476,32 @@ test('all shipped rulesets and cards have localization entries in both catalogs'
   }
 });
 
+test('Algeria Arabic localization is substantive and no longer mirrors the English placeholders', () => {
+  const enCatalog = JSON.parse(readFileSync(new URL('../../src/i18n/en.json', import.meta.url), 'utf8')) as Record<string, unknown>;
+  const arCatalog = JSON.parse(readFileSync(new URL('../../src/i18n/ar-EG.json', import.meta.url), 'utf8')) as Record<string, unknown>;
+
+  assert.notEqual(
+    arCatalog.content.scenarios.algerian_war_of_independence.introduction,
+    enCatalog.content.scenarios.algerian_war_of_independence.introduction,
+  );
+  assert.notEqual(
+    arCatalog.content.factions.fln_urban_cells.passive,
+    enCatalog.content.factions.fln_urban_cells.passive,
+  );
+  assert.notEqual(
+    arCatalog.content.cards.crs_alg_battle_of_algiers.text,
+    enCatalog.content.cards.crs_alg_battle_of_algiers.text,
+  );
+  assert.notEqual(
+    arCatalog.content.regions.Algiers.description,
+    enCatalog.content.regions.Algiers.description,
+  );
+  assert.equal(
+    String(arCatalog.content.rulesets.algerian_war_of_independence.name).includes('ALGERIAN WAR OF INDEPENDENCE'),
+    false,
+  );
+});
+
 test('known hardcoded localization regressions stay out of UI and engine sources', () => {
   const files = [
     '../../src/engine/adapters/compat/selectors.ts',

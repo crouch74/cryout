@@ -1,0 +1,10 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Oran" },
+      "geometry": { "type": "Point", "coordinates": [-0.6212, 35.6971] }
+    }
+  ]
+}

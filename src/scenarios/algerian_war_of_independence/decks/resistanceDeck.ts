@@ -1,0 +1,130 @@
+import type { ResistanceCardDefinition } from '../../../engine/adapters/compat/types.ts';
+
+export const resistanceCards: ResistanceCardDefinition[] = [
+  {
+    id: 'res_alg_urban_cell_network',
+    deck: 'resistance',
+    type: 'action',
+    name: 'Urban Cell Network',
+    text: 'Neighborhood cells move witness, shelter, and clandestine coordination.',
+    effects: [
+      { type: 'gain_evidence', seat: 'acting_player', amount: 1 },
+      { type: 'add_bodies', region: 'target_region', seat: 'acting_player', amount: 1 },
+    ],
+  },
+  {
+    id: 'res_alg_mountain_guerrilla_offensive',
+    deck: 'resistance',
+    type: 'support',
+    name: 'Mountain Guerrilla Offensive',
+    text: '+2 on a campaign launched from the mountains or toward colonial army pressure.',
+    campaignBonus: 2,
+    regionBonus: 'KabylieMountains',
+  },
+  {
+    id: 'res_alg_international_student_solidarity',
+    deck: 'resistance',
+    type: 'action',
+    name: 'International Student Solidarity',
+    text: 'Student networks force the struggle into international discourse.',
+    effects: [
+      { type: 'modify_gaze', delta: 2 },
+      { type: 'gain_evidence', seat: 'acting_player', amount: 1 },
+    ],
+  },
+  {
+    id: 'res_alg_labor_strike',
+    deck: 'resistance',
+    type: 'action',
+    name: 'Labor Strike',
+    text: 'Workers disrupt colonial commerce and settler confidence.',
+    effects: [
+      { type: 'modify_domain', domain: 'EmptyStomach', delta: 1 },
+      { type: 'add_bodies', region: 'Oran', seat: 'acting_player', amount: 1 },
+    ],
+  },
+  {
+    id: 'res_alg_cultural_resistance_campaign',
+    deck: 'resistance',
+    type: 'support',
+    name: 'Cultural Resistance Campaign',
+    text: '+1 on campaigns that preserve memory, witness, and political legitimacy.',
+    campaignBonus: 1,
+    domainBonus: 'SilencedTruth',
+  },
+  {
+    id: 'res_alg_underground_printing_press',
+    deck: 'resistance',
+    type: 'action',
+    name: 'Underground Printing Press',
+    text: 'Pamphlets, testimony, and clandestine news circulate despite censorship.',
+    effects: [
+      { type: 'gain_evidence', seat: 'acting_player', amount: 2 },
+      { type: 'modify_gaze', delta: 1 },
+    ],
+  },
+  {
+    id: 'res_alg_mass_funeral_mobilization',
+    deck: 'resistance',
+    type: 'action',
+    name: 'Mass Funeral Mobilization',
+    text: 'Collective mourning strengthens determination and shared purpose.',
+    effects: [
+      { type: 'add_bodies', region: 'Algiers', seat: 'acting_player', amount: 2 },
+      { type: 'modify_domain', domain: 'RevolutionaryWave', delta: 1 },
+    ],
+  },
+  {
+    id: 'res_alg_negotiation_delegation',
+    deck: 'resistance',
+    type: 'action',
+    name: 'Negotiation Delegation',
+    text: 'Movement delegates force the question of colonial abuse into formal forums.',
+    effects: [
+      { type: 'modify_gaze', delta: 1 },
+      { type: 'gain_evidence', seat: 'acting_player', amount: 1 },
+    ],
+  },
+  {
+    id: 'res_alg_cross_border_supply',
+    deck: 'resistance',
+    type: 'action',
+    name: 'Cross-Border Supply',
+    text: 'Border routes keep the movement materially alive.',
+    effects: [
+      { type: 'add_bodies', region: 'TunisianBorder', seat: 'acting_player', amount: 2 },
+      { type: 'gain_evidence', seat: 'acting_player', amount: 1 },
+    ],
+  },
+  {
+    id: 'res_alg_prison_solidarity_network',
+    deck: 'resistance',
+    type: 'action',
+    name: 'Prison Solidarity Network',
+    text: 'Families and clandestine networks keep prisoners politically present.',
+    effects: [
+      { type: 'modify_domain', domain: 'GildedCage', delta: -1 },
+      { type: 'gain_evidence', seat: 'acting_player', amount: 1 },
+    ],
+  },
+  {
+    id: 'res_alg_ceasefire_proposal',
+    deck: 'resistance',
+    type: 'support',
+    name: 'Ceasefire Proposal',
+    text: '+1 on campaigns that reduce colonial impunity or open negotiation space.',
+    campaignBonus: 1,
+    domainBonus: 'UnfinishedJustice',
+  },
+  {
+    id: 'res_alg_grassroots_education',
+    deck: 'resistance',
+    type: 'action',
+    name: 'Grassroots Education',
+    text: 'Political education binds scattered struggle into collective strategy.',
+    effects: [
+      { type: 'modify_domain', domain: 'RevolutionaryWave', delta: 1 },
+      { type: 'gain_evidence', seat: 'acting_player', amount: 1 },
+    ],
+  },
+];

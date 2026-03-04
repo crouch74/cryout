@@ -19,3 +19,12 @@ export const IRAN_SCENARIO_MARKERS = {
   Khuzestan: { x: '29.22%', y: '58.58%' },
   Balochistan: { x: '79.77%', y: '69.59%' },
 } as const;
+
+export const ALGERIA_SCENARIO_MARKERS = {
+  Algiers: { x: '54.90%', y: '6.37%' },
+  KabylieMountains: { x: '58.38%', y: '6.60%' },
+  Oran: { x: '41.95%', y: '12.14%' },
+  SaharaSouth: { x: '63.58%', y: '77.49%' },
+  TunisianBorder: { x: '72.74%', y: '13.72%' },
+  FrenchMetropoleInfluence: { x: '16.67%', y: '15.29%' },
+} as const;

@@ -334,6 +334,25 @@ export const compatRuleset: RulesetDefinition = {
     systemCards,
     liberationThreshold: 1,
     suddenDeathRound: 12,
+    setup: {
+        globalGaze: 5,
+        northernWarMachine: 7,
+        extractionPool: 72,
+        extractionSeeds: {
+            Tehran: 2,
+            Kurdistan: 2,
+            Khuzestan: 1,
+            Balochistan: 1,
+        },
+        regionHijabEnforcement: {
+            Tehran: 2,
+            Kurdistan: 2,
+            Isfahan: 2,
+            Mashhad: 2,
+            Khuzestan: 2,
+            Balochistan: 2,
+        },
+    },
 };
 
 export {

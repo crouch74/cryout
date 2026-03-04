@@ -16,7 +16,7 @@ function buildTrackDefinitions(ruleset: RulesetDefinition): ScenarioContent['tra
       'global_gaze',
       {
         id: 'global_gaze',
-        value: 5,
+        value: ruleset.setup?.globalGaze ?? 5,
         min: 0,
         max: 20,
         thresholds: [5, 10, 15],
@@ -27,13 +27,24 @@ function buildTrackDefinitions(ruleset: RulesetDefinition): ScenarioContent['tra
       'war_machine',
       {
         id: 'war_machine',
-        value: 7,
+        value: ruleset.setup?.northernWarMachine ?? 7,
         min: 0,
         max: 12,
         thresholds: [4, 8, 10],
         metadata: { legacy: 'northernWarMachine' },
       } satisfies Partial<CoreTrackState>,
     ],
+    ...(ruleset.customTracks ?? []).map((track) => [
+      track.id,
+      {
+        id: track.id,
+        value: track.initialValue,
+        min: track.min,
+        max: track.max,
+        thresholds: track.thresholds,
+        metadata: { description: track.description },
+      } satisfies Partial<CoreTrackState>,
+    ]),
     ...ruleset.domains.map((domain) => [
       domain.id,
       {
@@ -211,7 +222,7 @@ export function buildCompatScenarioUi(ruleset: RulesetDefinition): ScenarioUiAda
       return ruleset.board;
     },
     getTrackOrder() {
-      return ['global_gaze', 'war_machine', ...ruleset.domains.map((domain) => domain.id)];
+      return ['global_gaze', 'war_machine', ...(ruleset.customTracks ?? []).map((track) => track.id), ...ruleset.domains.map((domain) => domain.id)];
     },
     getZoneOrder() {
       return ruleset.regions.map((region) => region.id);

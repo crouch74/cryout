@@ -1,4 +1,5 @@
 import type { BoardRegionMapEntry, RegionId } from '../../engine/index.ts';
+import { algeriaBoard } from '../../scenarios/algerian_war_of_independence/boards/algeriaBoard.ts';
 import {
   BASE_WORLD_SVG_COUNTRY_INDEX,
   baseWorldBoard,
@@ -23,6 +24,7 @@ export const BOARD_REGION_MAP_MANIFEST = {
   ...baseWorldBoard.regions,
   ...tahrirBoard.regions,
   ...womanLifeFreedomBoard.regions,
+  ...algeriaBoard.regions,
 } as Partial<Record<RegionId, BoardRegionMapEntry>>;
 
 export function getBoardRegionSvgPathIds(regionId: keyof typeof baseWorldBoard.regions) {

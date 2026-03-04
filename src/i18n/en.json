@@ -771,6 +771,11 @@
         "name": "2022 — WOMAN, LIFE, FREEDOM",
         "description": "\"For Jina. For freedom. For the women who burn their chains.\"",
         "introduction": "After the morality police killed Jina (Mahsa) Amini, an intersectional revolutionary uprising spread across Iran. Women and schoolgirls moved at its front, burning headscarves in the street and shaking the foundations of the Islamic Republic."
+      },
+      "algerian_war_of_independence": {
+        "name": "1954 — ALGERIAN WAR OF INDEPENDENCE",
+        "description": "\"The Cost of Liberation.\"",
+        "introduction": "Algerian movements confront a colonial system of extraction, militarism, detention, and settler reaction. The struggle stretches from the Algiers corridor to Kabylia, the Saharan south, the Tunisian frontier, and the metropole itself."
       }
     },
     "domains": {
@@ -975,6 +980,36 @@
         "name": "Balochistan",
         "description": "Marginalized, Zahedan massacre, Friday protests.",
         "strapline": "Bloody Friday."
+      },
+      "Algiers": {
+        "name": "Algiers",
+        "description": "The capital corridor from Alger through Blida and Tipaza, where urban insurgency meets colonial administration.",
+        "strapline": "The colonial capital convulses."
+      },
+      "KabylieMountains": {
+        "name": "Kabylie Mountains",
+        "description": "Kabylia and its mountain approaches, a guerrilla stronghold for endurance, shelter, and political cohesion.",
+        "strapline": "The maquis holds the heights."
+      },
+      "Oran": {
+        "name": "Oran",
+        "description": "The western settler coast around Oran, where colonial power hardens into reaction and veto.",
+        "strapline": "The settler coast refuses to yield."
+      },
+      "SaharaSouth": {
+        "name": "Sahara South",
+        "description": "The Saharan south, where long distances, desert routes, and reprisal test rural organizing.",
+        "strapline": "Organizing survives across great distance."
+      },
+      "TunisianBorder": {
+        "name": "Tunisian Border",
+        "description": "The eastern frontier toward Tunisia, a corridor for supplies, testimony, and strategic passage.",
+        "strapline": "The corridor that keeps the struggle breathing."
+      },
+      "FrenchMetropoleInfluence": {
+        "name": "French Metropole Influence",
+        "description": "Political and media struggle inside France over legitimacy, repression, and the terms of colonial exit.",
+        "strapline": "The colonial center is part of the battlefield."
       }
     },
     "regionLabels": {
@@ -1028,6 +1063,24 @@
       },
       "Balochistan": {
         "name": "Balochistan"
+      },
+      "Algiers": {
+        "name": "Algiers"
+      },
+      "KabylieMountains": {
+        "name": "Kabylie Mountains"
+      },
+      "Oran": {
+        "name": "Oran"
+      },
+      "SaharaSouth": {
+        "name": "Sahara South"
+      },
+      "TunisianBorder": {
+        "name": "Tunisian Border"
+      },
+      "FrenchMetropoleInfluence": {
+        "name": "French Metropole Influence"
       }
     },
     "factions": {
@@ -1126,6 +1179,38 @@
         "weakness": "Cannot resolve Burn Veil action directly.",
         "mandateTitle": "Shield the Vanguard",
         "mandateDescription": "Patriarchal Grip <= 3."
+      },
+      "fln_urban_cells": {
+        "name": "FLN Urban Cells",
+        "shortName": "Urban Cells",
+        "passive": "Investigate gains +1 Evidence in Algiers, and urban cells turn the capital corridor into launch infrastructure.",
+        "weakness": "Failed campaigns in Algiers immediately add 1 Extraction there.",
+        "mandateTitle": "Protect International Legitimacy",
+        "mandateDescription": "End with Global Gaze at 12 or more and Algiers at 2 or fewer Extraction Tokens."
+      },
+      "kabyle_maquis": {
+        "name": "Kabyle Maquis",
+        "shortName": "Maquis",
+        "passive": "Launch Campaign gains +1 in Kabylie Mountains, and mountain offensives strike harder from the maquis.",
+        "weakness": "Global Appeal costs +1 Evidence when War Machine is 8 or higher.",
+        "mandateTitle": "Accelerate Armed Struggle",
+        "mandateDescription": "End with Liberation Cohesion at 6 or more and Kabylie Mountains at 1 or fewer Extraction Tokens."
+      },
+      "rural_organizing_committees": {
+        "name": "Rural Organizing Committees",
+        "shortName": "Rural Committees",
+        "passive": "Organize gains +1 Comrade in Sahara South, and solidarity is cheaper across rural routes there.",
+        "weakness": "Military intervention in Sahara South removes 1 extra Comrade.",
+        "mandateTitle": "Minimize Civilian Casualties",
+        "mandateDescription": "End with Repression Cycle at 6 or less and Sahara South at 2 or fewer Extraction Tokens."
+      },
+      "border_solidarity_networks": {
+        "name": "Border Solidarity Networks",
+        "shortName": "Border Networks",
+        "passive": "Smuggle Evidence can move up to 2 Evidence, and cross-border supply gains +1 Comrade.",
+        "weakness": "Border Closure effects hit this seat first when multiple seats are valid.",
+        "mandateTitle": "Prevent Internal Purge",
+        "mandateDescription": "End with Torture & Detention Network at 4 or less and French Metropole Influence at 2 or fewer Extraction Tokens."
       }
     },
     "actions": {
@@ -1250,6 +1335,18 @@
       "beacon_digital_truth": {
         "title": "Digital Truth",
         "description": "5 regions at 1 or fewer Extraction and Silenced Truth at 8 or more."
+      },
+      "beacon_alg_global_gaze_breakthrough": {
+        "title": "Break the Colonial Narrative",
+        "description": "Global Gaze reaches 15 or more."
+      },
+      "beacon_alg_torture_exposed": {
+        "title": "Expose the Torture Network",
+        "description": "The torture system is forced into the open."
+      },
+      "beacon_alg_tribunal_acknowledgement": {
+        "title": "Force International Reckoning",
+        "description": "An international tribunal acknowledges colonial abuses."
       }
     },
     "cards": {
@@ -1448,6 +1545,126 @@
       "sys_wlf_hijab_crackdown": {
         "name": "Hijab Crackdown",
         "text": "The regime turns compulsory modesty law into a disciplined daily crackdown."
+      },
+      "crs_alg_battle_of_algiers": {
+        "name": "Battle of Algiers",
+        "text": "The colonial state saturates the capital corridor with raids, checkpoints, and collective punishment."
+      },
+      "crs_alg_oas_terror_attack": {
+        "name": "OAS Terror Attack",
+        "text": "Settler terror escalates to fracture civilian life and harden colonial resolve."
+      },
+      "crs_alg_rural_village_burned": {
+        "name": "Rural Village Burned",
+        "text": "Scorched-earth tactics punish the countryside and disrupt organizing."
+      },
+      "crs_alg_mass_arrest_sweep": {
+        "name": "Mass Arrest Sweep",
+        "text": "Detention and disappearance reach deep into the movement."
+      },
+      "crs_alg_french_national_assembly_debate": {
+        "name": "French National Assembly Debate",
+        "text": "The metropole debates reform while refusing to break the structure of colonial rule."
+      },
+      "crs_alg_international_press_leak": {
+        "name": "International Press Leak",
+        "text": "Testimony crosses borders and weakens the colonial story."
+      },
+      "crs_alg_evian_talks": {
+        "name": "Evian Talks",
+        "text": "Negotiations open without ending coercion across the front."
+      },
+      "crs_alg_border_closure": {
+        "name": "Border Closure",
+        "text": "Supply corridors tighten under coordinated surveillance."
+      },
+      "crs_alg_settler_militias_mobilize": {
+        "name": "Settler Militias Mobilize",
+        "text": "Pied-noir forces organize to sabotage decolonization and punish civilians."
+      },
+      "crs_alg_torture_network_exposed": {
+        "name": "Torture Network Exposed",
+        "text": "The machinery of torture becomes undeniable abroad."
+      },
+      "crs_alg_political_assassination": {
+        "name": "Political Assassination",
+        "text": "Elimination of movement leadership strains unity and trust."
+      },
+      "crs_alg_referendum_announcement": {
+        "name": "Referendum Announcement",
+        "text": "The colonial center offers managed transition under pressure."
+      },
+      "res_alg_urban_cell_network": {
+        "name": "Urban Cell Network",
+        "text": "Neighborhood cells move witness, shelter, and clandestine coordination across the capital."
+      },
+      "res_alg_mountain_guerrilla_offensive": {
+        "name": "Mountain Guerrilla Offensive",
+        "text": "+2 on a campaign launched from the mountains or toward colonial army pressure."
+      },
+      "res_alg_international_student_solidarity": {
+        "name": "International Student Solidarity",
+        "text": "Student networks force the struggle into international discourse."
+      },
+      "res_alg_labor_strike": {
+        "name": "Labor Strike",
+        "text": "Workers disrupt colonial commerce and settler confidence."
+      },
+      "res_alg_cultural_resistance_campaign": {
+        "name": "Cultural Resistance Campaign",
+        "text": "+1 on campaigns that preserve memory, witness, and political legitimacy."
+      },
+      "res_alg_underground_printing_press": {
+        "name": "Underground Printing Press",
+        "text": "Pamphlets, testimony, and clandestine news circulate despite censorship."
+      },
+      "res_alg_mass_funeral_mobilization": {
+        "name": "Mass Funeral Mobilization",
+        "text": "Collective mourning strengthens determination and shared purpose."
+      },
+      "res_alg_negotiation_delegation": {
+        "name": "Negotiation Delegation",
+        "text": "Movement delegates force the question of colonial abuse into formal forums."
+      },
+      "res_alg_cross_border_supply": {
+        "name": "Cross-Border Supply",
+        "text": "Border routes keep the movement materially alive across the eastern frontier."
+      },
+      "res_alg_prison_solidarity_network": {
+        "name": "Prison Solidarity Network",
+        "text": "Families and clandestine networks keep prisoners politically present."
+      },
+      "res_alg_ceasefire_proposal": {
+        "name": "Ceasefire Proposal",
+        "text": "+1 on campaigns that reduce colonial impunity or open negotiation space."
+      },
+      "res_alg_grassroots_education": {
+        "name": "Grassroots Education",
+        "text": "Political education binds scattered struggle into collective strategy."
+      },
+      "sys_alg_colonial_army_sweep": {
+        "name": "Colonial Army Sweep",
+        "text": "The colonial army tightens military pressure across the most vulnerable front."
+      },
+      "sys_alg_settler_political_veto": {
+        "name": "Settler Political Veto",
+        "text": "Settler pressure hardens both the colonial center and the metropole against compromise."
+      },
+      "sys_alg_detention_grid_tightens": {
+        "name": "Detention Grid Tightens",
+        "text": "The detention network widens to disappear militants and witnesses."
+      },
+      "sys_alg_nato_cover": {
+        "name": "NATO Cover",
+        "text": "Geopolitical backing shields colonial violence from immediate consequence."
+      },
+      "sys_alg_counter_insurgency_doctrine": {
+        "name": "Counter-Insurgency Doctrine",
+        "text": "Doctrine spreads forced relocation, intelligence fusion, and punitive raids."
+      },
+      "sys_alg_administrative_partition": {
+        "name": "Administrative Partition",
+        "text": "Fragmentation is used to isolate fronts and discipline the struggle."
       }
     },
     "scenarios": {
@@ -1486,6 +1703,33 @@
           "gender_dynamics": {
             "label": "Gender Dynamics",
             "description": "Male allies can shield or transfer actions to support female-led factions."
+          }
+        }
+      },
+      "algerian_war_of_independence": {
+        "name": "1954 — Algerian War of Independence",
+        "description": "The Cost of Liberation.",
+        "introduction": "Lead a movement-centered struggle against French colonial rule, detention, and settler political power between 1954 and 1962.",
+        "story": "The movement survives between the capital corridor, Kabylia, the western settler coast, the Saharan south, the Tunisian frontier, and the metropole. Every gain invites harsher repression; every sacrifice leaves a mark that outlives the war.",
+        "dramatization": "Relentless raids, clandestine printing presses, border routes, funeral marches, and the unbearable knowledge that liberation itself will not heal every wound.",
+        "gameplay": "Evidence strengthens witness but also raises Repression Cycle. Urban operations trigger colonial escalation. Symbolic victory depends on forcing international acknowledgement of colonial abuse.",
+        "moralCenter": "Liberation is collective, necessary, and costly. Victory ends colonial rule, not the scars it leaves behind.",
+        "specialRules": {
+          "repression_feedback": {
+            "label": "Repression Feedback",
+            "description": "Whenever the coalition gains Evidence, Repression Cycle rises by 1."
+          },
+          "urban_operations": {
+            "label": "Urban Operations",
+            "description": "Successful campaigns in Algiers or Oran increase War Machine by 1."
+          },
+          "referendum_pressure": {
+            "label": "Force Immediate Referendum",
+            "description": "Symbolic victory requires international acknowledgement of colonial abuse, not just attention."
+          },
+          "repression_cycle": {
+            "label": "Repression Cycle",
+            "description": "At 5 the movement suffers mass detention. At 7 torture is exposed. At 9 a nationwide state of emergency hardens every campaign. At 10 the coalition loses 1 Comrade each round."
           }
         }
       }

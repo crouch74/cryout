@@ -108,13 +108,13 @@ export interface StatusRibbonItem {
 }
 
 export interface FrontTrackRow {
-  id: DomainId;
+  id: string;
   label: string;
   shortLabel: string;
   icon: IconType;
   color: string;
   value: number;
-  max: 12;
+  max: number;
   tooltip: string;
   severity: Severity;
 }
@@ -596,7 +596,23 @@ export function getStatusRibbonItems(state: EngineState, content: CompiledConten
 }
 
 export function getFrontTrackRows(state: EngineState, content: CompiledContent): FrontTrackRow[] {
-  return (Object.keys(content.domains) as DomainId[]).map((domainId) => ({
+  const customTrackRows = (content.ruleset.customTracks ?? []).map((track) => ({
+    id: track.id,
+    label: track.name,
+    shortLabel: track.name,
+    icon: 'frontJustice' as const,
+    color: '#7f4f24',
+    value: state.customTracks[track.id]?.value ?? track.initialValue,
+    max: track.max,
+    tooltip: track.description,
+    severity: getSeverityByBands(state.customTracks[track.id]?.value ?? track.initialValue, {
+      watch: track.thresholds[0] ?? Math.ceil(track.max * 0.4),
+      danger: track.thresholds[1] ?? Math.ceil(track.max * 0.7),
+      critical: track.thresholds[2] ?? Math.ceil(track.max * 0.9),
+    }),
+  }));
+
+  const domainRows = (Object.keys(content.domains) as DomainId[]).map((domainId) => ({
     id: domainId,
     label: localizeDomainField(domainId, 'name', content.domains[domainId].name),
     shortLabel: t(`ui.domains.short.${domainId}`, DOMAIN_SHORT_LABELS[domainId]),
@@ -607,6 +623,8 @@ export function getFrontTrackRows(state: EngineState, content: CompiledContent):
     tooltip: localizeDomainField(domainId, 'description', content.domains[domainId].description),
     severity: getSeverityByBands(state.domains[domainId].progress, { watch: 4, danger: 7, critical: 10 }),
   }));
+
+  return [...customTrackRows, ...domainRows];
 }
 
 export function getActionQuickQueue(state: EngineState, content: CompiledContent, seat: number, actionId: ActionId) {

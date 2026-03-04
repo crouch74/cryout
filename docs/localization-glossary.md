@@ -19,6 +19,8 @@
 | Militarism track | War Machine | آلة الحرب | Structural militarism, not an individual villain. | war level |
 | Pressure fronts | Domains | المجالات | Keep as structural fronts of struggle. | lanes, categories |
 | Hidden objectives | Secret Mandates | التكليفات السرية | Must read as binding commitments with failure risk. | side quests |
+| Algeria track | Repression Cycle | دورة القمع | Use for the Algeria scenario's escalation track. | repression meter |
+| Algeria inset | French Metropole Influence | تأثير المتروبول الفرنسي | Refers to the political and media theater inside France, not a second protagonist map. | france region |
 | Public win mode | Liberation | Liberation | Localize as mode label only where the UI requires it; keep political meaning explicit in body copy. | rescue |
 | Limited win mode | Symbolic | رمزي | Frame as partial breakthrough, never full emancipation. | easy mode |
 | Team phase | Coalition | التحالف | Cooperative structure with tension intact. | party |

@@ -1,0 +1,10 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Tamanrasset" },
+      "geometry": { "type": "Point", "coordinates": [5.5228, 22.7850] }
+    }
+  ]
+}

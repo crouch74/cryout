@@ -43,6 +43,16 @@ const womanLifeFreedomStartCommand: Extract<EngineCommand, { type: 'StartGame' }
   seed: 4242,
 };
 
+const algeriaStartCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
+  type: 'StartGame',
+  rulesetId: 'algerian_war_of_independence',
+  mode: 'LIBERATION',
+  humanPlayerCount: 4,
+  seatFactionIds: ['fln_urban_cells', 'kabyle_maquis', 'rural_organizing_committees', 'border_solidarity_networks'],
+  seatOwnerIds: [0, 1, 2, 3],
+  seed: 4242,
+};
+
 function getStartupWithdrawalEvents(state: EngineState) {
   return state.eventLog.filter((event) => event.context?.cardReveals?.[0]?.origin === 'startup_withdrawal');
 }
@@ -66,8 +76,10 @@ function findStartupWithdrawal(
 test('canonical ruleset registry exposes the shipped rulesets', () => {
   const rulesets = listRulesets();
   const baseDesign = rulesets.find((ruleset) => ruleset.id === 'base_design');
+  const algeria = rulesets.find((ruleset) => ruleset.id === 'algerian_war_of_independence');
 
   assert.equal(Boolean(baseDesign), true);
+  assert.equal(Boolean(algeria), true);
   assert.equal(baseDesign?.regions.length, 6);
 });
 
@@ -148,6 +160,17 @@ test('Woman, Life, Freedom startup withdrawal applies effectful resistance cards
   assert.equal(event.context?.targetRegionId, 'Kurdistan');
 });
 
+test('Algeria startup seeds authored tracks and extraction values', () => {
+  const content = compileContent(algeriaStartCommand.rulesetId);
+  const state = initializeGame(algeriaStartCommand);
+
+  assert.equal(content.ruleset.setup?.globalGaze, 4);
+  assert.equal(content.ruleset.setup?.northernWarMachine, 6);
+  assert.equal(state.customTracks.repression_cycle?.value, 3);
+  assert.equal(state.regions.Oran.extractionTokens, 3);
+  assert.equal(state.regions.Algiers.extractionTokens, 2);
+});
+
 test('startup supports fewer human players than faction seats while keeping all factions active', () => {
   const state = initializeGame(multiOwnerStartCommand);
 
@@ -179,6 +202,149 @@ test('phase gating rejects coalition actions during system phase', () => {
   assert.equal(next.phase, 'SYSTEM');
   assert.equal(next.players[0].queuedIntents.length, 0);
   assert.equal(next.eventLog.at(-1)?.emoji, '❌');
+});
+
+test('Algeria investigate raises Repression Cycle exactly once for a positive Evidence resolution', () => {
+  const content = compileContent(algeriaStartCommand.rulesetId);
+  let state = initializeGame(algeriaStartCommand);
+  state = dispatchCommand(state, { type: 'ResolveSystemPhase' }, content);
+  state = dispatchCommand(
+    state,
+    { type: 'QueueIntent', seat: 0, action: { actionId: 'investigate', regionId: 'Algiers' } },
+    content,
+  );
+  state.players[0].actionsRemaining = 0;
+  state.players[0].ready = true;
+  for (const player of state.players.slice(1)) {
+    player.actionsRemaining = 0;
+    player.ready = true;
+  }
+
+  const next = dispatchCommand(state, { type: 'CommitCoalitionIntent' }, content);
+  const investigateEvent = next.eventLog.findLast((event) => event.sourceId === 'investigate');
+  const repressionDeltas = investigateEvent?.deltas.filter((delta) => delta.label === 'repression_cycle') ?? [];
+
+  assert.equal(next.customTracks.repression_cycle.value, 4);
+  assert.equal(repressionDeltas.length, 1);
+});
+
+test('Algeria urban campaign success escalates War Machine in Algiers', () => {
+  const content = compileContent(algeriaStartCommand.rulesetId);
+  let state = initializeGame(algeriaStartCommand);
+  state.phase = 'COALITION';
+  state.globalGaze = 15;
+  state.players[0].evidence = 4;
+  state.regions.Algiers.bodiesPresent[0] = 8;
+  state.regions.Algiers.extractionTokens = 2;
+  state.players[0].actionsRemaining = 1;
+  state = dispatchCommand(
+    state,
+    { type: 'QueueIntent', seat: 0, action: { actionId: 'launch_campaign', regionId: 'Algiers', domainId: 'SilencedTruth', bodiesCommitted: 4, evidenceCommitted: 2 } },
+    content,
+  );
+  state.players[0].actionsRemaining = 0;
+  state.players[0].ready = true;
+  for (const player of state.players.slice(1)) {
+    player.actionsRemaining = 0;
+    player.ready = true;
+  }
+
+  const next = dispatchCommand(state, { type: 'CommitCoalitionIntent' }, content);
+  const campaignEvent = next.eventLog.findLast((event) => event.sourceId === 'launch_campaign');
+
+  assert.equal((campaignEvent?.context?.roll?.success ?? false), true);
+  assert.equal(next.northernWarMachine, state.northernWarMachine + 1);
+});
+
+test('Algeria repression thresholds apply their authored consequences once', () => {
+  const content = compileContent(algeriaStartCommand.rulesetId);
+  const state = initializeGame(algeriaStartCommand);
+  state.customTracks.repression_cycle.value = 4;
+  for (const player of state.players) {
+    player.evidence = 1;
+  }
+
+  const traces = dispatchCommand(
+    {
+      ...state,
+      phase: 'COALITION',
+      players: state.players.map((player, index) => ({
+        ...player,
+        actionsRemaining: index === 0 ? 1 : 0,
+        ready: index !== 0,
+      })),
+    },
+    { type: 'QueueIntent', seat: 0, action: { actionId: 'investigate', regionId: 'Algiers' } },
+    content,
+  );
+  traces.players[0].actionsRemaining = 0;
+  traces.players[0].ready = true;
+
+  const resolved = dispatchCommand(traces, { type: 'CommitCoalitionIntent' }, content);
+  const thresholdEvent = resolved.eventLog.find((event) => event.sourceId === 'threshold_repression_cycle_5');
+
+  assert.equal(Boolean(thresholdEvent), true);
+  assert.equal(resolved.players.slice(1).every((player) => player.evidence === 0), true);
+
+  resolved.phase = 'COALITION';
+  resolved.players[0].actionsRemaining = 1;
+  resolved.players[0].ready = false;
+  const queuedAgain = dispatchCommand(
+    resolved,
+    { type: 'QueueIntent', seat: 0, action: { actionId: 'investigate', regionId: 'Algiers' } },
+    content,
+  );
+  queuedAgain.players[0].actionsRemaining = 0;
+  queuedAgain.players[0].ready = true;
+  for (const player of queuedAgain.players.slice(1)) {
+    player.actionsRemaining = 0;
+    player.ready = true;
+  }
+  const resolvedAgain = dispatchCommand(queuedAgain, { type: 'CommitCoalitionIntent' }, content);
+
+  assert.equal(resolvedAgain.eventLog.filter((event) => event.sourceId === 'threshold_repression_cycle_5').length, 1);
+});
+
+test('Algeria symbolic beacons and tribunal acknowledgement can produce symbolic victory', () => {
+  const content = compileContent('algerian_war_of_independence');
+  const state = initializeGame({ ...algeriaStartCommand, mode: 'SYMBOLIC' });
+  state.phase = 'RESOLUTION';
+  state.globalGaze = 15;
+  state.domains.RevolutionaryWave.progress = 6;
+  state.domains.GildedCage.progress = 4;
+  state.regions.Algiers.extractionTokens = 2;
+  state.regions.KabylieMountains.extractionTokens = 1;
+  state.regions.SaharaSouth.extractionTokens = 2;
+  state.regions.FrenchMetropoleInfluence.extractionTokens = 2;
+  state.scenarioFlags.tortureExposed = true;
+  state.scenarioFlags.tribunalAcknowledged = true;
+
+  const next = dispatchCommand(state, { type: 'ResolveResolutionPhase' }, content);
+
+  assert.equal(next.phase, 'WIN');
+  assert.equal(next.terminalOutcome?.cause, 'symbolic');
+});
+
+test('Algeria liberation victory requires repression to remain at 6 or lower', () => {
+  const content = compileContent('algerian_war_of_independence');
+  const state = initializeGame(algeriaStartCommand);
+  state.phase = 'RESOLUTION';
+  for (const region of Object.values(state.regions)) {
+    region.extractionTokens = 5;
+  }
+  state.customTracks.repression_cycle.value = 6;
+  state.globalGaze = 12;
+  state.domains.RevolutionaryWave.progress = 6;
+  state.domains.GildedCage.progress = 4;
+  state.regions.KabylieMountains.extractionTokens = 1;
+  state.regions.SaharaSouth.extractionTokens = 2;
+  state.regions.FrenchMetropoleInfluence.extractionTokens = 2;
+  state.regions.Algiers.extractionTokens = 2;
+
+  const next = dispatchCommand(state, { type: 'ResolveResolutionPhase' }, content);
+
+  assert.equal(next.phase, 'WIN');
+  assert.equal(next.terminalOutcome?.cause, 'liberation');
 });
 
 test('symbolic mode reveals exactly three active beacons', () => {

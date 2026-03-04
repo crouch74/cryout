@@ -1,0 +1,10 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Algiers" },
+      "geometry": { "type": "Point", "coordinates": [3.0588, 36.7538] }
+    }
+  ]
+}

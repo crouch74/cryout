@@ -1,0 +1,10 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Tizi Ouzou" },
+      "geometry": { "type": "Point", "coordinates": [4.0459, 36.7118] }
+    }
+  ]
+}

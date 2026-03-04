@@ -140,6 +140,65 @@ const SCENARIOS = [
       },
     ],
   },
+  {
+    id: 'algerian_war_of_independence',
+    countryLabel: 'Algeria',
+    sourceGeoJson: 'data/geojson/algeria-adm1/geoBoundaries-DZA-ADM1_simplified.geojson',
+    outputSvg: 'public/assets/scenarios/algerian_war_of_independence/algeria-location-map.svg',
+    markerExport: 'ALGERIA_SCENARIO_MARKERS',
+    regions: [
+      {
+        regionId: 'Algiers',
+        groupId: 'algiers-region',
+        pathId: 'algiers-shape',
+        adminNames: ['Alger', 'Blida', 'Tipaza'],
+        cityGeoJson: 'data/geojson/cities/algiers.geojson',
+        accent: '#8d6746',
+      },
+      {
+        regionId: 'KabylieMountains',
+        groupId: 'kabylie-mountains-region',
+        pathId: 'kabylie-mountains-shape',
+        adminNames: ['Tizi Ouzou', 'Bejaia', 'Bouira', 'Boumerdes', 'Jijel'],
+        cityGeoJson: 'data/geojson/cities/tizi_ouzou.geojson',
+        accent: '#a16d4e',
+      },
+      {
+        regionId: 'Oran',
+        groupId: 'oran-region',
+        pathId: 'oran-shape',
+        adminNames: ['Oran', 'Ain-Temouchent', 'Tlemcen', 'Sidi Bel Abbes', 'Mostaganem', 'Mascara', 'Relizane'],
+        cityGeoJson: 'data/geojson/cities/oran.geojson',
+        accent: '#9b7d5b',
+      },
+      {
+        regionId: 'SaharaSouth',
+        groupId: 'sahara-south-region',
+        pathId: 'sahara-south-shape',
+        adminNames: ['Adrar', 'Bechar', 'Tindouf', 'Ghardaia', 'Ouargla', 'El Oued', 'Laghouat', 'Tamanrasset', 'Illizi', 'Biskra', 'Djelfa'],
+        cityGeoJson: 'data/geojson/cities/tamanrasset.geojson',
+        accent: '#7b5c3d',
+      },
+      {
+        regionId: 'TunisianBorder',
+        groupId: 'tunisian-border-region',
+        pathId: 'tunisian-border-shape',
+        adminNames: ['Tebessa', 'Souk-Ahras', 'El-Tarf', 'Guelma', 'Annaba', 'Khenchela', 'Batna', 'Oum El Bouaghi', 'Skikda', 'Constantine'],
+        cityGeoJson: 'data/geojson/cities/tebessa.geojson',
+        accent: '#c18d5b',
+      },
+    ],
+    authoredInset: {
+      regionId: 'FrenchMetropoleInfluence',
+      groupId: 'french-metropole-influence-region',
+      pathId: 'french-metropole-influence-shape',
+      accent: '#6d4c41',
+      sourceGeoJson: 'data/geojson/france-adm0/geoBoundaries-FRA-ADM0.geojson',
+      anchorCoordinate: [2.3522, 48.8566],
+      box: { x: 72, y: 86, width: 190, height: 126, padding: 10 },
+      frame: { x: 64, y: 78, width: 206, height: 142, pathId: 'french-metropole-influence-inset-frame' },
+    },
+  },
 ];
 
 function readJson(relativePath) {
@@ -194,20 +253,29 @@ function collectProjectedBounds(features) {
 }
 
 function createProjector(bounds) {
-  const drawableWidth = VIEWBOX.width - VIEWBOX.padding * 2;
-  const drawableHeight = VIEWBOX.height - VIEWBOX.padding * 2;
+  return createBoxProjector(bounds, {
+    x: VIEWBOX.padding,
+    y: VIEWBOX.padding,
+    width: VIEWBOX.width - VIEWBOX.padding * 2,
+    height: VIEWBOX.height - VIEWBOX.padding * 2,
+  });
+}
+
+function createBoxProjector(bounds, box) {
+  const drawableWidth = box.width;
+  const drawableHeight = box.height;
   const scale = Math.min(
     drawableWidth / (bounds.maxX - bounds.minX),
     drawableHeight / (bounds.maxY - bounds.minY),
   );
-  const offsetX = (VIEWBOX.width - (bounds.maxX - bounds.minX) * scale) / 2;
-  const offsetY = (VIEWBOX.height - (bounds.maxY - bounds.minY) * scale) / 2;
+  const offsetX = box.x + (box.width - (bounds.maxX - bounds.minX) * scale) / 2;
+  const offsetY = box.y + (box.height - (bounds.maxY - bounds.minY) * scale) / 2;
 
   return ([longitude, latitude]) => {
     const point = mercatorPoint([longitude, latitude]);
     return {
       x: offsetX + (point.x - bounds.minX) * scale,
-      y: VIEWBOX.height - (offsetY + (point.y - bounds.minY) * scale),
+      y: box.y + box.height - (offsetY - box.y + (point.y - bounds.minY) * scale),
     };
   };
 }
@@ -358,7 +426,7 @@ function pointToPercent(point) {
   };
 }
 
-function renderScenarioSvg({ countryLabel, countryPath, boundaryPaths, regionLayers }) {
+function renderScenarioSvg({ countryLabel, countryPath, boundaryPaths, regionLayers, extraMarkup = '' }) {
   const regionMarkup = regionLayers.map((region) => `    <g id="${region.groupId}">
       <path id="${region.pathId}" d="${region.path}" fill="${region.accent}" fill-opacity="0.78" stroke="none" />
     </g>`).join('\n');
@@ -378,8 +446,22 @@ ${boundaryPaths.map((path) => `    <path d="${path}" fill="none" stroke="#a69070
   <g id="scenario-regions">
 ${regionMarkup}
   </g>
+${extraMarkup}
 </svg>
 `;
+}
+
+function buildInsetMarkup(inset) {
+  const framePath = inset.frame
+    ? `      <path id="${inset.frame.pathId}" d="M${formatNumber(inset.frame.x)} ${formatNumber(inset.frame.y)} L${formatNumber(inset.frame.x + inset.frame.width)} ${formatNumber(inset.frame.y)} L${formatNumber(inset.frame.x + inset.frame.width)} ${formatNumber(inset.frame.y + inset.frame.height)} L${formatNumber(inset.frame.x)} ${formatNumber(inset.frame.y + inset.frame.height)} Z" fill="none" stroke="#eadfc8" stroke-width="3" />\n`
+    : '';
+
+  return [
+    `    <g id="${inset.groupId}">`,
+    `      <path id="${inset.pathId}" d="${inset.path}" fill="${inset.accent}" fill-opacity="0.82" stroke="#4b342b" stroke-width="2" fill-rule="evenodd" />`,
+    framePath.trimEnd(),
+    '    </g>',
+  ].filter(Boolean).join('\n');
 }
 
 function renderAnchorModule(anchorSets) {
@@ -432,11 +514,33 @@ function main() {
       console.log(`📍 ${scenario.countryLabel} ${region.regionId} anchor resolved to ${anchors[region.regionId].x}, ${anchors[region.regionId].y}`);
     }
 
+    if (scenario.authoredInset) {
+      const insetCollection = readJson(scenario.authoredInset.sourceGeoJson);
+      const insetFeatures = insetCollection.features ?? [];
+      if (!Array.isArray(insetFeatures) || insetFeatures.length === 0) {
+        throw new Error(`Inset GeoJSON missing features array: ${scenario.authoredInset.sourceGeoJson}`);
+      }
+
+      const insetBounds = collectProjectedBounds(insetFeatures);
+      const insetProject = createBoxProjector(insetBounds, {
+        x: scenario.authoredInset.box.x + scenario.authoredInset.box.padding,
+        y: scenario.authoredInset.box.y + scenario.authoredInset.box.padding,
+        width: scenario.authoredInset.box.width - scenario.authoredInset.box.padding * 2,
+        height: scenario.authoredInset.box.height - scenario.authoredInset.box.padding * 2,
+      });
+      const insetPoint = insetProject(scenario.authoredInset.anchorCoordinate);
+      anchors[scenario.authoredInset.regionId] = pointToPercent(insetPoint);
+      scenario.authoredInset.path = featuresToSvgPath(insetFeatures, insetProject);
+      scenario.authoredInset.markup = buildInsetMarkup(scenario.authoredInset);
+      console.log(`📍 ${scenario.countryLabel} ${scenario.authoredInset.regionId} anchor resolved to ${anchors[scenario.authoredInset.regionId].x}, ${anchors[scenario.authoredInset.regionId].y}`);
+    }
+
     const svgMarkup = renderScenarioSvg({
       countryLabel: scenario.countryLabel,
       countryPath,
       boundaryPaths,
       regionLayers,
+      extraMarkup: scenario.authoredInset?.markup ?? '',
     });
 
     const svgOutputPath = resolve(ROOT, scenario.outputSvg);

@@ -1,0 +1,10 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Tebessa" },
+      "geometry": { "type": "Point", "coordinates": [8.1242, 35.4042] }
+    }
+  ]
+}
