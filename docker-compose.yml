@@ -1,21 +1,39 @@
 services:
   frontend:
-    image: node:20-alpine
+    image: node:23-alpine
     working_dir: /app
     volumes:
       - .:/app
       - node_modules:/app/node_modules
+    environment:
+      VITE_ROOM_SERVICE_PROXY_TARGET: http://room-service:3010
     ports:
       - "5174:5173"
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    depends_on:
+      - room-service
     profiles:
       - dev
+      - all
+
+  room-service:
+    image: node:23-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    command: sh -c "npm install && npm run dev:rooms"
+    profiles:
+      - dev
+      - prod
       - all
 
   frontend-prod:
     build: .
     ports:
       - "8080:80"
+    depends_on:
+      - room-service
     profiles:
       - prod
 

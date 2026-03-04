@@ -81,7 +81,7 @@ interface EventSourcePresentation {
   label: string;
 }
 
-export type ContextPanelMode = 'region' | 'action' | 'ledger' | 'decks';
+export type ContextPanelMode = 'region' | 'action' | 'ledger' | 'decks' | 'mandate';
 
 export interface DeckSummary {
   deckId: DeckId;
@@ -129,8 +129,10 @@ export interface PlayerStripSummary {
   moves: number;
   passivePrimary: string;
   passiveSecondary: string;
-  mandateTitle: string;
-  mandateLines: string[];
+  detailEyebrow: string;
+  detailTitle: string;
+  detailLines: string[];
+  detailKind: 'mandate' | 'open_role';
   ready: boolean;
 }
 
@@ -517,6 +519,7 @@ export function getSeatPresentation(player: PlayerState, content: CompiledConten
 export function getPlayerStripSummary(player: PlayerState, content: CompiledContent, state: EngineState): PlayerStripSummary {
   const faction = content.factions[player.factionId];
   const passive = getPassiveShorthand(faction.id);
+  const secretMandatesEnabled = state.secretMandatesEnabled;
   return {
     seat: player.seat,
     factionName: localizeFactionField(faction.id, 'name', faction.name),
@@ -527,8 +530,19 @@ export function getPlayerStripSummary(player: PlayerState, content: CompiledCont
     moves: player.actionsRemaining,
     passivePrimary: passive.primary,
     passiveSecondary: passive.secondary,
-    mandateTitle: localizeFactionField(faction.id, 'mandateTitle', faction.mandate.title),
-    mandateLines: getMandateLines(faction.id),
+    detailEyebrow: secretMandatesEnabled
+      ? t('ui.game.secretMandate', 'Secret Mandate')
+      : t('ui.game.openRole', 'Open Role'),
+    detailTitle: secretMandatesEnabled
+      ? localizeFactionField(faction.id, 'mandateTitle', faction.mandate.title)
+      : t('ui.game.publicCoordination', 'Public Coordination'),
+    detailLines: secretMandatesEnabled
+      ? getMandateLines(faction.id)
+      : [
+          localizeFactionField(faction.id, 'passive', faction.passive),
+          `${t('ui.game.weakness', 'Weakness')}: ${localizeFactionField(faction.id, 'weakness', faction.weakness)}`,
+        ].filter(Boolean),
+    detailKind: secretMandatesEnabled ? 'mandate' : 'open_role',
     ready: player.ready,
   };
 }

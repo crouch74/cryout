@@ -2,6 +2,7 @@ import type { IconBaseShape, IconType } from './iconTypes.ts';
 
 export const ICON_COLORS = {
   bodies: '#8E2C2C',
+  close: '#5E4630',
   evidence: '#2E355F',
   defense: '#5F8D6D',
   extraction: '#1F1F1F',
@@ -10,6 +11,7 @@ export const ICON_COLORS = {
   warMachine: '#A32E2E',
   round: '#D6C7A8',
   modeLiberation: '#C6A75E',
+  mandate: '#7A4A2E',
   objective: '#D6C7A8',
   organize: '#8E2C2C',
   investigate: '#2E355F',
@@ -57,6 +59,7 @@ export const ICON_BASE_SHAPES: Partial<Record<IconType, IconBaseShape>> = {
   warMachine: 'diamond',
   round: 'diamond',
   modeLiberation: 'rounded-rect',
+  mandate: 'rounded-rect',
   objective: 'rounded-rect',
   frontWar: 'rounded-rect',
   frontPlanet: 'rounded-rect',

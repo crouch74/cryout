@@ -3,6 +3,7 @@ import {
   toCompatStructuredEvent,
   getAvailableDomains,
   getAvailableRegions,
+  getMandateStatus,
   getPlayerBodyTotal,
   getSeatActions,
   getSeatDisabledReason,
@@ -399,7 +400,9 @@ function getPhaseInsights(state: EngineState, focusedSeat: number): PhaseInsight
     {
       id: 'resolution-check',
       label: t('ui.game.phaseInsightCheck', 'Check why the round ends'),
-      detail: t('ui.game.phaseInsightResolutionCheck', 'After resolution, the game checks victory, defeat, Secret Mandates, and whether a new round begins.'),
+      detail: state.secretMandatesEnabled
+        ? t('ui.game.phaseInsightResolutionCheck', 'After resolution, the game checks victory, defeat, Secret Mandates, and whether a new round begins.')
+        : t('ui.game.phaseInsightResolutionCheckLocal', 'After resolution, the game checks victory, defeat, and whether a new round begins.'),
     },
   ];
 }
@@ -1015,6 +1018,30 @@ export function GameSessionScreen({
     </div>
   );
 
+  const mandateContent = state.secretMandatesEnabled ? (
+    <div className="context-stack">
+      <section className="context-card">
+        <span className="context-eyebrow">{t('ui.game.secretMandate', 'Secret Mandate')}</span>
+        <strong>{localizeFactionField(faction.id, 'mandateTitle', getMandateStatus(state, content, focusedPlayer.seat).title)}</strong>
+        <p>{localizeFactionField(faction.id, 'mandateDescription', getMandateStatus(state, content, focusedPlayer.seat).description)}</p>
+      </section>
+      <section className="context-card">
+        <span className="context-eyebrow">{t('ui.game.mandateStatus', 'Mandate Status')}</span>
+        <strong>
+          {focusedPlayer.mandateRevealed
+            ? t('ui.game.mandateRevealed', 'Revealed in the final reckoning')
+            : t('ui.game.mandatePrivate', 'Visible only to this seat owner')}
+        </strong>
+        <p>
+          {t(
+            'ui.game.mandatePanelBody',
+            'This objective remains private during room play. The coalition still shares the full board, history, Global Gaze, War Machine, and public card reveals.',
+          )}
+        </p>
+      </section>
+    </div>
+  ) : null;
+
   const selectedDeckSummary = deckSummaries.find((summary) => summary.deckId === selectedDeckId) ?? deckSummaries[0];
   const selectedDeckCards = selectedDeckId === 'system'
     ? state.activeSystemCardIds.slice().reverse()
@@ -1408,6 +1435,18 @@ export function GameSessionScreen({
                   )}
                   onClick={onBack}
                 />
+                {state.secretMandatesEnabled ? (
+                  <button
+                    type="button"
+                    className="ledger-toggle ledger-toggle-mandate"
+                    onClick={() => { setContextMode('mandate'); setContextOpen(true); }}
+                    aria-label={t('ui.game.openSecretMandate', 'Open Secret Mandate')}
+                    title={t('ui.game.openSecretMandate', 'Open Secret Mandate')}
+                  >
+                    <Icon type="mandate" size={20} />
+                    <span>{t('ui.game.viewMandate', 'Your Mandate')}</span>
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   className="ledger-toggle"
@@ -1493,6 +1532,7 @@ export function GameSessionScreen({
             regionContent={regionContent}
             actionContent={actionContent}
             decksContent={decksContent}
+            mandateContent={mandateContent}
             ledgerContent={ledgerContent}
           />
         </aside>

@@ -1,5 +1,5 @@
 # Stage 1: Build
-FROM node:20-alpine AS builder
+FROM node:23-alpine AS builder
 WORKDIR /app
 ARG VITE_RELEASE=true
 ENV VITE_RELEASE=$VITE_RELEASE

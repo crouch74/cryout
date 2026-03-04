@@ -36,7 +36,8 @@ export function GuidelinesScreen({ onBackHome, onOpenOffline }: GuidelinesScreen
             <span className="engraved-eyebrow">{t('ui.guide.victoryModes', 'Victory Modes')}</span>
             <p>{t('ui.mode.liberation', 'Liberation')}: {t('ui.mode.liberationSummary', 'End Resolution with every region at 1 Extraction or less.')}</p>
             <p>{t('ui.mode.symbolic', 'Symbolic')}: {t('ui.mode.symbolicSummary', 'Complete all three active Beacons.')}</p>
-            <p>{t('ui.guide.beacon2', 'Every faction carries a Secret Mandate. Reaching the public win condition without satisfying all Secret Mandates still ends in failure.')}</p>
+            <p>{t('ui.guide.beacon2', 'Online rooms keep Secret Mandates private. Reaching the public win condition while any mandate fails still ends in defeat there.')}</p>
+            <p>{t('ui.guide.beacon3', 'Local tables remove Secret Mandates entirely so every movement can coordinate in the open.')}</p>
           </PaperSheet>
 
           <PaperSheet tone="tray">

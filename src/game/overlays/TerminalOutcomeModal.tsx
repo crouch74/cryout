@@ -67,10 +67,12 @@ export function TerminalOutcomeModal({
             <span>{t('ui.game.extractionTokens', 'Extraction Tokens')}</span>
             <strong>{formatNumber(totalExtraction)}</strong>
           </article>
-          <article>
-            <span>{t('ui.game.secretMandate', 'Secret Mandates')}</span>
-            <strong>{mandateSummary}</strong>
-          </article>
+          {state.secretMandatesEnabled ? (
+            <article>
+              <span>{t('ui.game.secretMandate', 'Secret Mandates')}</span>
+              <strong>{mandateSummary}</strong>
+            </article>
+          ) : null}
         </section>
 
         <div className="terminal-outcome-grid">

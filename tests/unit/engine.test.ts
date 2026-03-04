@@ -23,6 +23,11 @@ const multiOwnerStartCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
   seed: 4242,
 };
 
+const localStartCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
+  ...multiOwnerStartCommand,
+  secretMandates: 'disabled',
+};
+
 const tahrirStartCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
   type: 'StartGame',
   rulesetId: 'tahrir_square',
@@ -179,11 +184,47 @@ test('startup supports fewer human players than faction seats while keeping all 
   assert.deepEqual(state.players.map((player) => player.ownerId), [0, 0, 1, 1]);
 });
 
+test('startup can disable secret mandates for local tables', () => {
+  const state = initializeGame(localStartCommand);
+
+  assert.equal(state.secretMandatesEnabled, false);
+  assert.equal(state.mandatesResolved, true);
+  assert.equal(state.players.every((player) => player.mandateId === ''), true);
+  assert.equal(state.players.every((player) => player.mandateRevealed), true);
+});
+
 test('startup rejects ownership maps that leave a human player without a faction seat', () => {
   assert.throws(
     () => initializeGame({ ...multiOwnerStartCommand, humanPlayerCount: 3, seatOwnerIds: [0, 0, 2, 2] }),
     /owner 1 has no assigned factions/i,
   );
+});
+
+test('local victory ignores secret mandate failure while room play still enforces it', () => {
+  const content = compileContent(startCommand.rulesetId);
+  const localState = initializeGame(localStartCommand);
+  const roomState = initializeGame({ ...startCommand, secretMandates: 'enabled' });
+
+  for (const region of Object.values(localState.regions)) {
+    region.extractionTokens = 1;
+  }
+  for (const region of Object.values(roomState.regions)) {
+    region.extractionTokens = 1;
+  }
+
+  localState.phase = 'RESOLUTION';
+  roomState.phase = 'RESOLUTION';
+  localState.domains.DyingPlanet.progress = 0;
+  roomState.domains.DyingPlanet.progress = 0;
+  localState.northernWarMachine = 7;
+  roomState.northernWarMachine = 7;
+
+  const localOutcome = dispatchCommand(localState, { type: 'ResolveResolutionPhase' }, content);
+  const roomOutcome = dispatchCommand(roomState, { type: 'ResolveResolutionPhase' }, content);
+
+  assert.equal(localOutcome.phase, 'WIN');
+  assert.equal(roomOutcome.phase, 'LOSS');
+  assert.equal(roomOutcome.terminalOutcome?.cause, 'mandate_failure');
 });
 
 test('phase gating rejects coalition actions during system phase', () => {

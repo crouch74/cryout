@@ -49,9 +49,10 @@ export function PlayerStrip({
           <span>{active.passiveSecondary}</span>
         </div>
         <div className="player-strip-mandate">
-          <strong>{active.mandateTitle}</strong>
-          <span>{active.mandateLines[0]}</span>
-          <span>{active.mandateLines[1]}</span>
+          <span className="engraved-eyebrow">{active.detailEyebrow}</span>
+          <strong>{active.detailTitle}</strong>
+          <span>{active.detailLines[0]}</span>
+          <span>{active.detailLines[1]}</span>
         </div>
       </div>
     </section>

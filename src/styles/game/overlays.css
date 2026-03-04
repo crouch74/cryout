@@ -412,6 +412,17 @@ html[dir='rtl'] .campaign-result-equation-row {
   opacity: 0.58;
 }
 
+.drawer-close-button {
+  min-width: 40px;
+  width: 40px;
+  min-height: 40px;
+  height: 40px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .campaign-dice-stage {
   display: grid;
   gap: 12px;

@@ -175,6 +175,7 @@ test('phase progress helper marks the active step for the production round loop'
 test('phase and preview helpers expose calibrated presentation copy', () => {
   const content = compileContent(startCommand.rulesetId);
   const state = initializeGame(startCommand);
+  const localState = initializeGame({ ...startCommand, secretMandates: 'disabled' });
   state.phase = 'COALITION';
   const phase = getPhasePresentation('COALITION');
   const tracks = getTrackPresentation(state);
@@ -182,6 +183,7 @@ test('phase and preview helpers expose calibrated presentation copy', () => {
   const fronts = getFrontTrackRows(state, content);
   const dock = getActionDockItems(state, content, 0);
   const strip = getPlayerStripSummary(state.players[0], content, state);
+  const localStrip = getPlayerStripSummary(localState.players[0], content, localState);
   const preview = buildIntentPreview(
     { actionId: 'launch_campaign', regionId: 'Congo', domainId: 'WarMachine', bodiesCommitted: 2, evidenceCommitted: 1 },
     content.actions.launch_campaign,
@@ -196,7 +198,10 @@ test('phase and preview helpers expose calibrated presentation copy', () => {
   assert.equal(ribbon.some((item) => item.id === 'globalGaze'), true);
   assert.equal(fronts.length, 7);
   assert.equal(dock.some((item) => item.actionId === 'organize'), true);
-  assert.match(strip.mandateTitle, /Forest|Siege|River|Sacrifice/i);
+  assert.match(strip.detailTitle, /Forest|Siege|River|Sacrifice/i);
+  assert.equal(strip.detailKind, 'mandate');
+  assert.equal(localStrip.detailKind, 'open_role');
+  assert.match(localStrip.detailTitle, /Public Coordination/i);
   assert.equal(preview.some((chip) => chip.tone === 'risk'), true);
   assert.equal(preview.some((chip) => chip.tone === 'benefit'), true);
 });

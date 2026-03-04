@@ -988,6 +988,7 @@ html[dir='rtl'] .deck-reveal-deck-label {
 .context-panel-tabs {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .context-panel-tabs button,
@@ -1439,6 +1440,27 @@ html[dir='rtl'] .deck-reveal-deck-label {
   font-family: var(--font-display);
   font-weight: 700;
   letter-spacing: 0.04em;
+}
+
+.ledger-toggle-mandate {
+  min-width: 132px;
+}
+
+.ledger-toggle-mandate span {
+  white-space: nowrap;
+}
+
+.context-panel-close {
+  min-width: 38px;
+  width: 38px;
+  min-height: 38px;
+  height: 38px;
+  padding: 0;
+  flex: 0 0 auto;
+}
+
+.context-panel-close span {
+  display: none;
 }
 
 .ledger-toggle:hover,

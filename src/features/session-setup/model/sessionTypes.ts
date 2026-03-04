@@ -8,7 +8,6 @@ export interface SessionSetupDraft {
   factionIds: FactionId[];
   seatOwnerIds: number[];
   seed: number;
-  roomUrl: string;
 }
 
 export interface SessionViewport {

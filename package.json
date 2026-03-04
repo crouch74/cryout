@@ -6,16 +6,16 @@
   "scripts": {
     "dev": "vite",
     "dev:ui": "vite",
-    "dev:rooms": "node --experimental-transform-types room-service/server.ts",
+    "dev:rooms": "node room-service/server.ts",
     "generate:scenario-maps": "node scripts/generate-scenario-maps.mjs",
     "build": "tsc -p tsconfig.app.json && tsc -p tsconfig.room-service.json && vite build",
     "build:pages": "tsc -p tsconfig.app.json && tsc -p tsconfig.room-service.json && vite build --mode pages",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "node --experimental-transform-types --test tests/unit/*.test.ts tests/integration/*.test.ts",
-    "test:engine": "node --experimental-transform-types --test tests/unit/engine.test.ts tests/unit/replay.test.ts tests/integration/scenario-framework.test.ts",
-    "test:ui": "node --experimental-transform-types --test tests/unit/ui.test.ts tests/unit/world-map-anchor.test.ts tests/unit/world-map-token-layout.test.ts tests/unit/world-map-viewport.test.ts tests/unit/scenario-map-assets.test.ts tests/integration/permalinks.test.ts tests/unit/runtime.test.ts",
-    "test:e2e": "node --experimental-transform-types --test tests/integration/e2e.test.ts"
+    "test": "node --test tests/unit/*.test.ts tests/integration/*.test.ts",
+    "test:engine": "node --test tests/unit/engine.test.ts tests/unit/replay.test.ts tests/integration/scenario-framework.test.ts",
+    "test:ui": "node --test tests/unit/ui.test.ts tests/unit/world-map-anchor.test.ts tests/unit/world-map-token-layout.test.ts tests/unit/world-map-viewport.test.ts tests/unit/scenario-map-assets.test.ts tests/integration/permalinks.test.ts tests/unit/runtime.test.ts",
+    "test:e2e": "node --test tests/integration/e2e.test.ts"
   },
   "dependencies": {
     "i18next": "^25.8.13",

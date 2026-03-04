@@ -53,4 +53,13 @@ test('serialized command log replays to the same snapshot', () => {
   assert.equal(payload.snapshot.eventLog.some((event) => event.context?.cardReveals?.length), true);
   assert.equal(payload.snapshot.eventLog.some((event) => event.context?.cardReveals?.[0]?.origin === 'startup_withdrawal'), true);
   assert.deepEqual(payload.snapshot.players.map((player) => player.ownerId), [0, 0, 1, 1]);
+  assert.equal(payload.snapshot.secretMandatesEnabled, true);
+});
+
+test('serialized snapshots preserve local no-mandate tables', () => {
+  const localState = initializeGame({ ...startCommand, secretMandates: 'disabled' });
+  const payload = deserializeGame(serializeGame(localState));
+
+  assert.equal(payload.snapshot.secretMandatesEnabled, false);
+  assert.equal(payload.snapshot.players.every((player) => player.mandateId === ''), true);
 });

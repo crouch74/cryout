@@ -6,6 +6,14 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => ({
   base: mode === 'pages' ? './' : '/',
   plugins: [react()],
+  server: {
+    proxy: {
+      '/api': {
+        target: process.env.VITE_ROOM_SERVICE_PROXY_TARGET ?? 'http://127.0.0.1:3010',
+        changeOrigin: true,
+      },
+    },
+  },
   resolve: {
     alias: {
       '@app': fileURLToPath(new URL('./src/app', import.meta.url)),

@@ -2,6 +2,7 @@ import type { CompiledContent, DomainEvent } from '../../engine/index.ts';
 import { t } from '../../i18n/index.ts';
 import { presentHistoryEvent } from '../presentation/historyPresentation.ts';
 import { PaperSheet } from '../../ui/layout/tabletop.tsx';
+import { Icon } from '../../ui/icon/Icon.tsx';
 
 interface TraceDrawerProps {
   event: DomainEvent | null;
@@ -27,8 +28,14 @@ export function TraceDrawer({ event, content, onClose }: TraceDrawerProps) {
             </h3>
             <p>{presented.contextLabel ?? presented.sourceLabel}</p>
           </div>
-          <button type="button" className="mini-plate" onClick={onClose}>
-            {t('ui.traceDrawer.close', 'Close')}
+          <button
+            type="button"
+            className="mini-plate drawer-close-button"
+            onClick={onClose}
+            aria-label={t('ui.traceDrawer.close', 'Close')}
+            title={t('ui.traceDrawer.close', 'Close')}
+          >
+            <Icon type="close" size={16} ariaLabel={t('ui.traceDrawer.close', 'Close')} />
           </button>
         </div>
 

@@ -234,3 +234,80 @@ html[dir='rtl'] .scenario-select-major {
   padding-right: 24px;
   padding-left: 56px;
 }
+
+.room-lobby-scene,
+.room-lobby-board,
+.room-lobby-summary,
+.room-lobby-owners,
+.room-lobby-actions {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.room-lobby-grid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.1fr);
+}
+
+.room-lobby-link {
+  padding: 14px 16px;
+  border: 1px dashed var(--accent-primary);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.06);
+  font-family: var(--font-mono);
+  word-break: break-all;
+}
+
+.room-lobby-note,
+.room-owner-status {
+  color: var(--text-2);
+}
+
+.room-owner-grid {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.room-owner-card {
+  display: grid;
+  gap: var(--space-2);
+  padding: 18px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--tier-a-border);
+  background: var(--tier-a-bg);
+  box-shadow: var(--shadow-1);
+}
+
+.room-owner-card.is-claimed {
+  border-color: var(--accent-secondary);
+}
+
+.room-owner-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.room-owner-card-header div {
+  display: grid;
+  gap: 4px;
+}
+
+.room-owner-badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--accent-primary);
+  color: var(--surface-0);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+@media (max-width: 980px) {
+  .room-lobby-grid {
+    grid-template-columns: 1fr;
+  }
+}

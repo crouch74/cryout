@@ -1,5 +1,6 @@
 export type IconType =
   | 'bodies'
+  | 'close'
   | 'evidence'
   | 'defense'
   | 'extraction'
@@ -8,6 +9,7 @@ export type IconType =
   | 'warMachine'
   | 'round'
   | 'modeLiberation'
+  | 'mandate'
   | 'objective'
   | 'organize'
   | 'investigate'

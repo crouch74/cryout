@@ -13,6 +13,7 @@ export function ContextPanel({
   actionContent,
   ledgerContent,
   decksContent,
+  mandateContent,
 }: {
   mode: ContextPanelMode;
   open: boolean;
@@ -23,6 +24,7 @@ export function ContextPanel({
   actionContent: ReactNode;
   ledgerContent: ReactNode;
   decksContent: ReactNode;
+  mandateContent: ReactNode;
 }) {
   return (
     <aside className={`context-panel ${open ? 'is-open' : ''}`.trim()} role="dialog" aria-modal="false" aria-label={t('ui.app.contextPanel', 'Board context panel')}>
@@ -47,12 +49,21 @@ export function ContextPanel({
             <span>{t('ui.game.ledger', 'Ledger')}</span>
           </button>
         </div>
-        <button type="button" className="context-panel-close" onClick={onClose}>{t('ui.game.close', 'Close')}</button>
+        <button
+          type="button"
+          className="context-panel-close"
+          onClick={onClose}
+          aria-label={t('ui.game.close', 'Close')}
+          title={t('ui.game.close', 'Close')}
+        >
+          <Icon type="close" size={16} ariaLabel={t('ui.game.close', 'Close')} />
+        </button>
       </div>
       <div className="context-panel-body">
         {mode === 'region' ? regionContent : null}
         {mode === 'action' ? actionContent : null}
         {mode === 'decks' ? decksContent : null}
+        {mode === 'mandate' ? mandateContent : null}
         {mode === 'ledger' ? ledgerContent : null}
       </div>
     </aside>

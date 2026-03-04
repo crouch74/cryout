@@ -25,6 +25,9 @@ const serializedGameSchema = z.custom<SerializedGame>(
   'SerializedGame',
 );
 
+export const roomPhaseSchema = z.enum(['LOBBY', 'ACTIVE']);
+export type RoomPhase = z.infer<typeof roomPhaseSchema>;
+
 export const roomCredentialSchema = z.object({
   ownerId: z.number().int().nonnegative(),
   ownerToken: z.string().min(1),
@@ -32,17 +35,7 @@ export const roomCredentialSchema = z.object({
 
 export type RoomCredential = z.infer<typeof roomCredentialSchema>;
 
-export const roomSnapshotSchema = z.object({
-  roomId: z.string().min(1),
-  ownerId: z.number().int().nonnegative(),
-  ownedSeats: z.array(z.number().int().nonnegative()),
-  latestEventSeq: z.number().int().nonnegative(),
-  state: engineStateSchema,
-});
-
-export type RoomSnapshot = z.infer<typeof roomSnapshotSchema>;
-
-export const createRoomRequestSchema = z.object({
+export const roomConfigSchema = z.object({
   rulesetId: z.string().min(1),
   mode: z.enum(['LIBERATION', 'SYMBOLIC']),
   humanPlayerCount: z.union([z.literal(2), z.literal(3), z.literal(4)]),
@@ -51,6 +44,7 @@ export const createRoomRequestSchema = z.object({
   playerCount: z.number().int().positive().optional(),
   factionIds: z.array(z.string().min(1)).optional(),
   seed: z.number().int().nonnegative(),
+  secretMandates: z.enum(['enabled', 'disabled']).optional(),
 }).transform((value) => ({
   type: 'StartGame',
   ...value,
@@ -59,11 +53,70 @@ export const createRoomRequestSchema = z.object({
   factionIds: value.factionIds as StartGameCommand['factionIds'],
 }) satisfies StartGameCommand);
 
-export const createRoomResponseSchema = roomSnapshotSchema.extend({
-  ownerTokens: z.array(roomCredentialSchema).min(1),
+export type RoomConfig = z.infer<typeof roomConfigSchema>;
+
+export const createRoomRequestSchema = roomConfigSchema;
+
+export const roomOwnerSummarySchema = z.object({
+  ownerId: z.number().int().nonnegative(),
+  displayLabel: z.string().min(1),
+  claimed: z.boolean(),
+});
+
+export type RoomOwnerSummary = z.infer<typeof roomOwnerSummarySchema>;
+
+export const roomLobbySnapshotSchema = z.object({
+  phase: z.literal('LOBBY'),
+  roomId: z.string().min(1),
+  hostOwnerId: z.number().int().nonnegative(),
+  viewerOwnerId: z.number().int().nonnegative().nullable(),
+  config: roomConfigSchema,
+  owners: z.array(roomOwnerSummarySchema).min(1),
+});
+
+export type RoomLobbySnapshot = z.infer<typeof roomLobbySnapshotSchema>;
+
+export const roomActiveSnapshotSchema = z.object({
+  phase: z.literal('ACTIVE'),
+  roomId: z.string().min(1),
+  ownerId: z.number().int().nonnegative(),
+  ownedSeats: z.array(z.number().int().nonnegative()),
+  latestEventSeq: z.number().int().nonnegative(),
+  state: engineStateSchema,
+});
+
+export type RoomActiveSnapshot = z.infer<typeof roomActiveSnapshotSchema>;
+
+export const roomSnapshotSchema = z.discriminatedUnion('phase', [
+  roomLobbySnapshotSchema,
+  roomActiveSnapshotSchema,
+]);
+
+export type RoomSnapshot = z.infer<typeof roomSnapshotSchema>;
+
+export const createRoomResponseSchema = roomLobbySnapshotSchema.extend({
+  hostCredential: roomCredentialSchema,
 });
 
 export type CreateRoomResponse = z.infer<typeof createRoomResponseSchema>;
+
+export const joinRoomRequestSchema = z.object({
+  ownerId: z.number().int().nonnegative(),
+});
+
+export type JoinRoomRequest = z.infer<typeof joinRoomRequestSchema>;
+
+export const joinRoomResponseSchema = roomLobbySnapshotSchema.extend({
+  ownerCredential: roomCredentialSchema,
+});
+
+export type JoinRoomResponse = z.infer<typeof joinRoomResponseSchema>;
+
+export const startRoomRequestSchema = z.object({
+  ownerToken: z.string().min(1).optional(),
+});
+
+export type StartRoomRequest = z.infer<typeof startRoomRequestSchema>;
 
 export const commandBatchRequestSchema = z.object({
   ownerToken: z.string().min(1).optional(),
@@ -100,4 +153,8 @@ export function parseRoomSnapshot(payload: unknown) {
 
 export function parseCreateRoomResponse(payload: unknown) {
   return createRoomResponseSchema.parse(payload);
+}
+
+export function parseJoinRoomResponse(payload: unknown) {
+  return joinRoomResponseSchema.parse(payload);
 }

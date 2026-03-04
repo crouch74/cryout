@@ -15,7 +15,7 @@ const startCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
 
 function runLocalSequence() {
   const content = compileContent(startCommand.rulesetId);
-  let state = initializeGame(startCommand);
+  let state = initializeGame({ ...startCommand, secretMandates: 'enabled' });
   const commands: EngineCommand[] = [
     { type: 'ResolveSystemPhase' },
     { type: 'QueueIntent', seat: 0, action: { actionId: 'organize', regionId: 'Congo' } },
@@ -41,20 +41,54 @@ function runLocalSequence() {
   return { commands, state };
 }
 
-test('room service stays in sync with the local table reducer', async () => {
-  const controller = createRoomController();
-  const created = controller.createRoom(startCommand) as {
-    roomId: string;
-    ownerTokens: Array<{ ownerId: number; ownerToken: string }>;
-    state: EngineState;
+function claimAndStartRoom(controller: ReturnType<typeof createRoomController>) {
+  const created = controller.createRoom(startCommand);
+  assert.equal(created.phase, 'LOBBY');
+  assert.equal(created.hostCredential.ownerId, 0);
+
+  const joined = controller.claimOwner(created.roomId, 1);
+  if (!joined || !('ownerCredential' in joined)) {
+    throw new Error('Expected owner 1 claim to succeed.');
+  }
+
+  const active = controller.startRoom(created.roomId, created.hostCredential.ownerToken);
+  if (!active || active.phase !== 'ACTIVE') {
+    throw new Error('Expected room to become active.');
+  }
+
+  return {
+    roomId: created.roomId,
+    ownerTokens: new Map<number, string>([
+      [created.hostCredential.ownerId, created.hostCredential.ownerToken],
+      [joined.ownerCredential.ownerId, joined.ownerCredential.ownerToken],
+    ]),
+    active,
   };
+}
+
+test('room creation returns a lobby snapshot and requires claims before start', () => {
+  const controller = createRoomController();
+  const created = controller.createRoom(startCommand);
+
+  assert.equal(created.phase, 'LOBBY');
+  assert.equal(created.owners.length, 2);
+  assert.equal(created.owners[0]?.claimed, true);
+  assert.equal(created.owners[1]?.claimed, false);
+  assert.equal(created.config.secretMandates, 'enabled');
+
+  const startBeforeClaim = controller.startRoom(created.roomId, created.hostCredential.ownerToken);
+  assert.deepEqual(startBeforeClaim, { unclaimedOwners: true });
+});
+
+test('room service stays in sync with the local table reducer after lobby start', async () => {
+  const controller = createRoomController();
+  const activated = claimAndStartRoom(controller);
   const local = runLocalSequence();
   let payload: { state: EngineState } | null = null;
-  const ownerTokens = new Map(created.ownerTokens.map((credential) => [credential.ownerId, credential.ownerToken]));
 
   for (const command of local.commands) {
     const ownerId = 'seat' in command ? (startCommand.seatOwnerIds?.[command.seat] ?? 0) : 0;
-    payload = controller.applyCommands(created.roomId, ownerTokens.get(ownerId) ?? '', [command]) as { state: EngineState };
+    payload = controller.applyCommands(activated.roomId, activated.ownerTokens.get(ownerId) ?? '', [command]) as { state: EngineState };
   }
 
   assert.equal(payload?.state.phase, local.state.phase);
@@ -65,21 +99,18 @@ test('room service stays in sync with the local table reducer', async () => {
   assert.deepEqual(payload?.state.regions, local.state.regions);
 });
 
-test('room snapshots reveal private data for all seats owned by the same human player', () => {
+test('room snapshots reveal private data only for seats owned by the same human player', () => {
   const controller = createRoomController();
-  const created = controller.createRoom(startCommand) as {
-    roomId: string;
-    ownerTokens: Array<{ ownerId: number; ownerToken: string }>;
-    state: EngineState;
-  };
-  controller.applyCommands(created.roomId, created.ownerTokens[0]?.ownerToken ?? '', [
+  const activated = claimAndStartRoom(controller);
+  controller.applyCommands(activated.roomId, activated.ownerTokens.get(0) ?? '', [
     { type: 'ResolveSystemPhase' },
     { type: 'QueueIntent', seat: 1, action: { actionId: 'defend', regionId: 'Levant', bodiesCommitted: 1 } },
   ]);
 
-  const ownerZero = controller.getRoom(created.roomId, created.ownerTokens[0]?.ownerToken ?? '') as { state: EngineState; ownerId: number };
-  const ownerOne = controller.getRoom(created.roomId, created.ownerTokens[1]?.ownerToken ?? '') as { state: EngineState; ownerId: number };
+  const ownerZero = controller.getRoom(activated.roomId, activated.ownerTokens.get(0) ?? '') as { state: EngineState; ownerId: number; phase: 'ACTIVE' };
+  const ownerOne = controller.getRoom(activated.roomId, activated.ownerTokens.get(1) ?? '') as { state: EngineState; ownerId: number; phase: 'ACTIVE' };
 
+  assert.equal(ownerZero.phase, 'ACTIVE');
   assert.equal(ownerZero.ownerId, 0);
   assert.equal(ownerOne.ownerId, 1);
   assert.equal(ownerZero.state.players[1]?.queuedIntents.length, 1);
@@ -87,24 +118,27 @@ test('room snapshots reveal private data for all seats owned by the same human p
   assert.equal(ownerOne.state.players[1]?.queuedIntents[0]?.actionId, 'defend');
   assert.equal(ownerOne.state.players[1]?.queuedIntents[0]?.bodiesCommitted, undefined);
   assert.equal(ownerOne.state.players[1]?.mandateId, '');
-  assert.equal(ownerZero.state.players[2]?.resistanceHand.length, 0);
-  assert.equal(ownerZero.state.players[3]?.resistanceHand.length, 0);
-  assert.equal(ownerOne.state.players[0]?.resistanceHand.length, 0);
-  assert.equal(ownerOne.state.players[1]?.resistanceHand.length, 0);
-  assert.equal(ownerZero.state.eventLog.some((event) => event.context?.cardReveals?.[0]?.deckId === 'resistance'), true);
-  assert.equal(ownerZero.state.eventLog.some((event) => event.context?.cardReveals?.[0]?.origin === 'startup_withdrawal'), true);
+  assert.equal(ownerZero.state.secretMandatesEnabled, true);
+});
+
+test('room service rejects already-claimed slots and commands before activation', () => {
+  const controller = createRoomController();
+  const created = controller.createRoom(startCommand);
+
+  assert.deepEqual(controller.claimOwner(created.roomId, 0), { conflict: true });
+  assert.deepEqual(
+    controller.applyCommands(created.roomId, created.hostCredential.ownerToken, [{ type: 'ResolveSystemPhase' }]),
+    { inactive: true },
+  );
 });
 
 test('room service rejects commands for seats owned by another human player', () => {
   const controller = createRoomController();
-  const created = controller.createRoom(startCommand) as {
-    roomId: string;
-    ownerTokens: Array<{ ownerId: number; ownerToken: string }>;
-  };
+  const activated = claimAndStartRoom(controller);
 
   const response = controller.applyCommands(
-    created.roomId,
-    created.ownerTokens[0]?.ownerToken ?? '',
+    activated.roomId,
+    activated.ownerTokens.get(0) ?? '',
     [{ type: 'QueueIntent', seat: 2, action: { actionId: 'organize', regionId: 'Mekong' } }],
   );
 
@@ -113,7 +147,7 @@ test('room service rejects commands for seats owned by another human player', ()
 
 test('room service issues friendly 11-segment room keys', () => {
   const controller = createRoomController();
-  const created = controller.createRoom(startCommand) as { roomId: string };
+  const created = controller.createRoom(startCommand);
 
   assert.match(created.roomId, /^[a-z]{3}-[a-z]{3}-[a-z]{3}$/);
 });

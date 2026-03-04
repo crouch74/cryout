@@ -47,7 +47,7 @@
 ## Missing Keys Resolved
 
 - Added `ui.runtime.*` in both locales.
-- Added `ui.home.roomUrlPlaceholder` in both locales.
+- Added room-play status copy in both locales.
 - Added `ui.game.currentMode`, `ui.game.modeDescLiberation`, `ui.game.modeDescSymbolic`, `ui.game.beginStruggle`, and `ui.game.phaseSummary*` in both locales.
 - Added Arabic top-level ruleset entries for `tahrir_square` and `woman_life_freedom`.
 

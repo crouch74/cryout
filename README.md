@@ -16,7 +16,7 @@ This repo now ships with three major rulebooks/scenarios:
 - **1 central threat system**: Extraction Tokens (expanded pool for specialized scenarios).
 - **3 live decks**: System, Resistance, and Crisis.
 - **2 global meters**: Global Gaze and Northern War Machine.
-- **Asymmetric factions**: Each with unique passives, weaknesses, and secret mandates.
+- **Asymmetric factions**: Each with unique passives, weaknesses, and room-play Secret Mandates.
 
 ## Game Loop
 
@@ -27,20 +27,21 @@ Each round follows three phases:
 2. `COALITION`
    Each seat queues two actions from the universal action set, then marks ready.
 3. `RESOLUTION`
-   Queued actions resolve in priority order, then the game checks Liberation or Symbolic victory and all secret mandates.
+   Queued actions resolve in priority order, then the game checks Liberation or Symbolic victory and, in room play, all Secret Mandates.
 
 ## Core Defeat / Victory
 
 - Any region reaching `6` Extraction Tokens is an immediate loss.
 - `Liberation`: win if all six regions are at `1` or fewer Extraction Tokens at the end of Resolution.
 - `Symbolic`: win if all three active Beacons are complete at the end of Resolution.
-- In both modes, every secret mandate must also be satisfied or the coalition still fails.
+- In online room play, every Secret Mandate must also be satisfied or the coalition still fails.
+- In local play, Secret Mandates are removed so the coalition coordinates entirely in the open.
 
 ## Tech Stack
 
 - Frontend: React + TypeScript + Vite
 - Rules engine: TypeScript deterministic reducer with seeded replay
-- Room play: Node HTTP room service with seat-scoped mandate redaction
+- Room play: Node HTTP room service with lobby creation, seat claiming, host start, and seat-scoped private-state redaction
 - Styling: existing tabletop shell and CSS system
 
 ## Quick Start
@@ -52,11 +53,21 @@ npm install
 npm run dev
 ```
 
+The frontend now talks to the room backend through same-origin `/api` routes. Players never need to enter a separate room-service URL.
+
 ### Room Service
 
 ```bash
 npm run dev:rooms
 ```
+
+Room play uses a lightweight lobby flow:
+
+1. Create a room from the setup screen.
+2. Each browser opens the room URL and claims one player slot.
+3. The host starts the match once every slot is claimed.
+
+Rooms are intentionally ephemeral and disappear when the room-service process stops.
 
 ### Full Test Suite
 
@@ -73,5 +84,5 @@ npm run build
 ## Notes
 
 - Local autosaves are intentionally versioned to the current ruleset and old saves are not forward-compatible.
-- The Node room service is the active multiplayer path.
+- The Node room service is the active multiplayer path and keeps Secret Mandates private per claimed owner.
 - The shipped repo now contains only the active TypeScript engine, scenario content, and Node room service surfaces.

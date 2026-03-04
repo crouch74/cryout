@@ -172,6 +172,10 @@ function normalizeStartGameCommand(command: StartGameCommand): NormalizedStartGa
   };
 }
 
+function areSecretMandatesEnabled(command: Pick<StartGameCommand, 'secretMandates'>) {
+  return command.secretMandates !== 'disabled';
+}
+
 function validateStartGameCommand(command: StartGameCommand, content: CompiledContent) {
   const scenarioFactionIds = content.ruleset.factions.map((faction) => faction.id);
   const { humanPlayerCount, seatFactionIds, seatOwnerIds } = normalizeStartGameCommand(command);
@@ -911,6 +915,33 @@ function checkPositiveVictory(state: EngineState, content: CompiledContent): boo
     return false;
   }
 
+  if (!state.secretMandatesEnabled) {
+    const cause: TerminalOutcomeCause = liberationComplete ? 'liberation' : 'symbolic';
+    state.phase = 'WIN';
+    state.winner = liberationComplete
+      ? t('ui.runtime.winnerLiberation', 'Liberation achieved.')
+      : t('ui.runtime.winnerSymbolic', 'Symbolic beacons aligned.');
+    addSimpleEvent(
+      state,
+      'beacon',
+      'victory',
+      '🕯️',
+      state.winner,
+      ['victory'],
+    );
+    finalizeTerminalEvent(
+      state,
+      createTerminalOutcome(
+        state,
+        'victory',
+        cause,
+        t('ui.runtime.outcomeVictory', 'Victory'),
+        state.winner,
+      ),
+    );
+    return true;
+  }
+
   const failedMandates = state.players.filter((player) => {
     const faction = getFaction(content, player);
     return !evaluateCondition(state, content, faction.mandate.condition, { actingSeat: player.seat, causedBy: [faction.mandate.id] });
@@ -1481,6 +1512,7 @@ function resolveSystemEscalation(state: EngineState, content: CompiledContent) {
 
 function createInitialPlayers(command: StartGameCommand, content: CompiledContent): PlayerState[] {
   const { seatFactionIds, seatOwnerIds } = normalizeStartGameCommand(command);
+  const secretMandatesEnabled = areSecretMandatesEnabled(command);
 
   return seatFactionIds.map((factionId, seat) => ({
     seat,
@@ -1491,8 +1523,8 @@ function createInitialPlayers(command: StartGameCommand, content: CompiledConten
     ready: false,
     queuedIntents: [],
     resistanceHand: [],
-    mandateId: content.factions[factionId].mandate.id,
-    mandateRevealed: false,
+    mandateId: secretMandatesEnabled ? content.factions[factionId].mandate.id : '',
+    mandateRevealed: !secretMandatesEnabled,
   }));
 }
 
@@ -1500,6 +1532,7 @@ function createInitialState(command: StartGameCommand, content: CompiledContent)
   let rng = createRng(command.seed);
   const players = createInitialPlayers(command, content);
   const setup = getRulesetSetup(content);
+  const secretMandatesEnabled = areSecretMandatesEnabled(command);
 
   const decks = {
     system: { drawPile: [] as string[], discardPile: [] as string[] },
@@ -1576,6 +1609,7 @@ function createInitialState(command: StartGameCommand, content: CompiledContent)
     rng,
     rulesetId: command.rulesetId,
     mode: command.mode,
+    secretMandatesEnabled,
     round: 1,
     phase: 'SYSTEM',
     extractionPool: 0,
@@ -1611,7 +1645,7 @@ function createInitialState(command: StartGameCommand, content: CompiledContent)
     winner: null,
     lossReason: null,
     terminalOutcome: null,
-    mandatesResolved: false,
+    mandatesResolved: !secretMandatesEnabled,
     tahrirEmptyRounds: 0,
     tahrirMartyrCount: 0,
     scenarioFlags: Object.fromEntries((content.ruleset.scenarioFlags ?? []).map((flag) => [flag, false])),
@@ -2203,6 +2237,7 @@ export function normalizeEngineState(state: EngineState): EngineState {
     ...player,
     ownerId: player.ownerId ?? player.seat,
   }));
+  next.secretMandatesEnabled = next.secretMandatesEnabled ?? true;
   next.customTracks = next.customTracks ?? {};
   next.activeBeaconIds = next.activeBeaconIds ?? [];
   next.activeSystemCardIds = next.activeSystemCardIds ?? [];
@@ -2210,7 +2245,7 @@ export function normalizeEngineState(state: EngineState): EngineState {
   next.failedCampaigns = next.failedCampaigns ?? 0;
   next.publicAttentionEvents = next.publicAttentionEvents ?? [];
   next.lastSystemCardIds = next.lastSystemCardIds ?? [];
-  next.mandatesResolved = next.mandatesResolved ?? false;
+  next.mandatesResolved = next.mandatesResolved ?? !next.secretMandatesEnabled;
   next.terminalOutcome = next.terminalOutcome ?? null;
   next.scenarioFlags = next.scenarioFlags ?? {};
   next.triggeredScenarioThresholds = next.triggeredScenarioThresholds ?? {};

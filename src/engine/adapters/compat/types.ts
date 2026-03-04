@@ -565,6 +565,7 @@ export interface EngineState {
   rng: RngState;
   rulesetId: string;
   mode: VictoryMode;
+  secretMandatesEnabled: boolean;
   round: number;
   phase: Phase;
   extractionPool: number;
@@ -604,6 +605,7 @@ export interface StartGameCommand {
   type: 'StartGame';
   rulesetId: string;
   mode: VictoryMode;
+  secretMandates?: 'enabled' | 'disabled';
   humanPlayerCount?: 2 | 3 | 4;
   seatFactionIds?: FactionId[];
   seatOwnerIds?: number[];

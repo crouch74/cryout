@@ -18,20 +18,34 @@ import type {
 } from '../src/engine/index.ts';
 import {
   commandBatchRequestSchema,
-  createRoomRequestSchema,
+  createRoomResponseSchema,
+  joinRoomRequestSchema,
+  joinRoomResponseSchema,
   roomLoadRequestSchema,
+  startRoomRequestSchema,
+  type CreateRoomResponse,
+  type JoinRoomResponse,
+  type RoomActiveSnapshot,
+  type RoomConfig,
+  type RoomLobbySnapshot,
 } from '../src/features/room-session/api/schemas.ts';
+import { createRoomRequestSchema } from '../src/features/room-session/api/schemas.ts';
 import { ZodError } from 'zod';
 
 interface RoomCredential {
   ownerId: number;
-  ownerToken: string;
+  ownerToken: string | null;
+  displayLabel: string;
 }
 
 interface RoomRecord {
-  content: CompiledContent;
-  state: EngineState;
-  ownerTokens: RoomCredential[];
+  roomId: string;
+  phase: 'LOBBY' | 'ACTIVE';
+  config: RoomConfig;
+  owners: RoomCredential[];
+  hostOwnerId: number;
+  content: CompiledContent | null;
+  state: EngineState | null;
 }
 
 const ROOM_KEY_ALPHABET = 'abcdefghijklmnopqrstuvwxyz';
@@ -106,18 +120,11 @@ function redactStateForOwner(state: EngineState, ownerId: number): EngineState {
   return snapshot;
 }
 
-function buildRoomSnapshot(roomId: string, room: RoomRecord, ownerId: number) {
-  return {
-    roomId,
-    ownerId,
-    ownedSeats: room.state.players.filter((player) => player.ownerId === ownerId).map((player) => player.seat),
-    latestEventSeq: room.state.eventLog.at(-1)?.seq ?? 0,
-    state: redactStateForOwner(room.state, ownerId),
-  };
-}
-
 function resolveOwnerFromToken(room: RoomRecord, ownerToken: string | undefined | null) {
-  return room.ownerTokens.find((credential) => credential.ownerToken === ownerToken)?.ownerId ?? null;
+  if (!ownerToken) {
+    return null;
+  }
+  return room.owners.find((owner) => owner.ownerToken === ownerToken)?.ownerId ?? null;
 }
 
 function commandSeatBelongsToOwner(state: EngineState, command: EngineCommand, ownerId: number) {
@@ -127,75 +134,217 @@ function commandSeatBelongsToOwner(state: EngineState, command: EngineCommand, o
   return state.players[command.seat]?.ownerId === ownerId;
 }
 
+function buildLobbySnapshot(room: RoomRecord, ownerToken: string | null = null): RoomLobbySnapshot {
+  return {
+    phase: 'LOBBY',
+    roomId: room.roomId,
+    hostOwnerId: room.hostOwnerId,
+    viewerOwnerId: resolveOwnerFromToken(room, ownerToken),
+    config: room.config,
+    owners: room.owners.map((owner) => ({
+      ownerId: owner.ownerId,
+      displayLabel: owner.displayLabel,
+      claimed: Boolean(owner.ownerToken),
+    })),
+  };
+}
+
+function buildActiveSnapshot(room: RoomRecord, ownerId: number): RoomActiveSnapshot {
+  const state = room.state ? redactStateForOwner(room.state, ownerId) : null;
+  if (!state) {
+    throw new Error(`Room ${room.roomId} is active without state.`);
+  }
+
+  return {
+    phase: 'ACTIVE',
+    roomId: room.roomId,
+    ownerId,
+    ownedSeats: state.players.filter((player) => player.ownerId === ownerId).map((player) => player.seat),
+    latestEventSeq: state.eventLog.at(-1)?.seq ?? 0,
+    state,
+  };
+}
+
+function createOwners(config: RoomConfig): RoomCredential[] {
+  const ownerIds = [...new Set(config.seatOwnerIds ?? [])].sort((left, right) => left - right);
+  return ownerIds.map((ownerId) => ({
+    ownerId,
+    ownerToken: null,
+    displayLabel: `Player ${ownerId + 1}`,
+  }));
+}
+
+function ensureRoomModeConfig(config: StartGameCommand): RoomConfig {
+  return createRoomRequestSchema.parse({
+    ...config,
+    secretMandates: 'enabled',
+  });
+}
+
 export function createRoomController() {
   const rooms = new Map<string, RoomRecord>();
 
   return {
-    createRoom(startCommand: StartGameCommand) {
-      const content = compileContent(startCommand.rulesetId);
-      const state = initializeGame(startCommand);
+    createRoom(startCommand: StartGameCommand): CreateRoomResponse {
+      const config = ensureRoomModeConfig(startCommand);
       let roomId = createRoomKey();
       while (rooms.has(roomId)) {
         roomId = createRoomKey();
       }
-      const ownerTokens = Array.from(new Set(state.players.map((player) => player.ownerId))).map((ownerId) => ({
-        ownerId,
-        ownerToken: createOwnerToken(),
-      }));
-      const room = { content, state, ownerTokens };
+
+      const owners = createOwners(config);
+      const hostOwnerId = owners[0]?.ownerId ?? 0;
+      const hostOwner = owners.find((owner) => owner.ownerId === hostOwnerId);
+      if (!hostOwner) {
+        throw new Error('Room creation requires at least one owner slot.');
+      }
+      hostOwner.ownerToken = createOwnerToken();
+
+      const room: RoomRecord = {
+        roomId,
+        phase: 'LOBBY',
+        config,
+        owners,
+        hostOwnerId,
+        content: null,
+        state: null,
+      };
       rooms.set(roomId, room);
-      return { ...buildRoomSnapshot(roomId, room, ownerTokens[0]?.ownerId ?? 0), ownerTokens };
+
+      console.log(`🏠 [RoomService] Created lobby ${roomId} for ${config.rulesetId}.`);
+      return createRoomResponseSchema.parse({
+        ...buildLobbySnapshot(room, hostOwner.ownerToken),
+        hostCredential: {
+          ownerId: hostOwner.ownerId,
+          ownerToken: hostOwner.ownerToken,
+        },
+      });
     },
     getRoom(roomId: string, ownerToken: string | null) {
       const room = rooms.get(roomId);
       if (!room) {
         return null;
       }
+
+      if (room.phase === 'LOBBY') {
+        return buildLobbySnapshot(room, ownerToken);
+      }
+
       const ownerId = resolveOwnerFromToken(room, ownerToken);
       if (ownerId === null) {
         return { unauthorized: true };
       }
-      return buildRoomSnapshot(roomId, room, ownerId);
+      return buildActiveSnapshot(room, ownerId);
+    },
+    claimOwner(roomId: string, ownerId: number) {
+      const room = rooms.get(roomId);
+      if (!room) {
+        return null;
+      }
+      if (room.phase !== 'LOBBY') {
+        return { forbidden: true };
+      }
+
+      const owner = room.owners.find((entry) => entry.ownerId === ownerId);
+      if (!owner) {
+        return { invalidOwner: true };
+      }
+      if (owner.ownerToken) {
+        return { conflict: true };
+      }
+
+      owner.ownerToken = createOwnerToken();
+      console.log(`🫱🏽‍🫲🏾 [RoomService] Owner slot ${ownerId} claimed in room ${roomId}.`);
+
+      return joinRoomResponseSchema.parse({
+        ...buildLobbySnapshot(room, owner.ownerToken),
+        ownerCredential: {
+          ownerId: owner.ownerId,
+          ownerToken: owner.ownerToken,
+        },
+      } satisfies JoinRoomResponse);
+    },
+    startRoom(roomId: string, ownerToken: string | null) {
+      const room = rooms.get(roomId);
+      if (!room) {
+        return null;
+      }
+      if (room.phase !== 'LOBBY') {
+        return { alreadyActive: true };
+      }
+
+      const ownerId = resolveOwnerFromToken(room, ownerToken);
+      if (ownerId === null) {
+        return { unauthorized: true };
+      }
+      if (ownerId !== room.hostOwnerId) {
+        return { forbidden: true };
+      }
+      if (room.owners.some((owner) => !owner.ownerToken)) {
+        return { unclaimedOwners: true };
+      }
+
+      room.content = compileContent(room.config.rulesetId);
+      room.state = initializeGame(room.config);
+      room.phase = 'ACTIVE';
+      console.log(`🎲 [RoomService] Room match started for ${roomId}.`);
+      return buildActiveSnapshot(room, ownerId);
     },
     applyCommands(roomId: string, ownerToken: string | null, commands: EngineCommand[]) {
       const room = rooms.get(roomId);
       if (!room) {
         return null;
       }
+      if (room.phase !== 'ACTIVE' || !room.state || !room.content) {
+        return { inactive: true };
+      }
+
       const ownerId = resolveOwnerFromToken(room, ownerToken);
       if (ownerId === null) {
         return { unauthorized: true };
       }
+
       for (const command of commands) {
         if (!commandSeatBelongsToOwner(room.state, command, ownerId)) {
           return { forbidden: true };
         }
         room.state = dispatchCommand(room.state, command, room.content);
       }
-      return buildRoomSnapshot(roomId, room, ownerId);
+
+      return buildActiveSnapshot(room, ownerId);
     },
     loadSnapshot(roomId: string, ownerToken: string | null, snapshot: SerializedGame) {
       const room = rooms.get(roomId);
       if (!room) {
         return null;
       }
+      if (room.phase !== 'ACTIVE') {
+        return { inactive: true };
+      }
+
       const ownerId = resolveOwnerFromToken(room, ownerToken);
       if (ownerId === null) {
         return { unauthorized: true };
       }
+
       room.content = compileContent(snapshot.rulesetId);
       room.state = normalizeEngineState(snapshot.snapshot);
-      return buildRoomSnapshot(roomId, room, ownerId);
+      return buildActiveSnapshot(room, ownerId);
     },
     replay(roomId: string, ownerToken: string | null) {
       const room = rooms.get(roomId);
       if (!room) {
         return null;
       }
+      if (room.phase !== 'ACTIVE' || !room.state) {
+        return { inactive: true };
+      }
+
       const ownerId = resolveOwnerFromToken(room, ownerToken);
       if (ownerId === null) {
         return { unauthorized: true };
       }
+
       return {
         roomId,
         ownerId,
@@ -203,7 +352,15 @@ export function createRoomController() {
         commandLog: room.state.commandLog,
       };
     },
-    deleteRoom(roomId: string) {
+    deleteRoom(roomId: string, ownerToken: string | null) {
+      const room = rooms.get(roomId);
+      if (!room) {
+        return null;
+      }
+      const ownerId = resolveOwnerFromToken(room, ownerToken);
+      if (ownerId !== room.hostOwnerId) {
+        return { forbidden: true };
+      }
       return rooms.delete(roomId);
     },
   };
@@ -256,8 +413,66 @@ export function createRoomService() {
       }
 
       if (request.method === 'DELETE' && !tail) {
-        controller.deleteRoom(roomId);
+        const deleted = controller.deleteRoom(roomId, ownerToken);
+        if (deleted === null) {
+          sendJson(response, 404, { error: 'Room not found' });
+          return;
+        }
+        if (typeof deleted === 'object' && 'forbidden' in deleted) {
+          sendJson(response, 403, { error: 'Only the host can delete the room' });
+          return;
+        }
         sendJson(response, 200, { roomId, deleted: true });
+        return;
+      }
+
+      if (request.method === 'POST' && tail === 'join') {
+        const payload = joinRoomRequestSchema.parse(await readJson(request));
+        const join = controller.claimOwner(roomId, payload.ownerId);
+        if (!join) {
+          sendJson(response, 404, { error: 'Room not found' });
+          return;
+        }
+        if ('forbidden' in join) {
+          sendJson(response, 403, { error: 'Room is no longer accepting seat claims' });
+          return;
+        }
+        if ('invalidOwner' in join) {
+          sendJson(response, 400, { error: 'Unknown owner slot' });
+          return;
+        }
+        if ('conflict' in join) {
+          sendJson(response, 409, { error: 'Owner slot already claimed' });
+          return;
+        }
+        sendJson(response, 200, join);
+        return;
+      }
+
+      if (request.method === 'POST' && tail === 'start') {
+        const payload = startRoomRequestSchema.parse(await readJson(request));
+        const room = controller.startRoom(roomId, payload.ownerToken ?? ownerToken);
+        if (!room) {
+          sendJson(response, 404, { error: 'Room not found' });
+          return;
+        }
+        if ('unauthorized' in room) {
+          sendJson(response, 401, { error: 'Owner token required' });
+          return;
+        }
+        if ('forbidden' in room) {
+          sendJson(response, 403, { error: 'Only the host can start the room' });
+          return;
+        }
+        if ('unclaimedOwners' in room) {
+          sendJson(response, 409, { error: 'Every player slot must be claimed before the room can start' });
+          return;
+        }
+        if ('alreadyActive' in room) {
+          sendJson(response, 409, { error: 'Room already active' });
+          return;
+        }
+        sendJson(response, 200, room);
         return;
       }
 
@@ -265,6 +480,10 @@ export function createRoomService() {
         const replay = controller.replay(roomId, ownerToken);
         if (!replay) {
           sendJson(response, 404, { error: 'Room not found' });
+          return;
+        }
+        if ('inactive' in replay) {
+          sendJson(response, 409, { error: 'Room has not started yet' });
           return;
         }
         if ('unauthorized' in replay) {
@@ -280,6 +499,10 @@ export function createRoomService() {
         const room = controller.applyCommands(roomId, payload.ownerToken ?? ownerToken, payload.commands);
         if (!room) {
           sendJson(response, 404, { error: 'Room not found' });
+          return;
+        }
+        if ('inactive' in room) {
+          sendJson(response, 409, { error: 'Room has not started yet' });
           return;
         }
         if ('unauthorized' in room) {
@@ -306,6 +529,10 @@ export function createRoomService() {
         const room = controller.loadSnapshot(roomId, payload.ownerToken ?? ownerToken, snapshot);
         if (!room) {
           sendJson(response, 404, { error: 'Room not found' });
+          return;
+        }
+        if ('inactive' in room) {
+          sendJson(response, 409, { error: 'Room has not started yet' });
           return;
         }
         if ('unauthorized' in room) {

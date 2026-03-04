@@ -151,26 +151,15 @@ export function SessionSetupScreen({
                     </label>
                   </div>
                   {config.surface === 'room' ? (
-                    <>
-                      <label>
-                        <span>{t('ui.home.roomServiceUrl', 'Room Service URL')}</span>
-                        <input
-                          type="text"
-                          value={config.roomUrl}
-                          onChange={(event) => onConfigChange({ roomUrl: event.target.value })}
-                          placeholder={t('ui.home.roomUrlPlaceholder', 'http://localhost:3010')}
-                        />
-                      </label>
-                      <p className="room-status-note">
-                        {roomPlayDisabledByBuild
-                          ? t('ui.home.roomOfflineOnly', 'This build is configured for offline play only.')
-                          : roomPlayChecking
-                            ? t('ui.home.roomChecking', 'Checking room service...')
-                            : roomPlayAvailable
-                              ? t('ui.home.roomReachable', 'Room service reachable.')
-                              : t('ui.home.roomUnavailable', 'Room service unavailable. Local table still works.')}
-                      </p>
-                    </>
+                    <p className="room-status-note">
+                      {roomPlayDisabledByBuild
+                        ? t('ui.home.roomOfflineOnly', 'This build is configured for offline play only.')
+                        : roomPlayChecking
+                          ? t('ui.home.roomChecking', 'Checking room service...')
+                          : roomPlayAvailable
+                            ? t('ui.home.roomReachable', 'Room service reachable.')
+                            : t('ui.home.roomUnavailable', 'Room service unavailable. Local table still works.')}
+                    </p>
                   ) : null}
                   <div className="header-action-plates">
                     <ThemePlate
