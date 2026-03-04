@@ -4,7 +4,7 @@
       "label": "Language",
       "locales": {
         "en": "English",
-        "ar-EG": "Egyptian Arabic"
+        "ar-EG": "العربية المصرية"
       }
     },
     "accessibility": {
@@ -165,7 +165,14 @@
       "regions": "Regions",
       "threat": "Threat",
       "regionCount": "{{count}} regions",
-      "threatValue": "If any region reaches 6 Extraction Tokens, the coalition loses."
+      "threatValue": "If any region reaches 6 Extraction Tokens, the coalition collapses.",
+      "briefingWindow": "Window",
+      "briefingWindowValue": "to round {{round}}",
+      "movementState": "Movement State",
+      "systemPressure": "System Pressure",
+      "highestExtraction": "Highest Extraction",
+      "existentialThreat": "Existential Threat",
+      "currentPeakRegion": "Current peak: {{region}}."
     },
     "app": {
       "contextPanel": "Board context panel",

@@ -617,16 +617,16 @@ test('locale direction stays aligned with the supported locales', () => {
   assert.equal(getLocaleDirection('ar-EG'), 'rtl');
 });
 
-test('locale options localize their labels under each active locale', async () => {
+test('locale options keep autonym labels under each active locale', async () => {
   await changeLocale('en');
   assert.deepEqual(getLocaleOptions(), [
     { value: 'en', label: 'English' },
-    { value: 'ar-EG', label: 'Egyptian Arabic' },
+    { value: 'ar-EG', label: 'العربية المصرية' },
   ]);
 
   await changeLocale('ar-EG');
   assert.deepEqual(getLocaleOptions(), [
-    { value: 'en', label: 'الإنجليزية' },
+    { value: 'en', label: 'English' },
     { value: 'ar-EG', label: 'العربية المصرية' },
   ]);
 

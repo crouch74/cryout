@@ -20,6 +20,11 @@ const LOCALE_META: Record<Locale, { dir: 'ltr' | 'rtl'; intlLocale: string; zero
   'ar-EG': { dir: 'rtl', intlLocale: 'ar-EG-u-nu-arab', zero: '٠' },
 };
 
+const LOCALE_AUTONYMS: Record<Locale, string> = {
+  en: 'English',
+  'ar-EG': 'العربية المصرية',
+};
+
 const numberFormatters = new Map<Locale, Intl.NumberFormat>();
 
 function getNumberFormatter(locale: Locale) {
@@ -236,8 +241,8 @@ export function formatEffectPreview(action: ActionDefinition) {
 
 export function getLocaleOptions(): Array<{ value: Locale; label: string }> {
   return [
-    { value: 'en', label: t('ui.language.locales.en', 'English') },
-    { value: 'ar-EG', label: t('ui.language.locales.ar-EG', 'العربية المصرية') },
+    { value: 'en', label: LOCALE_AUTONYMS.en },
+    { value: 'ar-EG', label: LOCALE_AUTONYMS['ar-EG'] },
   ];
 }
 

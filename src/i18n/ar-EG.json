@@ -3,7 +3,7 @@
     "language": {
       "label": "اللغة",
       "locales": {
-        "en": "الإنجليزية",
+        "en": "English",
         "ar-EG": "العربية المصرية"
       }
     },
@@ -165,7 +165,14 @@
       "regions": "المناطق",
       "threat": "التهديد",
       "regionCount": "{{count}} مناطق",
-      "threatValue": "لو رموز الاستخراج وصلت ٦ في منطقة فدي خسارة"
+      "threatValue": "لو رموز الاستخراج وصلت ٦ في أي منطقة، التحالف بينهار.",
+      "briefingWindow": "نافذة الصمود",
+      "briefingWindowValue": "لحد الجولة {{round}}",
+      "movementState": "وضع الحركة",
+      "systemPressure": "ضغط النظام",
+      "highestExtraction": "أعلى استخراج",
+      "existentialThreat": "التهديد الوجودي",
+      "currentPeakRegion": "القمة دلوقتي: {{region}}."
     },
     "app": {
       "contextPanel": "لوحة سياق البورد",

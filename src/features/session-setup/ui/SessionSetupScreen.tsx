@@ -2,11 +2,15 @@ import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { buildBalancedSeatOwners, listRulesets, type FactionId, type VictoryMode } from '../../../engine/index.ts';
 import {
   formatNumber,
+  formatTrackFraction,
+  getFrontLabel,
+  getRegionLabel,
   localizeFactionField,
   localizeRulesetField,
   t,
 } from '../../../i18n/index.ts';
 import type { SessionSetupDraft } from '../model/sessionTypes.ts';
+import { Icon } from '../../../ui/icon/Icon.tsx';
 import {
   LocaleSwitcher,
   PaperSheet,
@@ -37,10 +41,6 @@ function getFactionLabel(factionId: FactionId) {
   );
 }
 
-function getModeLabel(mode: VictoryMode) {
-  return mode === 'LIBERATION' ? t('ui.mode.liberation', 'Liberation') : t('ui.mode.symbolic', 'Symbolic');
-}
-
 export function SessionSetupScreen({
   config,
   roomPlayAvailable = true,
@@ -55,6 +55,15 @@ export function SessionSetupScreen({
   const { motionMode } = useTabletopTheme();
   const currentRuleset = RULESETS.find((r) => r.id === config.rulesetId) || RULESETS[0];
   const selectedFactions = config.factionIds.length > 0 ? config.factionIds : currentRuleset.factions.map((faction) => faction.id);
+  const setupGlobalGaze = currentRuleset.setup?.globalGaze ?? 5;
+  const setupWarMachine = currentRuleset.setup?.northernWarMachine ?? 7;
+  const highestExtractionSeed = Math.max(
+    0,
+    ...Object.values(currentRuleset.setup?.extractionSeeds ?? {}).map((value) => value ?? 0),
+  );
+  const highestExtractionRegionId = Object.entries(currentRuleset.setup?.extractionSeeds ?? {})
+    .sort(([, a], [, b]) => (b ?? 0) - (a ?? 0))[0]?.[0] ?? null;
+  const extractionDefeatThreshold = 6;
   const playerOptions = Array.from(
     { length: Math.max(0, currentRuleset.factions.length - 1) },
     (_, index) => index + 2,
@@ -111,14 +120,63 @@ export function SessionSetupScreen({
                         <option key={r.id} value={r.id}>{localizeRulesetField(r.id, 'name', r.name)}</option>
                       ))}
                     </select>
-                    <h2>{localizeRulesetField(currentRuleset.id, 'name', currentRuleset.name)}</h2>
-                    <p>{localizeRulesetField(currentRuleset.id, 'introduction', currentRuleset.introduction)}</p>
-                    <div className="setup-stat-ribbon">
-                      <div><span>{t('ui.home.humanPlayerCount', 'Human Players')}</span><strong>{formatNumber(config.humanPlayerCount)}</strong></div>
-                      <div><span>{t('ui.home.factionSeatCount', 'Faction Seats')}</span><strong>{formatNumber(selectedFactions.length)}</strong></div>
-                      <div><span>{t('ui.home.mode', 'Mode')}</span><strong>{getModeLabel(config.mode)}</strong></div>
-                      <div><span>{t('ui.home.regions', 'Regions')}</span><strong>{t('ui.home.regionCount', '{{count}} regions', { count: currentRuleset.regions.length })}</strong></div>
-                      <div><span>{t('ui.home.threat', 'Threat')}</span><strong>{t('ui.home.threatValue', 'If any region reaches 6 Extraction Tokens, the coalition loses.')}</strong></div>
+                    <div className="setup-briefing-head">
+                      <h2 className="setup-briefing-title">{localizeRulesetField(currentRuleset.id, 'name', currentRuleset.name)}</h2>
+                      <p className="setup-briefing-window">
+                        {t('ui.home.briefingWindow', 'Window')} · {t('ui.home.briefingWindowValue', 'to round {{round}}', { round: formatNumber(currentRuleset.suddenDeathRound) })}
+                      </p>
+                      <p className="setup-briefing-thesis">
+                        {localizeRulesetField(currentRuleset.id, 'description', currentRuleset.description)}
+                      </p>
+                    </div>
+                    <div className="setup-briefing-divider" aria-hidden="true" />
+                    <div className="setup-briefing-summary">
+                      <section className="setup-briefing-column setup-briefing-column-movement" aria-label={t('ui.home.movementState', 'Movement State')}>
+                        <span className="engraved-eyebrow">{t('ui.home.movementState', 'Movement State')}</span>
+                        <ul className="setup-briefing-list">
+                          <li className="setup-briefing-item">
+                            <span className="setup-briefing-item-label"><Icon type="comrades" size={16} ariaLabel={t('ui.home.humanPlayerCount', 'Human Players')} />{t('ui.home.humanPlayerCount', 'Human Players')}</span>
+                            <strong>{formatNumber(config.humanPlayerCount)}</strong>
+                          </li>
+                          <li className="setup-briefing-item">
+                            <span className="setup-briefing-item-label"><Icon type="objective" size={16} ariaLabel={t('ui.home.regions', 'Regions')} />{t('ui.home.regions', 'Regions')}</span>
+                            <strong>{formatNumber(currentRuleset.regions.length)}</strong>
+                          </li>
+                          <li className="setup-briefing-item">
+                            <span className="setup-briefing-item-label"><Icon type="seat" size={16} ariaLabel={t('ui.home.factionSeatCount', 'Faction Seats')} />{t('ui.home.factionSeatCount', 'Faction Seats')}</span>
+                            <strong>{formatNumber(selectedFactions.length)}</strong>
+                          </li>
+                        </ul>
+                      </section>
+                      <section className="setup-briefing-column setup-briefing-column-system" aria-label={t('ui.home.systemPressure', 'System Pressure')}>
+                        <span className="engraved-eyebrow">{t('ui.home.systemPressure', 'System Pressure')}</span>
+                        <ul className="setup-briefing-list">
+                          <li className="setup-briefing-item">
+                            <span className="setup-briefing-item-label"><Icon type="warMachine" size={16} ariaLabel={getFrontLabel('WarMachine')} />{getFrontLabel('WarMachine')}</span>
+                            <strong>{formatTrackFraction(setupWarMachine, 12)}</strong>
+                          </li>
+                          <li className="setup-briefing-item">
+                            <span className="setup-briefing-item-label"><Icon type="globalGaze" size={16} ariaLabel={t('ui.game.globalGaze', 'Global Gaze')} />{t('ui.game.globalGaze', 'Global Gaze')}</span>
+                            <strong>{formatTrackFraction(setupGlobalGaze, 20)}</strong>
+                          </li>
+                          <li className={`setup-briefing-item ${highestExtractionSeed >= 5 ? 'is-critical' : ''}`.trim()}>
+                            <span className="setup-briefing-item-label"><Icon type="extraction" size={16} ariaLabel={t('ui.home.highestExtraction', 'Highest Extraction')} />{t('ui.home.highestExtraction', 'Highest Extraction')}</span>
+                            <strong>{formatTrackFraction(highestExtractionSeed, extractionDefeatThreshold)}</strong>
+                          </li>
+                        </ul>
+                      </section>
+                    </div>
+                    <div className={`setup-briefing-threat ${highestExtractionSeed >= 5 ? 'is-escalating' : ''}`.trim()}>
+                      <div className="setup-briefing-threat-title">
+                        <Icon type="crisis" size={18} ariaLabel={t('ui.home.existentialThreat', 'Existential Threat')} />
+                        <span>{t('ui.home.existentialThreat', 'Existential Threat')}</span>
+                      </div>
+                      <p>
+                        {t('ui.home.threatValue', 'If any region reaches 6 Extraction Tokens, the coalition loses.')}
+                        {highestExtractionRegionId ? (
+                          <strong>{` ${t('ui.home.currentPeakRegion', 'Current peak: {{region}}.', { region: getRegionLabel(highestExtractionRegionId) })}`}</strong>
+                        ) : null}
+                      </p>
                     </div>
                   </section>
 
