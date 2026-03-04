@@ -512,6 +512,8 @@
       "mandateForFaction": "For {{faction}} only.",
       "startupMandateReveal": "Private instruction before the table opens",
       "privateObjective": "Private objective",
+      "privateInstruction": "Read the private instruction before the struggle resumes.",
+      "privateInstructionReview": "Review the letter, then return it to the envelope.",
       "mandatePrivateLetter": "Keep this letter private to your seat.",
       "enterTable": "Enter the Table",
       "foldLetter": "Fold the Letter",

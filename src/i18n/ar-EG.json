@@ -512,6 +512,8 @@
       "mandateForFaction": "لـ {{faction}} فقط.",
       "startupMandateReveal": "تعليمات خاصة قبل ما الطاولة تفتح",
       "privateObjective": "هدف خاص",
+      "privateInstruction": "اقرأ التعليمات الخاصة قبل ما الصراع يكمل.",
+      "privateInstructionReview": "راجع الرسالة ثم أعدها إلى الظرف.",
       "mandatePrivateLetter": "خلّي الرسالة دي خاصة بمقعدك.",
       "enterTable": "ادخل إلى الطاولة",
       "foldLetter": "اطوِ الرسالة",

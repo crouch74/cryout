@@ -398,7 +398,15 @@ test('secret mandate modal source uses an envelope reveal and startup sequence',
   const sessionSource = readFileSync(new URL('../../src/game/screens/GameSessionScreen.tsx', import.meta.url), 'utf8');
 
   assert.match(modalSource, /mandate-envelope/);
+  assert.match(modalSource, /mandate-letter-unfold/);
   assert.match(modalSource, /mandate-letter-sheet/);
+  assert.match(modalSource, /mandate-envelope-art/);
+  assert.match(modalSource, /role="img"/);
+  assert.match(modalSource, /refolding/);
+  assert.match(modalSource, /reinserting/);
+  assert.match(modalSource, /finishRevealImmediately/);
+  assert.match(modalSource, /Escape/);
+  assert.match(modalSource, /aria-live/);
   assert.match(modalSource, /localizeScenarioField/);
   assert.match(sessionSource, /startupMandateDismissed/);
   assert.match(sessionSource, /mandateModalOpen/);
