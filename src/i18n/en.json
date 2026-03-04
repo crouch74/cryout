@@ -155,6 +155,7 @@
       "rulesBrief": "Rules Brief",
       "openRulesBrief": "Open Rules Brief",
       "playerGuide": "Player Guide",
+      "boardTour": "Board Tour",
       "factionSeats": "Faction Seats",
       "playerSeatGroup": "Player {{seat}}",
       "seat": "Seat {{seat}}",
@@ -233,27 +234,162 @@
     "guide": {
       "rulesBrief": "Rules Brief",
       "playerGuide": "Player Guide",
+      "boardTour": "Board Tour",
+      "boardTourTitle": "Read the table before it breaks",
+      "boardTourDetail": "Each panel explains what a board component means, how to use it, and what danger signals to monitor.",
       "coalitionFieldNotes": "Coalition Field Notes",
-      "playerGuideDetail": "Use this as the fast onboarding sheet for the current ruleset.",
+      "playerGuideDetail": "Use this as the fast operational guide for the current ruleset.",
       "backHome": "Back Home",
       "openTable": "Open Table",
       "victoryModes": "Paths to Victory",
-      "coreThreat": "Core Threat",
-      "coreThreat1": "Extraction Tokens mark where the System is tightening its hold. System cards and interventions keep driving them onto the map.",
-      "coreThreat2": "If any region reaches 6 Extraction Tokens, the struggle breaks there and the coalition loses.",
-      "coreThreat3": "Global Gaze and War Machine decide how much pressure the next round can carry.",
+      "victoryModes1": "Finish Resolution with every region at 1 Extraction Token or less.",
+      "victoryModes2": "Complete all active Beacons before sudden death closes the window.",
+      "victoryModes3": "In room play, public victory still fails if any Secret Mandate fails.",
+      "victoryModes4": "Local play removes Secret Mandates so every seat can plan in the open.",
+      "defeatChecks": "Defeat Checks",
+      "defeatChecks1": "If any region reaches 6 Extraction Tokens, the coalition loses immediately.",
+      "defeatChecks2": "If any seat is reduced to 0 Comrades, the coalition loses immediately.",
+      "defeatChecks3": "If sudden death is reached without Liberation or Symbolic completion, the coalition loses.",
+      "defeatChecks4": "In room play, Secret Mandates are checked at victory; failed mandates convert public victory into defeat.",
+      "systemPressureFlow": "System Pressure Flow",
+      "systemPressureFlow1": "System Phase resolves Crisis pressure, then active System escalations, then intervention effects.",
+      "systemPressureFlow2": "Global Gaze and War Machine change campaign math and escalation tempo, not just flavor text.",
+      "systemPressureFlow3": "Extraction Tokens are structural pressure; each round asks where the system is hardening fastest.",
       "universalActions": "Universal Actions",
       "canonicalRegions": "Canonical Regions",
       "roundLoop": "Round Loop",
-      "economy": "Economy",
-      "beaconsMandates": "Beacons and Secret Mandates",
+      "coordinationTension": "Coordination with Tension",
+      "boardReading": "Board Reading",
       "factions": "Factions",
-      "loop1": "System Phase: resolve crisis pressure, backlash, and interventions before the coalition can answer.",
-      "loop2": "Coalition Phase: prepare two moves for each seat, then mark every seat ready.",
-      "loop3": "Resolution Phase: resolve prepared moves in priority order, then check victory, defeat, and mandate fallout.",
-      "economy1": "Comrades hold ground in regions and are committed from the places they defend.",
-      "economy2": "Evidence belongs to seats and fuels campaigns, appeals, and the circulation of testimony.",
-      "economy3": "Defense is temporary. It exists only to blunt the next system strike before it clears.",
+      "loop1": "System Phase: resolve Crisis pressure, active System escalations, and interventions before the coalition can answer.",
+      "loop2": "Coalition Phase: each seat prepares two moves, then all seats mark ready.",
+      "loop3": "Resolution Phase: prepared moves resolve by priority, then the table checks victory, defeat, and mandate fallout.",
+      "loop4": "Launch Campaign always resolves as 2d6 with target 8+, then modifiers and outcomes apply.",
+      "coordinationTension1": "Cooperate on public survival: stop 6 Extraction breaches, protect Comrades, and keep pressure distributed.",
+      "coordinationTension2": "Protect private lines at the same time: Secret Mandates can still collapse a public win in room play.",
+      "coordinationTension3": "Queue order is strategy: place stabilizing actions first when you expect backlash or intervention.",
+      "boardReading1": "Scan regions at 4-5 Extraction first: those are immediate breach candidates next round.",
+      "boardReading2": "Track Global Gaze and War Machine together; they forecast campaign risk and escalation pace.",
+      "boardReading3": "Use Evidence where it shifts structural fronts, not only where it produces short-term relief.",
+      "boardReading4": "Defense is temporary. Treat it as a timing shield, not permanent safety.",
+      "whatItIs": "What it is",
+      "howToUseIt": "How to use it",
+      "whatToWatchFor": "What to watch for",
+      "boardTourSequence": "Guided Sequence",
+      "previousStep": "Previous",
+      "nextStep": "Next",
+      "boardTourSteps": {
+        "mapRegions": {
+          "title": "Board Map and Regions",
+          "what": "The map is the shared field of pressure. Every region carries Extraction Tokens, Defense, and Comrades.",
+          "how": "Inspect regions before committing actions so the table sees where pressure is concentrating.",
+          "watch": "If multiple regions trend toward 5 Extraction Tokens together, shift to stabilization."
+        },
+        "extractionTokens": {
+          "title": "Extraction Tokens",
+          "what": "Extraction Tokens show where the System has hardened control.",
+          "how": "Remove them with Launch Campaign, Build Solidarity, and resistance effects before compounding.",
+          "watch": "Any region at 6 Extraction Tokens is immediate defeat."
+        },
+        "globalGaze": {
+          "title": "Global Gaze",
+          "what": "Global Gaze tracks witness and attention pressure.",
+          "how": "Protect it while campaigning so setbacks do not seal the round against the coalition.",
+          "watch": "A collapsing Global Gaze can accelerate structural pressure."
+        },
+        "warMachine": {
+          "title": "War Machine",
+          "what": "War Machine tracks militarized escalation capacity.",
+          "how": "Factor it into campaign timing before committing Comrades and Evidence.",
+          "watch": "High War Machine raises round danger and escalation tempo."
+        },
+        "domains": {
+          "title": "Domain Track Bar",
+          "what": "Domains represent structural fronts under pressure.",
+          "how": "Target domains that align with immediate map risk and scenario obligations.",
+          "watch": "Neglected domains rebound through cards and vulnerabilities."
+        },
+        "playerStrip": {
+          "title": "Player Strip",
+          "what": "The strip shows each seat's Comrades, Evidence, and readiness.",
+          "how": "Use it to check who can pay costs and who is overextended.",
+          "watch": "Any seat at 0 Comrades means immediate defeat."
+        },
+        "actionDock": {
+          "title": "Action Dock and Queue Priority",
+          "what": "Seats prepare and order their actions here.",
+          "how": "Place stabilization ahead of risky campaigns when pressure is high.",
+          "watch": "Queue-order mistakes can expose regions before protection lands."
+        },
+        "decks": {
+          "title": "Crisis, System, Resistance Deck Rail",
+          "what": "The rail reveals current pressure and available movement tools.",
+          "how": "Read deck reveals before finalizing actions.",
+          "watch": "Persistent System escalations can stack into attrition."
+        },
+        "beacons": {
+          "title": "Beacons and Symbolic Pressure",
+          "what": "In Symbolic mode, active Beacons define public breakthrough requirements.",
+          "how": "Coordinate cross-seat actions around beacon conditions without abandoning extraction control.",
+          "watch": "Beacon progress without board stability often collapses."
+        },
+        "secretMandates": {
+          "title": "Secret Mandates",
+          "what": "Secret Mandates are private obligations in room play.",
+          "how": "Coordinate publicly while preserving each seat's mandate condition.",
+          "watch": "Public victory fails in room play if any Secret Mandate fails."
+        },
+        "terminalWarnings": {
+          "title": "Terminal Warning Patterns",
+          "what": "Collapse signals usually appear together: breach risk, seat exhaustion, and mandate instability.",
+          "how": "Run a quick warning checklist before ending each round.",
+          "watch": "When two warning signals align, shift immediately to stabilization."
+        }
+      },
+      "boardTourMapRegionsTitle": "Board Map and Regions",
+      "boardTourMapRegionsWhat": "The map is the shared field of pressure. Regions hold Extraction Tokens, Defense, and Comrades at the same time.",
+      "boardTourMapRegionsHow": "Select regions to read vulnerabilities and current token counts before committing moves.",
+      "boardTourMapRegionsWatch": "Watch clusters where multiple regions approach 5 Extraction Tokens together.",
+      "boardTourExtractionTokensTitle": "Extraction Tokens",
+      "boardTourExtractionTokensWhat": "Extraction Tokens represent where the System is tightening material control.",
+      "boardTourExtractionTokensHow": "Remove them through Launch Campaign, Build Solidarity, and card effects before they compound.",
+      "boardTourExtractionTokensWatch": "Any region reaching 6 Extraction Tokens is immediate defeat.",
+      "boardTourGlobalGazeTitle": "Global Gaze",
+      "boardTourGlobalGazeWhat": "Global Gaze tracks public attention and witness capacity across the board.",
+      "boardTourGlobalGazeHow": "Raise it through testimony and successful pressure shifts to improve campaign conditions.",
+      "boardTourGlobalGazeWatch": "Collapsing Global Gaze can accelerate structural escalations and campaign setbacks.",
+      "boardTourWarMachineTitle": "War Machine",
+      "boardTourWarMachineWhat": "War Machine tracks the System's militarized response capacity.",
+      "boardTourWarMachineHow": "Plan with War Machine in mind before committing costly campaigns.",
+      "boardTourWarMachineWatch": "High War Machine raises risk, hardens rounds, and can trigger escalation pressure.",
+      "boardTourDomainsTitle": "Domain Track Bar",
+      "boardTourDomainsWhat": "Domains track structural fronts under pressure: war, hunger, truth, and more.",
+      "boardTourDomainsHow": "Target domains with campaigns and solidarity to open systemic breathing room.",
+      "boardTourDomainsWatch": "Ignore a domain too long and it rebounds through cards and vulnerabilities.",
+      "boardTourPlayerStripTitle": "Player Strip",
+      "boardTourPlayerStripWhat": "The player strip shows each seat's Comrades, Evidence, and prepared moves.",
+      "boardTourPlayerStripHow": "Use it to confirm who can pay costs and who is overextended this round.",
+      "boardTourPlayerStripWatch": "Any seat at 0 Comrades triggers immediate defeat.",
+      "boardTourActionDockTitle": "Action Dock and Queue Priority",
+      "boardTourActionDockWhat": "The action dock is where seats prepare two moves and lock order.",
+      "boardTourActionDockHow": "Place defensive and setup actions before high-risk campaigns when pressure is high.",
+      "boardTourActionDockWatch": "Priority mistakes can waste Evidence and expose regions before protection lands.",
+      "boardTourDecksTitle": "Crisis, System, Resistance Deck Rail",
+      "boardTourDecksWhat": "The deck rail stages Crisis draws, persistent System escalations, and Resistance tools.",
+      "boardTourDecksHow": "Read revealed cards before committing: they define what this round is asking from the table.",
+      "boardTourDecksWatch": "Stacked escalations can outpace recovery if ignored for multiple rounds.",
+      "boardTourBeaconsTitle": "Beacons and Symbolic Pressure",
+      "boardTourBeaconsWhat": "In Symbolic mode, active Beacons define the coalition's public breakthrough path.",
+      "boardTourBeaconsHow": "Track beacon conditions each round and align actions across seats to complete all active Beacons.",
+      "boardTourBeaconsWatch": "Symbolic progress that ignores extraction often collapses before completion.",
+      "boardTourSecretMandatesTitle": "Secret Mandates",
+      "boardTourSecretMandatesWhat": "Secret Mandates are private movement obligations in room play.",
+      "boardTourSecretMandatesHow": "Coordinate publicly while quietly preserving each seat's mandate condition.",
+      "boardTourSecretMandatesWatch": "Public victory still fails if any Secret Mandate fails in room play.",
+      "boardTourTerminalWarningsTitle": "Terminal Warning Patterns",
+      "boardTourTerminalWarningsWhat": "Terminal warnings are recurring board patterns that precede collapse.",
+      "boardTourTerminalWarningsHow": "Each round, check: region at 5+, seat near 0 Comrades, mandate risk, and sudden death proximity.",
+      "boardTourTerminalWarningsWatch": "If two or more warnings appear together, shift to stabilization over expansion.",
       "beacon1": "Symbolic mode reveals three active Beacons from a six-card deck.",
       "beacon2": "Online rooms keep Secret Mandates private. Reaching the public win condition while any mandate fails still ends in defeat there.",
       "beacon3": "Local tables remove Secret Mandates entirely so every movement can coordinate in the open."
@@ -824,23 +960,23 @@
     "rulesets": {
       "base_design": {
         "name": "Where the Stones Cry Out",
-        "description": "A six-region cooperative struggle against extraction, militarism, hunger, and erasure.",
-        "introduction": "The coalition is trying to do more than survive. It must break extraction, move Evidence across borders, and keep every movement's Secret Mandate alive long enough to win together."
+        "description": "A six-region movement struggle against extraction, militarism, hunger, and erasure under systemic pressure.",
+        "introduction": "The coalition is not trying to survive a bad night. It is trying to hold six fronts at once: reduce Extraction Tokens, move Evidence across borders, and keep every movement's Secret Mandate alive long enough to win together."
       },
       "tahrir_square": {
         "name": "2011 — TAHRIR SQUARE",
-        "description": "\"For eighteen days, we were free.\"",
-        "introduction": "Players lead the January 25 Revolution: a sprawling, leaderful movement that broke a thirty-year dictatorship in eighteen days. The struggle does not end with Mubarak's fall; it continues through military transition, electoral capture, and the 2013 coup."
+        "description": "\"For eighteen days, we were free. Then the counterrevolution reorganized.\"",
+        "introduction": "Lead the January 25 Revolution as a plural movement fighting through regime collapse, military transition, and re-consolidation. The System shifts shape, but it does not disappear."
       },
       "woman_life_freedom": {
         "name": "2022 — WOMAN, LIFE, FREEDOM",
-        "description": "\"For Jina. For freedom. For the women who burn their chains.\"",
-        "introduction": "After the morality police killed Jina (Mahsa) Amini, an intersectional revolutionary uprising spread across Iran. Women and schoolgirls moved at its front, burning headscarves in the street and shaking the foundations of the Islamic Republic."
+        "description": "\"Woman, Life, Freedom\" against patriarchal rule and militarized repression.",
+        "introduction": "After the morality police killed Jina (Mahsa) Amini, an uprising spread across Iran. Women and schoolgirls moved at the front while the System answered with surveillance, detention, and force."
       },
       "algerian_war_of_independence": {
         "name": "1954 — ALGERIAN WAR OF INDEPENDENCE",
-        "description": "\"The Cost of Liberation.\"",
-        "introduction": "Algerian movements confront a colonial system of extraction, militarism, detention, and settler reaction. The struggle stretches from the Algiers corridor to Kabylia, the Saharan south, the Tunisian frontier, and the metropole itself."
+        "description": "\"Liberation is necessary. Its cost is permanent.\"",
+        "introduction": "Algerian movements confront a colonial system of extraction, militarism, detention, and settler veto. The struggle runs from Algiers to Kabylia, the Saharan south, the Tunisian frontier, and the metropole itself."
       }
     },
     "domains": {
@@ -1735,12 +1871,12 @@
     "scenarios": {
       "tahrir_square": {
         "name": "2011 — Tahrir Square",
-        "description": "For eighteen days, we were free.",
-        "introduction": "Lead the January 25 Revolution against the security state and its shifting successors.",
-        "story": "The revolution is not a moment, but a field of struggle. From the Square to the factories, the wave tries to topple a deep state.",
-        "dramatization": "Smoke, chants, and the sound of falling monuments. The Square must hold at all costs.",
-        "gameplay": "Maintain Presence in Cairo. If the Square empties, the revolutionary wave recedes. Martyrs surge progress but at high cost.",
-        "moralCenter": "Tahrir is the beating heart; the martyrs are the fuel of continuity.",
+        "description": "For eighteen days, we were free. Then the struggle widened.",
+        "introduction": "Lead January 25 as a movement struggle against a security state that keeps reorganizing.",
+        "story": "The uprising spills from Tahrir into factories, neighborhoods, and detention cells. Every concession from above is contested below; every opening is met by a reorganized apparatus.",
+        "dramatization": "Tear gas, chants, funerals, and barricades. The square fills, empties, and fills again while the System searches for a decisive break.",
+        "gameplay": "Keep Cairo politically alive while managing nationwide pressure. If The Square empties too long, Revolutionary Wave recedes; martyrdom can restore momentum, but at severe human cost.",
+        "moralCenter": "No single hero saves this table. Collective endurance keeps the uprising alive, even when victory remains partial.",
         "specialRules": {
           "the_square": {
             "label": "The Square",
@@ -1754,12 +1890,12 @@
       },
       "woman_life_freedom": {
         "name": "2022 — Woman, Life, Freedom",
-        "description": "For Jina. For Freedom.",
-        "introduction": "Lead a female-led uprising against patriarchal rule and security dominance.",
-        "story": "After the death of Mahsa Amini, the streets erupted. Veils burnt, walls spoke, and the vanguard shook the foundations of power.",
-        "dramatization": "Hair in the wind, fire in the streets, and a cry that echoes through prisons.",
-        "gameplay": "Break the patriarchal grip through viral dissent and symbolic defiance. Schoolgirls are your network.",
-        "moralCenter": "Women are the vanguard; their liberation is the liberation of all.",
+        "description": "Woman, Life, Freedom under patriarchal rule, censorship, and force.",
+        "introduction": "Lead a women-fronted uprising against patriarchal and militarized control.",
+        "story": "After Jina (Mahsa) Amini's killing, revolt spreads across streets, campuses, and marginalized regions. The movement grows through testimony, memory, and refusal while the System escalates repression.",
+        "dramatization": "Headscarves burn, classrooms become organizing cells, and prison walls answer with silence and fear. The chant keeps moving anyway.",
+        "gameplay": "Lower Patriarchal Grip while sustaining witness networks under heavy crackdown. Symbolic gains matter, but they collapse without structural pressure management.",
+        "moralCenter": "Women's liberation is collective liberation. Every gain is real, and none arrives without risk.",
         "specialRules": {
           "hijab_enforcement": {
             "label": "Hijab Enforcement",
@@ -1774,11 +1910,11 @@
       "algerian_war_of_independence": {
         "name": "1954 — Algerian War of Independence",
         "description": "The Cost of Liberation.",
-        "introduction": "Lead a movement-centered struggle against French colonial rule, detention, and settler political power between 1954 and 1962.",
-        "story": "The movement survives between the capital corridor, Kabylia, the western settler coast, the Saharan south, the Tunisian frontier, and the metropole. Every gain invites harsher repression; every sacrifice leaves a mark that outlives the war.",
-        "dramatization": "Relentless raids, clandestine printing presses, border routes, funeral marches, and the unbearable knowledge that liberation itself will not heal every wound.",
-        "gameplay": "Evidence strengthens witness but also raises Repression Cycle. Urban operations trigger colonial escalation. Symbolic victory depends on forcing international acknowledgement of colonial abuse.",
-        "moralCenter": "Liberation is collective, necessary, and costly. Victory ends colonial rule, not the scars it leaves behind.",
+        "introduction": "Lead a movement-centered anti-colonial struggle against French militarism, detention, and settler veto between 1954 and 1962.",
+        "story": "Organizing survives across Algiers, Kabylia, the settler coast, the Sahara, border corridors, and the metropole. Every breakthrough triggers retaliation; every act of witness invites another attempt at erasure.",
+        "dramatization": "Night raids, clandestine presses, intercepted routes, mass funerals, and the persistent knowledge that liberation will not erase the violence already lived.",
+        "gameplay": "Evidence builds international witness but raises Repression Cycle. Urban gains can raise War Machine. Symbolic victory requires acknowledgement of colonial abuse, not attention alone.",
+        "moralCenter": "Liberation is collective and costly. Ending colonial rule does not end grief, but it changes who decides the future.",
         "specialRules": {
           "repression_feedback": {
             "label": "Repression Feedback",

@@ -33,7 +33,7 @@ function coerceRoute(route: AppRoute, runtime: AppRuntimeOptions): AppRoute {
     return route;
   }
 
-  if (route.page === 'guidelines' || route.page === 'player-guide' || route.page === 'offline') {
+  if (route.page === 'guidelines' || route.page === 'player-guide' || route.page === 'board-tour' || route.page === 'offline') {
     return route;
   }
 

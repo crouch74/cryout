@@ -429,10 +429,12 @@ test('route screens point at the production guides and setup shell', () => {
   const home = readFileSync(new URL('../../src/features/session-setup/ui/SessionSetupScreen.tsx', import.meta.url), 'utf8');
   const guidelines = readFileSync(new URL('../../src/features/rules-brief/ui/RulesBriefScreen.tsx', import.meta.url), 'utf8');
   const playerGuide = readFileSync(new URL('../../src/features/player-guide/ui/PlayerGuideScreen.tsx', import.meta.url), 'utf8');
+  const boardTour = readFileSync(new URL('../../src/features/board-tour/ui/BoardTourScreen.tsx', import.meta.url), 'utf8');
 
   assert.match(home, /Campaign Briefing|Human Players/);
   assert.match(guidelines, /ui\.guide\.victoryModes|Victory Modes/);
   assert.match(playerGuide, /ui\.guide\.coalitionFieldNotes|Coalition Field Notes/);
+  assert.match(boardTour, /ui\.guide\.boardTourTitle|Board Tour/);
 });
 
 test('homepage source keeps hero hierarchy, utility strip, and dominant launch action', () => {

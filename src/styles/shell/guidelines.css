@@ -38,6 +38,126 @@
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
+.board-tour-grid {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.board-tour-card {
+  display: grid;
+  gap: 10px;
+}
+
+.board-tour-card p {
+  margin: 0;
+}
+
+.board-tour-stage {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr;
+}
+
+.board-tour-sequence-card {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.board-tour-sequence-card h3,
+.board-tour-sequence-card p {
+  margin: 0;
+}
+
+.board-tour-sequence-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.board-tour-sequence-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.board-tour-map-card {
+  min-height: 680px;
+}
+
+.board-tour-live-session {
+  position: relative;
+  width: 100%;
+  min-height: 640px;
+}
+
+.board-tour-live-session .game-table-shell {
+  min-height: 620px;
+}
+
+.board-tour-live-session .game-main-layout {
+  min-height: 560px;
+}
+
+.board-tour-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.board-tour-pointer {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 2px solid var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 22%, transparent);
+  box-shadow: 0 0 0 8px color-mix(in srgb, var(--color-accent) 18%, transparent);
+  transform: translate(-50%, -50%);
+  animation: board-tour-pulse 1.8s ease-in-out infinite;
+}
+
+.board-tour-pointer::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2px;
+  height: 74px;
+  background: linear-gradient(to bottom, var(--color-accent), transparent);
+  transform: translate(-50%, -6px);
+}
+
+.board-tour-bubble {
+  position: absolute;
+  max-width: 280px;
+  border-radius: 14px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 45%, rgba(0, 0, 0, 0.28));
+  background: color-mix(in srgb, var(--paper-base) 90%, rgba(0, 0, 0, 0.12));
+  box-shadow: var(--shadow-2);
+  transform: translateY(-4px);
+}
+
+.board-tour-bubble span {
+  display: block;
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+@keyframes board-tour-pulse {
+  0% {
+    box-shadow: 0 0 0 8px color-mix(in srgb, var(--color-accent) 16%, transparent);
+  }
+  60% {
+    box-shadow: 0 0 0 14px color-mix(in srgb, var(--color-accent) 0%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 8px color-mix(in srgb, var(--color-accent) 0%, transparent);
+  }
+}
+
 .guidelines-switch-trigger {
   width: 100%;
   border: 0;
@@ -64,5 +184,21 @@ html[dir='rtl'] .guidelines-switch-trigger {
   .guidelines-stat-grid,
   .guidelines-story-grid {
     grid-template-columns: 1fr;
+  }
+
+  .board-tour-map-card {
+    min-height: 520px;
+  }
+
+  .board-tour-live-board {
+    min-height: 480px;
+  }
+
+  .board-tour-live-session {
+    min-height: 520px;
+  }
+
+  .board-tour-live-session .game-table-shell {
+    min-height: 500px;
   }
 }

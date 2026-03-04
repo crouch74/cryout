@@ -25,6 +25,13 @@ test('offline route is a single stable path', () => {
   assert.equal(buildAppPath(route), '/offline');
 });
 
+test('board tour route is a single stable path', () => {
+  const route = parseAppRoute('/board-tour', 'base_design');
+
+  assert.equal(route.page, 'board-tour');
+  assert.equal(buildAppPath(route), '/board-tour');
+});
+
 test('room routes only preserve the room id', () => {
   const route = parseAppRoute('/rooms/abc-def-ghi', 'base_design');
 

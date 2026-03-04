@@ -20,6 +20,15 @@ test('pages runtime resolves hash routes for offline-safe navigation', () => {
   assert.equal(route.rulesetId, 'base_design');
 });
 
+test('pages runtime keeps board tour route available offline', () => {
+  const runtime = getRuntimeOptions();
+  const pagesRuntime = { ...runtime, defaultPage: 'offline' as const, forceOfflineOnly: true, useHashRouting: true };
+  const route = parseRuntimeRoute('/ignored', '#/board-tour', 'base_design', pagesRuntime);
+
+  assert.equal(route.page, 'board-tour');
+  assert.equal(route.rulesetId, 'base_design');
+});
+
 test('pages runtime coerces room URLs back to offline routes', () => {
   const runtime = getRuntimeOptions();
   const pagesRuntime = { ...runtime, defaultPage: 'offline' as const, forceOfflineOnly: true, useHashRouting: true };

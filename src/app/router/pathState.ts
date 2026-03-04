@@ -1,5 +1,5 @@
 export interface AppRoute {
-  page: 'home' | 'guidelines' | 'player-guide' | 'offline' | 'room';
+  page: 'home' | 'guidelines' | 'player-guide' | 'board-tour' | 'offline' | 'room';
   rulesetId: string;
   roomId: string | null;
 }
@@ -21,6 +21,10 @@ export function parseAppRoute(pathname: string, defaultRulesetId: string): AppRo
 
   if (segments[0] === 'player-guide') {
     return { page: 'player-guide', rulesetId: defaultRulesetId, roomId: null };
+  }
+
+  if (segments[0] === 'board-tour') {
+    return { page: 'board-tour', rulesetId: defaultRulesetId, roomId: null };
   }
 
   if (segments[0] === 'offline') {
@@ -48,6 +52,8 @@ export function buildAppPath(route: AppRoute) {
       return '/guidelines';
     case 'player-guide':
       return '/player-guide';
+    case 'board-tour':
+      return '/board-tour';
     case 'offline':
       return '/offline';
     case 'room':

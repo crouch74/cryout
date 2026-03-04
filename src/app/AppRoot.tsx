@@ -20,6 +20,7 @@ import { GameSessionScreen } from '../game/screens/GameSessionScreen.tsx';
 import { GuidelinesScreen } from '../features/rules-brief/ui/RulesBriefScreen.tsx';
 import { SessionSetupScreen } from '../features/session-setup/ui/SessionSetupScreen.tsx';
 import { PlayerGuideScreen } from '../features/player-guide/ui/PlayerGuideScreen.tsx';
+import { BoardTourScreen } from '../features/board-tour/ui/BoardTourScreen.tsx';
 import { RoomLobbyScreen } from '../features/room-session/ui/RoomLobbyScreen.tsx';
 import { buildAppPath, type AppRoute } from './router/pathState.ts';
 import { parseRuntimeRoute, type AppRuntimeOptions } from './router/runtime.ts';
@@ -757,6 +758,11 @@ export default function AppRoot({ runtime }: { runtime: AppRuntimeOptions }) {
         />
       ) : route.page === 'player-guide' ? (
         <PlayerGuideScreen onBackHome={() => goToPage(runtime.defaultPage)} />
+      ) : route.page === 'board-tour' ? (
+        <BoardTourScreen
+          onBackHome={() => goToPage(runtime.defaultPage)}
+          onOpenOffline={() => goToPage('offline')}
+        />
       ) : (
         <SessionSetupScreen
           config={setupDraft}
@@ -767,6 +773,7 @@ export default function AppRoot({ runtime }: { runtime: AppRuntimeOptions }) {
           onStart={startSession}
           onOpenGuidelines={() => goToPage('guidelines')}
           onOpenPlayerGuide={() => goToPage('player-guide')}
+          onOpenBoardTour={() => goToPage('board-tour')}
           mode={route.page === 'offline' ? 'offline' : 'home'}
         />
       )}

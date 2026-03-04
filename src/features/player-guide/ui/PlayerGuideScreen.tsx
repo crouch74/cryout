@@ -30,25 +30,25 @@ export function PlayerGuideScreen({ onBackHome }: PlayerGuideScreenProps) {
         <div className="guidelines-story-grid">
           <PaperSheet tone="tray">
             <span className="engraved-eyebrow">{t('ui.guide.roundLoop', 'Round Loop')}</span>
-            <ol>
-              <li>{t('ui.guide.loop1', 'System Phase: resolve system cards, backlash, and interventions.')}</li>
-              <li>{t('ui.guide.loop2', 'Coalition Phase: queue two moves for each seat, then mark every seat ready.')}</li>
-              <li>{t('ui.guide.loop3', 'Resolution Phase: resolve the prepared moves in priority order, then check victory and defeat.')}</li>
-            </ol>
+            <p>{t('ui.guide.loop1', 'System Phase: resolve Crisis pressure, active System escalations, and interventions before the coalition can answer.')}</p>
+            <p>{t('ui.guide.loop2', 'Coalition Phase: each seat prepares two moves, then all seats mark ready.')}</p>
+            <p>{t('ui.guide.loop3', 'Resolution Phase: prepared moves resolve by priority, then the table checks victory, defeat, and mandate fallout.')}</p>
+            <p>{t('ui.guide.loop4', 'Launch Campaign always resolves as 2d6 with target 8+, then modifiers and outcomes apply.')}</p>
           </PaperSheet>
 
           <PaperSheet tone="tray">
-            <span className="engraved-eyebrow">{t('ui.guide.economy', 'Economy')}</span>
-            <p>{t('ui.guide.economy1', 'Comrades hold ground in regions and are committed from those regions.')}</p>
-            <p>{t('ui.guide.economy2', 'Evidence belongs to seats and powers campaigns, appeals, and support work.')}</p>
-            <p>{t('ui.guide.economy3', 'Defense is temporary and only exists to blunt the next system strike.')}</p>
+            <span className="engraved-eyebrow">{t('ui.guide.coordinationTension', 'Coordination with Tension')}</span>
+            <p>{t('ui.guide.coordinationTension1', 'Cooperate on public survival: stop 6 Extraction breaches, protect Comrades, and keep pressure distributed.')}</p>
+            <p>{t('ui.guide.coordinationTension2', 'Protect private lines at the same time: Secret Mandates can still collapse a public win in room play.')}</p>
+            <p>{t('ui.guide.coordinationTension3', 'Queue order is strategy: place stabilizing actions first when you expect backlash or intervention.')}</p>
           </PaperSheet>
 
           <PaperSheet tone="tray">
-            <span className="engraved-eyebrow">{t('ui.guide.beaconsMandates', 'Beacons and Secret Mandates')}</span>
-            <p>{t('ui.guide.beacon1', 'Symbolic mode activates three Beacons from a six-card deck.')}</p>
-            <p>{t('ui.guide.beacon2', 'Online rooms keep Secret Mandates private. Reaching the public win condition while any mandate fails still ends in defeat there.')}</p>
-            <p>{t('ui.guide.beacon3', 'Local tables remove Secret Mandates entirely so every movement can coordinate in the open.')}</p>
+            <span className="engraved-eyebrow">{t('ui.guide.boardReading', 'Board Reading')}</span>
+            <p>{t('ui.guide.boardReading1', 'Scan regions at 4-5 Extraction first: those are immediate breach candidates next round.')}</p>
+            <p>{t('ui.guide.boardReading2', 'Track Global Gaze and War Machine together; they forecast campaign risk and escalation pace.')}</p>
+            <p>{t('ui.guide.boardReading3', 'Use Evidence where it shifts structural fronts, not only where it produces short-term relief.')}</p>
+            <p>{t('ui.guide.boardReading4', 'Defense is temporary. Treat it as a timing shield, not permanent safety.')}</p>
           </PaperSheet>
 
           <PaperSheet tone="tray">

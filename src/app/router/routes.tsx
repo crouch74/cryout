@@ -8,6 +8,7 @@ export function AppRoutes({ runtime }: { runtime: AppRuntimeOptions }) {
       <Route path="/" element={<AppRoot runtime={runtime} />} />
       <Route path="/guidelines" element={<AppRoot runtime={runtime} />} />
       <Route path="/player-guide" element={<AppRoot runtime={runtime} />} />
+      <Route path="/board-tour" element={<AppRoot runtime={runtime} />} />
       <Route path="/offline" element={<AppRoot runtime={runtime} />} />
       <Route path="/rooms/:roomId" element={<AppRoot runtime={runtime} />} />
       <Route path="*" element={<AppRoot runtime={runtime} />} />

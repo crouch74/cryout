@@ -34,17 +34,25 @@ export function GuidelinesScreen({ onBackHome, onOpenOffline }: GuidelinesScreen
         <div className="guidelines-story-grid">
           <PaperSheet tone="tray">
             <span className="engraved-eyebrow">{t('ui.guide.victoryModes', 'Victory Modes')}</span>
-            <p>{t('ui.mode.liberation', 'Liberation')}: {t('ui.mode.liberationSummary', 'End Resolution with every region at 1 Extraction or less.')}</p>
-            <p>{t('ui.mode.symbolic', 'Symbolic')}: {t('ui.mode.symbolicSummary', 'Complete all three active Beacons.')}</p>
-            <p>{t('ui.guide.beacon2', 'Online rooms keep Secret Mandates private. Reaching the public win condition while any mandate fails still ends in defeat there.')}</p>
-            <p>{t('ui.guide.beacon3', 'Local tables remove Secret Mandates entirely so every movement can coordinate in the open.')}</p>
+            <p>{t('ui.mode.liberation', 'Liberation')}: {t('ui.guide.victoryModes1', 'Finish Resolution with every region at 1 Extraction Token or less.')}</p>
+            <p>{t('ui.mode.symbolic', 'Symbolic')}: {t('ui.guide.victoryModes2', 'Complete all active Beacons before sudden death closes the window.')}</p>
+            <p>{t('ui.guide.victoryModes3', 'In room play, public victory still fails if any Secret Mandate fails.')}</p>
+            <p>{t('ui.guide.victoryModes4', 'Local play removes Secret Mandates so every seat can plan in the open.')}</p>
           </PaperSheet>
 
           <PaperSheet tone="tray">
-            <span className="engraved-eyebrow">{t('ui.guide.coreThreat', 'Core Threat')}</span>
-            <p>{t('ui.guide.coreThreat1', 'Extraction Tokens are the center of the board. The system adds them through system cards and intervention.')}</p>
-            <p>{t('ui.guide.coreThreat2', 'Any region reaching 6 Extraction Tokens is an immediate loss.')}</p>
-            <p>{t('ui.guide.coreThreat3', 'Global Gaze and War Machine shape how dangerous each round becomes.')}</p>
+            <span className="engraved-eyebrow">{t('ui.guide.defeatChecks', 'Defeat Checks')}</span>
+            <p>{t('ui.guide.defeatChecks1', 'If any region reaches 6 Extraction Tokens, the coalition loses immediately.')}</p>
+            <p>{t('ui.guide.defeatChecks2', 'If any seat is reduced to 0 Comrades, the coalition loses immediately.')}</p>
+            <p>{t('ui.guide.defeatChecks3', 'If sudden death is reached without Liberation or Symbolic completion, the coalition loses.')}</p>
+            <p>{t('ui.guide.defeatChecks4', 'In room play, Secret Mandates are checked at victory; failed mandates convert public victory into defeat.')}</p>
+          </PaperSheet>
+
+          <PaperSheet tone="tray">
+            <span className="engraved-eyebrow">{t('ui.guide.systemPressureFlow', 'System Pressure Flow')}</span>
+            <p>{t('ui.guide.systemPressureFlow1', 'System Phase resolves Crisis pressure, then active System escalations, then intervention effects.')}</p>
+            <p>{t('ui.guide.systemPressureFlow2', 'Global Gaze and War Machine change campaign math and escalation tempo, not just flavor text.')}</p>
+            <p>{t('ui.guide.systemPressureFlow3', 'Extraction Tokens are structural pressure; each round asks where the system is hardening fastest.')}</p>
           </PaperSheet>
 
           <PaperSheet tone="tray">

@@ -37,6 +37,7 @@ interface SessionSetupScreenProps {
   onStart: (config: SessionSetupDraft) => void;
   onOpenGuidelines: () => void;
   onOpenPlayerGuide: () => void;
+  onOpenBoardTour: () => void;
   mode?: 'home' | 'offline';
 }
 
@@ -59,6 +60,7 @@ export function SessionSetupScreen({
   onStart,
   onOpenGuidelines,
   onOpenPlayerGuide,
+  onOpenBoardTour,
   mode = 'home',
 }: SessionSetupScreenProps) {
   const { motionMode } = useTabletopTheme();
@@ -310,6 +312,10 @@ export function SessionSetupScreen({
                         <div className="coalition-secondary-links" aria-label={t('ui.home.utilities', 'Utilities')}>
                           <button type="button" className="coalition-secondary-link" onClick={onOpenPlayerGuide}>
                             {t('ui.home.playerGuide', 'Player Guide')}
+                          </button>
+                          <span aria-hidden="true">·</span>
+                          <button type="button" className="coalition-secondary-link" onClick={onOpenBoardTour}>
+                            {t('ui.home.boardTour', 'Board Tour')}
                           </button>
                           <span aria-hidden="true">·</span>
                           <button type="button" className="coalition-secondary-link" onClick={onOpenGuidelines}>
