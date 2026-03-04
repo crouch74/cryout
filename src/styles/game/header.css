@@ -77,7 +77,7 @@
 .phase-progress-step-active .phase-progress-index,
 .phase-progress-step-complete .phase-progress-index {
   background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-  color: #07111d;
+  color: var(--legacy-color-07111d);
 }
 
 .phase-progress-step-active .phase-progress-label {
@@ -152,7 +152,7 @@
 }
 
 [data-severity='high'] .kpi-gauge-fill {
-  background: #ff7840;
+  background: var(--legacy-color-ff7840);
 }
 
 [data-severity='critical'] .kpi-gauge-fill {
@@ -283,7 +283,7 @@ html[dir='rtl'] .phase-progress-step:not(:last-child)::after {
 .phase-progress-step-active .phase-progress-index {
   transform: scale(1.15);
   box-shadow: 0 0 0 4px rgba(94, 233, 213, 0.2);
-  z-index: 2;
+  z-index: var(--z-panel);
   animation: phase-pulse 2.4s ease-in-out infinite;
 }
 

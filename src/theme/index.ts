@@ -7,6 +7,7 @@ export type {
   ScenarioOverlayId,
   ThemeColors,
   ThemeDefinition,
+  ThemeLayout,
   ThemeId,
   ThemeMotion,
   ThemeOverlayDefinition,
@@ -14,4 +15,5 @@ export type {
   ThemeShadows,
   ThemeSpacing,
   ThemeTypography,
+  ThemeZIndex,
 } from './types.ts';

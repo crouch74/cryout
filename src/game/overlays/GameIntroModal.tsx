@@ -22,28 +22,22 @@ export function GameIntroModal({ open, state, content, onDismiss }: GameIntroMod
   return (
     <div className="paper-modal-shell context-intro-modal" role="presentation">
       <PaperSheet tone="folio" className="paper-modal-card" role="dialog" aria-modal="true" aria-labelledby="intro-title">
-        <header className="debug-panel-header">
-          <h2 id="intro-title" style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '2rem' }}>
+        <header className="debug-panel-header game-intro-header">
+          <h2 id="intro-title" className="game-intro-title">
             {localizeRulesetField(content.ruleset.id, 'name', content.ruleset.name)}
           </h2>
         </header>
 
-        <div style={{ display: 'grid', gap: '16px', lineHeight: 1.6 }}>
-          <p style={{ fontSize: '1.1rem' }}>
+        <div className="game-intro-content">
+          <p className="game-intro-description">
             {localizeRulesetField(content.ruleset.id, 'introduction', content.ruleset.introduction)}
           </p>
 
-          <div style={{
-            background: 'var(--paper-inset)',
-            padding: '16px',
-            borderRadius: '12px',
-            border: '1px solid var(--line-light)',
-          }}
-          >
-            <strong style={{ display: 'block', marginBottom: '8px', color: 'var(--burgundy)' }}>
+          <div className="game-intro-mode-card">
+            <strong className="game-intro-mode-title">
               {t('ui.game.currentMode', 'Current Mode: {{mode}}', { mode: modeTitle })}
             </strong>
-            <p style={{ margin: 0, fontSize: '0.95rem' }}>
+            <p className="game-intro-mode-description">
               {state.mode === 'SYMBOLIC'
                 ? t('ui.game.modeDescSymbolic', 'In Symbolic mode, the coalition must complete beacons to demonstrate unity before the 6th round. Keep extraction low, and use public attention to shift system pressure.')
                 : t('ui.game.modeDescLiberation', 'In Liberation mode, you must systematically sever extraction from every region. Drive extraction to 0 across the globe, balancing risks against the ever-growing System.')}
@@ -51,14 +45,13 @@ export function GameIntroModal({ open, state, content, onDismiss }: GameIntroMod
           </div>
         </div>
 
-        <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end' }}>
+        <div className="game-intro-actions">
           <button
             type="button"
             className="primary-button"
-            style={{ padding: '12px 24px', fontSize: '1.1rem' }}
             onClick={onDismiss}
           >
-            {t('ui.game.beginStruggle', 'Begin the Struggle')} <Icon type="objective" size={18} />
+            {t('ui.game.beginStruggle', 'Begin the Struggle')} <Icon type="objective" size="md" />
           </button>
         </div>
       </PaperSheet>

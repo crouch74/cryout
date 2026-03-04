@@ -330,7 +330,7 @@
     font-family: var(--font-display);
     font-weight: 800;
     font-size: var(--type-1);
-    z-index: 1;
+    z-index: var(--z-panel);
 }
 
 .phase-world .guide-phase-number {
@@ -745,19 +745,19 @@
 .tier-gold {
     background: linear-gradient(135deg, rgba(255, 215, 0, 0.20), rgba(255, 179, 71, 0.15));
     border: 1px solid rgba(255, 215, 0, 0.40);
-    color: #ffd700;
+    color: var(--legacy-color-ffd700);
 }
 
 .tier-silver {
     background: rgba(192, 192, 192, 0.15);
     border: 1px solid rgba(192, 192, 192, 0.30);
-    color: #c0c0c0;
+    color: var(--legacy-color-c0c0c0);
 }
 
 .tier-bronze {
     background: rgba(205, 127, 50, 0.15);
     border: 1px solid rgba(205, 127, 50, 0.30);
-    color: #cd7f32;
+    color: var(--legacy-color-cd7f32);
 }
 
 .tier-survival {

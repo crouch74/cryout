@@ -1,4 +1,4 @@
-export type IconType =
+export type GameIconName =
   | 'bodies'
   | 'comrades'
   | 'crisis'
@@ -7,6 +7,7 @@ export type IconType =
   | 'evidence'
   | 'defense'
   | 'extraction'
+  | 'extractionToken'
   | 'pool'
   | 'globalGaze'
   | 'warMachine'
@@ -47,7 +48,16 @@ export type IconType =
   | 'composeChant'
   | 'fundraise'
   | 'mediaBlitz'
-  | 'sanctions';
+  | 'sanctions'
+  | 'check'
+  | 'chevronDown'
+  | 'contrast'
+  | 'sparkles'
+  | 'scrollText'
+  | 'settings'
+  | 'x';
+
+export type IconType = GameIconName;
 
 export type IconState = 'default' | 'hover' | 'selected' | 'critical' | 'disabled' | 'gain';
 export type IconBaseShape = 'none' | 'circle' | 'hex' | 'diamond' | 'rounded-rect';

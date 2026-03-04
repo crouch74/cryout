@@ -76,24 +76,29 @@ test('four to six tokens use a two-row grid with at most three per row', () => {
   assert.equal(layout.units.filter((unit) => unit.y === distinctRows[1]).length <= 3, true);
 });
 
-test('seven to twelve tokens use a compact three-row grid with at most four per row', () => {
+test('seven and above tokens switch to smart stacking with compact overlap', () => {
   const layout = buildTokenGroupLayout('Congo', 'defense', 12, TOKEN_OPTIONS);
 
   assert.ok(layout);
   const distinctRows = [...new Set(layout.units.map((unit) => unit.y))];
-  assert.equal(distinctRows.length, 3);
-  distinctRows.forEach((rowY) => {
-    assert.equal(layout.units.filter((unit) => unit.y === rowY).length <= 4, true);
-  });
+  assert.equal(distinctRows.length <= 2, true);
+  assert.equal(layout.visibleCount, 8);
+  assert.equal(layout.units.length, 8);
+  const sortedX = layout.units.map((unit) => unit.x).sort((left, right) => left - right);
+  const minimumStep = sortedX.slice(1).reduce((smallest, value, index) => {
+    const delta = Math.abs(value - sortedX[index]);
+    return delta === 0 ? smallest : Math.min(smallest, delta);
+  }, Number.POSITIVE_INFINITY);
+  assert.equal(minimumStep < TOKEN_OPTIONS.tokenSize, true);
 });
 
-test('overflow layout caps visible tokens at twelve and shows a numeric badge', () => {
+test('overflow layout caps visible tokens for compact stacks and shows a numeric badge', () => {
   const layout = buildTokenGroupLayout('Congo', 'extraction', 15, TOKEN_OPTIONS);
 
   assert.ok(layout);
-  assert.equal(layout.visibleCount, 12);
-  assert.equal(layout.units.length, 12);
-  assert.equal(layout.overflowBadge?.label, '+3');
+  assert.equal(layout.visibleCount, 8);
+  assert.equal(layout.units.length, 8);
+  assert.equal(layout.overflowBadge?.label, '+7');
 });
 
 test('optical centering offsets token types deterministically', () => {
@@ -170,8 +175,8 @@ test('token size shrinks when the visible map is broader and grows slightly when
   });
 
   assert.equal(broad.Congo.cluster.tokenSize < focused.Congo.cluster.tokenSize, true);
-  assert.equal(broad.Congo.cluster.tokenSize >= 14, true);
-  assert.equal(focused.Congo.cluster.tokenSize <= 18, true);
+  assert.equal(broad.Congo.cluster.tokenSize >= 11, true);
+  assert.equal(focused.Congo.cluster.tokenSize <= 15, true);
 });
 
 test('effective cluster radius scales with viewport zoom', () => {
@@ -188,6 +193,6 @@ test('effective cluster radius scales with viewport zoom', () => {
   });
 
   assert.equal(broad.Congo.cluster.radius < focused.Congo.cluster.radius, true);
-  assert.equal(broad.Congo.cluster.radius >= 56, true);
-  assert.equal(focused.Congo.cluster.radius <= 84, true);
+  assert.equal(broad.Congo.cluster.radius >= 52, true);
+  assert.equal(focused.Congo.cluster.radius <= 76, true);
 });

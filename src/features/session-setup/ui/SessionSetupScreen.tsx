@@ -1,6 +1,5 @@
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import type { CSSProperties } from 'react';
-import { Check, ChevronDown, ScrollText, Settings2 } from 'lucide-react';
 import { buildBalancedSeatOwners, listRulesets, type FactionId, type VictoryMode } from '../../../engine/index.ts';
 import {
   formatNumber,
@@ -13,6 +12,7 @@ import {
 } from '../../../i18n/index.ts';
 import type { SessionSetupDraft } from '../model/sessionTypes.ts';
 import { Icon } from '../../../ui/icon/Icon.tsx';
+import { GameIcon } from '../../../ui/icon/GameIcon.tsx';
 import {
   LocaleSwitcher,
   PaperSheet,
@@ -145,8 +145,8 @@ export function SessionSetupScreen({
                               aria-label={t('ui.home.ruleset', 'Scenario')}
                               title={localizeRulesetField(currentRuleset.id, 'name', currentRuleset.name)}
                             >
-                              <ScrollText size={16} aria-hidden="true" />
-                              <ChevronDown size={14} aria-hidden="true" />
+                              <GameIcon name="scrollText" size="sm" ariaLabel={t('ui.home.ruleset', 'Scenario')} />
+                              <GameIcon name="chevronDown" size="xs" ariaLabel={t('ui.home.ruleset', 'Scenario')} />
                             </button>
                           </DropdownMenuTrigger>
                           <DropdownMenuPortal>
@@ -166,7 +166,7 @@ export function SessionSetupScreen({
                                   }}
                                 >
                                   <span>{localizeRulesetField(ruleset.id, 'name', ruleset.name)}</span>
-                                  {ruleset.id === config.rulesetId ? <Check size={14} aria-hidden="true" /> : null}
+                                  {ruleset.id === config.rulesetId ? <GameIcon name="check" size="xs" ariaLabel={t('ui.home.ruleset', 'Scenario')} /> : null}
                                 </DropdownMenuItem>
                               ))}
                             </DropdownMenuContent>
@@ -187,15 +187,15 @@ export function SessionSetupScreen({
                         <span className="engraved-eyebrow">{t('ui.home.movementState', 'Movement State')}</span>
                         <ul className="setup-briefing-list">
                           <li className="setup-briefing-item">
-                            <span className="setup-briefing-item-label"><Icon type="comrades" size={16} ariaLabel={t('ui.home.humanPlayerCount', 'Human Players')} />{t('ui.home.humanPlayerCount', 'Human Players')}</span>
+                            <span className="setup-briefing-item-label"><Icon type="comrades" size="sm" ariaLabel={t('ui.home.humanPlayerCount', 'Human Players')} />{t('ui.home.humanPlayerCount', 'Human Players')}</span>
                             <strong>{formatNumber(config.humanPlayerCount)}</strong>
                           </li>
                           <li className="setup-briefing-item">
-                            <span className="setup-briefing-item-label"><Icon type="objective" size={16} ariaLabel={t('ui.home.regions', 'Regions')} />{t('ui.home.regions', 'Regions')}</span>
+                            <span className="setup-briefing-item-label"><Icon type="objective" size="sm" ariaLabel={t('ui.home.regions', 'Regions')} />{t('ui.home.regions', 'Regions')}</span>
                             <strong>{formatNumber(currentRuleset.regions.length)}</strong>
                           </li>
                           <li className="setup-briefing-item">
-                            <span className="setup-briefing-item-label"><Icon type="seat" size={16} ariaLabel={t('ui.home.factionSeatCount', 'Faction Seats')} />{t('ui.home.factionSeatCount', 'Faction Seats')}</span>
+                            <span className="setup-briefing-item-label"><Icon type="seat" size="sm" ariaLabel={t('ui.home.factionSeatCount', 'Faction Seats')} />{t('ui.home.factionSeatCount', 'Faction Seats')}</span>
                             <strong>{formatNumber(selectedFactions.length)}</strong>
                           </li>
                         </ul>
@@ -204,15 +204,15 @@ export function SessionSetupScreen({
                         <span className="engraved-eyebrow">{t('ui.home.systemPressure', 'System Pressure')}</span>
                         <ul className="setup-briefing-list">
                           <li className="setup-briefing-item">
-                            <span className="setup-briefing-item-label"><Icon type="warMachine" size={16} ariaLabel={getFrontLabel('WarMachine')} />{getFrontLabel('WarMachine')}</span>
+                            <span className="setup-briefing-item-label"><Icon type="warMachine" size="sm" ariaLabel={getFrontLabel('WarMachine')} />{getFrontLabel('WarMachine')}</span>
                             <strong>{formatTrackFraction(setupWarMachine, 12)}</strong>
                           </li>
                           <li className="setup-briefing-item">
-                            <span className="setup-briefing-item-label"><Icon type="globalGaze" size={16} ariaLabel={t('ui.game.globalGaze', 'Global Gaze')} />{t('ui.game.globalGaze', 'Global Gaze')}</span>
+                            <span className="setup-briefing-item-label"><Icon type="globalGaze" size="sm" ariaLabel={t('ui.game.globalGaze', 'Global Gaze')} />{t('ui.game.globalGaze', 'Global Gaze')}</span>
                             <strong>{formatTrackFraction(setupGlobalGaze, 20)}</strong>
                           </li>
                           <li className={`setup-briefing-item ${highestExtractionSeed >= 5 ? 'is-critical' : ''}`.trim()}>
-                            <span className="setup-briefing-item-label"><Icon type="extraction" size={16} ariaLabel={t('ui.home.highestExtraction', 'Highest Extraction')} />{t('ui.home.highestExtraction', 'Highest Extraction')}</span>
+                            <span className="setup-briefing-item-label"><Icon type="extraction" size="sm" ariaLabel={t('ui.home.highestExtraction', 'Highest Extraction')} />{t('ui.home.highestExtraction', 'Highest Extraction')}</span>
                             <strong>{formatTrackFraction(highestExtractionSeed, extractionDefeatThreshold)}</strong>
                           </li>
                         </ul>
@@ -220,7 +220,7 @@ export function SessionSetupScreen({
                     </div>
                     <div className={`setup-briefing-threat ${highestExtractionSeed >= 5 ? 'is-escalating' : ''}`.trim()}>
                       <div className="setup-briefing-threat-title">
-                        <Icon type="crisis" size={18} ariaLabel={t('ui.home.existentialThreat', 'Existential Threat')} />
+                        <Icon type="crisis" size="md" ariaLabel={t('ui.home.existentialThreat', 'Existential Threat')} />
                         <span>{t('ui.home.existentialThreat', 'Existential Threat')}</span>
                       </div>
                       <p>
@@ -241,7 +241,7 @@ export function SessionSetupScreen({
                         <span className="engraved-eyebrow">{t('ui.home.launch', 'Open Table')}</span>
                       </div>
                       <h3 className="coalition-setup-title">
-                        <Settings2 size={16} aria-hidden="true" />
+                        <GameIcon name="settings" size="sm" ariaLabel={t('ui.home.coalitionSetup', 'Coalition Setup')} />
                         <span>{t('ui.home.coalitionSetup', 'Coalition Setup')}</span>
                       </h3>
                       <div className="coalition-field-grid">
@@ -252,7 +252,7 @@ export function SessionSetupScreen({
                               <option value="LIBERATION">{t('ui.mode.liberation', 'Liberation')}</option>
                               <option value="SYMBOLIC">{t('ui.mode.symbolic', 'Symbolic')}</option>
                             </select>
-                            <ChevronDown size={16} aria-hidden="true" />
+                            <GameIcon name="chevronDown" size="sm" ariaLabel={t('ui.home.mode', 'Mode')} />
                           </div>
                         </label>
                         <label className="coalition-field">
@@ -272,7 +272,7 @@ export function SessionSetupScreen({
                                 <option key={playerCount} value={playerCount}>{playerCount}</option>
                               ))}
                             </select>
-                            <ChevronDown size={16} aria-hidden="true" />
+                            <GameIcon name="chevronDown" size="sm" ariaLabel={t('ui.home.playerCount', 'Player Count')} />
                           </div>
                         </label>
                       </div>

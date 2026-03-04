@@ -24,7 +24,7 @@ export function StatusPill({
       className={`status-pill status-pill-${item.id} tone-${item.tone} ${isChanging ? 'is-changing' : ''}`.trim()}
       title={item.tooltip}
     >
-      <Icon type={item.icon} size={18} title={item.label} />
+      <Icon type={item.icon} size="md" title={item.label} />
       <div className="status-pill-copy">
         <span>{item.label}</span>
         <strong dir={metricDirection}>{item.value}</strong>

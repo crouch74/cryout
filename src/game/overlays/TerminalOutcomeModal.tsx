@@ -107,11 +107,11 @@ export function TerminalOutcomeModal({
 
         <div className="terminal-outcome-actions">
           <button type="button" className="primary-button" onClick={onReviewLedger}>
-            <Icon type="ledger" size={18} />
+            <Icon type="ledger" size="md" />
             <span>{t('ui.terminal.reviewLedger', 'Review Ledger')}</span>
           </button>
           <button type="button" className="secondary-button" onClick={onBack}>
-            <Icon type="home" size={18} />
+            <Icon type="home" size="md" />
             <span>{t('ui.terminal.backHome', 'Back Home')}</span>
           </button>
         </div>

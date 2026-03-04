@@ -26,7 +26,7 @@
   border-bottom: 1px solid var(--panel-rim);
   position: sticky;
   top: 0;
-  z-index: 30;
+  z-index: var(--z-modal);
   background:
     linear-gradient(180deg, rgba(245, 236, 221, 0.96), rgba(226, 212, 188, 0.92)),
     color-mix(in srgb, var(--board-sand) 92%, white 8%);
@@ -234,7 +234,7 @@
 .board-deck-rail {
   position: absolute;
   inset: 18px;
-  z-index: 4;
+  z-index: var(--z-panel);
   pointer-events: none;
 }
 
@@ -317,13 +317,13 @@
 
 .beacon-objective-card.is-complete .beacon-objective-state {
   background: rgba(200, 167, 94, 0.2);
-  color: #5f4620;
+  color: var(--legacy-color-5f4620);
 }
 
 .deck-reveal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: var(--z-toast);
   isolation: isolate;
   display: grid;
   place-items: center;
@@ -334,7 +334,7 @@
 .deck-reveal-vignette {
   position: absolute;
   inset: 0;
-  z-index: 0;
+  z-index: var(--z-base);
   background:
     radial-gradient(circle at center, rgba(0, 0, 0, 0.04) 0 12%, rgba(0, 0, 0, 0.44) 72%, rgba(0, 0, 0, 0.62) 100%),
     rgba(20, 13, 8, 0.42);
@@ -344,7 +344,7 @@
 
 .deck-reveal-scene {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-panel);
   display: grid;
   justify-items: center;
   gap: 18px;
@@ -352,15 +352,15 @@
 }
 
 .deck-reveal-card {
-  --reveal-front-base: #223144;
-  --reveal-front-accent: #c8a75e;
-  --reveal-front-ink: #f5ead0;
+  --reveal-front-base: var(--legacy-color-223144);
+  --reveal-front-accent: var(--legacy-color-c8a75e);
+  --reveal-front-ink: var(--legacy-color-f5ead0);
   position: relative;
   width: min(320px, calc(100vw - 36px));
   aspect-ratio: 63 / 88;
   transform-origin: center center;
   transform-style: preserve-3d;
-  z-index: 2;
+  z-index: var(--z-panel);
   opacity: 0;
   filter: drop-shadow(0 28px 38px rgba(14, 9, 6, 0.32));
   will-change: transform;
@@ -388,7 +388,7 @@
 }
 
 .deck-reveal-face-front {
-  z-index: 2;
+  z-index: var(--z-panel);
   transform: rotateY(180deg) translateZ(2px);
   display: grid;
   grid-template-rows: auto minmax(96px, 0.9fr) minmax(0, 1fr) auto;
@@ -399,7 +399,7 @@
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.18)),
     var(--reveal-front-pattern),
-    linear-gradient(180deg, color-mix(in srgb, var(--reveal-front-base) 88%, #12100e), color-mix(in srgb, var(--reveal-front-base) 72%, #090807));
+    linear-gradient(180deg, color-mix(in srgb, var(--reveal-front-base) 88%, var(--legacy-color-12100e)), color-mix(in srgb, var(--reveal-front-base) 72%, var(--legacy-color-090807)));
   box-shadow:
     inset 0 1px 0 rgba(255, 249, 235, 0.16),
     inset 0 -1px 0 rgba(0, 0, 0, 0.26),
@@ -407,27 +407,27 @@
 }
 
 .deck-reveal-card-system {
-  --reveal-front-base: #262729;
-  --reveal-front-accent: #a93a31;
-  --reveal-front-ink: #f3e5d1;
+  --reveal-front-base: var(--legacy-color-262729);
+  --reveal-front-accent: var(--legacy-color-a93a31);
+  --reveal-front-ink: var(--legacy-color-f3e5d1);
   --reveal-front-pattern:
     linear-gradient(90deg, transparent 0 44%, rgba(169, 58, 49, 0.14) 45%, transparent 46%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.08));
 }
 
 .deck-reveal-card-resistance {
-  --reveal-front-base: #22314a;
-  --reveal-front-accent: #d1af67;
-  --reveal-front-ink: #f4ebd8;
+  --reveal-front-base: var(--legacy-color-22314a);
+  --reveal-front-accent: var(--legacy-color-d1af67);
+  --reveal-front-ink: var(--legacy-color-f4ebd8);
   --reveal-front-pattern:
     radial-gradient(circle at 50% 16%, rgba(209, 175, 103, 0.18), transparent 18%),
     linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 44%);
 }
 
 .deck-reveal-card-crisis {
-  --reveal-front-base: #7d3f30;
-  --reveal-front-accent: #dec69d;
-  --reveal-front-ink: #fbefde;
+  --reveal-front-base: var(--legacy-color-7d3f30);
+  --reveal-front-accent: var(--legacy-color-dec69d);
+  --reveal-front-ink: var(--legacy-color-fbefde);
   --reveal-front-pattern:
     linear-gradient(126deg, transparent 0 42%, rgba(222, 198, 157, 0.18) 43%, transparent 45%),
     linear-gradient(56deg, transparent 0 34%, rgba(255, 255, 255, 0.08) 35%, transparent 38%);
@@ -438,18 +438,18 @@
 }
 
 .deck-reveal-card-system .deck-reveal-back-art {
-  --deck-base: #2a2a2e;
-  --deck-accent: #7a1e1e;
+  --deck-base: var(--legacy-color-2a2a2e);
+  --deck-accent: var(--legacy-color-7a1e1e);
 }
 
 .deck-reveal-card-resistance .deck-reveal-back-art {
-  --deck-base: #1e2a44;
-  --deck-accent: #c8a75e;
+  --deck-base: var(--legacy-color-1e2a44);
+  --deck-accent: var(--legacy-color-c8a75e);
 }
 
 .deck-reveal-card-crisis .deck-reveal-back-art {
-  --deck-base: #8a3b2f;
-  --deck-accent: #d9c7a1;
+  --deck-base: var(--legacy-color-8a3b2f);
+  --deck-accent: var(--legacy-color-d9c7a1);
 }
 
 .deck-reveal-back-art .deck-back-emblem {
@@ -476,7 +476,7 @@
   font-size: 0.7rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--reveal-front-accent) 82%, #f4e4bb);
+  color: color-mix(in srgb, var(--reveal-front-accent) 82%, var(--legacy-color-f4e4bb));
 }
 
 html[dir='rtl'] .deck-reveal-deck-label {
@@ -488,7 +488,7 @@ html[dir='rtl'] .deck-reveal-deck-label {
   font-size: 1rem;
   line-height: 1.25;
   font-weight: 500;
-  color: color-mix(in srgb, var(--reveal-front-ink) 80%, #f6ead2);
+  color: color-mix(in srgb, var(--reveal-front-ink) 80%, var(--legacy-color-f6ead2));
 }
 
 .deck-reveal-illustration {
@@ -514,9 +514,9 @@ html[dir='rtl'] .deck-reveal-deck-label {
 
 .deck-reveal-illustration-title {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-panel);
   padding: 0 20px;
-  color: color-mix(in srgb, var(--reveal-front-accent) 86%, #fff0cf);
+  color: color-mix(in srgb, var(--reveal-front-accent) 86%, var(--legacy-color-fff0cf));
   font-family: var(--font-display);
   font-size: clamp(26px, 2vw, 30px);
   letter-spacing: 0.03em;
@@ -549,7 +549,7 @@ html[dir='rtl'] .deck-reveal-deck-label {
   background:
     linear-gradient(180deg, rgba(255, 248, 232, 0.16), rgba(255, 248, 232, 0.04)),
     rgba(6, 10, 18, 0.44);
-  color: color-mix(in srgb, var(--reveal-front-ink) 88%, #fff7e1);
+  color: color-mix(in srgb, var(--reveal-front-ink) 88%, var(--legacy-color-fff7e1));
   box-shadow: inset 0 1px 0 rgba(255, 247, 232, 0.12);
   font-family: var(--font-data);
   font-size: 0.72rem;
@@ -632,7 +632,7 @@ html[dir='rtl'] .deck-reveal-deck-label {
   background:
     radial-gradient(circle at top, rgba(255, 240, 211, 0.32), transparent 44%),
     linear-gradient(180deg, rgba(154, 106, 51, 0.98), rgba(103, 67, 31, 0.96));
-  color: #fff7e9;
+  color: var(--legacy-color-fff7e9);
   box-shadow:
     inset 0 1px 0 rgba(255, 242, 213, 0.38),
     0 12px 22px rgba(46, 29, 12, 0.22);
@@ -747,7 +747,7 @@ html[dir='rtl'] .deck-reveal-deck-label {
   width: min(460px, 34vw, calc(100vw - 24px));
   min-height: 0;
   overflow: visible;
-  z-index: 60;
+  z-index: var(--z-toast);
   pointer-events: none;
 }
 
@@ -1166,7 +1166,7 @@ html[dir='rtl'] .deck-reveal-deck-label {
   min-height: 38px;
   border-radius: 12px;
   border: 1px solid var(--line-soft);
-  background: #fffdf9;
+  background: var(--legacy-color-fffdf9);
   padding: 8px 10px;
   color: inherit;
 }
@@ -1545,7 +1545,7 @@ html[dir='rtl'] .deck-reveal-deck-label {
 .status-pill-copy {
   position: relative;
   gap: 3px;
-  z-index: 1;
+  z-index: var(--z-panel);
 }
 
 .status-pill-copy span {
@@ -1577,7 +1577,7 @@ html[dir='rtl'] .deck-reveal-deck-label {
 }
 
 .tone-objective {
-  --status-chip-accent: #876a45;
+  --status-chip-accent: var(--legacy-color-876a45);
 }
 
 .tone-gaze {
@@ -1593,7 +1593,7 @@ html[dir='rtl'] .deck-reveal-deck-label {
 }
 
 .tone-round {
-  --status-chip-accent: #8c6d45;
+  --status-chip-accent: var(--legacy-color-8c6d45);
 }
 
 .status-pill {
@@ -1796,6 +1796,46 @@ html[dir='rtl'] .deck-reveal-deck-label {
   padding: 6px 4px;
 }
 
+.front-track-domain-frontWar {
+  --track-color: var(--front-war);
+}
+
+.front-track-domain-frontPlanet {
+  --track-color: var(--front-climate);
+}
+
+.front-track-domain-frontCage {
+  --track-color: var(--front-rights);
+}
+
+.front-track-domain-frontTruth {
+  --track-color: var(--front-speech-info);
+}
+
+.front-track-domain-frontHunger {
+  --track-color: var(--front-poverty);
+}
+
+.front-track-domain-frontFossil {
+  --track-color: var(--front-energy);
+}
+
+.front-track-domain-frontVoice {
+  --track-color: var(--front-speech-info);
+}
+
+.front-track-domain-frontWave {
+  --track-color: var(--front-wave);
+}
+
+.front-track-domain-frontPatriarchy {
+  --track-color: var(--front-culture);
+}
+
+.front-track-domain-frontJustice {
+  --track-color: var(--color-domain-justice);
+}
+
 .front-track-head {
   gap: 7px;
   font-family: var(--font-body);
@@ -1844,7 +1884,7 @@ html[dir='rtl'] .deck-reveal-deck-label {
   border: 1px solid var(--track-knob-rim);
   background:
     radial-gradient(circle at 35% 30%, rgba(255, 248, 236, 0.9), transparent 35%),
-    linear-gradient(180deg, rgba(255, 248, 236, 0.92), color-mix(in srgb, var(--track-color) 70%, #3a2d22));
+    linear-gradient(180deg, rgba(255, 248, 236, 0.92), color-mix(in srgb, var(--track-color) 70%, var(--legacy-color-3a2d22)));
   transform: translate(50%, -50%);
   box-shadow: 0 3px 8px rgba(40, 28, 18, 0.24);
 }
@@ -1966,7 +2006,7 @@ html[dir='rtl'] .deck-reveal-deck-label {
 
 .action-dock-button span {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-panel);
   font-family: var(--font-body);
   font-size: 10px;
   font-weight: 800;
@@ -1994,12 +2034,12 @@ html[dir='rtl'] .deck-reveal-deck-label {
   gap: 8px;
   padding: 9px 14px;
   border-radius: 11px;
-  border: 1px solid color-mix(in srgb, #3f8a57 52%, var(--tile-rim-dark));
+  border: 1px solid color-mix(in srgb, var(--legacy-color-3f8a57) 52%, var(--tile-rim-dark));
   background:
     linear-gradient(180deg, rgba(244, 255, 247, 0.98), rgba(191, 226, 201, 0.9)),
     rgba(218, 240, 223, 0.96);
   box-shadow: var(--tile-shadow), var(--tile-emboss);
-  color: #214c30;
+  color: var(--legacy-color-214c30);
   font-family: var(--font-body);
   font-size: 0.82rem;
   font-weight: 800;
@@ -2009,11 +2049,11 @@ html[dir='rtl'] .deck-reveal-deck-label {
 
 .action-dock-submit .action-dock-submit-icon,
 .action-dock-submit .ui-icon {
-  color: #2d7a45;
+  color: var(--legacy-color-2d7a45);
 }
 
 .action-dock-submit.is-active {
-  border-color: color-mix(in srgb, #2d7a45 68%, var(--tile-rim-dark));
+  border-color: color-mix(in srgb, var(--legacy-color-2d7a45) 68%, var(--tile-rim-dark));
   background:
     linear-gradient(180deg, rgba(235, 255, 240, 0.98), rgba(156, 210, 171, 0.94)),
     rgba(197, 233, 207, 0.98);
@@ -2124,17 +2164,17 @@ html[dir='rtl'] .deck-reveal-deck-label {
 
 .phase-progress-nav {
   position: relative;
-  z-index: 4;
+  z-index: var(--z-panel);
 }
 
 .phase-progress-nav .printed-track,
 .phase-progress-nav .printed-track-list {
   position: relative;
-  z-index: 4;
+  z-index: var(--z-panel);
 }
 
 .phase-progress-nav .printed-track-step.is-active {
-  z-index: 6;
+  z-index: var(--z-panel);
 }
 
 .phase-progress-nav .printed-track-step-controls {
@@ -2228,7 +2268,7 @@ html[dir='rtl'] .phase-progress-nav .dock-control-button.is-play-button .ui-icon
 
 .phase-progress-help-tooltip {
   position: relative;
-  z-index: 12;
+  z-index: var(--z-panel);
   display: grid;
   gap: 4px;
   width: min(240px, calc(100vw - 56px));
@@ -2418,23 +2458,23 @@ html[dir='rtl'] .phase-progress-help-popover::before {
 }
 
 .visual-delta-glyph.tone-track {
-  color: color-mix(in srgb, var(--theme-gaze-gold) 48%, #5c3331);
+  color: color-mix(in srgb, var(--theme-gaze-gold) 48%, var(--legacy-color-5c3331));
 }
 
 .visual-delta-glyph.tone-region {
-  color: #70492f;
+  color: var(--legacy-color-70492f);
 }
 
 .visual-delta-glyph.tone-resource {
-  color: #405b72;
+  color: var(--legacy-color-405b72);
 }
 
 .visual-delta-glyph.tone-card {
-  color: #6f5345;
+  color: var(--legacy-color-6f5345);
 }
 
 .visual-delta-glyph.tone-player {
-  color: #5c3331;
+  color: var(--legacy-color-5c3331);
 }
 
 .phase-progress-nav.is-advancing .phase-progress-controls {

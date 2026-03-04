@@ -185,16 +185,16 @@ const DOMAIN_SHORT_LABELS: Record<DomainId, string> = {
 };
 
 const DOMAIN_TRACK_COLORS: Record<DomainId, string> = {
-  WarMachine: '#9E1B1B',
-  DyingPlanet: '#3E6F4F',
-  GildedCage: '#8B5E3C',
-  SilencedTruth: '#2D3A64',
-  EmptyStomach: '#C9A227',
-  FossilGrip: '#1F1F1F',
-  StolenVoice: '#6E4A7E',
-  RevolutionaryWave: '#2A9D8F',
-  PatriarchalGrip: '#6B1E1E',
-  UnfinishedJustice: '#4A4E69',
+  WarMachine: 'var(--color-domain-war-machine)',
+  DyingPlanet: 'var(--color-domain-climate)',
+  GildedCage: 'var(--color-domain-fossil)',
+  SilencedTruth: 'var(--color-domain-voice)',
+  EmptyStomach: 'var(--color-domain-hunger)',
+  FossilGrip: 'var(--color-domain-fossil)',
+  StolenVoice: 'var(--color-domain-patriarchy)',
+  RevolutionaryWave: 'var(--color-domain-revolution)',
+  PatriarchalGrip: 'var(--color-domain-patriarchy)',
+  UnfinishedJustice: 'var(--color-domain-justice)',
 };
 
 const ACTION_ICONS: Record<ActionId, IconType> = {
@@ -343,7 +343,7 @@ export function getRegionDangerState(extractionTokens: number) {
     return {
       tone: 'breach',
       severity: 'critical' as const,
-      color: '#8B1E1E',
+      color: 'var(--color-state-danger)',
       pulsing: false,
       label: t('ui.game.breachNear', 'Breach Near'),
     };
@@ -353,7 +353,7 @@ export function getRegionDangerState(extractionTokens: number) {
     return {
       tone: 'critical',
       severity: 'critical' as const,
-      color: '#8B1E1E',
+      color: 'var(--color-state-danger)',
       pulsing: true,
       label: t('ui.game.nearCollapse', 'Near Collapse'),
     };
@@ -363,7 +363,7 @@ export function getRegionDangerState(extractionTokens: number) {
     return {
       tone: 'strained',
       severity: 'danger' as const,
-      color: '#D8A400',
+      color: 'var(--color-state-warning)',
       pulsing: false,
       label: t('ui.game.strained', 'Strained'),
     };
@@ -372,7 +372,7 @@ export function getRegionDangerState(extractionTokens: number) {
   return {
     tone: 'safe',
     severity: 'steady' as const,
-    color: '#5F8D6D',
+    color: 'var(--color-state-movement)',
     pulsing: false,
     label: t('ui.game.holding', 'Holding'),
   };
@@ -615,7 +615,7 @@ export function getFrontTrackRows(state: EngineState, content: CompiledContent):
     label: track.name,
     shortLabel: track.name,
     icon: 'frontJustice' as const,
-    color: '#7f4f24',
+    color: 'var(--color-domain-justice)',
     value: state.customTracks[track.id]?.value ?? track.initialValue,
     max: track.max,
     tooltip: track.description,

@@ -73,6 +73,10 @@ function formatSeatLabel(seat: number) {
   return t('ui.game.seat', 'Seat {{seat}}', { seat: seat + 1 });
 }
 
+function stripLeadingEmoji(value: string) {
+  return value.replace(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}\uFE0F]+\s*/u, '');
+}
+
 export function getRevealDeckLabel(deckId: RevealDeckId) {
   switch (deckId) {
     case 'system':
@@ -369,23 +373,23 @@ function getEventTitle(event: DomainEvent, content: CompiledContent) {
   if (reveal) {
     const revealCopy = presentRevealCopy(reveal, content, event);
     if (reveal.origin === 'startup_withdrawal' && typeof reveal.seat === 'number') {
-      return t('ui.history.eventStartupWithdrawal', '🃏 {{seat}} withdrew a startup resistance card.', {
+      return t('ui.history.eventStartupWithdrawal', '{{seat}} withdrew a startup resistance card.', {
         seat: formatSeatLabel(reveal.seat),
       });
     }
     if (reveal.origin === 'investigate' && typeof reveal.seat === 'number') {
-      return t('ui.history.eventInvestigateDraw', '🃏 {{seat}} drew a resistance card.', {
+      return t('ui.history.eventInvestigateDraw', '{{seat}} drew a resistance card.', {
         seat: formatSeatLabel(reveal.seat),
       });
     }
     if (reveal.origin === 'played_action_card' && typeof reveal.seat === 'number') {
-      return t('ui.history.eventPlayedCard', '🃏 {{seat}} played {{card}}.', {
+      return t('ui.history.eventPlayedCard', '{{seat}} played {{card}}.', {
         seat: formatSeatLabel(reveal.seat),
         card: revealCopy.title,
       });
     }
     if (reveal.origin === 'beacon_activation') {
-      return t('ui.history.eventBeaconActivated', '🕯️ {{card}} became an active Beacon.', {
+      return t('ui.history.eventBeaconActivated', '{{card}} became an active Beacon.', {
         card: revealCopy.title,
       });
     }
@@ -454,14 +458,14 @@ function getEventTitle(event: DomainEvent, content: CompiledContent) {
       const mode = event.message.includes('SYMBOLIC')
         ? t('ui.mode.symbolic', 'Symbolic')
         : t('ui.mode.liberation', 'Liberation');
-      return t('ui.history.eventGameStart', '🌍 {{ruleset}} begins in {{mode}} mode.', {
+      return t('ui.history.eventGameStart', '{{ruleset}} begins in {{mode}} mode.', {
         ruleset: localizeRulesetField(content.ruleset.id, 'name', content.ruleset.name),
         mode,
       });
     }
   }
 
-  return event.message;
+  return stripLeadingEmoji(event.message);
 }
 
 export function presentHistoryEvent(event: DomainEvent, content: CompiledContent, state?: EngineState): PresentedHistoryEvent {

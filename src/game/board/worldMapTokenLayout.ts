@@ -116,8 +116,9 @@ export interface BuildRegionLayoutsInput {
 const GRID_STEP = 8;
 const ANCHOR_SNAP_STEP_X = 8;
 const ANCHOR_SNAP_STEP_Y = 8;
-const MAX_VISIBLE_TOKENS = 12;
+const MAX_VISIBLE_TOKENS = 8;
 const MAX_NEIGHBOR_OFFSET = 12;
+const SMART_STACK_THRESHOLD = 7;
 const TYPE_ORDER: RegionTokenVisual[] = ['extraction', 'defense', 'bodies'];
 
 function percentToNumber(value: string) {
@@ -157,15 +158,15 @@ function getViewportMetrics(mapViewport: MapViewport, canvasWidth: number, canva
 // Token scale now follows the visible world width so pieces stay proportional to the rendered map.
 function getTokenSizing(defaultVisibleWorldWidth: number, currentVisibleWorldWidth: number): TokenSizing {
   const zoomFactor = clamp(defaultVisibleWorldWidth / currentVisibleWorldWidth, 0.8, 1.6);
-  const tokenScale = clamp(Math.sqrt(zoomFactor), 0.9, 1.15);
-  const tokenSize = clamp(Math.round(16 * tokenScale), 14, 18);
+  const tokenScale = clamp(Math.sqrt(zoomFactor), 0.82, 1.08);
+  const tokenSize = clamp(Math.round(14 * tokenScale), 11, 15);
 
   return {
     tokenScale,
     tokenSize,
-    gap: tokenSize >= 17 ? 8 : 6,
-    padding: tokenSize >= 17 ? 8 : 6,
-    overflowBadgeWidth: tokenSize >= 17 ? 32 : 28,
+    gap: tokenSize >= 14 ? 6 : 4,
+    padding: tokenSize >= 14 ? 6 : 4,
+    overflowBadgeWidth: tokenSize >= 14 ? 28 : 24,
   };
 }
 
@@ -207,6 +208,39 @@ function getGroupDimensions(
   };
 }
 
+function getSmartStackDimensions(
+  visibleCount: number,
+  tokenSize: number,
+  gap: number,
+  padding: number,
+  hasOverflow: boolean,
+  overflowBadgeWidth: number,
+) {
+  const rowCount = visibleCount <= 4 ? 1 : 2;
+  const topRowCount = rowCount === 1 ? visibleCount : Math.ceil(visibleCount / 2);
+  const bottomRowCount = rowCount === 1 ? 0 : visibleCount - topRowCount;
+  const stackStepX = Math.max(3, Math.round(tokenSize * 0.58));
+  const stackStepY = Math.max(3, Math.round(tokenSize * 0.52));
+  const rowWidth = tokenSize + Math.max(0, topRowCount - 1) * stackStepX;
+  const bottomRowWidth = bottomRowCount > 0
+    ? tokenSize + Math.max(0, bottomRowCount - 1) * stackStepX
+    : 0;
+  const gridWidth = Math.max(rowWidth, bottomRowWidth);
+  const gridHeight = tokenSize + Math.max(0, rowCount - 1) * stackStepY;
+  const totalWidth = gridWidth + padding * 2 + (hasOverflow ? overflowBadgeWidth + gap : 0);
+
+  return {
+    width: totalWidth,
+    height: gridHeight + padding * 2,
+    gridWidth,
+    gridHeight,
+    stackStepX,
+    stackStepY,
+    topRowCount,
+    bottomRowCount,
+  };
+}
+
 // Three-token groups use a shallow arc so the eye reads them as a single countable cluster.
 function getThreeTokenArcYOffset(columnIndex: number) {
   return columnIndex === 1 ? 0 : -4;
@@ -224,38 +258,41 @@ export function buildTokenGroupLayout(
 
   const visibleCount = Math.min(count, MAX_VISIBLE_TOKENS);
   const hasOverflow = count > MAX_VISIBLE_TOKENS;
-  const rowSizes = getRowSizes(visibleCount);
-  const dimensions = getGroupDimensions(
-    rowSizes,
-    options.tokenSize,
-    options.gap,
-    options.padding,
-    hasOverflow,
-    options.overflowBadgeWidth,
-  );
+  const useSmartStack = visibleCount >= SMART_STACK_THRESHOLD;
+  const rowSizes = useSmartStack ? [] : getRowSizes(visibleCount);
+  const dimensions = useSmartStack
+    ? getSmartStackDimensions(
+      visibleCount,
+      options.tokenSize,
+      options.gap,
+      options.padding,
+      hasOverflow,
+      options.overflowBadgeWidth,
+    )
+    : getGroupDimensions(
+      rowSizes,
+      options.tokenSize,
+      options.gap,
+      options.padding,
+      hasOverflow,
+      options.overflowBadgeWidth,
+    );
   const groupCenterX = dimensions.width / 2;
   const groupCenterY = dimensions.height / 2;
   const units: RegionTokenUnit[] = [];
   let tokenIndex = 0;
-  let cursorY = options.padding;
 
-  rowSizes.forEach((rowCount) => {
-    const rowWidth = rowCount * options.tokenSize + Math.max(0, rowCount - 1) * options.gap;
-    const startX = options.padding + (dimensions.gridWidth - rowWidth) / 2;
+  if (useSmartStack) {
+    const topRowCount = dimensions.topRowCount;
+    const bottomRowCount = dimensions.bottomRowCount;
+    const topRowWidth = options.tokenSize + Math.max(0, topRowCount - 1) * dimensions.stackStepX;
+    const topStartX = options.padding + (dimensions.gridWidth - topRowWidth) / 2;
+    const topY = options.padding + options.tokenSize / 2;
 
-    for (let columnIndex = 0; columnIndex < rowCount; columnIndex += 1) {
-      const x = startX + columnIndex * (options.tokenSize + options.gap) + options.tokenSize / 2;
-      let y = cursorY + options.tokenSize / 2;
-
-      if (visibleCount === 3 && rowCount === 3) {
-        y += getThreeTokenArcYOffset(columnIndex);
-      }
-
+    for (let columnIndex = 0; columnIndex < topRowCount; columnIndex += 1) {
+      const x = topStartX + columnIndex * dimensions.stackStepX + options.tokenSize / 2;
       const relativeX = snapToGrid(x - groupCenterX + options.opticalCorrection.x, GRID_STEP);
-      const relativeY = visibleCount === 3 && rowCount === 3
-        ? y - groupCenterY + options.opticalCorrection.y
-        : snapToGrid(y - groupCenterY + options.opticalCorrection.y, GRID_STEP);
-
+      const relativeY = snapToGrid(topY - groupCenterY + options.opticalCorrection.y, GRID_STEP);
       units.push({
         key: `${regionId}-${type}-${tokenIndex}`,
         type,
@@ -265,8 +302,56 @@ export function buildTokenGroupLayout(
       tokenIndex += 1;
     }
 
-    cursorY += options.tokenSize + options.gap;
-  });
+    if (bottomRowCount > 0) {
+      const bottomRowWidth = options.tokenSize + Math.max(0, bottomRowCount - 1) * dimensions.stackStepX;
+      const bottomStartX = options.padding + (dimensions.gridWidth - bottomRowWidth) / 2 + dimensions.stackStepX * 0.5;
+      const bottomY = options.padding + options.tokenSize / 2 + dimensions.stackStepY;
+
+      for (let columnIndex = 0; columnIndex < bottomRowCount; columnIndex += 1) {
+        const x = bottomStartX + columnIndex * dimensions.stackStepX + options.tokenSize / 2;
+        const relativeX = snapToGrid(x - groupCenterX + options.opticalCorrection.x, GRID_STEP);
+        const relativeY = snapToGrid(bottomY - groupCenterY + options.opticalCorrection.y, GRID_STEP);
+        units.push({
+          key: `${regionId}-${type}-${tokenIndex}`,
+          type,
+          x: normalizeZero(relativeX),
+          y: normalizeZero(relativeY),
+        });
+        tokenIndex += 1;
+      }
+    }
+  } else {
+    let cursorY = options.padding;
+
+    rowSizes.forEach((rowCount) => {
+      const rowWidth = rowCount * options.tokenSize + Math.max(0, rowCount - 1) * options.gap;
+      const startX = options.padding + (dimensions.gridWidth - rowWidth) / 2;
+
+      for (let columnIndex = 0; columnIndex < rowCount; columnIndex += 1) {
+        const x = startX + columnIndex * (options.tokenSize + options.gap) + options.tokenSize / 2;
+        let y = cursorY + options.tokenSize / 2;
+
+        if (visibleCount === 3 && rowCount === 3) {
+          y += getThreeTokenArcYOffset(columnIndex);
+        }
+
+        const relativeX = snapToGrid(x - groupCenterX + options.opticalCorrection.x, GRID_STEP);
+        const relativeY = visibleCount === 3 && rowCount === 3
+          ? y - groupCenterY + options.opticalCorrection.y
+          : snapToGrid(y - groupCenterY + options.opticalCorrection.y, GRID_STEP);
+
+        units.push({
+          key: `${regionId}-${type}-${tokenIndex}`,
+          type,
+          x: normalizeZero(relativeX),
+          y: normalizeZero(relativeY),
+        });
+        tokenIndex += 1;
+      }
+
+      cursorY += options.tokenSize + options.gap;
+    });
+  }
 
   const overflowBadge = hasOverflow
     ? {
@@ -298,7 +383,7 @@ function buildClusterLayout(
   counts: RegionCountSummary,
   sizing: TokenSizing,
 ): RegionClusterLayout {
-  const effectiveClusterRadius = clamp(Math.round(manifestEntry.clusterRadius * sizing.tokenScale), 56, 84);
+  const effectiveClusterRadius = clamp(Math.round(manifestEntry.clusterRadius * sizing.tokenScale), 52, 76);
   const items = TYPE_ORDER
     .map((type) => buildTokenGroupLayout(regionId, type, counts[type], {
       tokenSize: sizing.tokenSize,
@@ -325,18 +410,46 @@ function buildClusterLayout(
   }
 
   const itemGap = sizing.gap;
-  const maxWidth = Math.max(...items.map((item) => item.width));
-  const naturalHeight = items.reduce((sum, item) => sum + item.height, 0) + itemGap * Math.max(0, items.length - 1);
-  let cursorY = 0;
+  let maxWidth = Math.max(...items.map((item) => item.width));
+  let naturalHeight = items.reduce((sum, item) => sum + item.height, 0) + itemGap * Math.max(0, items.length - 1);
 
-  items.forEach((item) => {
-    item.x = snapToGrid((maxWidth - item.width) / 2, GRID_STEP);
-    item.y = snapToGrid(cursorY, GRID_STEP);
-    cursorY += item.height + itemGap;
-  });
+  if (items.length === 2) {
+    const [left, right] = items;
+    const columnGap = Math.max(4, Math.round(itemGap * 0.75));
+    maxWidth = left.width + columnGap + right.width;
+    naturalHeight = Math.max(left.height, right.height);
+
+    left.x = 0;
+    left.y = snapToGrid((naturalHeight - left.height) / 2, GRID_STEP);
+    right.x = snapToGrid(left.width + columnGap, GRID_STEP);
+    right.y = snapToGrid((naturalHeight - right.height) / 2, GRID_STEP);
+  } else if (items.length === 3) {
+    const [left, right, bottom] = items;
+    const columnGap = Math.max(4, Math.round(itemGap * 0.75));
+    const rowGap = Math.max(4, Math.round(itemGap * 0.75));
+    const topRowHeight = Math.max(left.height, right.height);
+    const topRowWidth = left.width + columnGap + right.width;
+    maxWidth = Math.max(topRowWidth, bottom.width);
+    naturalHeight = topRowHeight + rowGap + bottom.height;
+
+    left.x = snapToGrid((maxWidth - topRowWidth) / 2, GRID_STEP);
+    left.y = 0;
+    right.x = snapToGrid(left.x + left.width + columnGap, GRID_STEP);
+    right.y = 0;
+    bottom.x = snapToGrid((maxWidth - bottom.width) / 2, GRID_STEP);
+    bottom.y = snapToGrid(topRowHeight + rowGap, GRID_STEP);
+  } else {
+    let cursorY = 0;
+
+    items.forEach((item) => {
+      item.x = snapToGrid((maxWidth - item.width) / 2, GRID_STEP);
+      item.y = snapToGrid(cursorY, GRID_STEP);
+      cursorY += item.height + itemGap;
+    });
+  }
 
   const clusterMaxDimension = Math.max(maxWidth, naturalHeight);
-  const compressionThreshold = effectiveClusterRadius * 1.4;
+  const compressionThreshold = effectiveClusterRadius * 1.34;
   const scale = clusterMaxDimension > compressionThreshold
     ? clamp(compressionThreshold / clusterMaxDimension, 0.9, 1)
     : 1;

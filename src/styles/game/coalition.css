@@ -21,7 +21,7 @@
 .action-card {
   flex: 0 0 160px;
   height: 220px;
-  background: linear-gradient(135deg, #1a2333, #0c1018);
+  background: linear-gradient(135deg, var(--legacy-color-1a2333), var(--legacy-color-0c1018));
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-sm);
   padding: 14px;
@@ -87,7 +87,7 @@
 .action-reading-pane {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: var(--z-toast);
   background: rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(8px);
   display: flex;
@@ -141,7 +141,7 @@
 }
 
 .mini-seat-dot.active {
-  border-color: #fff;
+  border-color: var(--legacy-color-fff);
   transform: scale(1.2);
 }
 
@@ -170,7 +170,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 10px 14px;
-  background: #0d121b;
+  background: var(--legacy-color-0d121b);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-left: 4px solid var(--accent-primary);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);

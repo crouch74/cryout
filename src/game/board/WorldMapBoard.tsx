@@ -11,7 +11,7 @@ import {
   type Point,
 } from './svgPathCentroid.ts';
 import { useTransientHighlightKeys } from '../presentation/useTransientHighlights.ts';
-import { buildRegionCountSummary, buildRegionLayouts } from './worldMapTokenLayout.ts';
+import { buildRegionCountSummary, buildRegionLayouts, type RegionTokenVisual } from './worldMapTokenLayout.ts';
 import { buildFocusedMapViewport, getUnionBounds } from './worldMapViewport.ts';
 
 interface WorldMapBoardProps {
@@ -39,6 +39,12 @@ const DOMAIN_ICON_BY_ID: Record<DomainId, IconType> = {
   RevolutionaryWave: 'frontWave',
   PatriarchalGrip: 'frontPatriarchy',
   UnfinishedJustice: 'frontJustice',
+};
+
+const REGION_TOKEN_ICON_BY_VISUAL: Record<RegionTokenVisual, IconType> = {
+  extraction: 'extractionToken',
+  defense: 'defense',
+  bodies: 'comrades',
 };
 
 function getBoundingBox(points: Point[]) {
@@ -411,15 +417,15 @@ export function WorldMapBoard({
           <p>{localizeRegionField(cardRegionId, 'strapline', content.regions[cardRegionId].strapline)}</p>
           <div className="board-region-sidecard-metrics">
             <span>
-              <Icon type="extraction" size={15} />
+              <Icon type="extraction" size="sm" />
               {t('ui.game.extraction', 'Extraction')} {formatNumber(state.regions[cardRegionId]?.extractionTokens ?? 0)}
             </span>
             <span>
-              <Icon type="defense" size={15} />
+              <Icon type="defense" size="sm" />
               {t('ui.game.defense', 'Defense')} {formatNumber(state.regions[cardRegionId]?.defenseRating ?? 0)}
             </span>
             <span>
-              <Icon type="bodies" size={15} />
+              <Icon type="bodies" size="sm" />
               {t('ui.game.bodies', 'Comrades')} {formatNumber(state.players.reduce((sum, p) => sum + (state.regions[cardRegionId]?.bodiesPresent[p.seat] ?? 0), 0))}
             </span>
           </div>
@@ -429,7 +435,7 @@ export function WorldMapBoard({
               .slice(0, 3)
               .map(([domainId, value]) => (
                 <span key={domainId}>
-                  <Icon type={DOMAIN_ICON_BY_ID[domainId]} size={15} />
+                  <Icon type={DOMAIN_ICON_BY_ID[domainId]} size="sm" />
                   {localizeDomainField(domainId, 'name', content.domains[domainId].name)} {formatNumber(value)}
                 </span>
               ))}
@@ -521,7 +527,15 @@ export function WorldMapBoard({
                               height: `${layout.cluster.tokenSize}px`,
                               ['--token-index' as string]: String(unitIndex),
                             }}
-                          />
+                          >
+                            <Icon
+                              type={REGION_TOKEN_ICON_BY_VISUAL[unit.type]}
+                              size={Math.max(10, Math.round(layout.cluster.tokenSize * 0.78))}
+                              strokeWidth={unit.type === 'extraction' ? 2.45 : 2.15}
+                              ariaHidden
+                              className="board-region-token-icon"
+                            />
+                          </span>
                         ))}
                         {item.overflowBadge ? (
                           <span

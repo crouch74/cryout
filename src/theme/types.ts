@@ -10,17 +10,30 @@ export type ScenarioOverlayId =
 export type ThemeId = BaseThemeId | ScenarioOverlayId;
 
 export interface ThemeColors {
-  background: string;
-  surface: string;
-  surfaceElevated: string;
-  focusSurface: string;
-  border: string;
+  backgroundPrimary: string;
+  backgroundSecondary: string;
+  backgroundPanel: string;
+  backgroundElevated: string;
   textPrimary: string;
+  textSecondary: string;
   textMuted: string;
-  accent: string;
-  accentStrong: string;
-  danger: string;
-  success: string;
+  textInverted: string;
+  borderSubtle: string;
+  borderStrong: string;
+  borderDanger: string;
+  stateMovement: string;
+  stateDanger: string;
+  stateWarning: string;
+  stateNeutral: string;
+  stateInfo: string;
+  domainWarMachine: string;
+  domainClimate: string;
+  domainFossil: string;
+  domainJustice: string;
+  domainVoice: string;
+  domainHunger: string;
+  domainPatriarchy: string;
+  domainRevolution: string;
   heroTone: string;
   backgroundWash: string;
   selectionHighlight: string;
@@ -29,8 +42,9 @@ export interface ThemeColors {
 }
 
 export interface ThemeShadows {
-  level1: string;
-  level2: string;
+  subtle: string;
+  medium: string;
+  strong: string;
   focus: string;
 }
 
@@ -41,6 +55,7 @@ export interface ThemeRadius {
 }
 
 export interface ThemeSpacing {
+  xxs: string;
   xs: string;
   sm: string;
   md: string;
@@ -50,27 +65,48 @@ export interface ThemeSpacing {
 }
 
 export interface ThemeTypography {
-  display: string;
+  headline: string;
   body: string;
-  narrative: string;
-  data: string;
-  scale0: string;
-  scale1: string;
-  scale2: string;
-  scale3: string;
-  scale4: string;
-  scale5: string;
+  mono: string;
+  sizeXs: string;
+  sizeSm: string;
+  sizeMd: string;
+  sizeLg: string;
+  sizeXl: string;
+  sizeXxl: string;
+  sizeHero: string;
+  weightRegular: string;
+  weightMedium: string;
+  weightBold: string;
   lineHeightTight: string;
-  lineHeightCopy: string;
+  lineHeightNormal: string;
+  lineHeightRelaxed: string;
 }
 
 export interface ThemeMotion {
-  durationFast: string;
-  durationMed: string;
-  durationSlow: string;
-  easingStandard: string;
-  easingEmphasized: string;
-  easingEntrance: string;
+  fast: string;
+  normal: string;
+  slow: string;
+  easing: string;
+}
+
+export interface ThemeZIndex {
+  base: number;
+  panel: number;
+  dropdown: number;
+  modal: number;
+  overlay: number;
+  toast: number;
+}
+
+export interface ThemeLayout {
+  iconXs: number;
+  iconSm: number;
+  iconMd: number;
+  iconLg: number;
+  buttonPaddingY: string;
+  buttonPaddingX: string;
+  panelPadding: string;
 }
 
 export interface ThemeDefinition {
@@ -82,12 +118,16 @@ export interface ThemeDefinition {
   spacing: ThemeSpacing;
   typography: ThemeTypography;
   motion: ThemeMotion;
+  zIndex: ThemeZIndex;
+  layout: ThemeLayout;
 }
 
 export interface ThemeOverlayDefinition {
   id: ScenarioOverlayId;
   label: string;
-  overrides: DeepPartial<Omit<ThemeDefinition, 'id' | 'label'>>;
+  overrides: {
+    colors: DeepPartial<ThemeColors>;
+  };
 }
 
 type Primitive = string | number | boolean | null | undefined | symbol | bigint;

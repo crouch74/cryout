@@ -1,4 +1,4 @@
-import { useMemo, type CSSProperties } from 'react';
+import { useMemo } from 'react';
 import { Icon } from '../../ui/icon/Icon.tsx';
 import type { FrontTrackRow } from '../presentation/gameUiHelpers.ts';
 import { formatTrackFraction, t, useAppLocale } from '../../i18n/index.ts';
@@ -25,12 +25,11 @@ export function FrontTrackBar({
       {rows.map((row) => (
         <article
           key={row.id}
-          className={`front-track-row is-${row.severity} ${highlightedRows.has(row.id) || highlightedIds?.has(row.id) === true ? 'is-changing' : ''}`.trim()}
+          className={`front-track-row front-track-domain-${row.icon} is-${row.severity} ${highlightedRows.has(row.id) || highlightedIds?.has(row.id) === true ? 'is-changing' : ''}`.trim()}
           title={row.tooltip}
-          style={{ ['--track-color' as string]: row.color } as CSSProperties}
         >
           <div className="front-track-head">
-            <Icon type={row.icon} size={18} title={row.label} />
+            <Icon type={row.icon} size="md" title={row.label} />
             <span>{row.shortLabel}</span>
           </div>
           <div className="front-track-meter" aria-hidden="true">
@@ -39,7 +38,6 @@ export function FrontTrackBar({
                 <span key={`${row.id}-${index}`} className={index < row.value ? 'is-filled' : ''} />
               ))}
             </div>
-            <span className="front-track-marker" style={{ ['--track-progress' as string]: `${(row.value / row.max) * 100}%` }} />
           </div>
           <strong dir={dir}>{formatTrackFraction(row.value, row.max)}</strong>
         </article>

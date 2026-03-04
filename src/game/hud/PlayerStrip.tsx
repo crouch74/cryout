@@ -24,7 +24,7 @@ export function PlayerStrip({
             onClick={() => onSelectSeat(summary.seat)}
           >
             <div className="seat-chip-frame">
-              <Icon type="seat" size={16} title={t('ui.game.seat', 'Seat {{seat}}', { seat: summary.seat + 1 })} />
+              <Icon type="seat" size="sm" title={t('ui.game.seat', 'Seat {{seat}}', { seat: summary.seat + 1 })} />
               <div className="seat-chip-info">
                 <span className="seat-chip-label">{t('ui.game.focusSeatAbbrev', 'S{{seat}}', { seat: summary.seat + 1 })}</span>
                 <strong className="seat-chip-name">{summary.shortName}</strong>
@@ -40,9 +40,9 @@ export function PlayerStrip({
           <span>{active.homeRegion}</span>
         </div>
         <div className="player-strip-metrics">
-          <span><Icon type="bodies" size={16} title={t('ui.game.bodies', 'Comrades')} /> {formatNumber(active.bodies)}</span>
-          <span><Icon type="evidence" size={16} title={t('ui.game.evidence', 'Evidence')} /> {formatNumber(active.evidence)}</span>
-          <span><Icon type="objective" size={16} title={t('ui.game.moves', 'Moves')} /> {formatNumber(active.moves)}</span>
+          <span><Icon type="bodies" size="sm" title={t('ui.game.bodies', 'Comrades')} /> {formatNumber(active.bodies)}</span>
+          <span><Icon type="evidence" size="sm" title={t('ui.game.evidence', 'Evidence')} /> {formatNumber(active.evidence)}</span>
+          <span><Icon type="objective" size="sm" title={t('ui.game.moves', 'Moves')} /> {formatNumber(active.moves)}</span>
         </div>
         <div className="player-strip-passive">
           <span>{active.passivePrimary}</span>

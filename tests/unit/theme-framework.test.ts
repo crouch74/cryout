@@ -11,17 +11,29 @@ import {
 } from '../../src/theme/index.ts';
 
 const REQUIRED_COLOR_KEYS = [
-  'background',
-  'surface',
-  'surfaceElevated',
-  'focusSurface',
-  'border',
+  'backgroundPrimary',
+  'backgroundSecondary',
+  'backgroundPanel',
+  'backgroundElevated',
   'textPrimary',
+  'textSecondary',
   'textMuted',
-  'accent',
-  'accentStrong',
-  'danger',
-  'success',
+  'borderSubtle',
+  'borderStrong',
+  'borderDanger',
+  'stateMovement',
+  'stateDanger',
+  'stateWarning',
+  'stateNeutral',
+  'stateInfo',
+  'domainWarMachine',
+  'domainClimate',
+  'domainFossil',
+  'domainJustice',
+  'domainVoice',
+  'domainHunger',
+  'domainPatriarchy',
+  'domainRevolution',
   'heroTone',
   'backgroundWash',
   'selectionHighlight',
@@ -35,14 +47,23 @@ const REQUIRED_CSS_VARIABLES = [
   '--color-surface-elevated',
   '--color-focus-surface',
   '--color-border',
+  '--color-bg-primary',
+  '--color-bg-secondary',
+  '--color-bg-panel',
+  '--color-bg-elevated',
   '--color-text-primary',
+  '--color-text-secondary',
   '--color-text-muted',
   '--color-accent',
-  '--color-accent-strong',
+  '--color-border-subtle',
+  '--color-border-strong',
   '--color-danger',
   '--color-success',
+  '--color-domain-war-machine',
+  '--color-domain-climate',
   '--shadow-level-1',
   '--shadow-level-2',
+  '--shadow-level-3',
   '--shadow-focus',
   '--radius-sm',
   '--radius-md',
@@ -53,9 +74,18 @@ const REQUIRED_CSS_VARIABLES = [
   '--space-4',
   '--space-5',
   '--space-6',
+  '--z-base',
+  '--z-panel',
+  '--z-dropdown',
+  '--z-modal',
+  '--z-overlay',
+  '--z-toast',
+  '--icon-size-xs',
+  '--icon-size-sm',
+  '--icon-size-md',
+  '--icon-size-lg',
   '--font-display',
   '--font-body',
-  '--font-narrative',
   '--font-data',
   '--type-0',
   '--type-1',
@@ -110,11 +140,11 @@ test('scenario mapping resolves overlays and unknown rulesets fall back to base 
 
   const overlayTheme = resolveTheme(getScenarioOverlayForRuleset('base_design'));
   assert.equal(overlayTheme.id, 'burnt-earth-resistance');
-  assert.notEqual(overlayTheme.colors.accent, BASE_THEME.colors.accent);
+  assert.notEqual(overlayTheme.colors.stateDanger, BASE_THEME.colors.stateDanger);
 
   const fallbackTheme = resolveTheme(getScenarioOverlayForRuleset('unknown_ruleset_id'));
   assert.equal(fallbackTheme.id, BASE_THEME.id);
-  assert.equal(fallbackTheme.colors.accent, BASE_THEME.colors.accent);
+  assert.equal(fallbackTheme.colors.stateDanger, BASE_THEME.colors.stateDanger);
 
   const mapping = listScenarioThemeMappings();
   assert.equal(mapping.some((entry) => entry.rulesetId === 'base_design' && entry.overlayId === 'burnt-earth-resistance'), true);
@@ -127,7 +157,7 @@ test('resolved themes export canonical CSS variables for runtime application', (
     assert.equal(typeof variables[key], 'string', `Missing CSS variable output: ${key}`);
   }
 
-  assert.equal(variables['--color-accent'], resolveTheme('night-map-escalation').colors.accent);
+  assert.equal(variables['--color-accent'], resolveTheme('night-map-escalation').colors.stateDanger);
 });
 
 test('reduced-motion and RTL guardrails remain encoded in shared shell sources', () => {

@@ -111,8 +111,8 @@ interface VisualDeltaGlyph {
 interface VisualDeltaTile {
   id: string;
   seq: number;
-  emoji: string;
-  phaseIcon: string;
+  eventIcon: IconType;
+  phaseIcon: IconType;
   glyphs: VisualDeltaGlyph[];
   ariaLabel: string;
   targetKeys: string[];
@@ -130,6 +130,42 @@ const DOMAIN_DELTA_ICONS: Record<DomainId, IconType> = {
   PatriarchalGrip: 'frontPatriarchy',
   UnfinishedJustice: 'frontJustice',
 };
+
+function getPhaseDeltaIcon(phase: EngineState['phase']): IconType {
+  switch (phase) {
+    case 'SYSTEM':
+      return 'warMachine';
+    case 'COALITION':
+      return 'organize';
+    case 'RESOLUTION':
+      return 'advancePhase';
+    case 'WIN':
+      return 'objective';
+    case 'LOSS':
+      return 'crisis';
+    default:
+      return 'ledger';
+  }
+}
+
+function getEventSourceIcon(sourceType: EngineState['eventLog'][number]['sourceType']): IconType {
+  switch (sourceType) {
+    case 'system':
+      return 'warMachine';
+    case 'command':
+      return 'ledger';
+    case 'action':
+      return 'organize';
+    case 'card':
+      return 'playCard';
+    case 'mandate':
+      return 'mandate';
+    case 'beacon':
+      return 'objective';
+    default:
+      return 'ledger';
+  }
+}
 
 function createDraft(actionId: ActionId, regions: RegionId[], domains: DomainId[]): DraftState {
   return {
@@ -588,8 +624,8 @@ function getRecentVisualDeltaTiles(state: EngineState, content: CompiledContent)
       return {
         id: String(event.seq),
         seq: event.seq,
-        emoji: event.emoji,
-        phaseIcon: getPhasePresentation(event.phase).icon,
+        eventIcon: getEventSourceIcon(event.sourceType),
+        phaseIcon: getPhaseDeltaIcon(event.phase),
         glyphs,
         ariaLabel: `${presentHistoryEvent(event, content, state).title}. ${glyphs.map((glyph) => glyph.ariaLabel).join('. ')}`.trim(),
         targetKeys,
@@ -838,7 +874,7 @@ export function GameSessionScreen({
         aria-label={phaseActionLabel}
         title={phaseActionLabel}
       >
-        <Icon type="advancePhase" size={18} title={phaseActionLabel} />
+        <Icon type="advancePhase" size="md" title={phaseActionLabel} />
       </button>
     </div>
   );
@@ -980,13 +1016,13 @@ export function GameSessionScreen({
               title={tile.ariaLabel}
             >
               <div className="visual-delta-tile-head" aria-hidden="true">
-                <span className="visual-delta-phase-marker">{tile.phaseIcon}</span>
-                <span className="visual-delta-emoji">{tile.emoji}</span>
+                <span className="visual-delta-phase-marker"><Icon type={tile.phaseIcon} size="xs" /></span>
+                <span className="visual-delta-emoji"><Icon type={tile.eventIcon} size="xs" /></span>
               </div>
               <div className="visual-delta-glyph-row" aria-hidden="true">
                 {tile.glyphs.map((glyph) => (
                   <span key={glyph.id} className={`visual-delta-glyph tone-${glyph.tone}`.trim()}>
-                    <Icon type={glyph.icon} size={16} title={glyph.ariaLabel} />
+                    <Icon type={glyph.icon} size="sm" title={glyph.ariaLabel} />
                     <strong dir="ltr">{glyph.value}</strong>
                   </span>
                 ))}
@@ -1004,7 +1040,7 @@ export function GameSessionScreen({
               return (
                 <article key={event.seq} className="context-card context-history-card">
                   <span className="context-eyebrow">{presented.sourceLabel}</span>
-                  <strong>{event.emoji} {presented.title}</strong>
+                  <strong>{presented.title}</strong>
                   {presented.contextLabel ? <p>{presented.contextLabel}</p> : null}
                   {presented.cardReveals.length > 0 ? (
                     <div className="context-list">
@@ -1095,7 +1131,7 @@ export function GameSessionScreen({
             title={selectedDeckLatestCard.title}
             body={selectedDeckLatestCard.body}
             tag={t('ui.game.latestReveal', 'Latest reveal')}
-            emoji={selectedDeckId === 'system' ? '🚩' : selectedDeckId === 'crisis' ? '⚠️' : '🃏'}
+            icon={selectedDeckId === 'system' ? 'warMachine' : selectedDeckId === 'crisis' ? 'crisis' : 'playCard'}
           />
         ) : (
           <p>{t('ui.game.noRevealYet', 'No card has been revealed for this deck yet.')}</p>
@@ -1459,7 +1495,7 @@ export function GameSessionScreen({
                       disabled={focusedPlayer.actionsRemaining > 0}
                       onClick={() => handleSetReady(!focusedPlayer.ready)}
                     >
-                      <Icon type="objective" size={18} className="action-dock-submit-icon" />
+                      <Icon type="objective" size="md" className="action-dock-submit-icon" />
                       <span>{focusedPlayer.ready ? t('ui.game.seatReady', 'Seat Ready') : t('ui.game.markSeatReady', 'Mark Seat Ready')}</span>
                     </button>
                   </>
@@ -1479,7 +1515,7 @@ export function GameSessionScreen({
                   label={(
                     <Icon
                       type="home"
-                      size={18}
+                      size="md"
                       title={t('ui.game.backHome', 'Back Home')}
                     />
                   )}
@@ -1493,7 +1529,7 @@ export function GameSessionScreen({
                     aria-label={t('ui.game.openSecretMandate', 'Open Secret Mandate')}
                     title={t('ui.game.openSecretMandate', 'Open Secret Mandate')}
                   >
-                    <Icon type="mandate" size={20} />
+                    <Icon type="mandate" size="lg" />
                     <span>{t('ui.game.viewMandate', 'Mandate Letter')}</span>
                   </button>
                 ) : null}
@@ -1503,7 +1539,7 @@ export function GameSessionScreen({
                   onClick={() => { setContextMode('ledger'); setContextOpen(true); }}
                   aria-label={t('ui.game.ledger', 'Ledger')}
                 >
-                  <Icon type="ledger" size={20} />
+                  <Icon type="ledger" size="lg" />
                   <span>{t('ui.game.ledger', 'Ledger')}</span>
                 </button>
               </div>

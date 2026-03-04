@@ -4,9 +4,10 @@ import {
   type HTMLAttributes,
   type ReactNode,
 } from 'react';
-import { Check, ChevronDown, Contrast, Languages, Sparkles } from 'lucide-react';
 import { useThemeSettings } from '../../app/providers/ThemeProvider.tsx';
 import { formatNumber, t, useAppLocale } from '../../i18n/index.ts';
+import { GameIcon } from '../icon/GameIcon.tsx';
+import type { GameIconName } from '../icon/iconTypes.ts';
 import {
   DropdownMenuContent,
   DropdownMenuItem,
@@ -84,16 +85,26 @@ export function ThemePlate({
   label: ReactNode;
   active?: boolean;
   disabled?: boolean;
-  variant?: 'default' | 'primary' | 'quiet' | 'utility';
+  variant?: 'primary' | 'danger' | 'ghost' | 'neutral' | 'default' | 'quiet' | 'utility';
   size?: 'sm' | 'md' | 'lg';
   className?: string;
   ariaLabel?: string;
   onClick: () => void;
 }) {
+  const variantName = ({
+    default: 'neutral',
+    quiet: 'ghost',
+    utility: 'ghost',
+    primary: 'primary',
+    danger: 'danger',
+    ghost: 'ghost',
+    neutral: 'neutral',
+  } as const)[variant];
+
   return (
     <button
       type="button"
-      className={`engraved-plate engraved-plate-${variant} engraved-plate-${size} ${active ? 'is-active' : ''} ${className}`.trim()}
+      className={`engraved-plate engraved-plate-${variantName} engraved-plate-${size} ${active ? 'is-active' : ''} ${className}`.trim()}
       disabled={disabled}
       aria-label={ariaLabel}
       onClick={onClick}
@@ -117,10 +128,10 @@ export function TabletopControls({ compact = false }: { compact?: boolean }) {
       <ThemePlate
         label={
           compact
-            ? <Contrast size={14} aria-hidden="true" />
+            ? <GameIcon name="contrast" size="xs" ariaLabel={contrastLabel} />
             : (
               <span className="plate-label-with-icon">
-                <Contrast size={14} aria-hidden="true" />
+                <GameIcon name="contrast" size="xs" ariaLabel={contrastLabel} />
                 <span>{contrastLabel}</span>
               </span>
             )
@@ -134,10 +145,10 @@ export function TabletopControls({ compact = false }: { compact?: boolean }) {
       <ThemePlate
         label={
           compact
-            ? <Sparkles size={14} aria-hidden="true" />
+            ? <GameIcon name="sparkles" size="xs" ariaLabel={motionLabel} />
             : (
               <span className="plate-label-with-icon">
-                <Sparkles size={14} aria-hidden="true" />
+                <GameIcon name="sparkles" size="xs" ariaLabel={motionLabel} />
                 <span>{motionLabel}</span>
               </span>
             )
@@ -167,8 +178,8 @@ export function LocaleSwitcher({ showLabel = true, compact = false }: { showLabe
               aria-label={t('ui.language.label', 'Language')}
               title={currentLocaleLabel}
             >
-              <Languages size={16} aria-hidden="true" />
-              <ChevronDown size={14} aria-hidden="true" />
+              <GameIcon name="language" size="sm" ariaLabel={t('ui.language.label', 'Language')} />
+              <GameIcon name="chevronDown" size="xs" ariaLabel={t('ui.language.label', 'Language')} />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuPortal>
@@ -188,7 +199,7 @@ export function LocaleSwitcher({ showLabel = true, compact = false }: { showLabe
                   }}
                 >
                   <span>{option.label}</span>
-                  {option.value === locale ? <Check size={14} aria-hidden="true" /> : null}
+                  {option.value === locale ? <GameIcon name="check" size="xs" ariaLabel={t('ui.language.label', 'Language')} /> : null}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -202,7 +213,7 @@ export function LocaleSwitcher({ showLabel = true, compact = false }: { showLabe
     <div className="locale-switcher">
       {showLabel ? <span className="engraved-eyebrow">{t('ui.language.label', 'Language')}</span> : null}
       <div className="locale-switcher-select-shell">
-        <Languages size={16} aria-hidden="true" />
+        <GameIcon name="language" size="sm" ariaLabel={t('ui.language.label', 'Language')} />
         <select
           value={locale}
           onChange={(event) => {
@@ -365,20 +376,20 @@ export function CrisisCard({
   title,
   body,
   tag,
-  emoji,
+  icon,
   className = '',
 }: {
   title: string;
   body: string;
   tag?: string;
-  emoji?: string;
+  icon?: GameIconName;
   className?: string;
 }) {
   return (
     <article className={`crisis-card ${className}`.trim()}>
       <div className="crisis-card-header">
         <span className="engraved-eyebrow">{tag ?? 'Crisis Card'}</span>
-        {emoji ? <span className="crisis-card-emoji">{emoji}</span> : null}
+        {icon ? <GameIcon name={icon} className="crisis-card-icon" size="lg" /> : null}
       </div>
       <h3>{title}</h3>
       <p>{body}</p>
@@ -395,12 +406,12 @@ export function WoodenToken({
   label: string;
   count?: number;
   shape: 'disc' | 'cube' | 'bar' | 'marker';
-  icon: string;
+  icon: GameIconName;
 }) {
   return (
     <div className={`wooden-token wooden-token-${shape}`} aria-label={count === undefined ? label : `${label}: ${formatNumber(count)}`}>
       <span className="wooden-token-icon" aria-hidden="true">
-        {icon}
+        <GameIcon name={icon} size="xs" />
       </span>
       <span className="wooden-token-label">{label}</span>
       {count !== undefined ? <strong>{formatNumber(count)}</strong> : null}
@@ -417,7 +428,7 @@ export function TokenStack({
   label: string;
   count: number;
   shape: 'disc' | 'cube' | 'bar' | 'marker';
-  icon: string;
+  icon: GameIconName;
 }) {
   const visibleCount = Math.min(count, 8);
   return (

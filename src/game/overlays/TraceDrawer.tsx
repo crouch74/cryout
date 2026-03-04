@@ -1,7 +1,7 @@
 import type { CompiledContent, DomainEvent } from '../../engine/index.ts';
-import { X } from 'lucide-react';
 import { t } from '../../i18n/index.ts';
 import { presentHistoryEvent } from '../presentation/historyPresentation.ts';
+import { GameIcon } from '../../ui/icon/GameIcon.tsx';
 import { PaperSheet } from '../../ui/layout/tabletop.tsx';
 
 interface TraceDrawerProps {
@@ -24,7 +24,7 @@ export function TraceDrawer({ event, content, onClose }: TraceDrawerProps) {
           <div>
             <span className="engraved-eyebrow">{t('ui.game.meetingNotes', 'Meeting Notes')}</span>
             <h3 id="trace-drawer-title">
-              {event.emoji} {presented.title}
+              {presented.title}
             </h3>
             <p>{presented.contextLabel ?? presented.sourceLabel}</p>
           </div>
@@ -35,7 +35,7 @@ export function TraceDrawer({ event, content, onClose }: TraceDrawerProps) {
             aria-label={t('ui.traceDrawer.close', 'Close')}
             title={t('ui.traceDrawer.close', 'Close')}
           >
-            <X size={16} aria-label={t('ui.traceDrawer.close', 'Close')} />
+            <GameIcon name="x" size="sm" ariaLabel={t('ui.traceDrawer.close', 'Close')} />
           </button>
         </div>
 

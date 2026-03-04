@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { X } from 'lucide-react';
 import { getMandateStatus, getSeatFaction, type CompiledContent, type EngineState } from '../../engine/index.ts';
 import { localizeFactionField, localizeRulesetField, localizeScenarioField, t } from '../../i18n/index.ts';
+import { GameIcon } from '../../ui/icon/GameIcon.tsx';
 
 type MandateRevealStage =
   | 'sealed'
@@ -361,7 +361,7 @@ export function SecretMandateModal({
                 disabled={!dismissEnabled}
                 tabIndex={dismissEnabled ? 0 : -1}
               >
-                <X size={16} aria-label={t('ui.game.close', 'Close')} />
+                <GameIcon name="x" size="sm" ariaLabel={t('ui.game.close', 'Close')} />
               </button>
             </header>
             <span className="engraved-eyebrow mandate-letter-copy">

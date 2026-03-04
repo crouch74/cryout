@@ -16,7 +16,7 @@ export function ActionDockButton({
       disabled={item.disabled}
       title={item.disabledReason ?? item.label}
     >
-      <Icon type={item.icon} size={18} title={item.label} />
+      <Icon type={item.icon} size="md" title={item.label} />
       <span>{item.label}</span>
     </button>
   );

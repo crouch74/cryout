@@ -98,7 +98,7 @@ test('history presenter localizes reveal details and disabled reasons', async ()
   await changeLocale('en');
   const state = initializeGame(startCommand);
   const english = presentHistoryEvent(revealEvent, content, state);
-  assert.equal(english.title, '🃏 Seat 1 drew a resistance card.');
+  assert.equal(english.title, 'Seat 1 drew a resistance card.');
   assert.equal(english.cardReveals[0]?.title, 'Archive Leak');
   assert.match(english.cardReveals[0]?.body ?? '', /Global Gaze/);
   assert.doesNotMatch(english.cardReveals[0]?.body ?? '', /Affected region\(s\):/);
@@ -152,7 +152,7 @@ test('history presenter labels startup withdrawals distinctly from later draws',
 
   const presented = presentHistoryEvent(startupEvent, content);
 
-  assert.equal(presented.title, '🃏 Seat 1 withdrew a startup resistance card.');
+  assert.equal(presented.title, 'Seat 1 withdrew a startup resistance card.');
   assert.equal(presented.cardReveals[0]?.title, 'Archive Leak');
   assert.match(presented.cardReveals[0]?.body ?? '', /Global Gaze/);
   assert.equal(presented.deltas.some((delta) => /Global Gaze/.test(delta.label)), true);
@@ -451,19 +451,21 @@ test('homepage source keeps hero hierarchy, utility strip, and dominant launch a
   assert.match(homeCss, /setup-utility-strip/);
 });
 
-test('utility icons use Lucide while custom icon pack keeps core concept glyphs', () => {
+test('player-facing icon usage is centralized through GameIcon', () => {
   const tabletop = readFileSync(new URL('../../src/ui/layout/tabletop.tsx', import.meta.url), 'utf8');
   const contextPanel = readFileSync(new URL('../../src/game/panels/ContextPanel.tsx', import.meta.url), 'utf8');
+  const gameIcon = readFileSync(new URL('../../src/ui/icon/GameIcon.tsx', import.meta.url), 'utf8');
   const iconPack = readFileSync(new URL('../../src/ui/icon/Icon.tsx', import.meta.url), 'utf8');
 
-  assert.match(tabletop, /from 'lucide-react'/);
-  assert.match(contextPanel, /from 'lucide-react'/);
+  assert.match(tabletop, /from '\.\.\/icon\/GameIcon\.tsx'/);
+  assert.match(contextPanel, /from '\.\.\/\.\.\/ui\/icon\/GameIcon\.tsx'/);
   assert.match(tabletop, /DropdownMenuRoot/);
   assert.match(tabletop, /locale-icon-trigger/);
-  assert.match(iconPack, /case 'crisis'/);
-  assert.match(iconPack, /case 'extraction'/);
-  assert.match(iconPack, /case 'evidence'/);
-  assert.match(iconPack, /case 'comrades'/);
+  assert.match(gameIcon, /crisis: TriangleAlert/);
+  assert.match(gameIcon, /extraction: Hexagon/);
+  assert.match(gameIcon, /evidence: FileText/);
+  assert.match(gameIcon, /comrades: Users/);
+  assert.match(iconPack, /GameIcon/);
 });
 
 test('toast helpers keep live-region metadata and role semantics', () => {

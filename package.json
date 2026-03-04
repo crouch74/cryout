@@ -15,7 +15,7 @@
     "preview": "vite preview",
     "test": "node --test tests/unit/*.test.ts tests/integration/*.test.ts",
     "test:engine": "node --test tests/unit/engine.test.ts tests/unit/replay.test.ts tests/integration/scenario-framework.test.ts",
-    "test:ui": "node --test tests/unit/ui.test.ts tests/unit/world-map-anchor.test.ts tests/unit/world-map-token-layout.test.ts tests/unit/world-map-viewport.test.ts tests/unit/scenario-map-assets.test.ts tests/integration/permalinks.test.ts tests/unit/runtime.test.ts",
+    "test:ui": "node --test tests/unit/ui.test.ts tests/unit/ui-token-guards.test.ts tests/unit/world-map-anchor.test.ts tests/unit/world-map-token-layout.test.ts tests/unit/world-map-viewport.test.ts tests/unit/scenario-map-assets.test.ts tests/integration/permalinks.test.ts tests/unit/runtime.test.ts",
     "test:e2e": "node --test tests/integration/e2e.test.ts"
   },
   "dependencies": {
