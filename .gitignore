@@ -8,6 +8,7 @@ __pycache__/
 
 # Build output
 dist/
+simulation_output/
 
 # Environment
 .env

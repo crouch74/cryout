@@ -75,6 +75,27 @@ Rooms are intentionally ephemeral and disappear when the room-service process st
 npm test
 ```
 
+### Autoplay Simulation
+
+Run deterministic headless balance simulations with NDJSON output:
+
+```bash
+npm run simulate -- --runs 100000 --parallel 8
+```
+
+Common options:
+
+- `--runs <n>`: runs per scenario
+- `--scenario <id[,id...]>`: one or more scenarios (repeat flag or comma-separate)
+- `--mode liberation|symbolic|both`
+- `--seed <n>`: deterministic seed
+- `--parallel <n>`: worker thread count
+
+Outputs:
+
+- `simulation_output/simulations.ndjson`
+- `simulation_output/simulation_summary.json`
+
 ### Production Build
 
 ```bash

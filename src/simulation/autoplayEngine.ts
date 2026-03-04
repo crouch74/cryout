@@ -1,0 +1,958 @@
+import { cpus } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
+import { rm, mkdir, writeFile } from 'node:fs/promises';
+import { createReadStream, createWriteStream } from 'node:fs';
+import { Worker } from 'node:worker_threads';
+import {
+  buildBalancedSeatOwners,
+  compileContent,
+  dispatchCommand,
+  initializeGame,
+  listRulesets,
+  CORE_VERSION,
+  type CompiledContent,
+  type EngineCommand,
+  type EngineState,
+  type FactionId,
+} from '../engine/index.ts';
+import { buildStrategyCandidatesForSeat, getStrategyProfile, listStrategyProfiles } from './strategies.ts';
+import type {
+  NormalizedSimulationBatchConfig,
+  PlannedSimulationRun,
+  RunExecutionResult,
+  SimulationBatchConfig,
+  SimulationBatchResult,
+  SimulationCommand,
+  SimulationRecord,
+  SimulationSummary,
+  SimulationVictoryMode,
+  StrategyDecision,
+  SummaryAccumulator,
+  WorkerMessage,
+  WorkerResultMessage,
+  WorkerRunChunk,
+} from './types.ts';
+
+const REQUIRED_CORE_VERSION = '0.10.1-scenario-framework.1';
+
+const DEFAULT_SCENARIOS = [
+  'base_design',
+  'tahrir_square',
+  'woman_life_freedom',
+  'algerian_war_of_independence',
+] as const;
+
+const DEFAULT_VICTORY_MODES: SimulationVictoryMode[] = ['liberation', 'symbolic'];
+
+const CANONICAL_DOMAIN_ORDER = [
+  'WarMachine',
+  'DyingPlanet',
+  'GildedCage',
+  'SilencedTruth',
+  'EmptyStomach',
+  'FossilGrip',
+  'StolenVoice',
+  'RevolutionaryWave',
+  'PatriarchalGrip',
+  'UnfinishedJustice',
+] as const;
+
+const BASE_ACTION_KEY_MAP = {
+  organize: 'organize',
+  investigate: 'investigate',
+  launch_campaign: 'launchCampaign',
+  build_solidarity: 'buildSolidarity',
+  smuggle_evidence: 'smuggleEvidence',
+  international_outreach: 'internationalOutreach',
+  defend: 'defend',
+} as const;
+
+const CONTENT_CACHE = new Map<string, CompiledContent>();
+
+function getCompiledContent(rulesetId: string) {
+  const cached = CONTENT_CACHE.get(rulesetId);
+  if (cached) {
+    return cached;
+  }
+
+  const compiled = compileContent(rulesetId);
+  CONTENT_CACHE.set(rulesetId, compiled);
+  return compiled;
+}
+
+function stableHash(value: string) {
+  let hash = 2166136261 >>> 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619) >>> 0;
+  }
+  return hash >>> 0;
+}
+
+function mixSeed(seed: number, salt: number) {
+  let mixed = (seed ^ salt ^ 0x9e3779b9) >>> 0;
+  mixed ^= mixed >>> 16;
+  mixed = Math.imul(mixed, 0x85ebca6b) >>> 0;
+  mixed ^= mixed >>> 13;
+  mixed = Math.imul(mixed, 0xc2b2ae35) >>> 0;
+  mixed ^= mixed >>> 16;
+  return mixed >>> 0;
+}
+
+function createRng(seed: number) {
+  let state = seed === 0 ? 0x6d2b79f5 : seed >>> 0;
+  return () => {
+    state = Math.imul(state ^ (state >>> 15), state | 1) >>> 0;
+    state ^= state + Math.imul(state ^ (state >>> 7), state | 61);
+    return (state ^ (state >>> 14)) >>> 0;
+  };
+}
+
+function deterministicShuffle<T>(input: readonly T[], seed: number): T[] {
+  const values = [...input];
+  const next = createRng(seed);
+
+  for (let index = values.length - 1; index > 0; index -= 1) {
+    const swapIndex = next() % (index + 1);
+    const current = values[index];
+    values[index] = values[swapIndex];
+    values[swapIndex] = current;
+  }
+
+  return values;
+}
+
+function getModeLabel(mode: SimulationVictoryMode) {
+  return mode === 'liberation' ? 'LIBERATION' : 'SYMBOLIC';
+}
+
+function getDefaultParallelWorkers() {
+  const available = typeof (globalThis as { navigator?: { hardwareConcurrency?: number } }).navigator?.hardwareConcurrency === 'number'
+    ? (globalThis as { navigator?: { hardwareConcurrency?: number } }).navigator?.hardwareConcurrency ?? 0
+    : 0;
+  const cpuCount = Math.max(available, cpus().length, 1);
+  return Math.max(1, cpuCount - 1);
+}
+
+function uniqueValues<T>(values: T[]) {
+  return Array.from(new Set(values));
+}
+
+function assertScenarioIds(scenarios: string[]) {
+  const validScenarioIds = new Set(listRulesets().map((ruleset) => ruleset.id));
+  const unknown = scenarios.filter((scenario) => !validScenarioIds.has(scenario));
+  if (unknown.length > 0) {
+    throw new Error(`Unknown simulation scenarios: ${unknown.join(', ')}`);
+  }
+}
+
+function normalizeBatchConfig(config: SimulationBatchConfig): NormalizedSimulationBatchConfig {
+  const scenarios = uniqueValues(config.scenarios && config.scenarios.length > 0 ? config.scenarios : [...DEFAULT_SCENARIOS]);
+  assertScenarioIds(scenarios);
+
+  const victoryModes = uniqueValues(config.victoryModes && config.victoryModes.length > 0
+    ? config.victoryModes
+    : [...DEFAULT_VICTORY_MODES]);
+
+  if (victoryModes.length === 0) {
+    throw new Error('At least one victory mode is required for simulation.');
+  }
+
+  for (const mode of victoryModes) {
+    if (mode !== 'liberation' && mode !== 'symbolic') {
+      throw new Error(`Unsupported victory mode: ${mode}`);
+    }
+  }
+
+  const requestedProfiles = config.strategies && config.strategies.length > 0
+    ? config.strategies.map((profile) => profile.id)
+    : listStrategyProfiles().map((profile) => profile.id);
+  const strategyIds = uniqueValues(requestedProfiles);
+
+  for (const strategyId of strategyIds) {
+    if (!getStrategyProfile(strategyId)) {
+      throw new Error(`Unknown strategy profile: ${strategyId}`);
+    }
+  }
+
+  const runsPerScenario = Math.max(1, Math.floor(config.runsPerScenario ?? 100000));
+  const randomSeed = Math.floor(config.randomSeed ?? (Date.now() >>> 0)) >>> 0;
+  const parallelWorkers = Math.max(1, Math.floor(config.parallelWorkers ?? getDefaultParallelWorkers()));
+  const outputDir = resolve(config.outputDir ?? resolve(process.cwd(), 'simulation_output'));
+  const progressInterval = Math.max(1, Math.floor(config.progressInterval ?? 250));
+
+  return {
+    scenarios,
+    victoryModes,
+    runsPerScenario,
+    strategyIds,
+    randomSeed,
+    parallelWorkers,
+    outputDir,
+    progressInterval,
+  };
+}
+
+function createSimulationId(index: number, scenario: string, seed: number) {
+  return `${scenario}:${String(index + 1).padStart(9, '0')}:${seed}`;
+}
+
+function createPlannedRuns(config: NormalizedSimulationBatchConfig): PlannedSimulationRun[] {
+  const scenarioQueue: string[] = [];
+  for (const scenario of config.scenarios) {
+    for (let runIndex = 0; runIndex < config.runsPerScenario; runIndex += 1) {
+      scenarioQueue.push(scenario);
+    }
+  }
+
+  const randomizedScenarios = deterministicShuffle(scenarioQueue, mixSeed(config.randomSeed, stableHash('scenario-order')));
+
+  return randomizedScenarios.map((scenario, index) => {
+    const runSeed = mixSeed(config.randomSeed, index + 1);
+    const scenarioSalt = stableHash(scenario);
+    const runLocalSeed = mixSeed(runSeed, scenarioSalt);
+
+    const content = getCompiledContent(scenario);
+    const factionIds = content.ruleset.factions.map((faction) => faction.id);
+    const seatFactionIds = deterministicShuffle<FactionId>(factionIds, mixSeed(runLocalSeed, stableHash('factions')));
+
+    const playerCountOptions: Array<2 | 3 | 4> = [2, 3, 4];
+    const humanPlayerCount = playerCountOptions[mixSeed(runLocalSeed, stableHash('players')) % playerCountOptions.length];
+    const seatOwnerIds = buildBalancedSeatOwners(humanPlayerCount, seatFactionIds);
+
+    const modeIndex = mixSeed(runLocalSeed, stableHash('mode')) % config.victoryModes.length;
+    const mode = getModeLabel(config.victoryModes[modeIndex]);
+
+    const strategyIds = seatFactionIds.map((_, seat) => {
+      const strategyIndex = mixSeed(runLocalSeed, stableHash(`strategy:${seat}`)) % config.strategyIds.length;
+      return config.strategyIds[strategyIndex];
+    });
+
+    return {
+      index,
+      simulationId: createSimulationId(index, scenario, runSeed),
+      scenario,
+      mode,
+      seed: runSeed,
+      humanPlayerCount,
+      seatFactionIds,
+      seatOwnerIds,
+      strategyIds,
+    } satisfies PlannedSimulationRun;
+  });
+}
+
+function buildIntentKey(command: EngineCommand) {
+  if (command.type !== 'QueueIntent') {
+    return command.type;
+  }
+
+  return JSON.stringify([
+    command.action.actionId,
+    command.action.regionId ?? null,
+    command.action.domainId ?? null,
+    command.action.targetSeat ?? null,
+    command.action.bodiesCommitted ?? null,
+    command.action.evidenceCommitted ?? null,
+    command.action.cardId ?? null,
+  ]);
+}
+
+function chooseDecisionFromTopBand(state: EngineState, runSeed: number, decisions: StrategyDecision[]) {
+  const ordered = decisions
+    .slice()
+    .sort((left, right) => {
+      if (right.score !== left.score) {
+        return right.score - left.score;
+      }
+      if (left.seat !== right.seat) {
+        return left.seat - right.seat;
+      }
+      return buildIntentKey({ type: 'QueueIntent', seat: left.seat, action: left.action })
+        .localeCompare(buildIntentKey({ type: 'QueueIntent', seat: right.seat, action: right.action }));
+    });
+
+  const bestScore = ordered[0].score;
+  const topBand = ordered.filter((candidate) => candidate.score >= bestScore - 5);
+  const pickIndex = (state.rng.state ^ state.rng.calls ^ runSeed ^ (state.round * 193)) >>> 0;
+  return topBand[pickIndex % topBand.length] ?? ordered[0];
+}
+
+function selectSimulationCommand(
+  state: EngineState,
+  content: CompiledContent,
+  run: PlannedSimulationRun,
+): SimulationCommand | null {
+  if (state.phase === 'SYSTEM') {
+    return { type: 'ResolveSystemPhase' };
+  }
+
+  if (state.phase === 'RESOLUTION') {
+    return { type: 'ResolveResolutionPhase' };
+  }
+
+  if (state.phase === 'COALITION') {
+    const activeSeats = state.players.filter((player) => player.actionsRemaining > 0).map((player) => player.seat);
+    if (activeSeats.length > 0) {
+      const decisions: StrategyDecision[] = [];
+
+      for (const seat of activeSeats) {
+        const strategyId = run.strategyIds[seat] ?? 'balanced';
+        const profile = getStrategyProfile(strategyId);
+        if (!profile) {
+          continue;
+        }
+
+        const candidates = buildStrategyCandidatesForSeat(state, content, seat);
+        const decision = profile.chooseAction({
+          strategyId,
+          state,
+          content,
+          seat,
+          candidates,
+        });
+        if (decision) {
+          decisions.push(decision);
+        }
+      }
+
+      if (decisions.length === 0) {
+        return null;
+      }
+
+      const selected = chooseDecisionFromTopBand(state, run.seed, decisions);
+      return {
+        type: 'QueueIntent',
+        seat: selected.seat,
+        action: selected.action,
+      };
+    }
+
+    const pendingSeat = state.players.find((player) => !player.ready);
+    if (pendingSeat) {
+      return {
+        type: 'SetReady',
+        seat: pendingSeat.seat,
+        ready: true,
+      };
+    }
+
+    return {
+      type: 'CommitCoalitionIntent',
+    };
+  }
+
+  return null;
+}
+
+function getAverageExtraction(state: EngineState) {
+  const extraction = Object.values(state.regions).map((region) => region.extractionTokens);
+  if (extraction.length === 0) {
+    return 0;
+  }
+  const total = extraction.reduce((sum, value) => sum + value, 0);
+  return Number((total / extraction.length).toFixed(3));
+}
+
+function getDomainsAverage(state: EngineState) {
+  const total = CANONICAL_DOMAIN_ORDER.reduce((sum, domainId) => {
+    return sum + (state.domains[domainId]?.progress ?? 0);
+  }, 0);
+  return Number((total / CANONICAL_DOMAIN_ORDER.length).toFixed(3));
+}
+
+function buildFinalDomains(state: EngineState) {
+  return {
+    WarMachine: state.domains.WarMachine?.progress ?? 0,
+    DyingPlanet: state.domains.DyingPlanet?.progress ?? 0,
+    GildedCage: state.domains.GildedCage?.progress ?? 0,
+    SilencedTruth: state.domains.SilencedTruth?.progress ?? 0,
+    EmptyStomach: state.domains.EmptyStomach?.progress ?? 0,
+    FossilGrip: state.domains.FossilGrip?.progress ?? 0,
+    StolenVoice: state.domains.StolenVoice?.progress ?? 0,
+    RevolutionaryWave: state.domains.RevolutionaryWave?.progress ?? 0,
+    PatriarchalGrip: state.domains.PatriarchalGrip?.progress ?? 0,
+    UnfinishedJustice: state.domains.UnfinishedJustice?.progress ?? 0,
+  };
+}
+
+function buildFinalFronts(state: EngineState) {
+  const fronts: Record<string, number> = {};
+  for (const [regionId, regionState] of Object.entries(state.regions)) {
+    fronts[regionId] = regionState.extractionTokens;
+  }
+  return fronts;
+}
+
+function initializeActionCounts() {
+  return {
+    organize: 0,
+    investigate: 0,
+    launchCampaign: 0,
+    buildSolidarity: 0,
+    smuggleEvidence: 0,
+    internationalOutreach: 0,
+    defend: 0,
+  };
+}
+
+function buildRunRecord(run: PlannedSimulationRun, state: EngineState, stalled: boolean): SimulationRecord {
+  const actionCounts = initializeActionCounts();
+  const actionCountsExtra: Record<string, number> = {};
+
+  const campaignStats = {
+    campaignAttempts: 0,
+    campaignSuccess: 0,
+    attentionFailures: 0,
+    backlashFailures: 0,
+  };
+
+  const resourceStats = {
+    bodiesSpent: 0,
+    evidenceSpent: 0,
+  };
+
+  const timelineByRound = new Map<number, {
+    round: number;
+    globalGaze: number;
+    warMachine: number;
+    avgExtraction: number;
+    domainsAverage: number;
+  }>();
+
+  const captureRound = (snapshot: EngineState) => {
+    timelineByRound.set(snapshot.round, {
+      round: snapshot.round,
+      globalGaze: snapshot.globalGaze,
+      warMachine: snapshot.northernWarMachine,
+      avgExtraction: getAverageExtraction(snapshot),
+      domainsAverage: getDomainsAverage(snapshot),
+    });
+  };
+
+  captureRound(state);
+
+  for (const event of state.eventLog) {
+    if (event.sourceType !== 'action') {
+      continue;
+    }
+
+    const actionId = event.sourceId;
+    const actionKey = BASE_ACTION_KEY_MAP[actionId as keyof typeof BASE_ACTION_KEY_MAP];
+    if (actionKey) {
+      actionCounts[actionKey] += 1;
+    } else {
+      actionCountsExtra[actionId] = (actionCountsExtra[actionId] ?? 0) + 1;
+    }
+
+    if (actionId === 'launch_campaign' && event.context?.roll) {
+      campaignStats.campaignAttempts += 1;
+      if (event.context.roll.success) {
+        campaignStats.campaignSuccess += 1;
+      }
+      if (event.context.roll.outcomeBand === 'attention') {
+        campaignStats.attentionFailures += 1;
+      }
+      if (event.context.roll.outcomeBand === 'backlash') {
+        campaignStats.backlashFailures += 1;
+      }
+    }
+
+    for (const trace of event.trace) {
+      for (const delta of trace.deltas) {
+        if (delta.kind === 'bodies' && typeof delta.before === 'number' && typeof delta.after === 'number' && delta.after < delta.before) {
+          resourceStats.bodiesSpent += delta.before - delta.after;
+        }
+        if (delta.kind === 'evidence' && typeof delta.before === 'number' && typeof delta.after === 'number' && delta.after < delta.before) {
+          resourceStats.evidenceSpent += delta.before - delta.after;
+        }
+      }
+    }
+  }
+
+  captureRound(state);
+
+  const terminalReason = state.terminalOutcome?.cause ?? (stalled ? 'simulation_stalled' : 'simulation_stalled');
+  const resultType = state.phase === 'WIN' ? 'victory' : 'defeat';
+
+  return {
+    simulationId: run.simulationId,
+    scenario: run.scenario,
+    victoryMode: run.mode === 'LIBERATION' ? 'liberation' : 'symbolic',
+    playerCount: run.humanPlayerCount,
+    strategies: [...run.strategyIds],
+    turnsPlayed: state.terminalOutcome?.round ?? state.round,
+    result: {
+      type: resultType,
+      reason: terminalReason,
+    },
+    publicVictoryAchieved: resultType === 'victory' || terminalReason === 'mandate_failure',
+    mandateFailure: terminalReason === 'mandate_failure',
+    extractionBreach: terminalReason === 'extraction_breach',
+    comradesExhausted: terminalReason === 'comrades_exhausted',
+    suddenDeath: terminalReason === 'sudden_death',
+    finalState: {
+      globalGaze: state.globalGaze,
+      warMachine: state.northernWarMachine,
+      domains: buildFinalDomains(state),
+      fronts: buildFinalFronts(state),
+    },
+    campaignStats,
+    resourceStats,
+    actionCounts,
+    actionCountsExtra,
+    timeline: Array.from(timelineByRound.values()).sort((left, right) => left.round - right.round),
+  };
+}
+
+export function runSingleSimulation(run: PlannedSimulationRun): RunExecutionResult {
+  const content = getCompiledContent(run.scenario);
+
+  // Canonical simulation path: use compat runtime commands exactly as shipped.
+  let state = initializeGame({
+    type: 'StartGame',
+    rulesetId: run.scenario,
+    mode: run.mode,
+    secretMandates: 'enabled',
+    humanPlayerCount: run.humanPlayerCount,
+    seatFactionIds: run.seatFactionIds,
+    seatOwnerIds: run.seatOwnerIds,
+    seed: run.seed,
+  });
+
+  const maxSteps = Math.max(180, content.ruleset.suddenDeathRound * 10);
+  let stalled = false;
+
+  for (let step = 0; step < maxSteps; step += 1) {
+    if (state.terminalOutcome || state.phase === 'WIN' || state.phase === 'LOSS') {
+      break;
+    }
+
+    const command = selectSimulationCommand(state, content, run);
+    if (!command) {
+      stalled = true;
+      break;
+    }
+
+    state = dispatchCommand(state, command, content);
+  }
+
+  if (!state.terminalOutcome && state.phase !== 'WIN' && state.phase !== 'LOSS') {
+    stalled = true;
+  }
+
+  const record = buildRunRecord(run, state, stalled);
+  return {
+    record,
+    terminalCommandLogLength: state.commandLog.length,
+  };
+}
+
+export function createSummaryAccumulator(): SummaryAccumulator {
+  return {
+    runs: 0,
+    wins: 0,
+    totalTurns: 0,
+    defeatReasons: {
+      extraction_breach: 0,
+      comrades_exhausted: 0,
+      sudden_death: 0,
+      mandate_failure: 0,
+      simulation_stalled: 0,
+    },
+    campaignAttempts: 0,
+    campaignSuccess: 0,
+    scenarioStats: {},
+    strategyPerformance: {},
+  };
+}
+
+function incrementCount(map: Record<string, number>, key: string) {
+  map[key] = (map[key] ?? 0) + 1;
+}
+
+export function updateSummaryAccumulator(accumulator: SummaryAccumulator, record: SimulationRecord) {
+  accumulator.runs += 1;
+  accumulator.totalTurns += record.turnsPlayed;
+
+  if (record.result.type === 'victory') {
+    accumulator.wins += 1;
+  } else {
+    if (record.result.reason in accumulator.defeatReasons) {
+      const reason = record.result.reason as keyof SummaryAccumulator['defeatReasons'];
+      accumulator.defeatReasons[reason] += 1;
+    }
+  }
+
+  accumulator.campaignAttempts += record.campaignStats.campaignAttempts;
+  accumulator.campaignSuccess += record.campaignStats.campaignSuccess;
+
+  const scenarioBucket = accumulator.scenarioStats[record.scenario] ?? {
+    runs: 0,
+    wins: 0,
+    totalTurns: 0,
+    defeatReasons: {},
+    campaignAttempts: 0,
+    campaignSuccess: 0,
+  };
+
+  scenarioBucket.runs += 1;
+  scenarioBucket.totalTurns += record.turnsPlayed;
+  if (record.result.type === 'victory') {
+    scenarioBucket.wins += 1;
+  } else {
+    incrementCount(scenarioBucket.defeatReasons, record.result.reason);
+  }
+  scenarioBucket.campaignAttempts += record.campaignStats.campaignAttempts;
+  scenarioBucket.campaignSuccess += record.campaignStats.campaignSuccess;
+  accumulator.scenarioStats[record.scenario] = scenarioBucket;
+
+  for (const strategyId of record.strategies) {
+    const strategyBucket = accumulator.strategyPerformance[strategyId] ?? {
+      runs: 0,
+      wins: 0,
+      totalTurns: 0,
+      mandateFailures: 0,
+    };
+
+    strategyBucket.runs += 1;
+    strategyBucket.totalTurns += record.turnsPlayed;
+    if (record.result.type === 'victory') {
+      strategyBucket.wins += 1;
+    }
+    if (record.mandateFailure) {
+      strategyBucket.mandateFailures += 1;
+    }
+
+    accumulator.strategyPerformance[strategyId] = strategyBucket;
+  }
+}
+
+export function mergeSummaryAccumulators(target: SummaryAccumulator, source: SummaryAccumulator) {
+  target.runs += source.runs;
+  target.wins += source.wins;
+  target.totalTurns += source.totalTurns;
+
+  target.defeatReasons.extraction_breach += source.defeatReasons.extraction_breach;
+  target.defeatReasons.comrades_exhausted += source.defeatReasons.comrades_exhausted;
+  target.defeatReasons.sudden_death += source.defeatReasons.sudden_death;
+  target.defeatReasons.mandate_failure += source.defeatReasons.mandate_failure;
+  target.defeatReasons.simulation_stalled += source.defeatReasons.simulation_stalled;
+
+  target.campaignAttempts += source.campaignAttempts;
+  target.campaignSuccess += source.campaignSuccess;
+
+  for (const [scenario, sourceScenario] of Object.entries(source.scenarioStats)) {
+    const targetScenario = target.scenarioStats[scenario] ?? {
+      runs: 0,
+      wins: 0,
+      totalTurns: 0,
+      defeatReasons: {},
+      campaignAttempts: 0,
+      campaignSuccess: 0,
+    };
+
+    targetScenario.runs += sourceScenario.runs;
+    targetScenario.wins += sourceScenario.wins;
+    targetScenario.totalTurns += sourceScenario.totalTurns;
+    targetScenario.campaignAttempts += sourceScenario.campaignAttempts;
+    targetScenario.campaignSuccess += sourceScenario.campaignSuccess;
+
+    for (const [reason, count] of Object.entries(sourceScenario.defeatReasons)) {
+      targetScenario.defeatReasons[reason] = (targetScenario.defeatReasons[reason] ?? 0) + count;
+    }
+
+    target.scenarioStats[scenario] = targetScenario;
+  }
+
+  for (const [strategyId, sourceStrategy] of Object.entries(source.strategyPerformance)) {
+    const targetStrategy = target.strategyPerformance[strategyId] ?? {
+      runs: 0,
+      wins: 0,
+      totalTurns: 0,
+      mandateFailures: 0,
+    };
+
+    targetStrategy.runs += sourceStrategy.runs;
+    targetStrategy.wins += sourceStrategy.wins;
+    targetStrategy.totalTurns += sourceStrategy.totalTurns;
+    targetStrategy.mandateFailures += sourceStrategy.mandateFailures;
+
+    target.strategyPerformance[strategyId] = targetStrategy;
+  }
+}
+
+function ratio(numerator: number, denominator: number) {
+  if (denominator <= 0) {
+    return 0;
+  }
+  return Number((numerator / denominator).toFixed(6));
+}
+
+export function finalizeSummary(accumulator: SummaryAccumulator): SimulationSummary {
+  const scenarioStats = Object.fromEntries(
+    Object.entries(accumulator.scenarioStats)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([scenario, bucket]) => [
+        scenario,
+        {
+          runs: bucket.runs,
+          winRate: ratio(bucket.wins, bucket.runs),
+          averageTurns: ratio(bucket.totalTurns, bucket.runs),
+          defeatReasons: bucket.defeatReasons,
+          campaignSuccessRate: ratio(bucket.campaignSuccess, bucket.campaignAttempts),
+        },
+      ]),
+  );
+
+  const strategyPerformance = Object.fromEntries(
+    Object.entries(accumulator.strategyPerformance)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([strategyId, bucket]) => [
+        strategyId,
+        {
+          runs: bucket.runs,
+          winRate: ratio(bucket.wins, bucket.runs),
+          averageTurns: ratio(bucket.totalTurns, bucket.runs),
+          mandateFailureRate: ratio(bucket.mandateFailures, bucket.runs),
+        },
+      ]),
+  );
+
+  return {
+    runs: accumulator.runs,
+    winRate: ratio(accumulator.wins, accumulator.runs),
+    averageTurns: ratio(accumulator.totalTurns, accumulator.runs),
+    defeatReasons: {
+      extraction_breach: accumulator.defeatReasons.extraction_breach,
+      comrades_exhausted: accumulator.defeatReasons.comrades_exhausted,
+      sudden_death: accumulator.defeatReasons.sudden_death,
+      mandate_failure: accumulator.defeatReasons.mandate_failure,
+      simulation_stalled: accumulator.defeatReasons.simulation_stalled,
+    },
+    scenarioStats,
+    strategyPerformance,
+    campaignSuccessRate: ratio(accumulator.campaignSuccess, accumulator.campaignAttempts),
+  };
+}
+
+async function closeStream(stream: ReturnType<typeof createWriteStream>) {
+  await new Promise<void>((resolvePromise, rejectPromise) => {
+    stream.end(() => resolvePromise());
+    stream.on('error', rejectPromise);
+  });
+}
+
+export async function executeRunChunk(
+  chunk: WorkerRunChunk,
+  onProgress?: (completed: number, total: number) => void,
+): Promise<WorkerResultMessage> {
+  await mkdir(dirname(chunk.shardPath), { recursive: true });
+  const stream = createWriteStream(chunk.shardPath, { flags: 'w', encoding: 'utf8' });
+
+  const summary = createSummaryAccumulator();
+  let processed = 0;
+  let activeScenario: string | null = null;
+
+  try {
+    for (const run of chunk.runs) {
+      if (run.scenario !== activeScenario) {
+        activeScenario = run.scenario;
+        console.log(`🧪 Worker ${chunk.workerId} running scenario ${run.scenario}`);
+      }
+
+      const { record } = runSingleSimulation(run);
+      stream.write(`${JSON.stringify(record)}\n`);
+      updateSummaryAccumulator(summary, record);
+
+      processed += 1;
+      if (processed % chunk.progressInterval === 0 || processed === chunk.runs.length) {
+        onProgress?.(processed, chunk.runs.length);
+      }
+    }
+  } finally {
+    await closeStream(stream);
+  }
+
+  return {
+    type: 'result',
+    workerId: chunk.workerId,
+    chunkIndex: chunk.chunkIndex,
+    shardPath: chunk.shardPath,
+    processed,
+    summary,
+  };
+}
+
+function createChunks(runs: PlannedSimulationRun[], parallelWorkers: number, shardDir: string, progressInterval: number): WorkerRunChunk[] {
+  const workerCount = Math.max(1, Math.min(parallelWorkers, runs.length));
+  const chunkSize = Math.ceil(runs.length / workerCount);
+  const chunks: WorkerRunChunk[] = [];
+
+  for (let workerId = 0; workerId < workerCount; workerId += 1) {
+    const start = workerId * chunkSize;
+    const end = Math.min(start + chunkSize, runs.length);
+    if (start >= end) {
+      continue;
+    }
+
+    chunks.push({
+      workerId,
+      chunkIndex: workerId,
+      runs: runs.slice(start, end),
+      shardPath: join(shardDir, `worker-${workerId}.ndjson`),
+      progressInterval,
+    });
+  }
+
+  return chunks;
+}
+
+async function mergeShardFiles(shardPaths: string[], outputPath: string) {
+  await mkdir(dirname(outputPath), { recursive: true });
+  const stream = createWriteStream(outputPath, { flags: 'w', encoding: 'utf8' });
+
+  try {
+    for (const shardPath of shardPaths) {
+      await new Promise<void>((resolvePromise, rejectPromise) => {
+        const input = createReadStream(shardPath, { encoding: 'utf8' });
+        input.on('error', rejectPromise);
+        input.on('end', resolvePromise);
+        input.pipe(stream, { end: false });
+      });
+    }
+  } finally {
+    await closeStream(stream);
+  }
+}
+
+async function runWorkerChunk(chunk: WorkerRunChunk, totalRuns: number, progressByWorker: Map<number, number>) {
+  return await new Promise<WorkerResultMessage>((resolvePromise, rejectPromise) => {
+    const worker = new Worker(new URL('./worker.ts', import.meta.url), {
+      type: 'module',
+      workerData: chunk,
+    });
+
+    let settled = false;
+
+    worker.on('message', (message: WorkerMessage) => {
+      if (message.type === 'progress') {
+        progressByWorker.set(message.workerId, message.completed);
+        const totalComplete = Array.from(progressByWorker.values()).reduce((sum, value) => sum + value, 0);
+        console.log(`📊 Simulation progress: ${totalComplete} / ${totalRuns}`);
+        return;
+      }
+
+      if (message.type === 'error') {
+        settled = true;
+        rejectPromise(new Error(message.stack ? `${message.message}\n${message.stack}` : message.message));
+        return;
+      }
+
+      if (message.type === 'result') {
+        settled = true;
+        progressByWorker.set(message.workerId, message.processed);
+        const totalComplete = Array.from(progressByWorker.values()).reduce((sum, value) => sum + value, 0);
+        console.log(`📊 Simulation progress: ${totalComplete} / ${totalRuns}`);
+        resolvePromise(message);
+      }
+    });
+
+    worker.on('error', (error) => {
+      if (!settled) {
+        settled = true;
+        rejectPromise(error);
+      }
+    });
+
+    worker.on('exit', (code) => {
+      if (!settled && code !== 0) {
+        settled = true;
+        rejectPromise(new Error(`Worker ${chunk.workerId} exited with code ${code}`));
+      }
+    });
+  });
+}
+
+function ensureCoreVersion() {
+  if (CORE_VERSION !== REQUIRED_CORE_VERSION) {
+    throw new Error(`Simulation framework expects core version ${REQUIRED_CORE_VERSION}, but found ${CORE_VERSION}.`);
+  }
+}
+
+export async function runSimulationBatch(config: SimulationBatchConfig): Promise<SimulationBatchResult> {
+  ensureCoreVersion();
+  const startedAt = Date.now();
+  const normalized = normalizeBatchConfig(config);
+
+  console.log('🎲 Starting simulation batch');
+  console.log(`🧠 Strategy profiles loaded (${normalized.strategyIds.join(', ')})`);
+
+  const outputPath = join(normalized.outputDir, 'simulations.ndjson');
+  const summaryPath = join(normalized.outputDir, 'simulation_summary.json');
+  const shardDir = join(normalized.outputDir, '.workers');
+
+  await mkdir(normalized.outputDir, { recursive: true });
+  await rm(outputPath, { force: true });
+  await rm(summaryPath, { force: true });
+  await rm(shardDir, { recursive: true, force: true });
+  await mkdir(shardDir, { recursive: true });
+
+  const runs = createPlannedRuns(normalized);
+  const totalRuns = runs.length;
+  const chunks = createChunks(runs, normalized.parallelWorkers, shardDir, normalized.progressInterval);
+
+  console.log('⚙️ Running workers');
+
+  const progressByWorker = new Map<number, number>();
+  const results: WorkerResultMessage[] = [];
+
+  if (chunks.length <= 1) {
+    const singleChunk = chunks[0] ?? {
+      workerId: 0,
+      chunkIndex: 0,
+      runs: [],
+      shardPath: join(shardDir, 'worker-0.ndjson'),
+      progressInterval: normalized.progressInterval,
+    };
+
+    const result = await executeRunChunk(singleChunk, (completed) => {
+      progressByWorker.set(singleChunk.workerId, completed);
+      console.log(`📊 Simulation progress: ${completed} / ${totalRuns}`);
+    });
+    results.push(result);
+  } else {
+    const workerResults = await Promise.all(chunks.map((chunk) => runWorkerChunk(chunk, totalRuns, progressByWorker)));
+    results.push(...workerResults);
+  }
+
+  console.log('📈 Aggregating results');
+
+  const aggregate = createSummaryAccumulator();
+  const orderedResults = results.slice().sort((left, right) => left.chunkIndex - right.chunkIndex);
+  const shardPaths = orderedResults.map((result) => result.shardPath);
+
+  for (const result of orderedResults) {
+    mergeSummaryAccumulators(aggregate, result.summary);
+  }
+
+  console.log('💾 Writing NDJSON output');
+  await mergeShardFiles(shardPaths, outputPath);
+
+  const summary = finalizeSummary(aggregate);
+  await writeFile(summaryPath, JSON.stringify(summary, null, 2), 'utf8');
+
+  await rm(shardDir, { recursive: true, force: true });
+
+  console.log('✅ Simulation batch complete');
+
+  return {
+    runs: summary.runs,
+    seed: normalized.randomSeed,
+    parallelWorkers: Math.max(1, Math.min(normalized.parallelWorkers, totalRuns)),
+    outputPath,
+    summaryPath,
+    summary,
+    durationMs: Date.now() - startedAt,
+  };
+}
