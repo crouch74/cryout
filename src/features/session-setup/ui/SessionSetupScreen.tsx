@@ -1,4 +1,6 @@
 import { LazyMotion, domAnimation, m } from 'framer-motion';
+import type { CSSProperties } from 'react';
+import { Check, ChevronDown, ScrollText, Settings2 } from 'lucide-react';
 import { buildBalancedSeatOwners, listRulesets, type FactionId, type VictoryMode } from '../../../engine/index.ts';
 import {
   formatNumber,
@@ -18,6 +20,13 @@ import {
   ThemePlate,
   useTabletopTheme,
 } from '../../../ui/layout/tabletop.tsx';
+import {
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuPortal,
+  DropdownMenuRoot,
+  DropdownMenuTrigger,
+} from '../../../ui/primitives/index.ts';
 
 interface SessionSetupScreenProps {
   config: SessionSetupDraft;
@@ -75,6 +84,21 @@ export function SessionSetupScreen({
     ownerId,
     factionIds: selectedFactions.filter((_, seat) => seatOwnerIds[seat] === ownerId),
   }));
+  const factionById = new Map(currentRuleset.factions.map((faction) => [faction.id, faction]));
+
+  const getSeatAccent = (factionIds: FactionId[]) => {
+    for (const factionId of factionIds) {
+      const faction = factionById.get(factionId);
+      if (!faction) {
+        continue;
+      }
+      const accent = currentRuleset.board.regions[faction.homeRegion]?.accent;
+      if (accent) {
+        return accent;
+      }
+    }
+    return 'var(--color-accent)';
+  };
 
   const handleRulesetChange = (rulesetId: string) => {
     const nextRuleset = RULESETS.find((r) => r.id === rulesetId) || RULESETS[0];
@@ -89,16 +113,17 @@ export function SessionSetupScreen({
   };
 
   const canAnimate = motionMode !== 'reduced';
+  const roomStatusMessage = roomPlayDisabledByBuild
+    ? t('ui.home.roomOfflineOnly', 'This build was cut for offline play only.')
+    : roomPlayChecking
+      ? t('ui.home.roomChecking', 'Checking whether the room service can hold the table...')
+      : roomPlayAvailable
+        ? null
+        : t('ui.home.roomUnavailable', 'Room service did not answer. Local play remains available.');
 
   return (
     <TableSurface className="home-table setup-table home-depth-surface">
       <div className="setup-scene premium-home">
-        <header className="setup-header setup-header-minimal">
-          <div className="setup-utility-strip" aria-label={t('ui.home.utilities', 'Utilities')}>
-            <LocaleSwitcher showLabel={false} compact />
-          </div>
-        </header>
-
         <LazyMotion features={domAnimation}>
           <main className="setup-board-layout">
             <m.section
@@ -110,18 +135,45 @@ export function SessionSetupScreen({
               <PaperSheet tone="board" className="setup-feature-board home-surface home-focus-surface">
                 <div className="setup-board-grid">
                   <section className="setup-scenario-cover">
-                    <span className="engraved-eyebrow">{t('ui.home.ruleset', 'Scenario')}</span>
-                    <select
-                      className="scenario-select-major"
-                      value={config.rulesetId}
-                      onChange={(e) => handleRulesetChange(e.target.value)}
-                    >
-                      {RULESETS.map(r => (
-                        <option key={r.id} value={r.id}>{localizeRulesetField(r.id, 'name', r.name)}</option>
-                      ))}
-                    </select>
                     <div className="setup-briefing-head">
-                      <h2 className="setup-briefing-title">{localizeRulesetField(currentRuleset.id, 'name', currentRuleset.name)}</h2>
+                      <div className="setup-briefing-title-row">
+                        <DropdownMenuRoot>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              type="button"
+                              className="locale-icon-trigger scenario-icon-trigger"
+                              aria-label={t('ui.home.ruleset', 'Scenario')}
+                              title={localizeRulesetField(currentRuleset.id, 'name', currentRuleset.name)}
+                            >
+                              <ScrollText size={16} aria-hidden="true" />
+                              <ChevronDown size={14} aria-hidden="true" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuPortal>
+                            <DropdownMenuContent
+                              className="locale-dropdown-menu"
+                              align="end"
+                              side="bottom"
+                              sideOffset={8}
+                            >
+                              {RULESETS.map((ruleset) => (
+                                <DropdownMenuItem
+                                  key={ruleset.id}
+                                  className="locale-dropdown-item"
+                                  data-active={ruleset.id === config.rulesetId ? 'true' : 'false'}
+                                  onSelect={() => {
+                                    handleRulesetChange(ruleset.id);
+                                  }}
+                                >
+                                  <span>{localizeRulesetField(ruleset.id, 'name', ruleset.name)}</span>
+                                  {ruleset.id === config.rulesetId ? <Check size={14} aria-hidden="true" /> : null}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenuPortal>
+                        </DropdownMenuRoot>
+                        <h2 className="setup-briefing-title">{localizeRulesetField(currentRuleset.id, 'name', currentRuleset.name)}</h2>
+                      </div>
                       <p className="setup-briefing-window">
                         {t('ui.home.briefingWindow', 'Window')} · {t('ui.home.briefingWindowValue', 'to round {{round}}', { round: formatNumber(currentRuleset.suddenDeathRound) })}
                       </p>
@@ -181,14 +233,56 @@ export function SessionSetupScreen({
                   </section>
 
                   <section className="setup-launch-tray">
-                    <PaperSheet tone="tray" className="home-surface launch-surface">
-                      <span className="engraved-eyebrow">{t('ui.home.launch', 'Open Table')}</span>
-                      <div className="plate-toggle-row">
+                    <PaperSheet tone="tray" className="home-surface launch-surface coalition-setup-surface">
+                      <div className="coalition-panel-head">
+                        <div className="setup-utility-strip" aria-label={t('ui.home.utilities', 'Utilities')}>
+                          <LocaleSwitcher showLabel={false} compact />
+                        </div>
+                        <span className="engraved-eyebrow">{t('ui.home.launch', 'Open Table')}</span>
+                      </div>
+                      <h3 className="coalition-setup-title">
+                        <Settings2 size={16} aria-hidden="true" />
+                        <span>{t('ui.home.coalitionSetup', 'Coalition Setup')}</span>
+                      </h3>
+                      <div className="coalition-field-grid">
+                        <label className="coalition-field">
+                          <span>{t('ui.home.mode', 'Mode')}</span>
+                          <div className="coalition-select-shell">
+                            <select value={config.mode} onChange={(event) => onConfigChange({ mode: event.target.value as VictoryMode })}>
+                              <option value="LIBERATION">{t('ui.mode.liberation', 'Liberation')}</option>
+                              <option value="SYMBOLIC">{t('ui.mode.symbolic', 'Symbolic')}</option>
+                            </select>
+                            <ChevronDown size={16} aria-hidden="true" />
+                          </div>
+                        </label>
+                        <label className="coalition-field">
+                          <span>{t('ui.home.playerCount', 'Player Count')}</span>
+                          <div className="coalition-select-shell">
+                            <select
+                              value={config.humanPlayerCount}
+                              onChange={(event) => {
+                                const humanPlayerCount = Number(event.target.value) as 2 | 3 | 4;
+                                onConfigChange({
+                                  humanPlayerCount,
+                                  seatOwnerIds: buildBalancedSeatOwners(humanPlayerCount, selectedFactions),
+                                });
+                              }}
+                            >
+                              {playerOptions.map((playerCount) => (
+                                <option key={playerCount} value={playerCount}>{playerCount}</option>
+                              ))}
+                            </select>
+                            <ChevronDown size={16} aria-hidden="true" />
+                          </div>
+                        </label>
+                      </div>
+                      <div className="plate-toggle-row coalition-surface-toggle">
                         <ThemePlate
                           label={t('ui.home.localTable', 'Local Table')}
                           active={config.surface === 'local'}
                           variant={config.surface === 'local' ? 'default' : 'quiet'}
                           size="sm"
+                          className="coalition-surface-button"
                           onClick={() => onConfigChange({ surface: 'local' })}
                         />
                         <ThemePlate
@@ -196,87 +290,52 @@ export function SessionSetupScreen({
                           active={config.surface === 'room'}
                           variant={config.surface === 'room' ? 'default' : 'quiet'}
                           size="sm"
+                          className="coalition-surface-button"
                           onClick={() => onConfigChange({ surface: 'room' })}
                         />
                       </div>
-                      <div className="paper-form-grid">
-                        <label>
-                          <span>{t('ui.home.mode', 'Mode')}</span>
-                          <select value={config.mode} onChange={(event) => onConfigChange({ mode: event.target.value as VictoryMode })}>
-                            <option value="LIBERATION">{t('ui.mode.liberation', 'Liberation')}</option>
-                            <option value="SYMBOLIC">{t('ui.mode.symbolic', 'Symbolic')}</option>
-                          </select>
-                        </label>
-                        <label>
-                          <span>{t('ui.home.humanPlayerCount', 'Human Players')}</span>
-                          <select
-                            value={config.humanPlayerCount}
-                            onChange={(event) => {
-                              const humanPlayerCount = Number(event.target.value) as 2 | 3 | 4;
-                              onConfigChange({
-                                humanPlayerCount,
-                                seatOwnerIds: buildBalancedSeatOwners(humanPlayerCount, selectedFactions),
-                              });
-                            }}
-                          >
-                            {playerOptions.map((playerCount) => (
-                              <option key={playerCount} value={playerCount}>{playerCount}</option>
-                            ))}
-                          </select>
-                        </label>
-                      </div>
-                      {config.surface === 'room' ? (
-                        <p className="room-status-note">
-                          {roomPlayDisabledByBuild
-                            ? t('ui.home.roomOfflineOnly', 'This build was cut for offline play only.')
-                            : roomPlayChecking
-                              ? t('ui.home.roomChecking', 'Checking whether the room service can hold the table...')
-                              : roomPlayAvailable
-                                ? t('ui.home.roomReachable', 'Room service is reachable.')
-                                : t('ui.home.roomUnavailable', 'Room service did not answer. Local play remains available.')}
+                      {config.surface === 'room' && roomStatusMessage ? (
+                        <p className="room-status-note coalition-room-status">
+                          {roomStatusMessage}
                         </p>
                       ) : null}
-                      <div className="header-action-plates home-launch-actions">
+                      <div className="header-action-plates home-launch-actions coalition-actions">
                         <ThemePlate
-                          label={config.surface === 'local' ? t('ui.home.startLocal', 'Start Local Table') : t('ui.home.createRoom', 'Create Room')}
+                          label={t('ui.home.startSession', 'Start Session')}
                           variant="primary"
                           size="lg"
                           className="home-primary-action"
                           onClick={() => onStart(config)}
                         />
-                        <ThemePlate
-                          label={mode === 'offline' ? t('ui.home.rulesBrief', 'Rules Brief') : t('ui.home.openRulesBrief', 'Open Rules Brief')}
-                          variant="quiet"
-                          size="sm"
-                          onClick={onOpenGuidelines}
-                        />
-                        <ThemePlate
-                          label={t('ui.home.playerGuide', 'Player Guide')}
-                          variant="quiet"
-                          size="sm"
-                          onClick={onOpenPlayerGuide}
-                        />
+                        <div className="coalition-secondary-links" aria-label={t('ui.home.utilities', 'Utilities')}>
+                          <button type="button" className="coalition-secondary-link" onClick={onOpenPlayerGuide}>
+                            {t('ui.home.playerGuide', 'Player Guide')}
+                          </button>
+                          <span aria-hidden="true">·</span>
+                          <button type="button" className="coalition-secondary-link" onClick={onOpenGuidelines}>
+                            {mode === 'offline' ? t('ui.home.rulesBrief', 'Rules Brief') : t('ui.home.openRulesBrief', 'Open Rules Brief')}
+                          </button>
+                        </div>
                       </div>
                     </PaperSheet>
 
-                    <PaperSheet tone="tray" className="home-surface">
+                    <PaperSheet tone="tray" className="home-surface seat-assembly-surface">
                       <span className="engraved-eyebrow">{t('ui.home.factionSeats', 'Faction Seats')}</span>
-                      <div className="seat-placard-grid">
-                        {factionGroups.map((group) => (
-                          <div key={group.ownerId} className="seat-placard">
-                            <span>{t('ui.home.playerSeatGroup', 'Player {{seat}}', { seat: group.ownerId + 1 })}</span>
-                            <strong>{group.factionIds.map((factionId) => getFactionLabel(factionId)).join(', ')}</strong>
-                          </div>
-                        ))}
+                      <div className="seat-placard-grid seat-assembly-grid">
+                        {factionGroups.map((group) => {
+                          const seatAccent = getSeatAccent(group.factionIds);
+                          const seatStyle = { ['--seat-accent' as string]: seatAccent } as CSSProperties;
+                          return (
+                            <article key={group.ownerId} className="seat-placard seat-assembly-card" style={seatStyle}>
+                              <span className="seat-assembly-seat">{t('ui.home.playerSeatGroup', 'Player {{seat}}', { seat: group.ownerId + 1 })}</span>
+                              <strong className="seat-assembly-faction">{group.factionIds.map((factionId) => getFactionLabel(factionId)).join(' · ')}</strong>
+                            </article>
+                          );
+                        })}
                       </div>
                     </PaperSheet>
                   </section>
                 </div>
-
-                <PaperSheet tone="note" className="home-surface home-surface-note">
-                  <span className="engraved-eyebrow">{t('ui.home.asymmetricAbilities', 'Distinct Movements')}</span>
-                  <p>{t('ui.home.rulesBody', 'Each seat carries a movement with distinct pressure, costs, and strategic obligations. Coordinate together without erasing the tension between collective survival and private mandates.')}</p>
-                </PaperSheet>
               </PaperSheet>
             </m.section>
           </main>
