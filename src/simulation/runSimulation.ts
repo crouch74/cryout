@@ -121,6 +121,7 @@ export async function runCli(argv: string[]) {
     randomSeed: config.randomSeed ?? 'auto',
     parallelWorkers: config.parallelWorkers,
   }, null, 2));
+  console.log('📸 Round snapshots are enabled (max 25 per simulation run).');
 
   const result = await runSimulationBatch(config);
 

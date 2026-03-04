@@ -16,9 +16,11 @@ import {
   type FactionId,
 } from '../engine/index.ts';
 import { buildStrategyCandidatesForSeat, getStrategyProfile, listStrategyProfiles } from './strategies.ts';
+import { captureRoundSnapshot, convertRoundSnapshotsToTimeline } from './captureRoundSnapshot.ts';
 import type {
   NormalizedSimulationBatchConfig,
   PlannedSimulationRun,
+  RoundSnapshot,
   RunExecutionResult,
   SimulationBatchConfig,
   SimulationBatchResult,
@@ -44,19 +46,6 @@ const DEFAULT_SCENARIOS = [
 
 const DEFAULT_VICTORY_MODES: SimulationVictoryMode[] = ['liberation', 'symbolic'];
 
-const CANONICAL_DOMAIN_ORDER = [
-  'WarMachine',
-  'DyingPlanet',
-  'GildedCage',
-  'SilencedTruth',
-  'EmptyStomach',
-  'FossilGrip',
-  'StolenVoice',
-  'RevolutionaryWave',
-  'PatriarchalGrip',
-  'UnfinishedJustice',
-] as const;
-
 const BASE_ACTION_KEY_MAP = {
   organize: 'organize',
   investigate: 'investigate',
@@ -66,6 +55,8 @@ const BASE_ACTION_KEY_MAP = {
   international_outreach: 'internationalOutreach',
   defend: 'defend',
 } as const;
+
+const MAX_SNAPSHOTS_PER_GAME = 25;
 
 const CONTENT_CACHE = new Map<string, CompiledContent>();
 
@@ -345,22 +336,6 @@ function selectSimulationCommand(
   return null;
 }
 
-function getAverageExtraction(state: EngineState) {
-  const extraction = Object.values(state.regions).map((region) => region.extractionTokens);
-  if (extraction.length === 0) {
-    return 0;
-  }
-  const total = extraction.reduce((sum, value) => sum + value, 0);
-  return Number((total / extraction.length).toFixed(3));
-}
-
-function getDomainsAverage(state: EngineState) {
-  const total = CANONICAL_DOMAIN_ORDER.reduce((sum, domainId) => {
-    return sum + (state.domains[domainId]?.progress ?? 0);
-  }, 0);
-  return Number((total / CANONICAL_DOMAIN_ORDER.length).toFixed(3));
-}
-
 function buildFinalDomains(state: EngineState) {
   return {
     WarMachine: state.domains.WarMachine?.progress ?? 0,
@@ -396,7 +371,12 @@ function initializeActionCounts() {
   };
 }
 
-function buildRunRecord(run: PlannedSimulationRun, state: EngineState, stalled: boolean): SimulationRecord {
+function buildRunRecord(
+  run: PlannedSimulationRun,
+  state: EngineState,
+  stalled: boolean,
+  roundSnapshots: RoundSnapshot[],
+): SimulationRecord {
   const actionCounts = initializeActionCounts();
   const actionCountsExtra: Record<string, number> = {};
 
@@ -411,26 +391,6 @@ function buildRunRecord(run: PlannedSimulationRun, state: EngineState, stalled: 
     bodiesSpent: 0,
     evidenceSpent: 0,
   };
-
-  const timelineByRound = new Map<number, {
-    round: number;
-    globalGaze: number;
-    warMachine: number;
-    avgExtraction: number;
-    domainsAverage: number;
-  }>();
-
-  const captureRound = (snapshot: EngineState) => {
-    timelineByRound.set(snapshot.round, {
-      round: snapshot.round,
-      globalGaze: snapshot.globalGaze,
-      warMachine: snapshot.northernWarMachine,
-      avgExtraction: getAverageExtraction(snapshot),
-      domainsAverage: getDomainsAverage(snapshot),
-    });
-  };
-
-  captureRound(state);
 
   for (const event of state.eventLog) {
     if (event.sourceType !== 'action') {
@@ -470,10 +430,9 @@ function buildRunRecord(run: PlannedSimulationRun, state: EngineState, stalled: 
     }
   }
 
-  captureRound(state);
-
   const terminalReason = state.terminalOutcome?.cause ?? (stalled ? 'simulation_stalled' : 'simulation_stalled');
   const resultType = state.phase === 'WIN' ? 'victory' : 'defeat';
+  const normalizedSnapshots = roundSnapshots.slice(0, MAX_SNAPSHOTS_PER_GAME);
 
   return {
     simulationId: run.simulationId,
@@ -501,8 +460,27 @@ function buildRunRecord(run: PlannedSimulationRun, state: EngineState, stalled: 
     resourceStats,
     actionCounts,
     actionCountsExtra,
-    timeline: Array.from(timelineByRound.values()).sort((left, right) => left.round - right.round),
+    roundSnapshots: normalizedSnapshots,
+    timeline: convertRoundSnapshotsToTimeline(normalizedSnapshots),
   };
+}
+
+function appendRoundSnapshot(
+  run: PlannedSimulationRun,
+  roundSnapshots: RoundSnapshot[],
+  state: EngineState,
+  snapshotLimitReached: { value: boolean },
+) {
+  if (roundSnapshots.length >= MAX_SNAPSHOTS_PER_GAME) {
+    if (!snapshotLimitReached.value) {
+      snapshotLimitReached.value = true;
+      console.log('⚠️ Snapshot limit reached, truncating further rounds');
+    }
+    return;
+  }
+
+  console.log(`📸 Capturing round snapshot r=${state.round} sim=${run.simulationId}`);
+  roundSnapshots.push(captureRoundSnapshot(state));
 }
 
 export function runSingleSimulation(run: PlannedSimulationRun): RunExecutionResult {
@@ -522,6 +500,8 @@ export function runSingleSimulation(run: PlannedSimulationRun): RunExecutionResu
 
   const maxSteps = Math.max(180, content.ruleset.suddenDeathRound * 10);
   let stalled = false;
+  const roundSnapshots: RoundSnapshot[] = [];
+  const snapshotLimitReached = { value: false };
 
   for (let step = 0; step < maxSteps; step += 1) {
     if (state.terminalOutcome || state.phase === 'WIN' || state.phase === 'LOSS') {
@@ -535,13 +515,16 @@ export function runSingleSimulation(run: PlannedSimulationRun): RunExecutionResu
     }
 
     state = dispatchCommand(state, command, content);
+    if (command.type === 'ResolveResolutionPhase') {
+      appendRoundSnapshot(run, roundSnapshots, state, snapshotLimitReached);
+    }
   }
 
   if (!state.terminalOutcome && state.phase !== 'WIN' && state.phase !== 'LOSS') {
     stalled = true;
   }
 
-  const record = buildRunRecord(run, state, stalled);
+  const record = buildRunRecord(run, state, stalled, roundSnapshots);
   return {
     record,
     terminalCommandLogLength: state.commandLog.length,

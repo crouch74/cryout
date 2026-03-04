@@ -84,6 +84,55 @@ export interface StrategyProfile {
   chooseAction: (context: StrategyContext) => StrategyDecision | null;
 }
 
+export interface RoundSnapshot {
+  round: number;
+  globalTracks: {
+    globalGaze: number;
+    warMachine: number;
+  };
+  domains: {
+    WarMachine?: number;
+    DyingPlanet?: number;
+    GildedCage?: number;
+    SilencedTruth?: number;
+    EmptyStomach?: number;
+    FossilGrip?: number;
+    StolenVoice?: number;
+    RevolutionaryWave?: number;
+    PatriarchalGrip?: number;
+    UnfinishedJustice?: number;
+  };
+  fronts: Record<string, {
+    extraction: number;
+    comradesTotal: number;
+    defense?: number;
+  }>;
+  resources: {
+    totalBodies: number;
+    totalEvidence: number;
+  };
+  actions: {
+    organize: number;
+    investigate: number;
+    launchCampaign: number;
+    buildSolidarity: number;
+    smuggleEvidence: number;
+    internationalOutreach: number;
+    defend: number;
+  };
+  campaign: {
+    attempts: number;
+    success: number;
+    attentionFailures: number;
+    backlashFailures: number;
+  };
+  escalationFlags?: {
+    extractionThresholdTriggered?: boolean;
+    warMachineThresholdTriggered?: boolean;
+    globalGazeCollapse?: boolean;
+  };
+}
+
 export interface SimulationRecord {
   simulationId: string;
   scenario: string;
@@ -137,7 +186,9 @@ export interface SimulationRecord {
     defend: number;
   };
   actionCountsExtra: Record<string, number>;
-  timeline: Array<{
+  roundSnapshots: RoundSnapshot[];
+  // Backward compatibility for analyzers that still consume timeline.
+  timeline?: Array<{
     round: number;
     globalGaze: number;
     warMachine: number;
