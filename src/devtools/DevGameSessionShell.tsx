@@ -160,6 +160,24 @@ export default function DevGameSessionShell({
     })
     : autoPlayStatus;
 
+  const handleToggleDevPanel = () => {
+    setShowDevPanel((current) => !current);
+  };
+
+  const handleToggleSnapshot = () => {
+    setShowDevPanel(true);
+    setShowDebugSnapshot((current) => !current);
+  };
+
+  const handleQuickAutoplay = () => {
+    if (autoPlayRunning) {
+      handleAutoPlayStop();
+      return;
+    }
+    setShowDevPanel(true);
+    handleAutoPlayStart();
+  };
+
   return (
     <>
       <GameSessionScreen
@@ -174,18 +192,46 @@ export default function DevGameSessionShell({
         autoAdvanceTransientUi={autoPlayRunning}
       />
 
-      <button
-        type="button"
-        className={`dev-panel-toggle ${showDevPanel ? 'is-active' : ''}`.trim()}
-        onClick={() => setShowDevPanel((current) => !current)}
-        aria-expanded={showDevPanel}
-        aria-controls="debug-panel-title"
-      >
-        <span className="dev-panel-emoji" aria-hidden="true">🛠</span>
-        <span className="dev-panel-label">
-          {showDevPanel ? t('ui.debug.hidePanel', 'Hide Dev Panel') : t('ui.debug.showPanel', 'Dev Panel')}
-        </span>
-      </button>
+      <div className={`dev-tools-fab ${showDevPanel ? 'is-panel-open' : ''}`.trim()}>
+        <button
+          type="button"
+          className={`dev-panel-toggle ${showDevPanel ? 'is-active' : ''}`.trim()}
+          onClick={handleToggleDevPanel}
+          aria-expanded={showDevPanel}
+          aria-controls="debug-panel-title"
+        >
+          <span className="dev-panel-emoji" aria-hidden="true">🛠</span>
+          <span className="dev-panel-label">
+            {showDevPanel ? t('ui.debug.hidePanel', 'Hide Dev Panel') : t('ui.debug.showPanel', 'Dev Panel')}
+          </span>
+        </button>
+        <div className="dev-tools-fab-actions" role="menu" aria-label={t('ui.debug.devPanel', 'Development panel')}>
+          <button
+            type="button"
+            className={`dev-tools-fab-action ${showDevPanel ? 'is-active' : ''}`.trim()}
+            role="menuitem"
+            onClick={handleToggleDevPanel}
+          >
+            {showDevPanel ? t('ui.debug.hidePanel', 'Hide Dev Panel') : t('ui.debug.showPanel', 'Dev Panel')}
+          </button>
+          <button
+            type="button"
+            className={`dev-tools-fab-action ${showDebugSnapshot ? 'is-active' : ''}`.trim()}
+            role="menuitem"
+            onClick={handleToggleSnapshot}
+          >
+            {showDebugSnapshot ? t('ui.debug.hideSnapshot', 'Hide Snapshot') : t('ui.debug.showSnapshot', 'Show Snapshot')}
+          </button>
+          <button
+            type="button"
+            className={`dev-tools-fab-action ${autoPlayRunning ? 'is-active' : ''}`.trim()}
+            role="menuitem"
+            onClick={handleQuickAutoplay}
+          >
+            {autoPlayRunning ? t('ui.debug.stopAutoplay', 'Stop') : t('ui.debug.startAutoplay', 'Start Autoplay')}
+          </button>
+        </div>
+      </div>
 
       {showDevPanel ? (
         <DebugOverlay

@@ -2,7 +2,8 @@
 .debug-panel {
   position: fixed;
   top: var(--space-2);
-  right: var(--space-2);
+  left: var(--space-2);
+  right: auto;
   width: min(430px, calc(100vw - 32px));
   max-height: calc(100vh - 32px);
   overflow: auto;
@@ -15,7 +16,8 @@
 }
 
 .overlay-trace-drawer {
-  right: min(468px, calc(100vw - 32px));
+  left: min(468px, calc(100vw - 32px));
+  right: auto;
 }
 
 .overlay-header,
@@ -1370,13 +1372,13 @@ html[dir='rtl'] .campaign-result-equation-row {
 
 html[dir='rtl'] .overlay-drawer,
 html[dir='rtl'] .debug-panel {
-  left: var(--space-2);
-  right: auto;
+  right: var(--space-2);
+  left: auto;
 }
 
 html[dir='rtl'] .overlay-trace-drawer {
-  left: min(468px, calc(100vw - 32px));
-  right: auto;
+  right: min(468px, calc(100vw - 32px));
+  left: auto;
 }
 
 html[dir='rtl'] .overlay-actions {
