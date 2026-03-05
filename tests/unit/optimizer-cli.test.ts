@@ -11,6 +11,7 @@ test('optimizer CLI parser reads all explicit flags', () => {
     '--candidates', '17',
     '--patience', '4',
     '--seed', '777',
+    '--parallel-workers', '6',
     '--out', 'simulation_output/custom_optimizer',
     '--mode', 'both',
     '--runtime', 'thorough',
@@ -25,6 +26,7 @@ test('optimizer CLI parser reads all explicit flags', () => {
   assert.equal(parsed.candidates, 17);
   assert.equal(parsed.patience, 4);
   assert.equal(parsed.seed, 777);
+  assert.equal(parsed.parallelWorkers, 6);
   assert.equal(parsed.mode, 'both');
   assert.equal(parsed.runtime, 'thorough');
   assert.equal(parsed.significance, 'strict');
@@ -46,6 +48,7 @@ test('optimizer config applies balanced defaults when optional flags are omitted
   assert.equal(config.strategy, 'full_optimizer');
   assert.equal(config.patience, 3);
   assert.equal(config.seed, 42);
+  assert.equal(config.parallelWorkers >= 1, true);
 });
 
 test('optimizer config maps mode=both to liberation and symbolic', async () => {

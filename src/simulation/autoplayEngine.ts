@@ -1194,11 +1194,23 @@ export async function executeRunChunk(
   const stream = createWriteStream(chunk.shardPath, { flags: 'w', encoding: 'utf8' });
 
   const summary = createSummaryAccumulator();
+  const mountedScenarioPatches: Array<{ unregister: () => void }> = [];
   let processed = 0;
   let capturedTrajectories = 0;
   let activeScenario: string | null = null;
 
   try {
+    if (chunk.scenarioPatches && chunk.scenarioPatches.length > 0) {
+      const { applyScenarioPatch } = await import('./experiments/applyScenarioPatch.ts');
+      for (const scenarioPatch of chunk.scenarioPatches) {
+        mountedScenarioPatches.push(applyScenarioPatch({
+          experimentId: scenarioPatch.experimentId,
+          scenarioId: scenarioPatch.scenarioId,
+          patch: scenarioPatch.patch,
+        }));
+      }
+    }
+
     for (const run of chunk.runs) {
       if (run.scenario !== activeScenario) {
         activeScenario = run.scenario;
@@ -1211,7 +1223,7 @@ export async function executeRunChunk(
         debug: chunk.debugSingle,
         trajectoryRecording: chunk.trajectoryRecording,
       });
-      if (record.turnsPlayed < 2) {
+      if (record.turnsPlayed < 2 && !chunk.suppressSanityWarnings) {
         console.warn(`⚠️ Simulation ended before round 2 (${run.simulationId})`);
       }
       stream.write(`${JSON.stringify(record)}\n`);
@@ -1234,6 +1246,9 @@ export async function executeRunChunk(
       }
     }
   } finally {
+    for (const mounted of mountedScenarioPatches) {
+      mounted.unregister();
+    }
     await closeStream(stream);
   }
 
@@ -1255,6 +1270,8 @@ function createChunks(
   debugSingle: boolean,
   trajectoryRecording: boolean,
   trajectoryDir: string,
+  suppressSanityWarnings?: boolean,
+  scenarioPatches?: WorkerRunChunk['scenarioPatches'],
 ): WorkerRunChunk[] {
   const workerCount = Math.max(1, Math.min(parallelWorkers, runs.length));
   const chunkSize = Math.ceil(runs.length / workerCount);
@@ -1276,6 +1293,8 @@ function createChunks(
       debugSingle,
       trajectoryRecording,
       trajectoryDir,
+      suppressSanityWarnings,
+      scenarioPatches,
     });
   }
 
@@ -1347,20 +1366,41 @@ async function writeOutputAsShards(shardPaths: string[], outputDir: string) {
   await closeStream(writer);
 }
 
-async function runWorkerChunk(chunk: WorkerRunChunk, totalRuns: number, progressByWorker: Map<number, number>) {
+async function runWorkerChunk(
+  chunk: WorkerRunChunk,
+  totalRuns: number,
+  progressByWorker: Map<number, number>,
+  options?: { logPrefix?: string; throttleMs?: number },
+) {
   return await new Promise<WorkerResultMessage>((resolvePromise, rejectPromise) => {
     const worker = new Worker(new URL('./worker.ts', import.meta.url), {
       type: 'module',
       workerData: chunk,
+      env: {
+        ...process.env,
+        SIMULATION_WORKER: '1',
+        NODE_NO_WARNINGS: '1',
+      },
     });
 
     let settled = false;
+    let lastProgressLogAt = 0;
+    const logPrefix = options?.logPrefix ?? 'Simulation progress';
+    const throttleMs = Math.max(0, options?.throttleMs ?? 0);
+    const logProgress = (totalComplete: number) => {
+      const now = Date.now();
+      if (throttleMs > 0 && totalComplete < totalRuns && now - lastProgressLogAt < throttleMs) {
+        return;
+      }
+      lastProgressLogAt = now;
+      console.log(`📊 ${logPrefix}: ${totalComplete} / ${totalRuns}`);
+    };
 
     worker.on('message', (message: WorkerMessage) => {
       if (message.type === 'progress') {
         progressByWorker.set(message.workerId, message.completed);
         const totalComplete = Array.from(progressByWorker.values()).reduce((sum, value) => sum + value, 0);
-        console.log(`📊 Simulation progress: ${totalComplete} / ${totalRuns}`);
+        logProgress(totalComplete);
         return;
       }
 
@@ -1374,7 +1414,7 @@ async function runWorkerChunk(chunk: WorkerRunChunk, totalRuns: number, progress
         settled = true;
         progressByWorker.set(message.workerId, message.processed);
         const totalComplete = Array.from(progressByWorker.values()).reduce((sum, value) => sum + value, 0);
-        console.log(`📊 Simulation progress: ${totalComplete} / ${totalRuns}`);
+        logProgress(totalComplete);
         resolvePromise(message);
       }
     });
@@ -1393,6 +1433,95 @@ async function runWorkerChunk(chunk: WorkerRunChunk, totalRuns: number, progress
       }
     });
   });
+}
+
+export interface PlannedRunWorkerExecutionOptions {
+  runs: PlannedSimulationRun[];
+  parallelWorkers: number;
+  shardDir: string;
+  progressInterval: number;
+  debugSingle?: boolean;
+  trajectoryRecording?: boolean;
+  trajectoryDir?: string;
+  progressLabel?: string;
+  progressThrottleMs?: number;
+  suppressSanityWarnings?: boolean;
+  scenarioPatches?: WorkerRunChunk['scenarioPatches'];
+}
+
+export interface PlannedRunWorkerExecutionResult {
+  shardPaths: string[];
+  workerCount: number;
+  processed: number;
+}
+
+export async function executePlannedRunsWithWorkers(
+  options: PlannedRunWorkerExecutionOptions,
+): Promise<PlannedRunWorkerExecutionResult> {
+  await mkdir(options.shardDir, { recursive: true });
+  const runs = options.runs;
+  const totalRuns = runs.length;
+  const label = options.progressLabel ?? 'Simulation progress';
+  if (totalRuns === 0) {
+    return {
+      shardPaths: [],
+      workerCount: 0,
+      processed: 0,
+    };
+  }
+
+  const chunks = createChunks(
+    runs,
+    options.parallelWorkers,
+    options.shardDir,
+    options.progressInterval,
+    Boolean(options.debugSingle),
+    Boolean(options.trajectoryRecording),
+    options.trajectoryDir ?? '',
+    options.suppressSanityWarnings,
+    options.scenarioPatches,
+  );
+
+  const progressByWorker = new Map<number, number>();
+  const results: WorkerResultMessage[] = [];
+
+  if (chunks.length <= 1) {
+    const singleChunk = chunks[0];
+    if (!singleChunk) {
+      return {
+        shardPaths: [],
+        workerCount: 0,
+        processed: 0,
+      };
+    }
+    const throttleMs = Math.max(0, options.progressThrottleMs ?? 0);
+    let lastProgressLogAt = 0;
+    const result = await executeRunChunk(singleChunk, (completed) => {
+      progressByWorker.set(singleChunk.workerId, completed);
+      const now = Date.now();
+      if (throttleMs > 0 && completed < totalRuns && now - lastProgressLogAt < throttleMs) {
+        return;
+      }
+      lastProgressLogAt = now;
+      console.log(`📊 ${label}: ${completed} / ${totalRuns}`);
+    });
+    results.push(result);
+  } else {
+    const workerResults = await Promise.all(chunks.map((chunk) => runWorkerChunk(chunk, totalRuns, progressByWorker, {
+      logPrefix: label,
+      throttleMs: options.progressThrottleMs,
+    })));
+    results.push(...workerResults);
+    const totalComplete = Array.from(progressByWorker.values()).reduce((sum, value) => sum + value, 0);
+    console.log(`📊 ${label}: ${totalComplete} / ${totalRuns}`);
+  }
+
+  const orderedResults = results.slice().sort((left, right) => left.chunkIndex - right.chunkIndex);
+  return {
+    shardPaths: orderedResults.map((result) => result.shardPath),
+    workerCount: chunks.length,
+    processed: orderedResults.reduce((sum, result) => sum + result.processed, 0),
+  };
 }
 
 function ensureCoreVersion() {
@@ -1435,6 +1564,8 @@ export async function runSimulationBatch(config: SimulationBatchConfig): Promise
     normalized.debugSingle,
     normalized.trajectoryRecording,
     trajectoryDir,
+    false,
+    undefined,
   );
 
   console.log('⚙️ Running workers');

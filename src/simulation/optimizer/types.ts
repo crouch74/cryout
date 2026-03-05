@@ -30,6 +30,7 @@ export interface OptimizerConfig {
   candidates: number;
   patience: number;
   seed: number;
+  parallelWorkers: number;
   outDir: string;
   runtime: OptimizerRuntimeProfile;
   significance: OptimizerSignificanceMode;

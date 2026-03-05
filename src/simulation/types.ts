@@ -8,6 +8,7 @@ import type {
 } from '../engine/index.ts';
 import type { MandateFailureStats } from './metrics/types.ts';
 import type { VictoryTrajectory } from './trajectory/types.ts';
+import type { ScenarioPatch } from './experiments/patchDsl.ts';
 
 export type SimulationVictoryMode = 'liberation' | 'symbolic';
 
@@ -316,6 +317,12 @@ export interface WorkerRunChunk {
   debugSingle?: boolean;
   trajectoryRecording?: boolean;
   trajectoryDir?: string;
+  suppressSanityWarnings?: boolean;
+  scenarioPatches?: Array<{
+    experimentId: string;
+    scenarioId: string;
+    patch: ScenarioPatch;
+  }>;
 }
 
 export interface WorkerProgressMessage {

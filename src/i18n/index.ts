@@ -104,12 +104,18 @@ await i18n
       caches: ['localStorage'],
       lookupLocalStorage: LOCALE_STORAGE_KEY,
     },
+    // Keep simulation and CLI output focused on game diagnostics.
+    showSupportNotice: false,
   });
 
-console.log(`🌍 [i18n] Runtime initialized for locale: ${getActiveLocale()}`);
+if (process.env.SIMULATION_WORKER !== '1') {
+  console.log(`🌍 [i18n] Runtime initialized for locale: ${getActiveLocale()}`);
+}
 
 export async function changeLocale(locale: Locale) {
-  console.log(`🌍 [i18n] Changing locale to: ${locale}`);
+  if (process.env.SIMULATION_WORKER !== '1') {
+    console.log(`🌍 [i18n] Changing locale to: ${locale}`);
+  }
   await i18n.changeLanguage(locale);
 }
 

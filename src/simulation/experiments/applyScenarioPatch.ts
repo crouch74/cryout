@@ -399,7 +399,9 @@ export function applyScenarioPatch(input: ApplyScenarioPatchInput): AppliedScena
     CONTENT_PACKS.splice(existingIndex, 1);
   }
 
-  console.log(`🧪 Applying patch arm=B scenario=${input.scenarioId} experiment=${input.experimentId}`);
+  if (process.env.SIMULATION_WORKER !== '1') {
+    console.log(`🧪 Applying patch arm=B scenario=${input.scenarioId} experiment=${input.experimentId}`);
+  }
 
   const treatment = deepClone(baseline);
   treatment.id = treatmentScenarioId;

@@ -1,12 +1,15 @@
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
+import process from 'node:process';
 import { join, resolve } from 'node:path';
+import { createInterface } from 'node:readline';
 import {
   buildBalancedSeatOwners,
   getRulesetDefinition,
   type FactionId,
   type VictoryMode as CompatVictoryMode,
 } from '../../engine/index.ts';
-import { runSingleSimulation } from '../autoplayEngine.ts';
+import { executePlannedRunsWithWorkers, runSingleSimulation } from '../autoplayEngine.ts';
 import { listStrategyProfiles } from '../strategies.ts';
 import { buildTrajectoryFileStem } from '../trajectory/TrajectoryRecorder.ts';
 import type { VictoryTrajectory } from '../trajectory/types.ts';
@@ -37,6 +40,8 @@ interface SampleProfile {
 export interface RunExperimentOptions {
   outDir?: string;
   recordTrajectories?: boolean;
+  parallelWorkers?: number;
+  logMode?: 'verbose' | 'aggregated';
 }
 
 class TrajectoryReservoir {
@@ -208,6 +213,42 @@ async function writeJson(path: string, value: unknown) {
   await writeFile(path, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
 }
 
+async function ingestShardRecordsIntoAccumulator(shardPaths: string[], accumulator: ReturnType<typeof createArmAccumulator>) {
+  for (const shardPath of shardPaths) {
+    const reader = createInterface({
+      input: createReadStream(shardPath, { encoding: 'utf8' }),
+      crlfDelay: Infinity,
+    });
+    for await (const line of reader) {
+      if (!line.trim()) {
+        continue;
+      }
+      ingestArmRecord(accumulator, JSON.parse(line));
+    }
+  }
+}
+
+async function sampleTrajectoriesFromDir(
+  dirPath: string,
+  reservoir: TrajectoryReservoir,
+) {
+  let entries: Awaited<ReturnType<typeof readdir>>;
+  try {
+    entries = await readdir(dirPath, { withFileTypes: true });
+  } catch {
+    return;
+  }
+  const files = entries
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
+    .map((entry) => join(dirPath, entry.name))
+    .sort((left, right) => left.localeCompare(right));
+
+  for (const filePath of files) {
+    const payload = await readFile(filePath, 'utf8');
+    reservoir.consider(JSON.parse(payload) as VictoryTrajectory);
+  }
+}
+
 function buildComparisonOutput(
   comparison: ExperimentResult['comparison'],
   armA: ExperimentResult['armA'],
@@ -278,12 +319,22 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
   const outputRoot = resolve(options?.outDir ?? DEFAULT_OUT_DIR);
   const outputDir = join(outputRoot, definition.id);
   const recordTrajectories = Boolean(options?.recordTrajectories);
+  const parallelWorkers = Math.max(1, Math.floor(options?.parallelWorkers ?? 1));
+  const aggregatedLogs = options?.logMode === 'aggregated';
+  const logInfo = (line: string) => {
+    console.log(line);
+  };
+  const logVerbose = (line: string) => {
+    if (!aggregatedLogs) {
+      console.log(line);
+    }
+  };
   const trajectoryReservoir = new TrajectoryReservoir(
     MAX_TRAJECTORIES_PER_EXPERIMENT,
     mixSeed(definition.seed, stableHash(`${definition.id}:trajectory-reservoir`)),
   );
 
-  console.log(`🔬 Experiment start id=${definition.id}`);
+  logInfo(`🔬 Experiment start id=${definition.id}`);
 
   const startedAtMs = Date.now();
   const startedAt = new Date(startedAtMs).toISOString();
@@ -293,6 +344,10 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
     scenarioId: definition.scenarioId,
     patch: definition.patch,
   });
+  const previousSimulationQuiet = process.env.SIMULATION_QUIET;
+  if (aggregatedLogs) {
+    process.env.SIMULATION_QUIET = '1';
+  }
 
   try {
     const strategyIds = listStrategyProfiles().map((profile) => profile.id) as StrategyId[];
@@ -307,61 +362,121 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
       },
     );
 
-    console.log(`🅰️ Arm A baseline runs=${definition.runsPerArm}`);
-    console.log(`🅱️ Arm B treatment patch=${definition.patch.note ?? 'scenario-local patch applied'}`);
+    logVerbose(`🅰️ Arm A baseline runs=${definition.runsPerArm}`);
+    logVerbose(`🅱️ Arm B treatment patch=${definition.patch.note ?? 'scenario-local patch applied'}`);
 
     const progressInterval = Math.max(1, Math.floor(definition.runsPerArm / 20));
-
+    const plannedRunsA: PlannedSimulationRun[] = [];
+    const plannedRunsB: PlannedSimulationRun[] = [];
     for (let runIndex = 0; runIndex < definition.runsPerArm; runIndex += 1) {
       const sampleProfile = buildSampleProfile(runIndex, definition, factionIds, strategyIds);
-
-      const runA = buildRun(
+      plannedRunsA.push(buildRun(
         runIndex,
         'A',
         patchedScenario.baselineScenarioId,
         definition.seed,
         sampleProfile,
         definition.id,
-      );
-      const runB = buildRun(
+      ));
+      plannedRunsB.push(buildRun(
         runIndex,
         'B',
         patchedScenario.treatmentScenarioId,
         definition.seed,
         sampleProfile,
         definition.id,
-      );
+      ));
+    }
 
-      const outcomeA = runSingleSimulation(runA, { trajectoryRecording: recordTrajectories });
-      const outcomeB = runSingleSimulation(runB, { trajectoryRecording: recordTrajectories });
+    const workerBatchCompatible = !patchedScenario.baselineScenarioId.includes('__exp__');
+    if (parallelWorkers > 1 && workerBatchCompatible) {
+      logInfo(`⚙️ Experiment worker batching enabled parallelWorkers=${parallelWorkers}`);
+      const tempRoot = join(outputRoot, `.tmp_${definition.id}_${Date.now()}`);
+      const shardRootA = join(tempRoot, 'arm_A_shards');
+      const shardRootB = join(tempRoot, 'arm_B_shards');
+      const trajectorySpool = join(tempRoot, 'trajectories');
+      try {
+        const armAResult = await executePlannedRunsWithWorkers({
+          runs: plannedRunsA,
+          parallelWorkers,
+          shardDir: shardRootA,
+          progressInterval,
+          trajectoryRecording: recordTrajectories,
+          trajectoryDir: trajectorySpool,
+          progressLabel: `Experiment ${definition.id} arm A progress`,
+          progressThrottleMs: aggregatedLogs ? 5000 : 0,
+          suppressSanityWarnings: aggregatedLogs,
+        });
+        const armBResult = await executePlannedRunsWithWorkers({
+          runs: plannedRunsB,
+          parallelWorkers,
+          shardDir: shardRootB,
+          progressInterval,
+          trajectoryRecording: recordTrajectories,
+          trajectoryDir: trajectorySpool,
+          progressLabel: `Experiment ${definition.id} arm B progress`,
+          progressThrottleMs: aggregatedLogs ? 5000 : 0,
+          suppressSanityWarnings: aggregatedLogs,
+          scenarioPatches: [
+            {
+              experimentId: definition.id,
+              scenarioId: patchedScenario.baselineScenarioId,
+              patch: definition.patch,
+            },
+          ],
+        });
 
-      const recordA = outcomeA.record;
-      const recordB = outcomeB.record;
+        await ingestShardRecordsIntoAccumulator(armAResult.shardPaths, armAAccumulator);
+        await ingestShardRecordsIntoAccumulator(armBResult.shardPaths, armBAccumulator);
 
-      if (recordTrajectories && outcomeA.trajectory) {
-        trajectoryReservoir.consider(outcomeA.trajectory);
-        const capturedCount = trajectoryReservoir.totalSeen();
-        if (capturedCount <= 5 || capturedCount % 50 === 0) {
-          console.log(`🏁 Public victory trajectory captured arm=A sim=${runA.simulationId} count=${capturedCount}`);
+        if (recordTrajectories) {
+          await sampleTrajectoriesFromDir(trajectorySpool, trajectoryReservoir);
+          logVerbose(`📊 Trajectory spool sampled ${trajectoryReservoir.totalSeen()} captures before reservoir cap.`);
         }
+      } finally {
+        await rm(tempRoot, { recursive: true, force: true });
       }
-      if (recordTrajectories && outcomeB.trajectory) {
-        trajectoryReservoir.consider(outcomeB.trajectory);
-        const capturedCount = trajectoryReservoir.totalSeen();
-        if (capturedCount <= 5 || capturedCount % 50 === 0) {
-          console.log(`🏁 Public victory trajectory captured arm=B sim=${runB.simulationId} count=${capturedCount}`);
+    } else {
+      if (parallelWorkers > 1 && !workerBatchCompatible) {
+        logInfo('⚠️ Worker batching disabled because baseline scenario is an in-memory mounted experiment ruleset.');
+      }
+      const sequentialProgressInterval = aggregatedLogs
+        ? Math.max(1, Math.floor(definition.runsPerArm / 10))
+        : progressInterval;
+      for (let runIndex = 0; runIndex < definition.runsPerArm; runIndex += 1) {
+        const runA = plannedRunsA[runIndex];
+        const runB = plannedRunsB[runIndex];
+        if (!runA || !runB) {
+          continue;
         }
-      }
+        const outcomeA = runSingleSimulation(runA, { trajectoryRecording: recordTrajectories });
+        const outcomeB = runSingleSimulation(runB, { trajectoryRecording: recordTrajectories });
 
-      ingestArmRecord(armAAccumulator, recordA);
-      ingestArmRecord(armBAccumulator, recordB);
+        if (recordTrajectories && outcomeA.trajectory) {
+          trajectoryReservoir.consider(outcomeA.trajectory);
+          const capturedCount = trajectoryReservoir.totalSeen();
+          if (capturedCount <= 5 || capturedCount % 50 === 0) {
+            logVerbose(`🏁 Public victory trajectory captured arm=A sim=${runA.simulationId} count=${capturedCount}`);
+          }
+        }
+        if (recordTrajectories && outcomeB.trajectory) {
+          trajectoryReservoir.consider(outcomeB.trajectory);
+          const capturedCount = trajectoryReservoir.totalSeen();
+          if (capturedCount <= 5 || capturedCount % 50 === 0) {
+            logVerbose(`🏁 Public victory trajectory captured arm=B sim=${runB.simulationId} count=${capturedCount}`);
+          }
+        }
 
-      if ((runIndex + 1) % progressInterval === 0 || runIndex + 1 === definition.runsPerArm) {
-        console.log(`🧮 Progress ${runIndex + 1}/${definition.runsPerArm} pairs complete`);
+        ingestArmRecord(armAAccumulator, outcomeA.record);
+        ingestArmRecord(armBAccumulator, outcomeB.record);
+
+        if ((runIndex + 1) % sequentialProgressInterval === 0 || runIndex + 1 === definition.runsPerArm) {
+          logInfo(`🧮 Progress ${runIndex + 1}/${definition.runsPerArm} pairs complete`);
+        }
       }
     }
 
-    console.log('📈 Aggregating metrics...');
+    logInfo('📈 Aggregating metrics...');
 
     const armA = finalizeArmSummary(armAAccumulator);
     const armB = finalizeArmSummary(armBAccumulator);
@@ -372,10 +487,10 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
     const structuralDiagnostics = detectStructuralDiagnostics(armA, armB);
 
     const winRate = comparison.metrics.winRate;
-    console.log(
+    logInfo(
       `📊 winRate A=${formatMetric(winRate.armA)} B=${formatMetric(winRate.armB)} lift=${winRate.absoluteLift >= 0 ? '+' : ''}${formatMetric(winRate.absoluteLift)} p=${winRate.proportionStats?.pValue ?? 'n/a'}`,
     );
-    console.log(`🧠 Decision=${recommendation.decision} reason=${recommendation.rationale.join(' | ')}`);
+    logInfo(`🧠 Decision=${recommendation.decision} reason=${recommendation.rationale.join(' | ')}`);
     if (structuralDiagnostics.turnOneVictoryWarning) {
       console.log('🚨 Structural Warning: Victory condition satisfied during setup or turn 1. This indicates victory predicate is reachable before gameplay.');
     }
@@ -383,7 +498,12 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
       console.log('🚨 Structural Warning: Simulation ends before meaningful gameplay occurs. Victory gating likely required.');
     }
     for (const mandate of structuralDiagnostics.impossibleMandates) {
-      console.log(`⚠️ Mandate appears structurally impossible under current rules. arm=${mandate.arm} mandate=${mandate.mandateId} failureRate=${mandate.failureRate.toFixed(6)} attempts=${mandate.attempts}`);
+      if (!aggregatedLogs) {
+        console.log(`⚠️ Mandate appears structurally impossible under current rules. arm=${mandate.arm} mandate=${mandate.mandateId} failureRate=${mandate.failureRate.toFixed(6)} attempts=${mandate.attempts}`);
+      }
+    }
+    if (aggregatedLogs && structuralDiagnostics.impossibleMandates.length > 0) {
+      logInfo(`⚠️ Mandates structurally impossible count=${structuralDiagnostics.impossibleMandates.length}`);
     }
 
     const finishedAtMs = Date.now();
@@ -400,7 +520,7 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
       structuralDiagnostics,
     };
 
-    console.log('🧾 Writing report...');
+    logVerbose('🧾 Writing report...');
 
     await rm(outputDir, { recursive: true, force: true });
     await mkdir(outputDir, { recursive: true });
@@ -444,17 +564,24 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
         const suffix = count === 0 ? '' : `_${count}`;
         const filePath = join(trajectoryDir, `${stem}${suffix}.json`);
         await writeJson(filePath, trajectory);
-        console.log(`💾 Trajectory written to disk ${filePath}`);
+        logVerbose(`💾 Trajectory written to disk ${filePath}`);
       }
 
-      console.log(`📊 Trajectory sampling kept ${trajectories.length}/${trajectoryReservoir.totalSeen()} captures (max ${MAX_TRAJECTORIES_PER_EXPERIMENT}).`);
+      logInfo(`📊 Trajectory sampling kept ${trajectories.length}/${trajectoryReservoir.totalSeen()} captures (max ${MAX_TRAJECTORIES_PER_EXPERIMENT}).`);
     }
 
-    console.log(`💾 Wrote report to ${outputDir}`);
-    console.log(`✅ Experiment complete: ${definition.id}`);
+    logInfo(`💾 Wrote report to ${outputDir}`);
+    logInfo(`✅ Experiment complete: ${definition.id}`);
 
     return result;
   } finally {
+    if (aggregatedLogs) {
+      if (previousSimulationQuiet === undefined) {
+        delete process.env.SIMULATION_QUIET;
+      } else {
+        process.env.SIMULATION_QUIET = previousSimulationQuiet;
+      }
+    }
     patchedScenario.unregister();
   }
 }

@@ -231,11 +231,14 @@ Common options:
 - `--candidates <n>`
 - `--patience <n>`
 - `--seed <n>`
+- `--parallel-workers <n>`
 - `--out <path>`
 - `--mode liberation|symbolic|both`
 - `--runtime fast|balanced|thorough`
 - `--significance strict|balanced|lenient`
 - `--strategy numeric_balancing|victory_gating_exploration|trajectory_discovery|full_optimizer`
+
+`--parallel-workers` controls both optimizer-level candidate experiment concurrency and per-experiment simulation worker batching.
 
 Outputs are written to:
 

@@ -17,6 +17,7 @@ test('scenario optimizer writes iteration artifacts and final recommendation', a
     candidates: 2,
     patience: 1,
     seed: 2026,
+    parallelWorkers: 1,
     outDir: outputRoot,
     runtime: 'balanced',
     significance: 'balanced',

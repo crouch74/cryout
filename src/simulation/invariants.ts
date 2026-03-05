@@ -27,7 +27,7 @@ export function validateResourceInvariants(gameState: GameState) {
     throw new Error('💥 Comrades resource underflow detected');
   }
 
-  if (coalitionComrades === 0 && gameState.round === 1) {
+  if (coalitionComrades === 0 && gameState.round === 1 && process.env.SIMULATION_QUIET !== '1') {
     console.warn('⚠️ Comrades exhausted in round 1 — possible bug');
   }
 }

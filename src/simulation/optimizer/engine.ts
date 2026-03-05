@@ -56,6 +56,30 @@ function formatProgressPercent(completed: number, total: number) {
   return ((completed / total) * 100).toFixed(1);
 }
 
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  mapper: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const limit = Math.max(1, Math.min(concurrency, items.length || 1));
+  const results: R[] = new Array(items.length);
+  let nextIndex = 0;
+
+  const worker = async () => {
+    while (true) {
+      const current = nextIndex;
+      nextIndex += 1;
+      if (current >= items.length) {
+        return;
+      }
+      results[current] = await mapper(items[current], current);
+    }
+  };
+
+  await Promise.all(Array.from({ length: limit }, () => worker()));
+  return results;
+}
+
 function stableHash(value: string) {
   let hash = 2166136261 >>> 0;
   for (let index = 0; index < value.length; index += 1) {
@@ -514,6 +538,7 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
   let completedExperiments = 0;
 
   console.log(`🧠 Run start scenario=${config.scenarioId} strategy=${config.strategy} runtime=${config.runtime}`);
+  console.log(`🧠 Parallel workers configured=${config.parallelWorkers}`);
   console.log(`🧠 Estimated experiment workload=${estimatedTotalExperiments} (baselines + candidates + final confirmation)`);
 
   for (let iteration = 1; iteration <= config.iterations; iteration += 1) {
@@ -545,6 +570,8 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
       const baselineResult = await runExperiment(baselineDefinition, {
         outDir: experimentsDir,
         recordTrajectories: true,
+        parallelWorkers: config.parallelWorkers,
+        logMode: 'aggregated',
       });
       completedExperiments += 1;
       console.log(`🔁 Overall run progress ${completedExperiments}/${estimatedTotalExperiments} (${formatProgressPercent(completedExperiments, estimatedTotalExperiments)}%) after baseline`);
@@ -616,11 +643,19 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
       await writeJson(join(iterationDir, 'candidate_patches.json'), candidates);
       console.log(`🧠 ${candidates.length} candidates created`);
 
-      const evaluations: OptimizerCandidateEvaluation[] = [];
-      for (let candidateIndex = 0; candidateIndex < candidates.length; candidateIndex += 1) {
-        const candidate = candidates[candidateIndex];
+      const candidateConcurrency = Math.max(1, Math.min(config.parallelWorkers, candidates.length));
+      const workersPerCandidateExperiment = Math.max(1, Math.floor(config.parallelWorkers / candidateConcurrency));
+      console.log(`🧪 Candidate pool concurrency=${candidateConcurrency} workers/experiment=${workersPerCandidateExperiment}`);
+      let completedCandidateExperiments = 0;
+      const candidateProgressInterval = Math.max(1, Math.floor(candidates.length / 5));
+      const candidateEvaluationResults = await mapWithConcurrency(
+        candidates,
+        candidateConcurrency,
+        async (candidate, candidateIndex): Promise<OptimizerCandidateEvaluation | null> => {
         const candidateExperimentId = `optimizer_${config.scenarioId}_iter_${pad2(iteration)}_${candidate.candidateId}`;
-        console.log(`🧪 Running A/B experiment candidate=${candidate.candidateId} (${candidateIndex + 1}/${candidates.length})`);
+        if (candidateIndex === 0) {
+          console.log(`🧪 Running candidate experiments (${candidates.length} total)`);
+        }
         try {
           const definition = createExperimentDefinition({
             id: candidateExperimentId,
@@ -637,6 +672,8 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
           const result = await runExperiment(definition, {
             outDir: experimentsDir,
             recordTrajectories: false,
+            parallelWorkers: workersPerCandidateExperiment,
+            logMode: 'aggregated',
           });
           completedExperiments += 1;
           console.log(`🔁 Overall run progress ${completedExperiments}/${estimatedTotalExperiments} (${formatProgressPercent(completedExperiments, estimatedTotalExperiments)}%)`);
@@ -650,9 +687,12 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
             significance: config.significance,
           });
           const scoreDeltaFromBaseline = roundTo(scoreBreakdown.score - baselineScore.score);
-          console.log(`📊 Candidate ${candidate.candidateId} score=${scoreBreakdown.score.toFixed(6)} delta=${scoreDeltaFromBaseline.toFixed(6)}`);
+          completedCandidateExperiments += 1;
+          if (completedCandidateExperiments % candidateProgressInterval === 0 || completedCandidateExperiments === candidates.length) {
+            console.log(`📊 Candidate batch progress ${completedCandidateExperiments}/${candidates.length}`);
+          }
 
-          evaluations.push({
+          return {
             candidateId: candidate.candidateId,
             strategy: candidate.strategy,
             experimentId: candidateExperimentId,
@@ -663,12 +703,21 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
             scoreBreakdown,
             scoreDeltaFromBaseline,
             gate,
-          });
+          };
         } catch (error) {
           const err = error as Error;
           console.log(`⚠️ Candidate ${candidate.candidateId} skipped: ${err.message}`);
+          completedCandidateExperiments += 1;
+          if (completedCandidateExperiments % candidateProgressInterval === 0 || completedCandidateExperiments === candidates.length) {
+            console.log(`📊 Candidate batch progress ${completedCandidateExperiments}/${candidates.length}`);
+          }
+          return null;
         }
-      }
+      },
+      );
+
+      const evaluations = candidateEvaluationResults
+        .filter((entry): entry is OptimizerCandidateEvaluation => entry !== null);
 
       const rankings = evaluations
         .slice()
@@ -767,6 +816,8 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
       {
         outDir: join(outputDir, 'final_confirmation'),
         recordTrajectories: false,
+        parallelWorkers: config.parallelWorkers,
+        logMode: 'aggregated',
       },
     );
     completedExperiments += 1;

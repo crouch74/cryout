@@ -1,6 +1,7 @@
 import process from 'node:process';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { cpus } from 'node:os';
 import { listRulesets } from '../../engine/index.ts';
 import { runScenarioOptimizer } from './engine.ts';
 import type {
@@ -19,6 +20,7 @@ interface CliArgs {
   candidates?: number;
   patience?: number;
   seed?: number;
+  parallelWorkers?: number;
   outDir?: string;
   mode?: OptimizerMode;
   runtime?: OptimizerRuntimeProfile;
@@ -38,6 +40,7 @@ interface InteractiveConfigAnswers {
   candidates: number;
   patience: number;
   seed: number;
+  parallelWorkers: number;
   outDir: string;
 }
 
@@ -71,6 +74,10 @@ function toPositiveInteger(value: string, label: string) {
     throw new Error(`${label} must be a positive integer.`);
   }
   return parsed;
+}
+
+function defaultParallelWorkers() {
+  return Math.max(1, cpus().length - 1);
 }
 
 function parseMode(raw: string): OptimizerMode {
@@ -164,6 +171,10 @@ export function parseArgs(argv: string[]): CliArgs {
     }
     if (arg === '--seed') {
       args.seed = toPositiveInteger(readValue(), '--seed') >>> 0;
+      continue;
+    }
+    if (arg === '--parallel-workers') {
+      args.parallelWorkers = toPositiveInteger(readValue(), '--parallel-workers');
       continue;
     }
     if (arg === '--out') {
@@ -324,6 +335,13 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
       },
       {
         type: 'input',
+        name: 'parallelWorkers',
+        message: 'Parallel workers (higher = faster experiments, higher CPU usage)',
+        default: prefill.parallelWorkers ?? defaultParallelWorkers(),
+        filter: (value: unknown) => toPositiveInteger(String(value), 'parallelWorkers'),
+      },
+      {
+        type: 'input',
         name: 'outDir',
         message: 'Output directory',
         default: prefill.outDir ?? DEFAULT_OUT_DIR,
@@ -359,6 +377,7 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
     candidates: args.candidates ?? runtimeDefaults.candidates,
     patience: args.patience ?? 3,
     seed: args.seed ?? 42,
+    parallelWorkers: args.parallelWorkers ?? defaultParallelWorkers(),
     outDir: args.outDir ?? DEFAULT_OUT_DIR,
     runtime,
     significance: args.significance ?? 'balanced',
@@ -381,6 +400,7 @@ export async function runCli(argv: string[]) {
     candidates: config.candidates,
     patience: config.patience,
     seed: config.seed,
+    parallelWorkers: config.parallelWorkers,
     runtime: config.runtime,
     significance: config.significance,
     mode: config.mode,
