@@ -122,6 +122,7 @@ export function SessionSetupScreen({
       : roomPlayAvailable
         ? null
         : t('ui.home.roomUnavailable', 'Room service did not answer. Local play remains available.');
+  const roomPlayDisabled = roomPlayDisabledByBuild || roomPlayChecking || !roomPlayAvailable;
 
   return (
     <TableSurface className="home-table setup-table home-depth-surface">
@@ -291,10 +292,16 @@ export function SessionSetupScreen({
                           variant={config.surface === 'room' ? 'default' : 'quiet'}
                           size="sm"
                           className="coalition-surface-button"
-                          onClick={() => onConfigChange({ surface: 'room' })}
+                          disabled={roomPlayDisabled}
+                          onClick={() => {
+                            if (roomPlayDisabled) {
+                              return;
+                            }
+                            onConfigChange({ surface: 'room' });
+                          }}
                         />
                       </div>
-                      {config.surface === 'room' && roomStatusMessage ? (
+                      {(config.surface === 'room' || roomPlayDisabled) && roomStatusMessage ? (
                         <p className="room-status-note coalition-room-status">
                           {roomStatusMessage}
                         </p>

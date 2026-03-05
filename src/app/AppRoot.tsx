@@ -340,6 +340,16 @@ export default function AppRoot({ runtime }: { runtime: AppRuntimeOptions }) {
   }, [route.page, route.roomId, session]);
 
   useEffect(() => {
+    if (runtime.forceOfflineOnly || roomServiceChecking || roomServiceReachable || session || setupDraft.surface !== 'room') {
+      return;
+    }
+
+    // Keep room mode unavailable while the backend health probe is failing.
+    console.info('📡 [RoomMode] Room service unreachable. Reverting setup surface to local.');
+    setSetupDraft((current) => (current.surface === 'room' ? { ...current, surface: 'local' } : current));
+  }, [roomServiceChecking, roomServiceReachable, runtime.forceOfflineOnly, session, setupDraft.surface]);
+
+  useEffect(() => {
     if (!hydrating || !route.roomId) {
       setHydrating(false);
       return;
@@ -532,6 +542,20 @@ export default function AppRoot({ runtime }: { runtime: AppRuntimeOptions }) {
 
     if (nextDraft.surface === 'local') {
       startLocalSession(nextDraft);
+      return;
+    }
+
+    if (roomServiceChecking || !roomServiceReachable) {
+      console.info('📡 [RoomMode] Room launch blocked because the backend is unreachable.');
+      startLocalSession(
+        { ...nextDraft, surface: 'local' },
+        {
+          tone: 'warning',
+          title: t('ui.app.roomUnavailable', 'Room unavailable'),
+          message: t('ui.app.roomFallbackLocal', 'Could not reach the room service. The game started offline instead.'),
+          dismissAfterMs: 5200,
+        },
+      );
       return;
     }
 
