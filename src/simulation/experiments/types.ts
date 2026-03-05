@@ -1,4 +1,5 @@
 import type { ScenarioPatch } from './patchDsl.ts';
+import type { MandateFailureDistribution } from '../metrics/types.ts';
 
 export type VictoryMode = 'liberation' | 'symbolic';
 
@@ -52,6 +53,7 @@ export interface ExperimentArmSummary {
   publicVictoryRate: number;
   mandateFailuresAmongPublic: number;
   mandateFailRateGivenPublic: number;
+  mandateFailureDistribution: MandateFailureDistribution[];
   turns: {
     average: number;
     median: number;

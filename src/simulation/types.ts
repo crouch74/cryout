@@ -6,6 +6,7 @@ import type {
   QueuedIntent,
   VictoryMode,
 } from '../engine/index.ts';
+import type { MandateFailureStats } from './metrics/types.ts';
 import type { VictoryTrajectory } from './trajectory/types.ts';
 
 export type SimulationVictoryMode = 'liberation' | 'symbolic';
@@ -176,6 +177,7 @@ export interface SimulationRecord {
   };
   publicVictoryAchieved: boolean;
   mandateFailure: boolean;
+  mandateOutcomeById: MandateFailureStats;
   extractionBreach: boolean;
   comradesExhausted: boolean;
   suddenDeath: boolean;

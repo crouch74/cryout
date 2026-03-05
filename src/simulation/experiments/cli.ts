@@ -6,7 +6,7 @@ import { EXPERIMENT_BACKLOG, getExperimentById } from './hypotheses/backlog.ts';
 import { runExperiment } from './runner.ts';
 import type { ExperimentDefinition, VictoryMode } from './types.ts';
 
-interface CliArgs {
+export interface CliArgs {
   all: boolean;
   id?: string;
   runs?: number;
@@ -66,7 +66,7 @@ function parsePlayers(raw: string): number[] {
   return unique;
 }
 
-function parseArgs(argv: string[]): CliArgs {
+export function parseArgs(argv: string[]): CliArgs {
   const result: CliArgs = { all: false, recordTrajectories: false };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -131,7 +131,7 @@ function parseArgs(argv: string[]): CliArgs {
   return result;
 }
 
-function applyOverrides(definition: ExperimentDefinition, args: CliArgs): ExperimentDefinition {
+export function applyOverrides(definition: ExperimentDefinition, args: CliArgs): ExperimentDefinition {
   return {
     ...definition,
     runsPerArm: args.runs ?? definition.runsPerArm,
@@ -141,7 +141,7 @@ function applyOverrides(definition: ExperimentDefinition, args: CliArgs): Experi
   };
 }
 
-async function runSingle(args: CliArgs) {
+export async function runSingle(args: CliArgs) {
   if (!args.id) {
     throw new Error('Single experiment mode requires --id <experiment-id>.');
   }
@@ -168,7 +168,7 @@ async function runSingle(args: CliArgs) {
   }, null, 2));
 }
 
-async function runAll(args: CliArgs) {
+export async function runAll(args: CliArgs) {
   const outputRoot = resolve(args.outDir ?? 'simulation_output/experiments');
   await mkdir(outputRoot, { recursive: true });
 

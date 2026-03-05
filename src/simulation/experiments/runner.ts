@@ -208,6 +208,22 @@ async function writeJson(path: string, value: unknown) {
   await writeFile(path, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
 }
 
+function buildComparisonOutput(
+  comparison: ExperimentResult['comparison'],
+  armA: ExperimentResult['armA'],
+  armB: ExperimentResult['armB'],
+) {
+  return {
+    ...comparison,
+    armA: {
+      mandateFailureDistribution: armA.mandateFailureDistribution,
+    },
+    armB: {
+      mandateFailureDistribution: armB.mandateFailureDistribution,
+    },
+  };
+}
+
 export async function runExperiment(definition: ExperimentDefinition, options?: RunExperimentOptions): Promise<ExperimentResult> {
   assertPlayerCounts(definition.playerCounts);
   assertVictoryModes(definition.victoryModes);
@@ -339,7 +355,7 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
     await writeJson(join(outputDir, 'experiment_definition.json'), definition);
     await writeJson(join(outputDir, 'arm_A_summary.json'), armA);
     await writeJson(join(outputDir, 'arm_B_summary.json'), armB);
-    await writeJson(join(outputDir, 'comparison.json'), comparison);
+    await writeJson(join(outputDir, 'comparison.json'), buildComparisonOutput(comparison, armA, armB));
     await writeJson(join(outputDir, 'recommendation.json'), recommendation);
 
     const reportMarkdown = renderMarkdownReport({

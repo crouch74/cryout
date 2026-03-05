@@ -385,12 +385,50 @@ function initializeActionCounts() {
   };
 }
 
+function buildMandateOutcomeById(
+  state: EngineState,
+  debug: boolean,
+) {
+  const failedMandateIds = new Set(state.terminalOutcome?.failedMandateIds ?? []);
+  const failuresByMandate: Record<string, number> = {};
+  const successesByMandate: Record<string, number> = {};
+
+  if (debug) {
+    console.log('📊 Mandate evaluation complete');
+  }
+  for (const player of state.players) {
+    const mandateId = player.mandateId;
+    if (!mandateId) {
+      continue;
+    }
+
+    if (failedMandateIds.has(mandateId)) {
+      failuresByMandate[mandateId] = (failuresByMandate[mandateId] ?? 0) + 1;
+      if (debug) {
+        console.log(`❌ mandate_failed: ${mandateId}`);
+      }
+      continue;
+    }
+
+    successesByMandate[mandateId] = (successesByMandate[mandateId] ?? 0) + 1;
+    if (debug) {
+      console.log(`✅ mandate_passed: ${mandateId}`);
+    }
+  }
+
+  return {
+    failuresByMandate,
+    successesByMandate,
+  };
+}
+
 function buildRunRecord(
   run: PlannedSimulationRun,
   state: EngineState,
   stalled: boolean,
   preDefeatSnapshots: PreDefeatSnapshot[],
   roundSnapshots: RoundSnapshot[],
+  debug: boolean,
 ): SimulationRecord {
   const actionCounts = initializeActionCounts();
   const actionCountsExtra: Record<string, number> = {};
@@ -448,6 +486,7 @@ function buildRunRecord(
   const terminalReason = state.terminalOutcome?.cause ?? (stalled ? 'simulation_stalled' : 'simulation_stalled');
   const resultType = state.phase === 'WIN' ? 'victory' : 'defeat';
   const normalizedSnapshots = roundSnapshots.slice(0, MAX_SNAPSHOTS_PER_GAME);
+  const mandateOutcomeById = buildMandateOutcomeById(state, debug);
 
   return {
     simulationId: run.simulationId,
@@ -462,6 +501,7 @@ function buildRunRecord(
     },
     publicVictoryAchieved: resultType === 'victory' || terminalReason === 'mandate_failure',
     mandateFailure: terminalReason === 'mandate_failure',
+    mandateOutcomeById,
     extractionBreach: terminalReason === 'extraction_breach',
     comradesExhausted: terminalReason === 'comrades_exhausted',
     suddenDeath: terminalReason === 'sudden_death',
@@ -877,7 +917,7 @@ export function runSingleSimulation(
     }
   }
 
-  const record = buildRunRecord(run, state, stalled, preDefeatSnapshots, roundSnapshots);
+  const record = buildRunRecord(run, state, stalled, preDefeatSnapshots, roundSnapshots, debug);
   const trajectory = trajectoryRecorder && (record.publicVictoryAchieved || record.result.type === 'victory')
     ? trajectoryRecorder.buildTrajectory({
       scenarioId: run.scenario,

@@ -1,4 +1,5 @@
 import type { SimulationRecord } from '../types.ts';
+import type { MandateFailureDistribution } from '../metrics/types.ts';
 import type {
   Decision,
   ExperimentArm,
@@ -51,6 +52,8 @@ export interface ArmAccumulator {
   };
   campaignAttempts: number;
   campaignSuccess: number;
+  mandateFailuresById: Record<string, number>;
+  mandateSuccessesById: Record<string, number>;
   reservoir: Reservoir;
   mandateFailureAsCostlyWin: boolean;
 }
@@ -72,6 +75,42 @@ function ratio(numerator: number, denominator: number) {
     return 0;
   }
   return roundTo(numerator / denominator);
+}
+
+function mergeCountMaps(target: Record<string, number>, source: Record<string, number>) {
+  for (const [key, value] of Object.entries(source)) {
+    target[key] = (target[key] ?? 0) + value;
+  }
+}
+
+function buildMandateFailureDistribution(
+  failuresByMandate: Record<string, number>,
+  successesByMandate: Record<string, number>,
+): MandateFailureDistribution[] {
+  const mandateIds = new Set([
+    ...Object.keys(failuresByMandate),
+    ...Object.keys(successesByMandate),
+  ]);
+
+  return Array.from(mandateIds)
+    .map((mandateId) => {
+      const failures = failuresByMandate[mandateId] ?? 0;
+      const successes = successesByMandate[mandateId] ?? 0;
+      const attempts = failures + successes;
+      return {
+        mandateId,
+        failureRate: ratio(failures, attempts),
+        successRate: ratio(successes, attempts),
+        attempts,
+      };
+    })
+    .filter((entry) => entry.attempts > 0)
+    .sort((left, right) => {
+      if (right.failureRate !== left.failureRate) {
+        return right.failureRate - left.failureRate;
+      }
+      return left.mandateId.localeCompare(right.mandateId);
+    });
 }
 
 function addToReservoir(reservoir: Reservoir, value: number) {
@@ -212,6 +251,8 @@ export function createArmAccumulator(
     },
     campaignAttempts: 0,
     campaignSuccess: 0,
+    mandateFailuresById: {},
+    mandateSuccessesById: {},
     reservoir: {
       capacity: Math.max(256, options?.reservoirSize ?? DEFAULT_RESERVOIR_SIZE),
       seen: 0,
@@ -256,6 +297,8 @@ export function ingestArmRecord(accumulator: ArmAccumulator, record: SimulationR
 
   accumulator.campaignAttempts += record.campaignStats.campaignAttempts;
   accumulator.campaignSuccess += record.campaignStats.campaignSuccess;
+  mergeCountMaps(accumulator.mandateFailuresById, record.mandateOutcomeById.failuresByMandate);
+  mergeCountMaps(accumulator.mandateSuccessesById, record.mandateOutcomeById.successesByMandate);
 }
 
 export function finalizeArmSummary(accumulator: ArmAccumulator): ExperimentArmSummary {
@@ -271,6 +314,10 @@ export function finalizeArmSummary(accumulator: ArmAccumulator): ExperimentArmSu
     publicVictoryRate: ratio(accumulator.publicVictories, accumulator.n),
     mandateFailuresAmongPublic: accumulator.mandateFailuresAmongPublic,
     mandateFailRateGivenPublic: ratio(accumulator.mandateFailuresAmongPublic, accumulator.publicVictories),
+    mandateFailureDistribution: buildMandateFailureDistribution(
+      accumulator.mandateFailuresById,
+      accumulator.mandateSuccessesById,
+    ),
     turns: {
       average: ratio(accumulator.totalTurns, accumulator.n),
       median: roundTo(medianTurns),
@@ -436,6 +483,16 @@ function formatLift(value: number) {
   return `${prefix}${value.toFixed(6)}`;
 }
 
+function renderMandateRankingMarkdown(distribution: MandateFailureDistribution[]) {
+  if (distribution.length === 0) {
+    return '- n/a';
+  }
+
+  return distribution
+    .map((entry, index) => `${index + 1}. ${entry.mandateId} - ${formatRate(entry.failureRate)} (${entry.attempts} attempts)`)
+    .join('\n');
+}
+
 export function renderMarkdownReport(input: {
   definition: ExperimentDefinition;
   armA: ExperimentArmSummary;
@@ -457,6 +514,8 @@ export function renderMarkdownReport(input: {
   }).join('\n');
 
   const rationale = input.recommendation.rationale.map((line) => `- ${line}`).join('\n');
+  const mandateRankingA = renderMandateRankingMarkdown(input.armA.mandateFailureDistribution);
+  const mandateRankingB = renderMandateRankingMarkdown(input.armB.mandateFailureDistribution);
 
   return `# Experiment Report: ${input.definition.id}
 
@@ -493,6 +552,12 @@ ${rows}
 | mandate_failure | ${input.armA.defeatReasons.mandate_failure} | ${input.armB.defeatReasons.mandate_failure} |
 | sudden_death | ${input.armA.defeatReasons.sudden_death} | ${input.armB.defeatReasons.sudden_death} |
 
+## 📊 Mandate Failure Ranking (Arm A)
+${mandateRankingA}
+
+## 📊 Mandate Failure Ranking (Arm B)
+${mandateRankingB}
+
 ## Recommendation Rationale
 ${rationale}
 `;
@@ -517,6 +582,11 @@ export function renderHtmlReport(input: {
   }).join('');
 
   const rationale = input.recommendation.rationale.map((line) => `<li>${line}</li>`).join('');
+  const mandateRows = (distribution: MandateFailureDistribution[]) => (
+    distribution.length === 0
+      ? '<tr><td colspan="4">n/a</td></tr>'
+      : distribution.map((entry) => `<tr><td>${entry.mandateId}</td><td>${formatRate(entry.failureRate)}</td><td>${formatRate(entry.successRate)}</td><td>${entry.attempts}</td></tr>`).join('')
+  );
 
   return `<!doctype html>
 <html lang="en">
@@ -589,6 +659,34 @@ export function renderHtmlReport(input: {
   <div class="card">
     <h2>Recommendation Rationale</h2>
     <ul>${rationale}</ul>
+  </div>
+  <div class="card">
+    <h2>📊 Mandate Failure Ranking (Arm A)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Mandate</th>
+          <th>Failure Rate</th>
+          <th>Success Rate</th>
+          <th>Attempts</th>
+        </tr>
+      </thead>
+      <tbody>${mandateRows(input.armA.mandateFailureDistribution)}</tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h2>📊 Mandate Failure Ranking (Arm B)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Mandate</th>
+          <th>Failure Rate</th>
+          <th>Success Rate</th>
+          <th>Attempts</th>
+        </tr>
+      </thead>
+      <tbody>${mandateRows(input.armB.mandateFailureDistribution)}</tbody>
+    </table>
   </div>
 </body>
 </html>`;
