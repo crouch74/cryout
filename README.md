@@ -6,7 +6,7 @@ A digital adaptation of a movement-centered cooperative strategy game about resi
 
 This repo now ships with four major rulebooks/scenarios:
 
-- **Where the Stones Cry Out (Base)**: 6 canonical regions (Congo, Levant, Amazon, Sahel, Mekong, Andes), 7 canonical domains (War Machine through Stolen Voice).
+- **Where the Stones Cry Out**: 6 canonical regions (Congo, Levant, Amazon, Sahel, Mekong, Andes), 7 canonical domains (War Machine through Stolen Voice).
 - **2011 — TAHRIR SQUARE**: 6 Egypt-specific regions (Cairo, Alexandria, Nile Delta, Upper Egypt, Suez, Sinai), featuring **Revolutionary Wave** and **Unfinished Justice** domains, and the **The Square** / **Martyrdom** mechanics.
 - **2022 — WOMAN, LIFE, FREEDOM**: 6 Iran-specific regions (Tehran, Kurdistan, Isfahan, Mashhad, Khuzestan, Balochistan), featuring **Patriarchal Grip** domain and **Hijab Enforcement** / **Gender Dynamics** mechanics.
 - **1954 — ALGERIAN WAR OF INDEPENDENCE**: 6 Algeria-focused regions (Algiers, Kabylie Mountains, Oran, Sahara South, Tunisian Border, French Metropole Influence), featuring **Repression Cycle** and anti-colonial pressure mechanics.
@@ -169,7 +169,7 @@ Example:
 export const EXPERIMENT_BACKLOG: ExperimentDefinition[] = [
   {
     id: 'base_design_trim_setup_pressure',
-    title: 'Base design: trim opening pressure to test early survivability and pacing.',
+    title: 'Where the Stones Cry Out: trim opening pressure to test early survivability and pacing.',
     scenarioId: 'base_design',
     victoryModes: ['liberation', 'symbolic'],
     runsPerArm: 50000,

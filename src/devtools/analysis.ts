@@ -361,7 +361,7 @@ function inspectCampaignLegality(
     projectedCampaignTarget: BASE_CAMPAIGN_TARGET + pressure.campaignTargetDelta,
     notes: pressure.campaignTargetDelta !== 0
       ? [`System escalations changed the target to ${BASE_CAMPAIGN_TARGET + pressure.campaignTargetDelta}+.`]
-      : ['Base Launch Campaign target remains 8+.'],
+      : ['Where the Stones Cry Out Launch Campaign target remains 8+.'],
   };
 }
 
@@ -583,7 +583,7 @@ export function buildConformanceChecks(state: EngineState, content: CompiledCont
     label: 'Launch Campaign remains the canonical pressure valve',
     status: launchCampaignConfigured ? 'pass' : 'fail',
     detail: launchCampaignConfigured
-      ? 'Launch Campaign still requires a region, domain, and committed Comrades. Base target is wired as 8+ in the compat runtime.'
+      ? 'Launch Campaign still requires a region, domain, and committed Comrades. Where the Stones Cry Out target is wired as 8+ in the compat runtime.'
       : 'Launch Campaign is missing or no longer carries the expected setup requirements.',
   });
 

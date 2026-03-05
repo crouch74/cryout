@@ -230,7 +230,7 @@ export default function AppRoot({ runtime }: { runtime: AppRuntimeOptions }) {
   const replaceRoute = useCallback((nextRoute: AppRoute) => {
     const nextPath = buildAppPath(nextRoute);
     if (location.pathname !== nextPath) {
-      navigate(nextPath, { replace: true });
+      navigate(nextPath);
     }
   }, [location.pathname, navigate]);
 
