@@ -1,7 +1,8 @@
-import type { EngineState } from '../engine/index.ts';
+import type { DomainId, EngineState } from '../engine/index.ts';
+import { seatBodies, totalBodies, totalEvidence } from './invariants.ts';
 import type { PreDefeatSnapshot } from './types.ts';
 
-const CANONICAL_DOMAIN_ORDER: Array<keyof PreDefeatSnapshot['domains']> = [
+const CANONICAL_DOMAIN_ORDER: DomainId[] = [
   'WarMachine',
   'DyingPlanet',
   'GildedCage',
@@ -13,10 +14,6 @@ const CANONICAL_DOMAIN_ORDER: Array<keyof PreDefeatSnapshot['domains']> = [
   'PatriarchalGrip',
   'UnfinishedJustice',
 ];
-
-function seatBodies(state: EngineState, seat: number) {
-  return Object.values(state.regions).reduce((sum, front) => sum + (front.bodiesPresent[seat] ?? 0), 0);
-}
 
 function collectDomains(state: EngineState): PreDefeatSnapshot['domains'] {
   const domains: PreDefeatSnapshot['domains'] = {};
@@ -44,18 +41,9 @@ function collectFronts(state: EngineState): PreDefeatSnapshot['fronts'] {
   return fronts;
 }
 
-function hasExtractionBreach(state: EngineState) {
-  return Object.values(state.regions).some((front) => front.extractionTokens >= 6);
-}
-
-function hasComradesExhausted(state: EngineState) {
-  return state.players.some((player) => seatBodies(state, player.seat) <= 0);
-}
-
 export function capturePreDefeatSnapshot(
   state: EngineState,
   phase: string,
-  suddenDeathRound: number,
 ): PreDefeatSnapshot {
   const seats = state.players.map((player) => ({
     seatId: String(player.seat),
@@ -63,15 +51,12 @@ export function capturePreDefeatSnapshot(
     evidence: player.evidence,
   }));
 
-  const totalBodies = seats.reduce((sum, seat) => sum + seat.bodies, 0);
-  const totalEvidence = seats.reduce((sum, seat) => sum + seat.evidence, 0);
-
   return {
     round: state.round,
     phase,
-    resources: {
-      bodiesRemaining: totalBodies,
-      evidenceRemaining: totalEvidence,
+    totals: {
+      bodies: totalBodies(state),
+      evidence: totalEvidence(state),
     },
     seats,
     fronts: collectFronts(state),
@@ -80,10 +65,5 @@ export function capturePreDefeatSnapshot(
       warMachine: state.northernWarMachine,
     },
     domains: collectDomains(state),
-    defeatChecks: {
-      comradesExhausted: hasComradesExhausted(state),
-      extractionBreach: hasExtractionBreach(state),
-      suddenDeath: state.round >= suddenDeathRound,
-    },
   };
 }

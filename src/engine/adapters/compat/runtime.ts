@@ -388,6 +388,10 @@ function getSeatTotalBodies(state: EngineState, seat: number) {
   return Object.values(state.regions).reduce((sum, region) => sum + (region.bodiesPresent[seat] ?? 0), 0);
 }
 
+function getTotalBodies(state: EngineState) {
+  return state.players.reduce((sum, player) => sum + getSeatTotalBodies(state, player.seat), 0);
+}
+
 function getRulesetSetup(content: CompiledContent) {
   return content.ruleset.setup;
 }
@@ -870,17 +874,15 @@ function checkExtractionLoss(state: EngineState) {
 }
 
 function checkComradesExhaustedLoss(state: EngineState) {
-  const exhaustedSeat = state.players.find((player) => getSeatTotalBodies(state, player.seat) === 0)?.seat;
-  if (exhaustedSeat === undefined) {
+  const coalitionBodies = getTotalBodies(state);
+  if (coalitionBodies > 0) {
     return false;
   }
 
   state.phase = 'LOSS';
-  state.lossReason = t('ui.runtime.lossComradesExhausted', 'Seat {{seat}} was reduced to 0 Comrades.', {
-    seat: exhaustedSeat + 1,
-  });
+  state.lossReason = t('ui.runtime.lossComradesExhaustedCoalition', 'Coalition was reduced to 0 Comrades.');
   revealMandates(state);
-  addSimpleEvent(state, 'system', 'comrades_exhausted', '🫂', '🫂 A movement seat was reduced to 0 Comrades.', ['comrades_exhausted']);
+  addSimpleEvent(state, 'system', 'comrades_exhausted', '🫂', '🫂 Coalition Comrades were exhausted.', ['comrades_exhausted']);
   finalizeTerminalEvent(
     state,
     createTerminalOutcome(
@@ -889,7 +891,6 @@ function checkComradesExhaustedLoss(state: EngineState) {
       'comrades_exhausted',
       t('ui.runtime.outcomeDefeat', 'Defeat'),
       state.lossReason,
-      { exhaustedSeat },
     ),
   );
   return true;
@@ -1246,9 +1247,6 @@ function applyEffects(state: EngineState, content: CompiledContent, effects: Eff
             : Math.max(0, before - effect.amount);
           trace.deltas.push(createDelta('bodies', `${regionId}.seat:${seat}`, before, region.bodiesPresent[seat]));
         }
-        if (effect.type === 'remove_bodies' && checkComradesExhaustedLoss(state)) {
-          trace.message = t('ui.runtime.traceComradesExhausted', 'A movement seat was reduced to 0 Comrades.');
-        }
         break;
       }
       case 'gain_evidence':
@@ -1305,9 +1303,6 @@ function applyEffects(state: EngineState, content: CompiledContent, effects: Eff
     }
 
     traces.push(trace);
-    if (state.phase === 'LOSS' && state.terminalOutcome?.cause === 'comrades_exhausted') {
-      break;
-    }
   }
 
   // MARTYRDOM LOGIC (Tahrir Square)
@@ -2523,6 +2518,9 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
       }
 
       updateBeaconCompletion(next, content);
+      if (checkComradesExhaustedLoss(next)) {
+        return next;
+      }
       if (checkPositiveVictory(next, content)) {
         return next;
       }

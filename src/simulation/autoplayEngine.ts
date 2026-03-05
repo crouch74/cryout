@@ -18,6 +18,7 @@ import {
 import { buildStrategyCandidatesForSeat, getStrategyProfile, listStrategyProfiles } from './strategies.ts';
 import { captureRoundSnapshot, convertRoundSnapshotsToTimeline } from './captureRoundSnapshot.ts';
 import { capturePreDefeatSnapshot } from './capturePreDefeatSnapshot.ts';
+import { seatBodies, totalBodies, validateResourceInvariants } from './invariants.ts';
 import type {
   NormalizedSimulationBatchConfig,
   PlannedSimulationRun,
@@ -173,6 +174,7 @@ function normalizeBatchConfig(config: SimulationBatchConfig): NormalizedSimulati
   const parallelWorkers = Math.max(1, Math.floor(config.parallelWorkers ?? getDefaultParallelWorkers()));
   const outputDir = resolve(config.outputDir ?? resolve(process.cwd(), 'simulation_output'));
   const progressInterval = Math.max(1, Math.floor(config.progressInterval ?? 250));
+  const debugSingle = Boolean(config.debugSingle);
 
   return {
     scenarios,
@@ -183,6 +185,7 @@ function normalizeBatchConfig(config: SimulationBatchConfig): NormalizedSimulati
     parallelWorkers,
     outputDir,
     progressInterval,
+    debugSingle,
   };
 }
 
@@ -474,16 +477,19 @@ function appendRoundSnapshot(
   roundSnapshots: RoundSnapshot[],
   state: EngineState,
   snapshotLimitReached: { value: boolean },
+  debug: boolean,
 ) {
   if (roundSnapshots.length >= MAX_SNAPSHOTS_PER_GAME) {
-    if (!snapshotLimitReached.value) {
+    if (!snapshotLimitReached.value && debug) {
       snapshotLimitReached.value = true;
       console.log('⚠️ Snapshot limit reached, truncating further rounds');
     }
     return;
   }
 
-  console.log(`📸 Capturing round snapshot r=${state.round} sim=${run.simulationId}`);
+  if (debug) {
+    console.log(`📸 Capturing round snapshot r=${state.round} sim=${run.simulationId}`);
+  }
   roundSnapshots.push(captureRoundSnapshot(state));
 }
 
@@ -492,9 +498,9 @@ function getPreDefeatPhase(command: SimulationCommand): string | null {
     case 'ResolveSystemPhase':
       return 'system_actions';
     case 'CommitCoalitionIntent':
-      return 'coalition_resolution';
+      return 'campaign_resolution';
     case 'ResolveResolutionPhase':
-      return 'resolution_checks';
+      return 'round_resolution';
     default:
       return null;
   }
@@ -504,20 +510,109 @@ function appendPreDefeatSnapshot(
   preDefeatSnapshots: PreDefeatSnapshot[],
   state: EngineState,
   command: SimulationCommand,
-  suddenDeathRound: number,
+  debug: boolean,
 ) {
   const phase = getPreDefeatPhase(command);
   if (!phase) {
     return;
   }
 
-  const snapshot = capturePreDefeatSnapshot(state, phase, suddenDeathRound);
+  const snapshot = capturePreDefeatSnapshot(state, phase);
   preDefeatSnapshots.push(snapshot);
-  console.log(`🧠 Pre-defeat snapshot captured round=${snapshot.round} phase=${phase}`);
+  if (debug) {
+    console.log(`🧠 Pre-defeat snapshot captured round=${snapshot.round} phase=${phase}`);
+  }
 }
 
-export function runSingleSimulation(run: PlannedSimulationRun): RunExecutionResult {
+function isPhaseCommand(command: SimulationCommand) {
+  return command.type === 'ResolveSystemPhase'
+    || command.type === 'CommitCoalitionIntent'
+    || command.type === 'ResolveResolutionPhase';
+}
+
+function collectSeatBodyTotals(state: EngineState) {
+  return new Map(state.players.map((player) => [player.seat, seatBodies(state, player.seat)]));
+}
+
+function logPhaseHeader(state: EngineState, command: SimulationCommand, debug: boolean) {
+  if (!debug) {
+    return;
+  }
+
+  switch (command.type) {
+    case 'ResolveSystemPhase':
+      console.log(`🎲 Round ${state.round} start`);
+      console.log(`👥 Bodies total = ${totalBodies(state)}`);
+      break;
+    case 'CommitCoalitionIntent':
+      console.log('⚙️ Player actions');
+      break;
+    case 'ResolveResolutionPhase':
+      console.log('🔍 Round resolution');
+      break;
+    default:
+      break;
+  }
+}
+
+function logBodySpend(before: Map<number, number>, afterState: EngineState, debug: boolean) {
+  if (!debug) {
+    return;
+  }
+
+  for (const [seat, beforeBodies] of before.entries()) {
+    const afterBodies = seatBodies(afterState, seat);
+    if (afterBodies < beforeBodies) {
+      const cost = beforeBodies - afterBodies;
+      console.log('🔻 Bodies spent', `seat${seat + 1}`, cost);
+    }
+  }
+}
+
+function logPhaseEffects(
+  state: EngineState,
+  command: SimulationCommand,
+  eventStartIndex: number,
+  debug: boolean,
+) {
+  if (!debug) {
+    return;
+  }
+
+  const newEvents = state.eventLog.slice(eventStartIndex);
+  const hasCampaignAttempt = newEvents.some((event) => event.sourceType === 'action'
+    && event.sourceId === 'launch_campaign'
+    && Boolean(event.context?.roll));
+  if (hasCampaignAttempt) {
+    console.log('🎯 Campaign attempt');
+  }
+
+  const warMachineIncreased = newEvents.some((event) => event.deltas.some((delta) => {
+    return delta.kind === 'track'
+      && delta.label === 'northernWarMachine'
+      && typeof delta.before === 'number'
+      && typeof delta.after === 'number'
+      && delta.after > delta.before;
+  }));
+  if (warMachineIncreased) {
+    console.log('📉 War machine increased');
+  }
+
+  if (isPhaseCommand(command)) {
+    console.log('🧠 Resource state', state.round, totalBodies(state));
+  }
+
+  if (command.type === 'ResolveResolutionPhase') {
+    console.log('💀 Defeat check');
+  }
+}
+
+export function runSingleSimulation(
+  run: PlannedSimulationRun,
+  options?: { debug?: boolean },
+): RunExecutionResult {
   const content = getCompiledContent(run.scenario);
+  const debug = Boolean(options?.debug);
 
   // Canonical simulation path: use compat runtime commands exactly as shipped.
   let state = initializeGame({
@@ -548,12 +643,21 @@ export function runSingleSimulation(run: PlannedSimulationRun): RunExecutionResu
       break;
     }
 
+    const seatBodiesBefore = collectSeatBodyTotals(state);
+    const eventStartIndex = state.eventLog.length;
+    logPhaseHeader(state, command, debug);
     // Capture immediately before dispatching commands that can evaluate defeat.
-    // This preserves pre-check state for collapse analysis without changing runtime rules.
-    appendPreDefeatSnapshot(preDefeatSnapshots, state, command, content.ruleset.suddenDeathRound);
+    appendPreDefeatSnapshot(preDefeatSnapshots, state, command, debug);
     state = dispatchCommand(state, command, content);
+    logBodySpend(seatBodiesBefore, state, debug);
+    logPhaseEffects(state, command, eventStartIndex, debug);
+
+    if (isPhaseCommand(command)) {
+      validateResourceInvariants(state);
+    }
+
     if (command.type === 'ResolveResolutionPhase') {
-      appendRoundSnapshot(run, roundSnapshots, state, snapshotLimitReached);
+      appendRoundSnapshot(run, roundSnapshots, state, snapshotLimitReached, debug);
     }
   }
 
@@ -562,9 +666,11 @@ export function runSingleSimulation(run: PlannedSimulationRun): RunExecutionResu
   }
 
   if (preDefeatSnapshots.length === 0) {
-    const fallback = capturePreDefeatSnapshot(state, 'simulation_end', content.ruleset.suddenDeathRound);
+    const fallback = capturePreDefeatSnapshot(state, 'simulation_end');
     preDefeatSnapshots.push(fallback);
-    console.log(`🧠 Pre-defeat snapshot captured round=${fallback.round} phase=simulation_end`);
+    if (debug) {
+      console.log(`🧠 Pre-defeat snapshot captured round=${fallback.round} phase=simulation_end`);
+    }
   }
 
   const record = buildRunRecord(run, state, stalled, preDefeatSnapshots, roundSnapshots);
@@ -579,6 +685,9 @@ export function createSummaryAccumulator(): SummaryAccumulator {
     runs: 0,
     wins: 0,
     totalTurns: 0,
+    sanity: {
+      endedBeforeRound2: 0,
+    },
     defeatReasons: {
       extraction_breach: 0,
       comrades_exhausted: 0,
@@ -600,6 +709,9 @@ function incrementCount(map: Record<string, number>, key: string) {
 export function updateSummaryAccumulator(accumulator: SummaryAccumulator, record: SimulationRecord) {
   accumulator.runs += 1;
   accumulator.totalTurns += record.turnsPlayed;
+  if (record.turnsPlayed < 2) {
+    accumulator.sanity.endedBeforeRound2 += 1;
+  }
 
   if (record.result.type === 'victory') {
     accumulator.wins += 1;
@@ -658,6 +770,7 @@ export function mergeSummaryAccumulators(target: SummaryAccumulator, source: Sum
   target.runs += source.runs;
   target.wins += source.wins;
   target.totalTurns += source.totalTurns;
+  target.sanity.endedBeforeRound2 += source.sanity.endedBeforeRound2;
 
   target.defeatReasons.extraction_breach += source.defeatReasons.extraction_breach;
   target.defeatReasons.comrades_exhausted += source.defeatReasons.comrades_exhausted;
@@ -749,6 +862,10 @@ export function finalizeSummary(accumulator: SummaryAccumulator): SimulationSumm
     runs: accumulator.runs,
     winRate: ratio(accumulator.wins, accumulator.runs),
     averageTurns: ratio(accumulator.totalTurns, accumulator.runs),
+    sanity: {
+      endedBeforeRound2: accumulator.sanity.endedBeforeRound2,
+      endedBeforeRound2Rate: ratio(accumulator.sanity.endedBeforeRound2, accumulator.runs),
+    },
     defeatReasons: {
       extraction_breach: accumulator.defeatReasons.extraction_breach,
       comrades_exhausted: accumulator.defeatReasons.comrades_exhausted,
@@ -784,10 +901,15 @@ export async function executeRunChunk(
     for (const run of chunk.runs) {
       if (run.scenario !== activeScenario) {
         activeScenario = run.scenario;
-        console.log(`🧪 Worker ${chunk.workerId} running scenario ${run.scenario}`);
+        if (chunk.debugSingle) {
+          console.log(`🧪 Worker ${chunk.workerId} running scenario ${run.scenario}`);
+        }
       }
 
-      const { record } = runSingleSimulation(run);
+      const { record } = runSingleSimulation(run, { debug: chunk.debugSingle });
+      if (record.turnsPlayed < 2) {
+        console.warn(`⚠️ Simulation ended before round 2 (${run.simulationId})`);
+      }
       stream.write(`${JSON.stringify(record)}\n`);
       updateSummaryAccumulator(summary, record);
 
@@ -810,7 +932,13 @@ export async function executeRunChunk(
   };
 }
 
-function createChunks(runs: PlannedSimulationRun[], parallelWorkers: number, shardDir: string, progressInterval: number): WorkerRunChunk[] {
+function createChunks(
+  runs: PlannedSimulationRun[],
+  parallelWorkers: number,
+  shardDir: string,
+  progressInterval: number,
+  debugSingle: boolean,
+): WorkerRunChunk[] {
   const workerCount = Math.max(1, Math.min(parallelWorkers, runs.length));
   const chunkSize = Math.ceil(runs.length / workerCount);
   const chunks: WorkerRunChunk[] = [];
@@ -828,6 +956,7 @@ function createChunks(runs: PlannedSimulationRun[], parallelWorkers: number, sha
       runs: runs.slice(start, end),
       shardPath: join(shardDir, `worker-${workerId}.ndjson`),
       progressInterval,
+      debugSingle,
     });
   }
 
@@ -884,14 +1013,14 @@ async function runWorkerChunk(chunk: WorkerRunChunk, totalRuns: number, progress
       }
     });
 
-    worker.on('error', (error) => {
+    worker.on('error', (error: unknown) => {
       if (!settled) {
         settled = true;
-        rejectPromise(error);
+        rejectPromise(error instanceof Error ? error : new Error(String(error)));
       }
     });
 
-    worker.on('exit', (code) => {
+    worker.on('exit', (code: number) => {
       if (!settled && code !== 0) {
         settled = true;
         rejectPromise(new Error(`Worker ${chunk.workerId} exited with code ${code}`));
@@ -926,7 +1055,13 @@ export async function runSimulationBatch(config: SimulationBatchConfig): Promise
 
   const runs = createPlannedRuns(normalized);
   const totalRuns = runs.length;
-  const chunks = createChunks(runs, normalized.parallelWorkers, shardDir, normalized.progressInterval);
+  const chunks = createChunks(
+    runs,
+    normalized.parallelWorkers,
+    shardDir,
+    normalized.progressInterval,
+    normalized.debugSingle,
+  );
 
   console.log('⚙️ Running workers');
 
@@ -966,6 +1101,9 @@ export async function runSimulationBatch(config: SimulationBatchConfig): Promise
   await mergeShardFiles(shardPaths, outputPath);
 
   const summary = finalizeSummary(aggregate);
+  if (summary.sanity.endedBeforeRound2 > 0) {
+    console.warn(`⚠️ Simulation sanity check: ${summary.sanity.endedBeforeRound2} run(s) ended before round 2.`);
+  }
   await writeFile(summaryPath, JSON.stringify(summary, null, 2), 'utf8');
 
   await rm(shardDir, { recursive: true, force: true });

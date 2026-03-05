@@ -477,14 +477,16 @@ test('sudden death writes a terminal defeat summary', () => {
   assert.match(next.lossReason ?? '', new RegExp(String(content.ruleset.suddenDeathRound)));
 });
 
-test('a seat reaching 0 comrades causes immediate defeat', () => {
+test('coalition comrades exhaustion is checked during resolution', () => {
   const content = compileContent(startCommand.rulesetId);
   let state = initializeGame(startCommand);
   state = dispatchCommand(state, { type: 'ResolveSystemPhase' }, content);
+  for (const region of Object.values(state.regions)) {
+    for (const player of state.players) {
+      region.bodiesPresent[player.seat] = 0;
+    }
+  }
   state.regions.Congo.bodiesPresent[0] = 1;
-  state.regions.Levant.bodiesPresent[0] = 0;
-  state.regions.Mekong.bodiesPresent[0] = 0;
-  state.regions.Amazon.bodiesPresent[0] = 0;
 
   const next = dispatchCommand(
     state,
@@ -503,11 +505,15 @@ test('a seat reaching 0 comrades causes immediate defeat', () => {
   };
 
   const resolved = dispatchCommand(committed, { type: 'CommitCoalitionIntent' }, content);
+  assert.equal(resolved.phase, 'RESOLUTION');
+  assert.equal(resolved.terminalOutcome, null);
 
-  assert.equal(resolved.phase, 'LOSS');
-  assert.equal(resolved.terminalOutcome?.cause, 'comrades_exhausted');
-  assert.equal(resolved.terminalOutcome?.exhaustedSeat, 0);
-  assert.match(resolved.lossReason ?? '', /0 Comrades/);
+  const postResolution = dispatchCommand(resolved, { type: 'ResolveResolutionPhase' }, content);
+
+  assert.equal(postResolution.phase, 'LOSS');
+  assert.equal(postResolution.terminalOutcome?.cause, 'comrades_exhausted');
+  assert.equal(postResolution.terminalOutcome?.exhaustedSeat, undefined);
+  assert.match(postResolution.lossReason ?? '', /0 Comrades/);
 });
 
 test('launch campaign consumes 2d6 of rng and can remove extraction on success', () => {

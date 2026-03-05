@@ -29,6 +29,7 @@ export interface SimulationBatchConfig {
   parallelWorkers?: number;
   outputDir?: string;
   progressInterval?: number;
+  debugSingle?: boolean;
 }
 
 export interface NormalizedSimulationBatchConfig {
@@ -40,6 +41,7 @@ export interface NormalizedSimulationBatchConfig {
   parallelWorkers: number;
   outputDir: string;
   progressInterval: number;
+  debugSingle: boolean;
 }
 
 export interface PlannedSimulationRun {
@@ -136,9 +138,9 @@ export interface RoundSnapshot {
 export interface PreDefeatSnapshot {
   round: number;
   phase: string;
-  resources: {
-    bodiesRemaining: number;
-    evidenceRemaining: number;
+  totals: {
+    bodies: number;
+    evidence: number;
   };
   seats: Array<{
     seatId: string;
@@ -153,23 +155,7 @@ export interface PreDefeatSnapshot {
     globalGaze: number;
     warMachine: number;
   };
-  domains: {
-    WarMachine?: number;
-    DyingPlanet?: number;
-    GildedCage?: number;
-    SilencedTruth?: number;
-    EmptyStomach?: number;
-    FossilGrip?: number;
-    StolenVoice?: number;
-    RevolutionaryWave?: number;
-    PatriarchalGrip?: number;
-    UnfinishedJustice?: number;
-  };
-  defeatChecks: {
-    comradesExhausted: boolean;
-    extractionBreach: boolean;
-    suddenDeath: boolean;
-  };
+  domains: Record<string, number>;
 }
 
 export interface SimulationRecord {
@@ -256,6 +242,10 @@ export interface SimulationSummary {
   runs: number;
   winRate: number;
   averageTurns: number;
+  sanity: {
+    endedBeforeRound2: number;
+    endedBeforeRound2Rate: number;
+  };
   defeatReasons: {
     extraction_breach: number;
     comrades_exhausted: number;
@@ -282,6 +272,9 @@ export interface SummaryAccumulator {
   runs: number;
   wins: number;
   totalTurns: number;
+  sanity: {
+    endedBeforeRound2: number;
+  };
   defeatReasons: {
     extraction_breach: number;
     comrades_exhausted: number;
@@ -313,6 +306,7 @@ export interface WorkerRunChunk {
   runs: PlannedSimulationRun[];
   shardPath: string;
   progressInterval: number;
+  debugSingle?: boolean;
 }
 
 export interface WorkerProgressMessage {

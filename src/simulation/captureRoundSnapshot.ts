@@ -1,4 +1,5 @@
 import type { EngineState } from '../engine/index.ts';
+import { totalBodies, totalEvidence } from './invariants.ts';
 import type { RoundSnapshot, SimulationRecord } from './types.ts';
 
 const FRONT_ACTION_KEY_MAP = {
@@ -112,15 +113,9 @@ function collectDomains(state: EngineState): RoundSnapshot['domains'] {
 }
 
 function collectResources(state: EngineState): RoundSnapshot['resources'] {
-  const totalBodies = Object.values(state.regions).reduce((sum, front) => {
-    return sum + Object.values(front.bodiesPresent).reduce((inner, amount) => inner + amount, 0);
-  }, 0);
-
-  const totalEvidence = state.players.reduce((sum, player) => sum + player.evidence, 0);
-
   return {
-    totalBodies,
-    totalEvidence,
+    totalBodies: totalBodies(state),
+    totalEvidence: totalEvidence(state),
   };
 }
 

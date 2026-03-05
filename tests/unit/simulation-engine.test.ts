@@ -71,14 +71,13 @@ test('simulation engine writes NDJSON records and summary with expected coverage
     const firstPreDefeat = preDefeatSnapshots[0] ?? {};
     assert.equal(typeof firstPreDefeat.round, 'number');
     assert.equal(typeof firstPreDefeat.phase, 'string');
-    assert.equal(typeof firstPreDefeat.resources, 'object');
+    assert.equal(typeof firstPreDefeat.totals, 'object');
     assert.equal(typeof firstPreDefeat.seats, 'object');
     assert.equal(typeof firstPreDefeat.fronts, 'object');
     assert.equal(typeof firstPreDefeat.globalTracks, 'object');
     assert.equal(typeof firstPreDefeat.domains, 'object');
-    assert.equal(typeof firstPreDefeat.defeatChecks, 'object');
     const preDefeatPhases = new Set(preDefeatSnapshots.map((snapshot) => String(snapshot.phase)));
-    const hasPhaseSnapshot = ['system_actions', 'coalition_resolution', 'resolution_checks']
+    const hasPhaseSnapshot = ['system_actions', 'campaign_resolution', 'round_resolution']
       .some((phase) => preDefeatPhases.has(phase));
     assert.equal(hasPhaseSnapshot, true);
 
@@ -91,6 +90,7 @@ test('simulation engine writes NDJSON records and summary with expected coverage
 
   const summary = JSON.parse(await readFile(result.summaryPath, 'utf8')) as Record<string, unknown>;
   assert.equal(Number(summary.runs), EXPECTED_SCENARIOS.length);
+  assert.equal(typeof summary.sanity, 'object');
   assert.equal(typeof summary.scenarioStats, 'object');
   assert.equal(typeof summary.strategyPerformance, 'object');
 });

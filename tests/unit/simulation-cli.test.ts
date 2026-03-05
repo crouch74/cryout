@@ -17,10 +17,17 @@ test('CLI parser handles runs, scenarios, mode, seed, and parallel options', () 
   assert.deepEqual(parsed.victoryModes, ['symbolic']);
   assert.equal(parsed.seed, 999);
   assert.equal(parsed.parallelWorkers, 8);
+  assert.equal(parsed.debugSingle, false);
 });
 
 test('CLI parser maps mode=both to liberation and symbolic', () => {
   const parsed = parseCliArgs(['--mode', 'both']);
 
   assert.deepEqual(parsed.victoryModes, ['liberation', 'symbolic']);
+  assert.equal(parsed.debugSingle, false);
+});
+
+test('CLI parser enables debug single mode', () => {
+  const parsed = parseCliArgs(['--debug-single']);
+  assert.equal(parsed.debugSingle, true);
 });

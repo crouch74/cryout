@@ -10,6 +10,7 @@ export interface SimulationCliOptions {
   victoryModes: SimulationVictoryMode[];
   seed?: number;
   parallelWorkers: number;
+  debugSingle: boolean;
 }
 
 function toPositiveInteger(value: string, label: string) {
@@ -45,6 +46,7 @@ export function parseCliArgs(argv: string[]): SimulationCliOptions {
   let victoryModes: SimulationVictoryMode[] = ['liberation', 'symbolic'];
   let seed: number | undefined;
   let parallelWorkers = defaultParallelWorkers();
+  let debugSingle = false;
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -91,6 +93,11 @@ export function parseCliArgs(argv: string[]): SimulationCliOptions {
       continue;
     }
 
+    if (arg === '--debug-single') {
+      debugSingle = true;
+      continue;
+    }
+
     throw new Error(`Unknown argument: ${arg}`);
   }
 
@@ -100,17 +107,22 @@ export function parseCliArgs(argv: string[]): SimulationCliOptions {
     victoryModes,
     seed,
     parallelWorkers,
+    debugSingle,
   };
 }
 
 export async function runCli(argv: string[]) {
   const parsed = parseCliArgs(argv);
+  const debugScenario = parsed.scenarios[0] ?? 'base_design';
   const config: SimulationBatchConfig = {
-    runsPerScenario: parsed.runs,
-    scenarios: parsed.scenarios.length > 0 ? parsed.scenarios : undefined,
+    runsPerScenario: parsed.debugSingle ? 1 : parsed.runs,
+    scenarios: parsed.debugSingle
+      ? [debugScenario]
+      : (parsed.scenarios.length > 0 ? parsed.scenarios : undefined),
     victoryModes: parsed.victoryModes,
     randomSeed: parsed.seed,
-    parallelWorkers: parsed.parallelWorkers,
+    parallelWorkers: parsed.debugSingle ? 1 : parsed.parallelWorkers,
+    debugSingle: parsed.debugSingle,
   };
 
   console.log('🎛️ Simulation CLI options resolved');
@@ -120,6 +132,7 @@ export async function runCli(argv: string[]) {
     victoryModes: config.victoryModes,
     randomSeed: config.randomSeed ?? 'auto',
     parallelWorkers: config.parallelWorkers,
+    debugSingle: config.debugSingle ?? false,
   }, null, 2));
   console.log('📸 Round snapshots are enabled (max 25 per simulation run).');
 
