@@ -131,7 +131,7 @@ function buildRandomCandidate(rng: () => number): BalanceCandidate {
   };
 }
 
-function candidateToPatch(candidate: BalanceCandidate): ScenarioPatch {
+export function balanceCandidateToPatch(candidate: BalanceCandidate): ScenarioPatch {
   return {
     note: '🧠 Balance search candidate',
     victory: {
@@ -243,7 +243,7 @@ async function evaluateCandidate(
   const patchedScenario = applyScenarioPatch({
     experimentId,
     scenarioId,
-    patch: candidateToPatch(candidate),
+    patch: balanceCandidateToPatch(candidate),
   });
 
   try {

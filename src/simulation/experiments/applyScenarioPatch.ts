@@ -358,7 +358,7 @@ function applyPatchToRuleset(ruleset: RulesetDefinition, patch: ScenarioPatch) {
 }
 
 function buildTreatmentScenarioId(experimentId: string, scenarioId: string) {
-  const safeExperimentId = experimentId.replace(/[^a-zA-Z0-9_\-]/g, '_');
+  const safeExperimentId = experimentId.replace(/[^a-zA-Z0-9_-]/g, '_');
   return `${scenarioId}__exp__${safeExperimentId}__B`;
 }
 

@@ -1,0 +1,150 @@
+import type { ScenarioPatch } from '../experiments/patchDsl.ts';
+import type { ExperimentArmSummary, MetricComparison } from '../experiments/types.ts';
+import type { TrajectorySummary } from '../trajectory/types.ts';
+import type { VictoryMode } from '../experiments/types.ts';
+
+export type OptimizerRuntimeProfile = 'fast' | 'balanced' | 'thorough';
+export type OptimizerSignificanceMode = 'strict' | 'balanced' | 'lenient';
+export type OptimizerMode = 'liberation' | 'symbolic' | 'both';
+
+export interface OptimizerConfig {
+  scenarioId: string;
+  iterations: number;
+  baselineRuns: number;
+  candidateRuns: number;
+  candidates: number;
+  patience: number;
+  seed: number;
+  outDir: string;
+  runtime: OptimizerRuntimeProfile;
+  significance: OptimizerSignificanceMode;
+  mode: OptimizerMode;
+  victoryModes: VictoryMode[];
+  playerCounts: number[];
+  useBalanceSearchSeeding?: boolean;
+}
+
+export interface OptimizerTargetScore {
+  metric: 'publicVictoryRate' | 'winRate' | 'mandateFailRateGivenPublic' | 'averageTurns';
+  value: number;
+  min: number;
+  max: number;
+  inRange: boolean;
+  distanceFromRange: number;
+  normalizedScore: number;
+}
+
+export interface OptimizerScoreBreakdown {
+  score: number;
+  catastrophePenalty: number;
+  targets: {
+    publicVictoryRate: OptimizerTargetScore;
+    winRate: OptimizerTargetScore;
+    mandateFailRateGivenPublic: OptimizerTargetScore;
+    averageTurns: OptimizerTargetScore;
+  };
+  allTargetsInRange: boolean;
+}
+
+export interface OptimizerAnalysis {
+  outOfRange: {
+    publicVictoryRate: boolean;
+    winRate: boolean;
+    mandateFailRateGivenPublic: boolean;
+    averageTurns: boolean;
+  };
+  defeatPressure: {
+    extractionBreachRate: number;
+    comradesExhaustedRate: number;
+    suddenDeathRate: number;
+    pressureDetected: boolean;
+  };
+  topMandateFailures: Array<{
+    mandateId: string;
+    failureRate: number;
+    attempts: number;
+  }>;
+  insights: string[];
+}
+
+export interface OptimizerCandidate {
+  candidateId: string;
+  strategy: 'random' | 'hill_climb' | 'trajectory_guided' | 'parameter_sweep' | 'balance_seed';
+  patch: ScenarioPatch;
+}
+
+export interface OptimizerGateDecision {
+  accepted: boolean;
+  primaryMetric: 'winRate' | 'publicVictoryRate';
+  statisticallyMeaningful: boolean;
+  fitnessLiftPassed: boolean;
+  guardrailsPassed: boolean;
+  movedTowardTarget: boolean;
+  reasons: string[];
+}
+
+export interface OptimizerCandidateEvaluation {
+  candidateId: string;
+  strategy: OptimizerCandidate['strategy'];
+  experimentId: string;
+  outputDir: string;
+  patch: ScenarioPatch;
+  metrics: ExperimentArmSummary;
+  comparison: MetricComparison;
+  scoreBreakdown: OptimizerScoreBreakdown;
+  scoreDeltaFromBaseline: number;
+  gate: OptimizerGateDecision;
+}
+
+export interface OptimizerIterationResult {
+  iteration: number;
+  baselineScenarioId: string;
+  baselineExperimentId: string;
+  baselineMetrics: ExperimentArmSummary;
+  baselineScore: OptimizerScoreBreakdown;
+  analysis: OptimizerAnalysis;
+  trajectorySummary: TrajectorySummary | null;
+  candidateCount: number;
+  rankings: OptimizerCandidateEvaluation[];
+  selectedCandidate: OptimizerCandidateEvaluation | null;
+  acceptedCandidate: OptimizerCandidateEvaluation | null;
+  noImprovementStreak: number;
+}
+
+export type OptimizerStopReason =
+  | 'targets_reached'
+  | 'no_significant_improvement'
+  | 'max_iterations_reached';
+
+export interface OptimizerFinalMetrics {
+  scenarioId: string;
+  baselineScenarioId: string;
+  experimentId: string;
+  metrics: ExperimentArmSummary;
+  score: OptimizerScoreBreakdown;
+}
+
+export interface OptimizerFinalReport {
+  scenarioId: string;
+  outputDir: string;
+  stopReason: OptimizerStopReason;
+  iterationsCompleted: number;
+  acceptedPatches: Array<{
+    iteration: number;
+    candidateId: string;
+    strategy: OptimizerCandidate['strategy'];
+    score: number;
+    scoreDeltaFromBaseline: number;
+    patch: ScenarioPatch;
+  }>;
+  recommendedPatch: ScenarioPatch;
+  finalMetrics: OptimizerFinalMetrics;
+  history: OptimizerIterationResult[];
+}
+
+export interface OptimizerSignificanceThresholds {
+  minFitnessLift: number;
+  maxGuardrailRegression: number;
+  confidence: 0.9 | 0.95 | 0.99;
+  alpha: number;
+}

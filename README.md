@@ -195,6 +195,64 @@ export const EXPERIMENT_BACKLOG: ExperimentDefinition[] = [
 ];
 ```
 
+### Autonomous Scenario Optimizer
+
+Run iterative autonomous scenario balancing that combines:
+
+- baseline simulation
+- diagnostics
+- trajectory analysis
+- candidate patch generation
+- A/B testing
+- statistical gate checks
+- baseline updates
+
+Run with explicit scenario:
+
+```bash
+npm run optimize-scenario -- --scenario tahrir_square
+```
+
+Run without a scenario (interactive selector):
+
+```bash
+npm run optimize-scenario --
+```
+
+Common options:
+
+- `--scenario <id>`
+- `--iterations <n>`
+- `--baseline-runs <n>`
+- `--candidate-runs <n>`
+- `--candidates <n>`
+- `--patience <n>`
+- `--seed <n>`
+- `--out <path>`
+- `--mode liberation|symbolic|both`
+- `--runtime fast|balanced|thorough`
+- `--significance strict|balanced|lenient`
+
+Outputs are written to:
+
+- `simulation_output/optimizer/<scenarioId>/<timestamp_seed>/`
+
+Artifacts include:
+
+- `optimizer_config.json`
+- `optimization_history.json`
+- `accepted_patch_history.json`
+- `recommended_patch.json`
+- `final_metrics.json`
+- `final_report.md`
+- `iteration_<NN>/baseline_summary.json`
+- `iteration_<NN>/analysis.json`
+- `iteration_<NN>/trajectory_summary.json`
+- `iteration_<NN>/candidate_patches.json`
+- `iteration_<NN>/candidate_rankings.json`
+- `iteration_<NN>/selected_candidate.json`
+- `iteration_<NN>/experiments/<experimentId>/*`
+
 ### Production Build
 
 ```bash
