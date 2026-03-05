@@ -13,6 +13,7 @@ import type {
 } from './types.ts';
 
 interface CliArgs {
+  help?: boolean;
   scenarioId?: string;
   iterations?: number;
   baselineRuns?: number;
@@ -67,6 +68,161 @@ const RUNTIME_DEFAULTS: Record<OptimizerRuntimeProfile, Pick<OptimizerConfig, 'b
     candidates: 24,
   },
 };
+
+const STRATEGY_DESCRIPTIONS: Record<OptimizerStrategyMode, string> = {
+  numeric_balancing: 'Prioritizes numeric pressure/threshold mutations (setup, pressure, victory, mandate numeric knobs).',
+  victory_gating_exploration: 'Focuses on victory gate parameters (round/action/progress) to reduce structural early wins.',
+  trajectory_discovery: 'Prioritizes trajectory-guided mutations based on sampled victory paths.',
+  full_optimizer: 'Uses all candidate families (numeric, gating, trajectory, hill-climb, and random fallback).',
+};
+
+const SIGNIFICANCE_DESCRIPTIONS: Record<OptimizerSignificanceMode, string> = {
+  strict: 'High confidence requirements; fewer accepted patches, lower false-positive risk.',
+  balanced: 'Default confidence thresholds; practical tradeoff of rigor and throughput.',
+  lenient: 'Lower confidence thresholds; faster acceptance but higher regression risk.',
+};
+
+const MODE_DESCRIPTIONS: Record<OptimizerMode, string> = {
+  liberation: 'Optimize only Liberation mode metrics and acceptance decisions.',
+  symbolic: 'Optimize only Symbolic mode metrics and acceptance decisions.',
+  both: 'Optimize across both modes in the same experiment definitions.',
+};
+
+function buildManual() {
+  const workersDefault = defaultParallelWorkers();
+  const scenarioOptions = listRulesets()
+    .map((ruleset) => `      ${ruleset.id}: ${ruleset.name}`)
+    .sort((left, right) => left.localeCompare(right))
+    .join('\n');
+  return `Where the Stones Cry Out - Scenario Optimizer Manual
+
+Usage:
+  npm run optimize -- [options]
+  npm run optimize-scenario -- [options]
+  node --no-warnings src/simulation/optimizer/cli.ts [options]
+
+Quick Help:
+  --help, -h
+    Show this manual and exit.
+
+Input Parameters:
+
+  --scenario <id>
+    Name: Scenario Identifier
+    Functionality: Selects the scenario ruleset to optimize.
+    Implementation: Validated against engine rulesets from listRulesets(); unknown IDs fail fast.
+    Impact: Controls all baseline/treatment simulations, available factions/actions, and scenario-local patch behavior.
+    Options:
+${scenarioOptions}
+
+  --iterations <n>
+    Name: Iteration Budget
+    Functionality: Maximum optimization rounds.
+    Implementation: Positive integer; default 10.
+    Impact: Higher values broaden search depth and increase total experiment runtime.
+
+  --baseline-runs <n>
+    Name: Baseline Arm Runs
+    Functionality: Number of simulations for the baseline arm each iteration.
+    Implementation: Positive integer; default depends on --runtime.
+    Impact: Higher values stabilize baseline metrics/diagnostics but cost more CPU time.
+
+  --candidate-runs <n>
+    Name: Candidate Arm Runs
+    Functionality: Number of simulations per candidate experiment arm.
+    Implementation: Positive integer; default depends on --runtime.
+    Impact: Higher values improve candidate ranking confidence and gate reliability.
+
+  --candidates <n>
+    Name: Candidate Count Per Iteration
+    Functionality: Number of patches generated and evaluated per iteration.
+    Implementation: Positive integer; default depends on --runtime.
+    Impact: Larger search breadth per iteration with proportional experiment cost.
+
+  --patience <n>
+    Name: No-Improvement Patience
+    Functionality: Stop condition after N iterations with no accepted improvement.
+    Implementation: Positive integer; default 3.
+    Impact: Higher values search longer before termination.
+
+  --seed <n>
+    Name: RNG Seed
+    Functionality: Deterministic seed for optimizer-level randomization.
+    Implementation: Positive integer coerced to uint32; default 42.
+    Impact: Reproducibility of candidate generation, run planning, and trajectory sampling order.
+
+  --parallel-workers <n>
+    Name: Worker Parallelism
+    Functionality: Number of worker threads for experiment execution.
+    Implementation: Positive integer; default ${workersDefault} (CPU cores - 1, min 1).
+    Impact: Higher throughput with increased CPU pressure and log concurrency.
+
+  --out <path>
+    Name: Output Directory
+    Functionality: Root directory for optimizer artifacts.
+    Implementation: Resolved to absolute path; default ${DEFAULT_OUT_DIR}.
+    Impact: Determines where iteration summaries, patch history, and final report are written.
+
+  --mode <liberation|symbolic|both>
+    Name: Victory Mode Scope
+    Functionality: Chooses which victory mode(s) are optimized.
+    Implementation: Mapped to victoryModes array via modeToVictoryModes().
+      liberation: ${MODE_DESCRIPTIONS.liberation}
+      symbolic: ${MODE_DESCRIPTIONS.symbolic}
+      both: ${MODE_DESCRIPTIONS.both}
+    Impact: Influences experiment definitions, metrics, and accepted patch behavior across modes.
+
+  --runtime <fast|balanced|thorough>
+    Name: Runtime Profile
+    Functionality: Applies default run budgets when run-count flags are omitted.
+    Implementation: Uses RUNTIME_DEFAULTS:
+      fast: baseline=3000, candidate=1500, candidates=8
+      balanced: baseline=10000, candidate=5000, candidates=15
+      thorough: baseline=30000, candidate=15000, candidates=24
+    Impact: Primary throughput vs. statistical stability tradeoff.
+
+  --significance <strict|balanced|lenient>
+    Name: Statistical Acceptance Strictness
+    Functionality: Selects optimizer gate thresholds used for candidate acceptance.
+    Implementation: Passed into optimizer engine; mapped to confidence/alpha/lift guardrails.
+      strict: ${SIGNIFICANCE_DESCRIPTIONS.strict}
+      balanced: ${SIGNIFICANCE_DESCRIPTIONS.balanced}
+      lenient: ${SIGNIFICANCE_DESCRIPTIONS.lenient}
+    Impact: Controls how hard it is for a patch to be accepted.
+
+  --strategy <numeric_balancing|victory_gating_exploration|trajectory_discovery|full_optimizer>
+    Name: Candidate Strategy Mode
+    Functionality: Chooses which candidate generators are active.
+    Implementation:
+      numeric_balancing: ${STRATEGY_DESCRIPTIONS.numeric_balancing}
+      victory_gating_exploration: ${STRATEGY_DESCRIPTIONS.victory_gating_exploration}
+      trajectory_discovery: ${STRATEGY_DESCRIPTIONS.trajectory_discovery}
+      full_optimizer: ${STRATEGY_DESCRIPTIONS.full_optimizer}
+    Impact: Changes the search space and shape of proposed rule patches.
+
+Derived/Fixed Inputs (Not CLI Flags):
+
+  victoryModes
+    Derived from --mode; liberation => [liberation], symbolic => [symbolic], both => [liberation, symbolic].
+  playerCounts
+    Fixed to [2, 3, 4] by CLI buildConfig().
+  useBalanceSearchSeeding
+    Fixed true in CLI output; enables periodic seeding from balance search inside candidate generation.
+
+Interactive Mode:
+  If --scenario is omitted and TTY is available, the CLI prompts for scenario and all major inputs.
+  Any explicit CLI flag overrides prompted values.
+
+Examples:
+  npm run optimize -- --scenario tahrir_square --mode liberation --runtime balanced --strategy full_optimizer
+  npm run optimize -- --scenario base_design --iterations 15 --baseline-runs 20000 --candidate-runs 8000 --candidates 20
+  npm run optimize -- --scenario woman_life_freedom --mode both --significance strict --parallel-workers 8 --seed 2026
+`;
+}
+
+export function renderHelpManual() {
+  return buildManual();
+}
 
 function toPositiveInteger(value: string, label: string) {
   const parsed = Number.parseInt(value, 10);
@@ -132,7 +288,12 @@ export function parseArgs(argv: string[]): CliArgs {
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
 
-    if (!arg.startsWith('--')) {
+    if (!arg.startsWith('-')) {
+      continue;
+    }
+
+    if (arg === '--help' || arg === '-h') {
+      args.help = true;
       continue;
     }
 
@@ -206,6 +367,9 @@ export function parseArgs(argv: string[]): CliArgs {
 
 export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
   const parsed = parseArgs(argv);
+  if (parsed.help) {
+    throw new Error('HelpRequested');
+  }
   const scenarioIds = listRulesets().map((ruleset) => ruleset.id).sort((left, right) => left.localeCompare(right));
 
   const validateScenarioId = (value: string) => {
@@ -390,6 +554,12 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
 }
 
 export async function runCli(argv: string[]) {
+  const parsed = parseArgs(argv);
+  if (parsed.help) {
+    console.log(renderHelpManual());
+    return;
+  }
+
   const config = await buildConfig(argv);
   console.log('🧠 Optimizer configuration resolved');
   console.log(JSON.stringify({

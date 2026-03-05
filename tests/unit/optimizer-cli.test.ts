@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildConfig, parseArgs } from '../../src/simulation/optimizer/cli.ts';
+import { buildConfig, parseArgs, renderHelpManual } from '../../src/simulation/optimizer/cli.ts';
 
 test('optimizer CLI parser reads all explicit flags', () => {
   const parsed = parseArgs([
@@ -59,4 +59,36 @@ test('optimizer config maps mode=both to liberation and symbolic', async () => {
 
   assert.equal(config.mode, 'both');
   assert.deepEqual(config.victoryModes, ['liberation', 'symbolic']);
+});
+
+test('optimizer CLI parser accepts --help and -h', () => {
+  const long = parseArgs(['--help']);
+  const short = parseArgs(['-h']);
+
+  assert.equal(long.help, true);
+  assert.equal(short.help, true);
+});
+
+test('optimizer help manual documents all primary input flags and impacts', () => {
+  const manual = renderHelpManual();
+
+  assert.match(manual, /--scenario <id>/);
+  assert.match(manual, /--iterations <n>/);
+  assert.match(manual, /--baseline-runs <n>/);
+  assert.match(manual, /--candidate-runs <n>/);
+  assert.match(manual, /--candidates <n>/);
+  assert.match(manual, /--patience <n>/);
+  assert.match(manual, /--seed <n>/);
+  assert.match(manual, /--parallel-workers <n>/);
+  assert.match(manual, /--out <path>/);
+  assert.match(manual, /--mode <liberation\|symbolic\|both>/);
+  assert.match(manual, /liberation:\s+Optimize only Liberation mode metrics/i);
+  assert.match(manual, /symbolic:\s+Optimize only Symbolic mode metrics/i);
+  assert.match(manual, /both:\s+Optimize across both modes/i);
+  assert.match(manual, /--runtime <fast\|balanced\|thorough>/);
+  assert.match(manual, /--significance <strict\|balanced\|lenient>/);
+  assert.match(manual, /--strategy <numeric_balancing\|victory_gating_exploration\|trajectory_discovery\|full_optimizer>/);
+  assert.match(manual, /Implementation:/);
+  assert.match(manual, /Impact:/);
+  assert.match(manual, /Options:/);
 });
