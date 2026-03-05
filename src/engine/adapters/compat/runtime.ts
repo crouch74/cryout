@@ -464,6 +464,49 @@ function revealMandates(state: EngineState) {
   state.mandatesResolved = true;
 }
 
+function updatePersistentMandateSatisfaction(
+  state: EngineState,
+  content: CompiledContent,
+  context: { actingSeat: number; actionId: ActionId },
+) {
+  if (!state.secretMandatesEnabled) {
+    return;
+  }
+
+  for (const player of state.players) {
+    if (player.mandateSatisfied) {
+      continue;
+    }
+
+    const faction = getFaction(content, player);
+    const satisfied = evaluateCondition(
+      state,
+      content,
+      faction.mandate.condition,
+      { actingSeat: player.seat, causedBy: [faction.mandate.id, context.actionId] },
+    );
+    if (!satisfied) {
+      continue;
+    }
+
+    player.mandateSatisfied = true;
+    addEvent(
+      state,
+      'mandate',
+      'mandate_satisfied',
+      '🧭',
+      `🧭 Seat ${player.seat + 1} locked ${faction.mandate.title}.`,
+      [faction.mandate.id, context.actionId, 'mandate_satisfied'],
+      [],
+      {
+        actingSeat: context.actingSeat,
+        actionId: context.actionId,
+        causedBy: [faction.mandate.id, context.actionId],
+      },
+    );
+  }
+}
+
 function compareValues(left: number, right: number, op: '>' | '>=' | '<' | '<=' | '==' | '!=') {
   switch (op) {
     case '>':
@@ -990,10 +1033,7 @@ function checkPositiveVictory(state: EngineState, content: CompiledContent, cont
     return true;
   }
 
-  const failedMandates = state.players.filter((player) => {
-    const faction = getFaction(content, player);
-    return !evaluateCondition(state, content, faction.mandate.condition, { actingSeat: player.seat, causedBy: [faction.mandate.id] });
-  });
+  const failedMandates = state.players.filter((player) => !player.mandateSatisfied);
 
   revealMandates(state);
   if (failedMandates.length > 0) {
@@ -1571,6 +1611,7 @@ function createInitialPlayers(command: StartGameCommand, content: CompiledConten
     resistanceHand: [],
     mandateId: secretMandatesEnabled ? content.factions[factionId].mandate.id : '',
     mandateRevealed: !secretMandatesEnabled,
+    mandateSatisfied: false,
   }));
 }
 
@@ -2291,6 +2332,7 @@ export function normalizeEngineState(state: EngineState): EngineState {
   next.players = next.players.map((player) => ({
     ...player,
     ownerId: player.ownerId ?? player.seat,
+    mandateSatisfied: player.mandateSatisfied ?? false,
   }));
   next.secretMandatesEnabled = next.secretMandatesEnabled ?? true;
   next.customTracks = next.customTracks ?? {};
@@ -2559,6 +2601,7 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
           continue;
         }
         resolveQueuedAction(next, content, seat, intent);
+        updatePersistentMandateSatisfaction(next, content, { actingSeat: seat, actionId: intent.actionId });
         if (next.terminalOutcome) {
           return next;
         }

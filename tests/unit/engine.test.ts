@@ -193,6 +193,13 @@ test('startup can disable secret mandates for local tables', () => {
   assert.equal(state.players.every((player) => player.mandateRevealed), true);
 });
 
+test('room play starts with unsatisfied secret mandates', () => {
+  const state = initializeGame(startCommand);
+
+  assert.equal(state.secretMandatesEnabled, true);
+  assert.equal(state.players.every((player) => player.mandateSatisfied === false), true);
+});
+
 test('startup rejects ownership maps that leave a human player without a faction seat', () => {
   assert.throws(
     () => initializeGame({ ...multiOwnerStartCommand, humanPlayerCount: 3, seatOwnerIds: [0, 0, 2, 2] }),
@@ -350,6 +357,9 @@ test('Algeria symbolic beacons and tribunal acknowledgement can produce symbolic
   const content = compileContent('algerian_war_of_independence');
   const state = initializeGame({ ...algeriaStartCommand, mode: 'SYMBOLIC' });
   state.phase = 'RESOLUTION';
+  for (const player of state.players) {
+    player.mandateSatisfied = true;
+  }
   state.globalGaze = 15;
   state.domains.RevolutionaryWave.progress = 6;
   state.domains.GildedCage.progress = 4;
@@ -370,6 +380,9 @@ test('Algeria liberation victory requires repression to remain at 6 or lower', (
   const content = compileContent('algerian_war_of_independence');
   const state = initializeGame(algeriaStartCommand);
   state.phase = 'RESOLUTION';
+  for (const player of state.players) {
+    player.mandateSatisfied = true;
+  }
   for (const region of Object.values(state.regions)) {
     region.extractionTokens = 5;
   }
@@ -429,6 +442,9 @@ test('liberation victory requires the public win and all active mandates', () =>
   const content = compileContent(startCommand.rulesetId);
   const state = initializeGame(startCommand);
   state.phase = 'RESOLUTION';
+  for (const player of state.players) {
+    player.mandateSatisfied = true;
+  }
   for (const region of Object.values(state.regions)) {
     region.extractionTokens = 1;
   }
@@ -462,6 +478,52 @@ test('a failed mandate voids a public liberation win', () => {
   assert.equal(next.players.every((player) => player.mandateRevealed), true);
   assert.equal(next.terminalOutcome?.cause, 'mandate_failure');
   assert.equal((next.terminalOutcome?.failedMandateIds?.length ?? 0) > 0, true);
+});
+
+test('secret mandates lock only from coalition action resolution and stay latched', () => {
+  const content = compileContent(startCommand.rulesetId);
+  let state = initializeGame(startCommand);
+  state.northernWarMachine = 6;
+  state.decks.crisis.drawPile = [];
+  state.decks.system.drawPile = [];
+
+  state = dispatchCommand(state, { type: 'ResolveSystemPhase' }, content);
+  assert.equal(state.players[1].mandateSatisfied, false);
+
+  state = dispatchCommand(
+    state,
+    { type: 'QueueIntent', seat: 0, action: { actionId: 'organize', regionId: 'Congo' } },
+    content,
+  );
+  state.players[0].actionsRemaining = 0;
+  state.players[0].ready = true;
+  for (const player of state.players.slice(1)) {
+    player.actionsRemaining = 0;
+    player.ready = true;
+  }
+
+  state = dispatchCommand(state, { type: 'CommitCoalitionIntent' }, content);
+  assert.equal(state.players[1].mandateSatisfied, true);
+  assert.equal(state.eventLog.some((event) => event.sourceType === 'mandate' && event.sourceId === 'mandate_satisfied'), true);
+
+  state.phase = 'COALITION';
+  state.northernWarMachine = 7;
+  state.players[0].actionsRemaining = 2;
+  state.players[0].ready = false;
+  state = dispatchCommand(
+    state,
+    { type: 'QueueIntent', seat: 0, action: { actionId: 'investigate', regionId: 'Congo' } },
+    content,
+  );
+  state.players[0].actionsRemaining = 0;
+  state.players[0].ready = true;
+  for (const player of state.players.slice(1)) {
+    player.actionsRemaining = 0;
+    player.ready = true;
+  }
+
+  const next = dispatchCommand(state, { type: 'CommitCoalitionIntent' }, content);
+  assert.equal(next.players[1].mandateSatisfied, true);
 });
 
 test('sudden death writes a terminal defeat summary', () => {

@@ -425,6 +425,7 @@ export interface PlayerState {
   resistanceHand: string[];
   mandateId: string;
   mandateRevealed: boolean;
+  mandateSatisfied: boolean;
 }
 
 export interface DeckState {

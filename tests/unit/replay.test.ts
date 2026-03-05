@@ -54,6 +54,7 @@ test('serialized command log replays to the same snapshot', () => {
   assert.equal(payload.snapshot.eventLog.some((event) => event.context?.cardReveals?.[0]?.origin === 'startup_withdrawal'), true);
   assert.deepEqual(payload.snapshot.players.map((player) => player.ownerId), [0, 0, 1, 1]);
   assert.equal(payload.snapshot.secretMandatesEnabled, true);
+  assert.equal(payload.snapshot.players.every((player) => typeof player.mandateSatisfied === 'boolean'), true);
 });
 
 test('serialized snapshots preserve local no-mandate tables', () => {
@@ -62,4 +63,21 @@ test('serialized snapshots preserve local no-mandate tables', () => {
 
   assert.equal(payload.snapshot.secretMandatesEnabled, false);
   assert.equal(payload.snapshot.players.every((player) => player.mandateId === ''), true);
+  assert.equal(payload.snapshot.players.every((player) => player.mandateSatisfied === false), true);
+});
+
+test('deserialize defaults missing mandate satisfaction flags to false', () => {
+  const initial = initializeGame(startCommand);
+  const serialized = serializeGame(initial);
+  const parsed = JSON.parse(serialized) as {
+    snapshot: { players: Array<Record<string, unknown>> };
+  };
+  parsed.snapshot.players = parsed.snapshot.players.map((player) => {
+    const next = { ...player };
+    delete next.mandateSatisfied;
+    return next;
+  });
+
+  const deserialized = deserializeGame(JSON.stringify(parsed));
+  assert.equal(deserialized.snapshot.players.every((player) => player.mandateSatisfied === false), true);
 });

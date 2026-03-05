@@ -93,6 +93,7 @@ function toCorePlayers(state: EngineState): Record<string, CorePlayerState> {
           factionId: player.factionId,
           mandateId: player.mandateId,
           mandateRevealed: player.mandateRevealed,
+          mandateSatisfied: player.mandateSatisfied,
           resistanceHand: player.resistanceHand as unknown as import('../../../types.ts').JsonValue,
         },
       } satisfies CorePlayerState,
