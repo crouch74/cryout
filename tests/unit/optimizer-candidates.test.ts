@@ -54,6 +54,8 @@ test('candidate generator builds deterministic candidate count with dedup', asyn
       },
       structural: {
         turnOnePublicVictoryRate: 0,
+        victoryBeforeAllowedRoundRate: 0,
+        earlyTerminationRate: 0,
         noGameplayDetected: false,
         impossibleMandates: [],
       },
@@ -121,6 +123,8 @@ test('victory gating exploration mode emits victory gate strategies', async () =
       },
       structural: {
         turnOnePublicVictoryRate: 0.4,
+        victoryBeforeAllowedRoundRate: 0.1,
+        earlyTerminationRate: 0.2,
         noGameplayDetected: true,
         impossibleMandates: [],
       },

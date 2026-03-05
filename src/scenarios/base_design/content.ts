@@ -405,6 +405,9 @@ export const compatRuleset: RulesetDefinition = {
   systemCards,
   liberationThreshold: 2,
   suddenDeathRound: 12,
+  victoryGate: {
+    minRoundBeforeVictory: 3,
+  },
   setup: {
     globalGaze: 6,
     northernWarMachine: 6,

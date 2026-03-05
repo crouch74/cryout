@@ -43,6 +43,8 @@ export interface ArmAccumulator {
   wins: number;
   publicVictories: number;
   publicVictoriesByRoundOne: number;
+  victoriesBeforeAllowedRound: number;
+  earlyTerminations: number;
   mandateFailuresAmongPublic: number;
   totalTurns: number;
   defeatReasons: {
@@ -243,6 +245,8 @@ export function createArmAccumulator(
     wins: 0,
     publicVictories: 0,
     publicVictoriesByRoundOne: 0,
+    victoriesBeforeAllowedRound: 0,
+    earlyTerminations: 0,
     mandateFailuresAmongPublic: 0,
     totalTurns: 0,
     defeatReasons: {
@@ -269,6 +273,9 @@ export function ingestArmRecord(accumulator: ArmAccumulator, record: SimulationR
   accumulator.n += 1;
   accumulator.totalTurns += record.turnsPlayed;
   addToReservoir(accumulator.reservoir, record.turnsPlayed);
+  if (record.turnsPlayed < 3) {
+    accumulator.earlyTerminations += 1;
+  }
 
   const isMandateFailure = record.result.reason === 'mandate_failure';
   const scoredWin = record.result.type === 'victory' || (accumulator.mandateFailureAsCostlyWin && isMandateFailure);
@@ -285,6 +292,9 @@ export function ingestArmRecord(accumulator: ArmAccumulator, record: SimulationR
     if (record.mandateFailure) {
       accumulator.mandateFailuresAmongPublic += 1;
     }
+  }
+  if (record.victoryPredicateSatisfiedBeforeAllowedRound) {
+    accumulator.victoriesBeforeAllowedRound += 1;
   }
 
   if (record.result.reason === 'extraction_breach') {
@@ -319,6 +329,8 @@ export function finalizeArmSummary(accumulator: ArmAccumulator): ExperimentArmSu
     publicVictoryRate: ratio(accumulator.publicVictories, accumulator.n),
     publicVictoriesByRoundOne: accumulator.publicVictoriesByRoundOne,
     turnOnePublicVictoryRate: ratio(accumulator.publicVictoriesByRoundOne, accumulator.n),
+    victoryBeforeAllowedRoundRate: ratio(accumulator.victoriesBeforeAllowedRound, accumulator.n),
+    earlyTerminationRate: ratio(accumulator.earlyTerminations, accumulator.n),
     mandateFailuresAmongPublic: accumulator.mandateFailuresAmongPublic,
     mandateFailRateGivenPublic: ratio(accumulator.mandateFailuresAmongPublic, accumulator.publicVictories),
     mandateFailureDistribution: buildMandateFailureDistribution(
@@ -537,6 +549,13 @@ ${input.definition.title}
 - Seed: ${input.definition.seed}
 - Decision: **${input.recommendation.decision}**
 
+## Structural Rates
+| Metric | Arm A | Arm B |
+| --- | ---: | ---: |
+| turnOnePublicVictoryRate | ${input.armA.turnOnePublicVictoryRate.toFixed(6)} | ${input.armB.turnOnePublicVictoryRate.toFixed(6)} |
+| victoryBeforeAllowedRoundRate | ${input.armA.victoryBeforeAllowedRoundRate.toFixed(6)} | ${input.armB.victoryBeforeAllowedRoundRate.toFixed(6)} |
+| earlyTerminationRate | ${input.armA.earlyTerminationRate.toFixed(6)} | ${input.armB.earlyTerminationRate.toFixed(6)} |
+
 ## Primary Metric
 - Metric: ${input.definition.decisionRule.primary}
 - Arm A: ${primary.armA.toFixed(6)} (${formatRate(primary.armA)})
@@ -645,6 +664,23 @@ export function renderHtmlReport(input: {
     <p>${input.definition.title}</p>
     <p class="decision">Decision: ${input.recommendation.decision}</p>
     <p>Scenario: ${input.definition.scenarioId} | Modes: ${input.definition.victoryModes.join(', ')} | Players: ${input.definition.playerCounts.join(', ')} | Runs/Arm: ${input.definition.runsPerArm}</p>
+  </div>
+  <div class="card">
+    <h2>Structural Rates</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>Arm A</th>
+          <th>Arm B</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>turnOnePublicVictoryRate</td><td>${input.armA.turnOnePublicVictoryRate.toFixed(6)}</td><td>${input.armB.turnOnePublicVictoryRate.toFixed(6)}</td></tr>
+        <tr><td>victoryBeforeAllowedRoundRate</td><td>${input.armA.victoryBeforeAllowedRoundRate.toFixed(6)}</td><td>${input.armB.victoryBeforeAllowedRoundRate.toFixed(6)}</td></tr>
+        <tr><td>earlyTerminationRate</td><td>${input.armA.earlyTerminationRate.toFixed(6)}</td><td>${input.armB.earlyTerminationRate.toFixed(6)}</td></tr>
+      </tbody>
+    </table>
   </div>
   <div class="card">
     <h2>Metrics</h2>

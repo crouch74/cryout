@@ -221,6 +221,8 @@ test('local victory ignores secret mandate failure while room play still enforce
 
   localState.phase = 'RESOLUTION';
   roomState.phase = 'RESOLUTION';
+  localState.round = 3;
+  roomState.round = 3;
   localState.domains.DyingPlanet.progress = 0;
   roomState.domains.DyingPlanet.progress = 0;
   localState.northernWarMachine = 7;
@@ -357,6 +359,7 @@ test('Algeria symbolic beacons and tribunal acknowledgement can produce symbolic
   const content = compileContent('algerian_war_of_independence');
   const state = initializeGame({ ...algeriaStartCommand, mode: 'SYMBOLIC' });
   state.phase = 'RESOLUTION';
+  state.round = 3;
   for (const player of state.players) {
     player.mandateSatisfied = true;
   }
@@ -380,6 +383,7 @@ test('Algeria liberation victory requires repression to remain at 6 or lower', (
   const content = compileContent('algerian_war_of_independence');
   const state = initializeGame(algeriaStartCommand);
   state.phase = 'RESOLUTION';
+  state.round = 3;
   for (const player of state.players) {
     player.mandateSatisfied = true;
   }
@@ -442,6 +446,7 @@ test('liberation victory requires the public win and all active mandates', () =>
   const content = compileContent(startCommand.rulesetId);
   const state = initializeGame(startCommand);
   state.phase = 'RESOLUTION';
+  state.round = 3;
   for (const player of state.players) {
     player.mandateSatisfied = true;
   }
@@ -465,6 +470,7 @@ test('a failed mandate voids a public liberation win', () => {
   const content = compileContent(startCommand.rulesetId);
   const state = initializeGame(startCommand);
   state.phase = 'RESOLUTION';
+  state.round = 3;
   for (const region of Object.values(state.regions)) {
     region.extractionTokens = 1;
   }

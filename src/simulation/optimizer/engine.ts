@@ -196,8 +196,8 @@ export function mergeScenarioPatches(base: ScenarioPatch, incoming: ScenarioPatc
 
   if (incoming.victoryGate) {
     merged.victoryGate = { ...(merged.victoryGate ?? {}) };
-    if (incoming.victoryGate.minRoundBeforeCheck !== undefined) {
-      merged.victoryGate.minRoundBeforeCheck = incoming.victoryGate.minRoundBeforeCheck;
+    if (incoming.victoryGate.minRoundBeforeVictory !== undefined) {
+      merged.victoryGate.minRoundBeforeVictory = incoming.victoryGate.minRoundBeforeVictory;
     }
     if (incoming.victoryGate.requiredAction?.actionId !== undefined) {
       merged.victoryGate.requiredAction = {
@@ -315,6 +315,12 @@ function analyzeBaselineMetrics(arm: ExperimentArmSummary, score: OptimizerScore
   if (arm.turnOnePublicVictoryRate > 0.05) {
     insights.push('Turn-1 public victories are structurally high; victory gating should be explored.');
   }
+  if (arm.victoryBeforeAllowedRoundRate > 0) {
+    insights.push('Victory predicate triggered before allowed round; round gating remains structurally active.');
+  }
+  if (arm.earlyTerminationRate > 0.05) {
+    insights.push('Early terminations are structurally high (games ending before round 3).');
+  }
 
   if (defeatPressure.pressureDetected) {
     insights.push('System pressure defeats are elevated.');
@@ -336,6 +342,8 @@ function analyzeBaselineMetrics(arm: ExperimentArmSummary, score: OptimizerScore
       })),
     structural: {
       turnOnePublicVictoryRate: arm.turnOnePublicVictoryRate,
+      victoryBeforeAllowedRoundRate: arm.victoryBeforeAllowedRoundRate,
+      earlyTerminationRate: arm.earlyTerminationRate,
       noGameplayDetected: arm.turns.average < 2,
       impossibleMandates: arm.mandateFailureDistribution
         .filter((entry) => entry.failureRate > 0.95 && entry.attempts > 0)

@@ -326,9 +326,9 @@ function applyPatchToRuleset(ruleset: RulesetDefinition, patch: ScenarioPatch) {
   if (patch.victoryGate) {
     ruleset.victoryGate = ruleset.victoryGate ?? {};
 
-    if (patch.victoryGate.minRoundBeforeCheck !== undefined) {
-      const roundGate = Math.max(1, Math.floor(patch.victoryGate.minRoundBeforeCheck));
-      ruleset.victoryGate.minRoundBeforeCheck = roundGate;
+    if (patch.victoryGate.minRoundBeforeVictory !== undefined) {
+      const roundGate = Math.max(1, Math.floor(patch.victoryGate.minRoundBeforeVictory));
+      ruleset.victoryGate.minRoundBeforeVictory = roundGate;
     }
 
     if (patch.victoryGate.requiredAction?.actionId !== undefined) {

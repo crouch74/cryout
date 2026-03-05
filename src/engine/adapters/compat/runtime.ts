@@ -950,26 +950,30 @@ function ensureVictoryProgress(state: EngineState) {
       extractionRemoved: 0,
       actionsById: {},
       lastResolvedActionId: null,
+      victoryPredicateSatisfiedBeforeAllowedRound: false,
     };
   }
+  state.victoryProgress.victoryPredicateSatisfiedBeforeAllowedRound
+    = state.victoryProgress.victoryPredicateSatisfiedBeforeAllowedRound ?? false;
   return state.victoryProgress;
 }
 
-function canEvaluatePublicVictory(state: EngineState, content: CompiledContent, context: VictoryCheckContext) {
-  const gate = content.ruleset.victoryGate;
-  if (!gate) {
-    return true;
-  }
+function getMinRoundBeforePublicVictory(content: CompiledContent) {
+  return Math.max(1, Math.floor(content.ruleset.victoryGate?.minRoundBeforeVictory ?? 1));
+}
 
-  if (gate.minRoundBeforeCheck !== undefined && state.round < gate.minRoundBeforeCheck) {
+function canResolvePublicVictory(state: EngineState, content: CompiledContent, context: VictoryCheckContext) {
+  const gate = content.ruleset.victoryGate;
+  if (state.round < getMinRoundBeforePublicVictory(content)) {
     return false;
   }
 
-  if (gate.requiredAction?.actionId) {
+  const requiredActionId = gate?.requiredAction?.actionId;
+  if (requiredActionId) {
     if (context.trigger !== 'action') {
       return false;
     }
-    if (context.actionId !== gate.requiredAction.actionId) {
+    if (context.actionId !== requiredActionId) {
       return false;
     }
   }
@@ -982,11 +986,7 @@ function canEvaluatePublicVictory(state: EngineState, content: CompiledContent, 
   return true;
 }
 
-function checkPositiveVictory(state: EngineState, content: CompiledContent, context: VictoryCheckContext): boolean {
-  if (!canEvaluatePublicVictory(state, content, context)) {
-    return false;
-  }
-
+function evaluatePublicVictoryPredicates(state: EngineState, content: CompiledContent) {
   const liberationCondition = content.ruleset.victoryConditions?.liberation;
   const symbolicCondition = content.ruleset.victoryConditions?.symbolic;
   const liberationComplete = state.mode === 'LIBERATION'
@@ -1002,7 +1002,20 @@ function checkPositiveVictory(state: EngineState, content: CompiledContent, cont
         : state.activeBeaconIds.every((beaconId) => state.beacons[beaconId]?.complete)
     );
 
+  return { liberationComplete, symbolicComplete };
+}
+
+function checkPositiveVictory(state: EngineState, content: CompiledContent, context: VictoryCheckContext): boolean {
+  const { liberationComplete, symbolicComplete } = evaluatePublicVictoryPredicates(state, content);
+
   if (!liberationComplete && !symbolicComplete) {
+    return false;
+  }
+
+  if (!canResolvePublicVictory(state, content, context)) {
+    if (state.round < getMinRoundBeforePublicVictory(content)) {
+      ensureVictoryProgress(state).victoryPredicateSatisfiedBeforeAllowedRound = true;
+    }
     return false;
   }
 
@@ -1741,6 +1754,7 @@ function createInitialState(command: StartGameCommand, content: CompiledContent)
       extractionRemoved: 0,
       actionsById: {},
       lastResolvedActionId: null,
+      victoryPredicateSatisfiedBeforeAllowedRound: false,
     },
   };
 
@@ -2350,7 +2364,10 @@ export function normalizeEngineState(state: EngineState): EngineState {
     extractionRemoved: 0,
     actionsById: {},
     lastResolvedActionId: null,
+    victoryPredicateSatisfiedBeforeAllowedRound: false,
   };
+  next.victoryProgress.victoryPredicateSatisfiedBeforeAllowedRound
+    = next.victoryProgress.victoryPredicateSatisfiedBeforeAllowedRound ?? false;
   next.eventLog = (next.eventLog ?? []).map((event) => ({
     ...event,
     ...(event.context

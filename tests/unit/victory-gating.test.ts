@@ -20,7 +20,7 @@ test('round gate blocks turn-1 public victory checks until minimum round', () =>
     scenarioId: 'base_design',
     patch: {
       victoryGate: {
-        minRoundBeforeCheck: 3,
+        minRoundBeforeVictory: 3,
       },
     },
   });
@@ -36,6 +36,7 @@ test('round gate blocks turn-1 public victory checks until minimum round', () =>
 
     const blocked = dispatchCommand(initial, { type: 'ResolveResolutionPhase' }, content);
     assert.notEqual(blocked.phase, 'WIN');
+    assert.equal(blocked.victoryProgress?.victoryPredicateSatisfiedBeforeAllowedRound, true);
 
     blocked.phase = 'RESOLUTION';
     blocked.round = 3;
@@ -110,6 +111,7 @@ test('progress gate requires minimum extraction removal before victory can trigg
       extractionRemoved: 2,
       actionsById: {},
       lastResolvedActionId: null,
+      victoryPredicateSatisfiedBeforeAllowedRound: false,
     };
 
     const blocked = dispatchCommand(state, { type: 'ResolveResolutionPhase' }, content);

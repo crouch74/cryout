@@ -356,7 +356,10 @@ function includeVictoryGateStrategies(mode: OptimizerStrategyMode, analysis: Opt
     return true;
   }
   // If structural alarms are active, always allow victory gating candidates.
-  return analysis.structural.noGameplayDetected || analysis.structural.turnOnePublicVictoryRate > 0.05;
+  return analysis.structural.noGameplayDetected
+    || analysis.structural.turnOnePublicVictoryRate > 0.05
+    || analysis.structural.earlyTerminationRate > 0.05
+    || analysis.structural.victoryBeforeAllowedRoundRate > 0;
 }
 
 function buildVictoryGatingCandidates(mode: OptimizerStrategyMode, analysis: OptimizerAnalysis): OptimizerCandidate[] {
@@ -366,12 +369,12 @@ function buildVictoryGatingCandidates(mode: OptimizerStrategyMode, analysis: Opt
 
   const patches: Array<Omit<OptimizerCandidate, 'candidateId'>> = [];
 
-  for (const minRoundBeforeCheck of [2, 3, 4]) {
+  for (const minRoundBeforeVictory of [2, 3, 4]) {
     patches.push({
       strategy: 'victory_gating_round',
       patch: normalizeScenarioPatch({
-        note: `🧠 Victory gate round >= ${minRoundBeforeCheck}`,
-        victoryGate: { minRoundBeforeCheck },
+        note: `🧠 Victory gate round >= ${minRoundBeforeVictory}`,
+        victoryGate: { minRoundBeforeVictory },
       }),
     });
   }
@@ -394,13 +397,13 @@ function buildVictoryGatingCandidates(mode: OptimizerStrategyMode, analysis: Opt
         victoryGate: { requiredProgress: { extractionRemoved } },
       }),
     });
-    for (const minRoundBeforeCheck of [2, 3, 4]) {
+    for (const minRoundBeforeVictory of [2, 3, 4]) {
       patches.push({
         strategy: 'victory_gating_progress',
         patch: normalizeScenarioPatch({
-          note: `🧠 Victory gate combo round>=${minRoundBeforeCheck} extraction_removed>=${extractionRemoved}`,
+          note: `🧠 Victory gate combo round>=${minRoundBeforeVictory} extraction_removed>=${extractionRemoved}`,
           victoryGate: {
-            minRoundBeforeCheck,
+            minRoundBeforeVictory,
             requiredProgress: { extractionRemoved },
           },
         }),
@@ -487,7 +490,7 @@ export async function generateCandidatePatches(input: CandidateGenerationInput):
       addCandidate('victory_gating_progress', {
         note: '🎲 Victory-gating exploration mutation',
         victoryGate: {
-          minRoundBeforeCheck: roundGate,
+          minRoundBeforeVictory: roundGate,
           requiredProgress: { extractionRemoved: progressGate },
         },
       });
@@ -500,7 +503,7 @@ export async function generateCandidatePatches(input: CandidateGenerationInput):
       addCandidate('victory_gating_progress', {
         note: '🎲 Random victory-gating mutation',
         victoryGate: {
-          minRoundBeforeCheck: roundGate,
+          minRoundBeforeVictory: roundGate,
           requiredProgress: { extractionRemoved: progressGate },
         },
       });

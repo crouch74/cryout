@@ -55,6 +55,8 @@ export interface ExperimentArmSummary {
   mandateFailRateGivenPublic: number;
   publicVictoriesByRoundOne: number;
   turnOnePublicVictoryRate: number;
+  victoryBeforeAllowedRoundRate: number;
+  earlyTerminationRate: number;
   mandateFailureDistribution: MandateFailureDistribution[];
   turns: {
     average: number;
@@ -122,6 +124,8 @@ export interface StructuralMandateDiagnostic {
 
 export interface StructuralDiagnostics {
   turnOneVictoryWarning: boolean;
+  victoryPredicateSatisfiedBeforeAllowedRoundWarning: boolean;
+  earlyTerminationWarning: boolean;
   noGameplayWarning: boolean;
   impossibleMandates: StructuralMandateDiagnostic[];
   summary: string[];

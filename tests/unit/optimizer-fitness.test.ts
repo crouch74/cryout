@@ -21,6 +21,8 @@ function makeArmSummary(input?: Partial<ExperimentArmSummary>): ExperimentArmSum
       median: 8,
       p90: 12,
     },
+    victoryBeforeAllowedRoundRate: input?.victoryBeforeAllowedRoundRate ?? 0,
+    earlyTerminationRate: input?.earlyTerminationRate ?? 0.01,
     defeatReasons: input?.defeatReasons ?? {
       extraction_breach: 200,
       comrades_exhausted: 120,

@@ -177,6 +177,7 @@ export interface SimulationRecord {
     reason: string;
   };
   publicVictoryAchieved: boolean;
+  victoryPredicateSatisfiedBeforeAllowedRound: boolean;
   mandateFailure: boolean;
   mandateOutcomeById: MandateFailureStats;
   extractionBreach: boolean;

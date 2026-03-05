@@ -367,7 +367,7 @@ export interface RulesetDefinition {
   };
   victoryGate?: {
     // Prevent public victory checks before this round (inclusive gate start).
-    minRoundBeforeCheck?: number;
+    minRoundBeforeVictory?: number;
     requiredAction?: {
       actionId: string;
     };
@@ -614,6 +614,7 @@ export interface EngineState {
     extractionRemoved: number;
     actionsById: Record<string, number>;
     lastResolvedActionId: string | null;
+    victoryPredicateSatisfiedBeforeAllowedRound: boolean;
   };
 }
 

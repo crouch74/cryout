@@ -28,7 +28,7 @@ export type ScenarioPatch = {
     removeActionIds?: string[];
   };
   victoryGate?: {
-    minRoundBeforeCheck?: number;
+    minRoundBeforeVictory?: number;
     requiredAction?: {
       actionId: string;
     };

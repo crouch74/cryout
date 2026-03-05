@@ -83,6 +83,8 @@ export interface OptimizerAnalysis {
   }>;
   structural: {
     turnOnePublicVictoryRate: number;
+    victoryBeforeAllowedRoundRate: number;
+    earlyTerminationRate: number;
     noGameplayDetected: boolean;
     impossibleMandates: string[];
   };

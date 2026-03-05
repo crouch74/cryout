@@ -286,11 +286,20 @@ function detectStructuralDiagnostics(armA: ExperimentResult['armA'], armB: Exper
   ];
 
   const turnOneVictoryWarning = armA.turnOnePublicVictoryRate > 0.05 || armB.turnOnePublicVictoryRate > 0.05;
+  const victoryPredicateSatisfiedBeforeAllowedRoundWarning = armA.victoryBeforeAllowedRoundRate > 0
+    || armB.victoryBeforeAllowedRoundRate > 0;
+  const earlyTerminationWarning = armA.earlyTerminationRate > 0.05 || armB.earlyTerminationRate > 0.05;
   const noGameplayWarning = armA.turns.average < 2 || armB.turns.average < 2;
   const summary: string[] = [];
 
   if (turnOneVictoryWarning) {
     summary.push('Victory condition satisfied during setup or turn 1. This indicates victory predicate is reachable before gameplay.');
+  }
+  if (victoryPredicateSatisfiedBeforeAllowedRoundWarning) {
+    summary.push('victoryPredicateSatisfiedBeforeAllowedRound detected. Public victory predicate can trigger before minRoundBeforeVictory.');
+  }
+  if (earlyTerminationWarning) {
+    summary.push('Early terminations are elevated (games ending before round 3). Structural defeat pressure may be too high.');
   }
   if (noGameplayWarning) {
     summary.push('Simulation ends before meaningful gameplay occurs. Victory gating likely required.');
@@ -301,6 +310,8 @@ function detectStructuralDiagnostics(armA: ExperimentResult['armA'], armB: Exper
 
   return {
     turnOneVictoryWarning,
+    victoryPredicateSatisfiedBeforeAllowedRoundWarning,
+    earlyTerminationWarning,
     noGameplayWarning,
     impossibleMandates,
     summary,
@@ -493,6 +504,12 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
     logInfo(`🧠 Decision=${recommendation.decision} reason=${recommendation.rationale.join(' | ')}`);
     if (structuralDiagnostics.turnOneVictoryWarning) {
       console.log('🚨 Structural Warning: Victory condition satisfied during setup or turn 1. This indicates victory predicate is reachable before gameplay.');
+    }
+    if (structuralDiagnostics.victoryPredicateSatisfiedBeforeAllowedRoundWarning) {
+      console.log('🚨 Structural Warning: victoryPredicateSatisfiedBeforeAllowedRound detected during experiments.');
+    }
+    if (structuralDiagnostics.earlyTerminationWarning) {
+      console.log('🚨 Structural Warning: earlyTerminationRate exceeded 5% (games ending before round 3).');
     }
     if (structuralDiagnostics.noGameplayWarning) {
       console.log('🚨 Structural Warning: Simulation ends before meaningful gameplay occurs. Victory gating likely required.');

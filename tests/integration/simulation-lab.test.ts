@@ -29,6 +29,8 @@ test('experiment output includes mandate diagnostics in arm summaries, compariso
   const comparison = JSON.parse(await readFile(join(experimentDir, 'comparison.json'), 'utf8')) as Record<string, unknown>;
   const diagnostics = JSON.parse(await readFile(join(experimentDir, 'structural_diagnostics.json'), 'utf8')) as {
     turnOneVictoryWarning: boolean;
+    victoryPredicateSatisfiedBeforeAllowedRoundWarning: boolean;
+    earlyTerminationWarning: boolean;
     noGameplayWarning: boolean;
   };
   const report = await readFile(join(experimentDir, 'report.md'), 'utf8');
@@ -38,6 +40,8 @@ test('experiment output includes mandate diagnostics in arm summaries, compariso
   assert.equal(typeof comparison.armA, 'object');
   assert.equal(typeof comparison.armB, 'object');
   assert.equal(typeof diagnostics.turnOneVictoryWarning, 'boolean');
+  assert.equal(typeof diagnostics.victoryPredicateSatisfiedBeforeAllowedRoundWarning, 'boolean');
+  assert.equal(typeof diagnostics.earlyTerminationWarning, 'boolean');
   assert.equal(typeof diagnostics.noGameplayWarning, 'boolean');
   assert.match(report, /Mandate Failure Ranking \(Arm A\)/);
   assert.match(report, /Mandate Failure Ranking \(Arm B\)/);

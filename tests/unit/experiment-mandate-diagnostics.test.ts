@@ -22,6 +22,7 @@ function makeRecord(input: {
       reason: 'liberation',
     },
     publicVictoryAchieved: input.publicVictoryAchieved ?? true,
+    victoryPredicateSatisfiedBeforeAllowedRound: false,
     mandateFailure: input.mandateFailure ?? false,
     mandateOutcomeById: {
       failuresByMandate: input.mandateFailuresById,
@@ -113,4 +114,6 @@ test('mandate failure distribution aggregates, computes rates, and sorts descend
   assert.equal(byId.stop_extraction?.failureRate, 0);
   assert.equal(summary.publicVictoriesByRoundOne, 0);
   assert.equal(summary.turnOnePublicVictoryRate, 0);
+  assert.equal(summary.victoryBeforeAllowedRoundRate, 0);
+  assert.equal(summary.earlyTerminationRate, 0);
 });

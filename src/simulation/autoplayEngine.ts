@@ -500,6 +500,7 @@ function buildRunRecord(
       reason: terminalReason,
     },
     publicVictoryAchieved: resultType === 'victory' || terminalReason === 'mandate_failure',
+    victoryPredicateSatisfiedBeforeAllowedRound: Boolean(state.victoryProgress?.victoryPredicateSatisfiedBeforeAllowedRound),
     mandateFailure: terminalReason === 'mandate_failure',
     mandateOutcomeById,
     extractionBreach: terminalReason === 'extraction_breach',
