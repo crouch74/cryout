@@ -12,6 +12,7 @@ export interface SimulationCliOptions {
   parallelWorkers: number;
   debugSingle: boolean;
   splitShards: boolean;
+  trajectoryRecording: boolean;
 }
 
 function toPositiveInteger(value: string, label: string) {
@@ -49,6 +50,7 @@ export function parseCliArgs(argv: string[]): SimulationCliOptions {
   let parallelWorkers = defaultParallelWorkers();
   let debugSingle = false;
   let splitShards = false;
+  let trajectoryRecording = false;
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -105,6 +107,11 @@ export function parseCliArgs(argv: string[]): SimulationCliOptions {
       continue;
     }
 
+    if (arg === '--trajectory-recording') {
+      trajectoryRecording = true;
+      continue;
+    }
+
     throw new Error(`Unknown argument: ${arg}`);
   }
 
@@ -116,6 +123,7 @@ export function parseCliArgs(argv: string[]): SimulationCliOptions {
     parallelWorkers,
     debugSingle,
     splitShards,
+    trajectoryRecording,
   };
 }
 
@@ -132,6 +140,7 @@ export async function runCli(argv: string[]) {
     parallelWorkers: parsed.debugSingle ? 1 : parsed.parallelWorkers,
     debugSingle: parsed.debugSingle,
     splitOutputShards: parsed.splitShards,
+    trajectoryRecording: parsed.trajectoryRecording,
   };
 
   console.log('🎛️ Simulation CLI options resolved');
@@ -143,6 +152,7 @@ export async function runCli(argv: string[]) {
     parallelWorkers: config.parallelWorkers,
     debugSingle: config.debugSingle ?? false,
     splitShards: config.splitOutputShards ?? false,
+    trajectoryRecording: config.trajectoryRecording ?? false,
   }, null, 2));
   console.log('📸 Round snapshots are enabled (max 25 per simulation run).');
 

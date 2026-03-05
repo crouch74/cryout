@@ -8,6 +8,8 @@ import {
 } from '../../engine/index.ts';
 import { runSingleSimulation } from '../autoplayEngine.ts';
 import { listStrategyProfiles } from '../strategies.ts';
+import { buildTrajectoryFileStem } from '../trajectory/TrajectoryRecorder.ts';
+import type { VictoryTrajectory } from '../trajectory/types.ts';
 import type { PlannedSimulationRun, StrategyId } from '../types.ts';
 import { applyScenarioPatch } from './applyScenarioPatch.ts';
 import {
@@ -22,6 +24,7 @@ import {
 import type { ExperimentDefinition, ExperimentResult, VictoryMode } from './types.ts';
 
 const DEFAULT_OUT_DIR = resolve(process.cwd(), 'simulation_output/experiments');
+const MAX_TRAJECTORIES_PER_EXPERIMENT = 200;
 
 interface SampleProfile {
   mode: VictoryMode;
@@ -33,6 +36,41 @@ interface SampleProfile {
 
 export interface RunExperimentOptions {
   outDir?: string;
+  recordTrajectories?: boolean;
+}
+
+class TrajectoryReservoir {
+  private readonly trajectories: VictoryTrajectory[] = [];
+  private readonly nextRng: () => number;
+  private readonly capacity: number;
+  private seen = 0;
+
+  constructor(capacity: number, seed: number) {
+    this.capacity = capacity;
+    this.nextRng = createRng(seed);
+  }
+
+  consider(trajectory: VictoryTrajectory) {
+    this.seen += 1;
+    // Keep a bounded, unbiased sample so large experiments stay analyzable.
+    if (this.trajectories.length < this.capacity) {
+      this.trajectories.push(trajectory);
+      return;
+    }
+
+    const replacementIndex = this.nextRng() % this.seen;
+    if (replacementIndex < this.capacity) {
+      this.trajectories[replacementIndex] = trajectory;
+    }
+  }
+
+  totalSeen() {
+    return this.seen;
+  }
+
+  values() {
+    return this.trajectories.slice();
+  }
 }
 
 function assertPlayerCounts(playerCounts: number[]) {
@@ -181,6 +219,11 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
 
   const outputRoot = resolve(options?.outDir ?? DEFAULT_OUT_DIR);
   const outputDir = join(outputRoot, definition.id);
+  const recordTrajectories = Boolean(options?.recordTrajectories);
+  const trajectoryReservoir = new TrajectoryReservoir(
+    MAX_TRAJECTORIES_PER_EXPERIMENT,
+    mixSeed(definition.seed, stableHash(`${definition.id}:trajectory-reservoir`)),
+  );
 
   console.log(`🔬 Experiment start id=${definition.id}`);
 
@@ -231,8 +274,26 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
         definition.id,
       );
 
-      const recordA = runSingleSimulation(runA).record;
-      const recordB = runSingleSimulation(runB).record;
+      const outcomeA = runSingleSimulation(runA, { trajectoryRecording: recordTrajectories });
+      const outcomeB = runSingleSimulation(runB, { trajectoryRecording: recordTrajectories });
+
+      const recordA = outcomeA.record;
+      const recordB = outcomeB.record;
+
+      if (recordTrajectories && outcomeA.trajectory) {
+        trajectoryReservoir.consider(outcomeA.trajectory);
+        const capturedCount = trajectoryReservoir.totalSeen();
+        if (capturedCount <= 5 || capturedCount % 50 === 0) {
+          console.log(`🏁 Public victory trajectory captured arm=A sim=${runA.simulationId} count=${capturedCount}`);
+        }
+      }
+      if (recordTrajectories && outcomeB.trajectory) {
+        trajectoryReservoir.consider(outcomeB.trajectory);
+        const capturedCount = trajectoryReservoir.totalSeen();
+        if (capturedCount <= 5 || capturedCount % 50 === 0) {
+          console.log(`🏁 Public victory trajectory captured arm=B sim=${runB.simulationId} count=${capturedCount}`);
+        }
+      }
 
       ingestArmRecord(armAAccumulator, recordA);
       ingestArmRecord(armBAccumulator, recordB);
@@ -298,6 +359,26 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
 
     await writeFile(join(outputDir, 'report.md'), reportMarkdown, 'utf8');
     await writeFile(join(outputDir, 'report.html'), reportHtml, 'utf8');
+
+    if (recordTrajectories) {
+      const trajectoryDir = join(outputDir, 'trajectories');
+      await mkdir(trajectoryDir, { recursive: true });
+
+      const stemCount = new Map<string, number>();
+      const trajectories = trajectoryReservoir.values();
+      for (const trajectory of trajectories) {
+        const stem = buildTrajectoryFileStem(trajectory);
+        const count = stemCount.get(stem) ?? 0;
+        stemCount.set(stem, count + 1);
+
+        const suffix = count === 0 ? '' : `_${count}`;
+        const filePath = join(trajectoryDir, `${stem}${suffix}.json`);
+        await writeJson(filePath, trajectory);
+        console.log(`💾 Trajectory written to disk ${filePath}`);
+      }
+
+      console.log(`📊 Trajectory sampling kept ${trajectories.length}/${trajectoryReservoir.totalSeen()} captures (max ${MAX_TRAJECTORIES_PER_EXPERIMENT}).`);
+    }
 
     console.log(`💾 Wrote report to ${outputDir}`);
     console.log(`✅ Experiment complete: ${definition.id}`);

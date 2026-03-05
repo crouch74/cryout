@@ -96,11 +96,13 @@ Common options:
 - `--mode liberation|symbolic|both`
 - `--seed <n>`: deterministic seed
 - `--parallel <n>`: worker thread count
+- `--trajectory-recording`: store compact trajectories for public victories/full wins only
 
 Outputs:
 
 - `simulation_output/simulations.ndjson`
 - `simulation_output/simulation_summary.json`
+- `simulation_output/trajectories/*.json` (only when `--trajectory-recording`)
 
 ### A/B Experiment Engine
 
@@ -129,6 +131,7 @@ Common options:
 - `--out <path>`: output root (default `simulation_output/experiments`)
 - `--modes liberation,symbolic`: override victory modes
 - `--players 2,3,4`: override player-count distribution
+- `--record-trajectories`: capture and reservoir-sample victory trajectories (max 200)
 
 Per-experiment outputs:
 
@@ -139,10 +142,21 @@ Per-experiment outputs:
 - `simulation_output/experiments/<experimentId>/recommendation.json`
 - `simulation_output/experiments/<experimentId>/report.md`
 - `simulation_output/experiments/<experimentId>/report.html`
+- `simulation_output/experiments/<experimentId>/trajectories/*.json` (only when `--record-trajectories`)
 
 Backlog run output:
 
 - `simulation_output/experiments/index.json`
+
+Trajectory analysis command:
+
+```bash
+npm run trajectories -- --experiment base_design_reference_state
+```
+
+Analysis output:
+
+- `simulation_output/experiments/<experimentId>/trajectory_summary.json`
 
 Where experiments are defined:
 

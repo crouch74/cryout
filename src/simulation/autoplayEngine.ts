@@ -12,14 +12,18 @@ import {
   listRulesets,
   CORE_VERSION,
   type CompiledContent,
+  type DomainEvent,
   type EngineCommand,
   type EngineState,
   type FactionId,
+  type StateDelta,
 } from '../engine/index.ts';
 import { buildStrategyCandidatesForSeat, getStrategyProfile, listStrategyProfiles } from './strategies.ts';
 import { captureRoundSnapshot, convertRoundSnapshotsToTimeline } from './captureRoundSnapshot.ts';
 import { capturePreDefeatSnapshot } from './capturePreDefeatSnapshot.ts';
 import { seatComrades, totalComrades, validateResourceInvariants } from './invariants.ts';
+import { TrajectoryRecorder, buildTrajectoryFileStem } from './trajectory/TrajectoryRecorder.ts';
+import type { TrajectoryStep, VictoryTrajectory } from './trajectory/types.ts';
 import type {
   NormalizedSimulationBatchConfig,
   PlannedSimulationRun,
@@ -177,6 +181,7 @@ function normalizeBatchConfig(config: SimulationBatchConfig): NormalizedSimulati
   const progressInterval = Math.max(1, Math.floor(config.progressInterval ?? 250));
   const debugSingle = Boolean(config.debugSingle);
   const splitOutputShards = Boolean(config.splitOutputShards);
+  const trajectoryRecording = Boolean(config.trajectoryRecording);
 
   return {
     scenarios,
@@ -189,6 +194,7 @@ function normalizeBatchConfig(config: SimulationBatchConfig): NormalizedSimulati
     progressInterval,
     debugSingle,
     splitOutputShards,
+    trajectoryRecording,
   };
 }
 
@@ -610,12 +616,197 @@ function logPhaseEffects(
   }
 }
 
+function buildSeatKey(seat: number) {
+  return `seat_${seat + 1}`;
+}
+
+function buildTrajectoryPlayerLabel(state: EngineState, seat: number | undefined) {
+  if (seat === undefined || seat < 0 || seat >= state.players.length) {
+    return 'system';
+  }
+
+  const player = state.players[seat];
+  return `${buildSeatKey(seat)}:${player.factionId}`;
+}
+
+function cloneTrajectorySnapshot(snapshot: TrajectoryStep['snapshot']): TrajectoryStep['snapshot'] {
+  return {
+    extractionByRegion: { ...snapshot.extractionByRegion },
+    bodiesByPlayer: { ...snapshot.bodiesByPlayer },
+    evidenceByPlayer: { ...snapshot.evidenceByPlayer },
+    globalGaze: snapshot.globalGaze,
+    northernWarMachine: snapshot.northernWarMachine,
+  };
+}
+
+function buildTrajectorySnapshot(state: EngineState): TrajectoryStep['snapshot'] {
+  // Snapshot only compact strategic signals to keep trajectory files small.
+  const extractionByRegion = Object.fromEntries(
+    Object.entries(state.regions).map(([regionId, region]) => [regionId, region.extractionTokens]),
+  );
+  const bodiesByPlayer = Object.fromEntries(
+    state.players.map((player) => [buildSeatKey(player.seat), seatComrades(state, player.seat)]),
+  );
+  const evidenceByPlayer = Object.fromEntries(
+    state.players.map((player) => [buildSeatKey(player.seat), player.evidence]),
+  );
+
+  return {
+    extractionByRegion,
+    bodiesByPlayer,
+    evidenceByPlayer,
+    globalGaze: state.globalGaze,
+    northernWarMachine: state.northernWarMachine,
+  };
+}
+
+function buildTrajectoryTargets(event: DomainEvent) {
+  const targets: string[] = [];
+  if (event.context?.targetRegionId) {
+    targets.push(event.context.targetRegionId);
+  }
+  if (event.context?.targetDomainId) {
+    targets.push(event.context.targetDomainId);
+  }
+  if (typeof event.context?.targetSeat === 'number') {
+    targets.push(buildSeatKey(event.context.targetSeat));
+  }
+  return targets.length > 0 ? targets : undefined;
+}
+
+function applyDeltaToTrajectorySnapshot(snapshot: TrajectoryStep['snapshot'], delta: StateDelta) {
+  if (delta.kind === 'track' && typeof delta.after === 'number') {
+    if (delta.label === 'globalGaze') {
+      snapshot.globalGaze = delta.after;
+    }
+    if (delta.label === 'northernWarMachine') {
+      snapshot.northernWarMachine = delta.after;
+    }
+    return;
+  }
+
+  if (delta.kind === 'extraction' && typeof delta.after === 'number') {
+    const match = /^(.+)\.extraction$/.exec(delta.label);
+    if (match?.[1]) {
+      snapshot.extractionByRegion[match[1]] = delta.after;
+    }
+    return;
+  }
+
+  if (delta.kind === 'comrades' && typeof delta.before === 'number' && typeof delta.after === 'number') {
+    const match = /\.seat:(\d+)$/.exec(delta.label);
+    if (match?.[1]) {
+      const seat = Number(match[1]);
+      const seatKey = buildSeatKey(seat);
+      const before = snapshot.bodiesByPlayer[seatKey] ?? 0;
+      snapshot.bodiesByPlayer[seatKey] = before + (delta.after - delta.before);
+    }
+    return;
+  }
+
+  if (delta.kind === 'evidence' && typeof delta.after === 'number') {
+    const match = /^seat:(\d+):evidence$/.exec(delta.label);
+    if (match?.[1]) {
+      const seat = Number(match[1]);
+      snapshot.evidenceByPlayer[buildSeatKey(seat)] = delta.after;
+    }
+  }
+}
+
+function buildTrajectoryResult(deltas: StateDelta[]): TrajectoryStep['result'] {
+  let bodiesDelta = 0;
+  let evidenceDelta = 0;
+  let extractionRemoved = 0;
+  let extractionAdded = 0;
+  let globalGazeDelta = 0;
+  let warMachineDelta = 0;
+
+  for (const delta of deltas) {
+    if (typeof delta.before !== 'number' || typeof delta.after !== 'number') {
+      continue;
+    }
+    const net = delta.after - delta.before;
+
+    if (delta.kind === 'comrades') {
+      bodiesDelta += net;
+      continue;
+    }
+    if (delta.kind === 'evidence') {
+      evidenceDelta += net;
+      continue;
+    }
+    if (delta.kind === 'extraction') {
+      if (net > 0) {
+        extractionAdded += net;
+      } else if (net < 0) {
+        extractionRemoved += Math.abs(net);
+      }
+      continue;
+    }
+    if (delta.kind === 'track' && delta.label === 'globalGaze') {
+      globalGazeDelta += net;
+      continue;
+    }
+    if (delta.kind === 'track' && delta.label === 'northernWarMachine') {
+      warMachineDelta += net;
+    }
+  }
+
+  return {
+    ...(bodiesDelta !== 0 ? { bodiesDelta } : {}),
+    ...(evidenceDelta !== 0 ? { evidenceDelta } : {}),
+    ...(extractionRemoved !== 0 ? { extractionRemoved } : {}),
+    ...(extractionAdded !== 0 ? { extractionAdded } : {}),
+    ...(globalGazeDelta !== 0 ? { globalGazeDelta } : {}),
+    ...(warMachineDelta !== 0 ? { warMachineDelta } : {}),
+  };
+}
+
+function appendTrajectorySteps(
+  recorder: TrajectoryRecorder,
+  stateBefore: EngineState,
+  stateAfter: EngineState,
+  events: DomainEvent[],
+  debug: boolean,
+) {
+  const actionEvents = events.filter((event) => event.sourceType === 'action');
+  if (actionEvents.length === 0) {
+    return;
+  }
+
+  const rollingSnapshot = buildTrajectorySnapshot(stateBefore);
+
+  for (const event of actionEvents) {
+    for (const delta of event.deltas) {
+      applyDeltaToTrajectorySnapshot(rollingSnapshot, delta);
+    }
+    const targets = buildTrajectoryTargets(event);
+
+    const trajectoryStep: TrajectoryStep = {
+      round: event.round,
+      phase: event.phase,
+      player: buildTrajectoryPlayerLabel(stateAfter, event.context?.actingSeat),
+      action: event.sourceId,
+      ...(targets ? { targets } : {}),
+      result: buildTrajectoryResult(event.deltas),
+      snapshot: cloneTrajectorySnapshot(rollingSnapshot),
+    };
+    recorder.record(trajectoryStep);
+
+    if (debug) {
+      console.log(`🧭 Recording trajectory step round=${trajectoryStep.round} phase=${trajectoryStep.phase} action=${trajectoryStep.action}`);
+    }
+  }
+}
+
 export function runSingleSimulation(
   run: PlannedSimulationRun,
-  options?: { debug?: boolean },
+  options?: { debug?: boolean; trajectoryRecording?: boolean },
 ): RunExecutionResult {
   const content = getCompiledContent(run.scenario);
   const debug = Boolean(options?.debug);
+  const trajectoryRecording = Boolean(options?.trajectoryRecording);
+  const trajectoryRecorder = trajectoryRecording ? new TrajectoryRecorder() : null;
 
   // Canonical simulation path: use compat runtime commands exactly as shipped.
   let state = initializeGame({
@@ -646,12 +837,22 @@ export function runSingleSimulation(
       break;
     }
 
+    const stateBeforeCommand = trajectoryRecorder ? state : null;
     const seatComradesBefore = collectSeatBodyTotals(state);
     const eventStartIndex = state.eventLog.length;
     logPhaseHeader(state, command, debug);
     // Capture immediately before dispatching commands that can evaluate defeat.
     appendPreDefeatSnapshot(preDefeatSnapshots, state, command, debug);
     state = dispatchCommand(state, command, content);
+    if (trajectoryRecorder && stateBeforeCommand) {
+      appendTrajectorySteps(
+        trajectoryRecorder,
+        stateBeforeCommand,
+        state,
+        state.eventLog.slice(eventStartIndex),
+        debug,
+      );
+    }
     logBodySpend(seatComradesBefore, state, debug);
     logPhaseEffects(state, command, eventStartIndex, debug);
 
@@ -677,9 +878,23 @@ export function runSingleSimulation(
   }
 
   const record = buildRunRecord(run, state, stalled, preDefeatSnapshots, roundSnapshots);
+  const trajectory = trajectoryRecorder && (record.publicVictoryAchieved || record.result.type === 'victory')
+    ? trajectoryRecorder.buildTrajectory({
+      scenarioId: run.scenario,
+      victoryMode: record.victoryMode,
+      seed: run.seed,
+      players: run.humanPlayerCount,
+      publicVictory: record.publicVictoryAchieved,
+      fullVictory: record.result.type === 'victory',
+      mandateFailure: record.mandateFailure,
+      turnsPlayed: record.turnsPlayed,
+    })
+    : undefined;
+
   return {
     record,
     terminalCommandLogLength: state.commandLog.length,
+    trajectory,
   };
 }
 
@@ -889,6 +1104,28 @@ async function closeStream(stream: ReturnType<typeof createWriteStream>) {
   });
 }
 
+async function writeTrajectoryToDirectory(trajectoryDir: string, trajectory: VictoryTrajectory) {
+  await mkdir(trajectoryDir, { recursive: true });
+  const stem = buildTrajectoryFileStem(trajectory);
+
+  for (let suffix = 0; suffix < 1000; suffix += 1) {
+    const suffixLabel = suffix === 0 ? '' : `_${suffix}`;
+    const filePath = join(trajectoryDir, `${stem}${suffixLabel}.json`);
+    try {
+      await writeFile(filePath, `${JSON.stringify(trajectory, null, 2)}\n`, { encoding: 'utf8', flag: 'wx' });
+      return filePath;
+    } catch (error) {
+      const err = error as { code?: string };
+      if (err.code === 'EEXIST') {
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw new Error(`Unable to allocate trajectory file for ${stem}.`);
+}
+
 export async function executeRunChunk(
   chunk: WorkerRunChunk,
   onProgress?: (completed: number, total: number) => void,
@@ -898,6 +1135,7 @@ export async function executeRunChunk(
 
   const summary = createSummaryAccumulator();
   let processed = 0;
+  let capturedTrajectories = 0;
   let activeScenario: string | null = null;
 
   try {
@@ -909,12 +1147,26 @@ export async function executeRunChunk(
         }
       }
 
-      const { record } = runSingleSimulation(run, { debug: chunk.debugSingle });
+      const { record, trajectory } = runSingleSimulation(run, {
+        debug: chunk.debugSingle,
+        trajectoryRecording: chunk.trajectoryRecording,
+      });
       if (record.turnsPlayed < 2) {
         console.warn(`⚠️ Simulation ended before round 2 (${run.simulationId})`);
       }
       stream.write(`${JSON.stringify(record)}\n`);
       updateSummaryAccumulator(summary, record);
+
+      if (chunk.trajectoryRecording && trajectory && chunk.trajectoryDir) {
+        capturedTrajectories += 1;
+        if (capturedTrajectories <= 5 || capturedTrajectories % 50 === 0) {
+          console.log(`🏁 Public victory trajectory captured sim=${run.simulationId} count=${capturedTrajectories}`);
+        }
+        const writtenPath = await writeTrajectoryToDirectory(chunk.trajectoryDir, trajectory);
+        if (capturedTrajectories <= 5 || capturedTrajectories % 50 === 0) {
+          console.log(`💾 Trajectory written to disk ${writtenPath}`);
+        }
+      }
 
       processed += 1;
       if (processed % chunk.progressInterval === 0 || processed === chunk.runs.length) {
@@ -941,6 +1193,8 @@ function createChunks(
   shardDir: string,
   progressInterval: number,
   debugSingle: boolean,
+  trajectoryRecording: boolean,
+  trajectoryDir: string,
 ): WorkerRunChunk[] {
   const workerCount = Math.max(1, Math.min(parallelWorkers, runs.length));
   const chunkSize = Math.ceil(runs.length / workerCount);
@@ -960,6 +1214,8 @@ function createChunks(
       shardPath: join(shardDir, `worker-${workerId}.ndjson`),
       progressInterval,
       debugSingle,
+      trajectoryRecording,
+      trajectoryDir,
     });
   }
 
@@ -1096,12 +1352,17 @@ export async function runSimulationBatch(config: SimulationBatchConfig): Promise
   const outputPath = join(normalized.outputDir, 'simulations.ndjson');
   const outputShardGlob = join(normalized.outputDir, 'simulations_*.ndjson');
   const summaryPath = join(normalized.outputDir, 'simulation_summary.json');
+  const trajectoryDir = join(normalized.outputDir, 'trajectories');
   const shardDir = join(normalized.outputDir, '.workers');
 
   await mkdir(normalized.outputDir, { recursive: true });
   await rm(outputPath, { force: true });
   await rm(summaryPath, { force: true });
   await rm(shardDir, { recursive: true, force: true });
+  if (normalized.trajectoryRecording) {
+    await rm(trajectoryDir, { recursive: true, force: true });
+    await mkdir(trajectoryDir, { recursive: true });
+  }
   await mkdir(shardDir, { recursive: true });
 
   const runs = createPlannedRuns(normalized);
@@ -1112,6 +1373,8 @@ export async function runSimulationBatch(config: SimulationBatchConfig): Promise
     shardDir,
     normalized.progressInterval,
     normalized.debugSingle,
+    normalized.trajectoryRecording,
+    trajectoryDir,
   );
 
   console.log('⚙️ Running workers');
@@ -1126,6 +1389,8 @@ export async function runSimulationBatch(config: SimulationBatchConfig): Promise
       runs: [],
       shardPath: join(shardDir, 'worker-0.ndjson'),
       progressInterval: normalized.progressInterval,
+      trajectoryRecording: normalized.trajectoryRecording,
+      trajectoryDir,
     };
 
     const result = await executeRunChunk(singleChunk, (completed) => {

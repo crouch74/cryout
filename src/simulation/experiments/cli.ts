@@ -14,6 +14,7 @@ interface CliArgs {
   outDir?: string;
   modes?: VictoryMode[];
   players?: number[];
+  recordTrajectories: boolean;
 }
 
 function toPositiveInteger(value: string, label: string) {
@@ -66,13 +67,18 @@ function parsePlayers(raw: string): number[] {
 }
 
 function parseArgs(argv: string[]): CliArgs {
-  const result: CliArgs = { all: false };
+  const result: CliArgs = { all: false, recordTrajectories: false };
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
 
     if (arg === '--all') {
       result.all = true;
+      continue;
+    }
+
+    if (arg === '--record-trajectories') {
+      result.recordTrajectories = true;
       continue;
     }
 
@@ -149,7 +155,10 @@ async function runSingle(args: CliArgs) {
   const resolved = applyOverrides(found, args);
   const outputRoot = resolve(args.outDir ?? 'simulation_output/experiments');
 
-  const result = await runExperiment(resolved, { outDir: outputRoot });
+  const result = await runExperiment(resolved, {
+    outDir: outputRoot,
+    recordTrajectories: args.recordTrajectories,
+  });
   console.log(JSON.stringify({
     id: result.definition.id,
     decision: result.recommendation.decision,
@@ -177,7 +186,10 @@ async function runAll(args: CliArgs) {
 
   for (const experiment of EXPERIMENT_BACKLOG) {
     const resolved = applyOverrides(experiment, args);
-    const result = await runExperiment(resolved, { outDir: outputRoot });
+    const result = await runExperiment(resolved, {
+      outDir: outputRoot,
+      recordTrajectories: args.recordTrajectories,
+    });
     indexEntries.push({
       id: result.definition.id,
       title: result.definition.title,

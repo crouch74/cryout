@@ -11,6 +11,7 @@
     "simulate": "node src/simulation/runSimulation.ts",
     "experiment": "node src/simulation/experiments/cli.ts",
     "experiment:all": "node src/simulation/experiments/cli.ts --all",
+    "trajectories": "node src/simulation/trajectory/analyzeTrajectories.ts",
     "build": "tsc -p tsconfig.app.json && tsc -p tsconfig.room-service.json && vite build",
     "build:pages": "tsc -p tsconfig.app.json && tsc -p tsconfig.room-service.json && vite build --mode pages",
     "lint": "eslint .",

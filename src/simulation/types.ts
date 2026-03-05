@@ -6,6 +6,7 @@ import type {
   QueuedIntent,
   VictoryMode,
 } from '../engine/index.ts';
+import type { VictoryTrajectory } from './trajectory/types.ts';
 
 export type SimulationVictoryMode = 'liberation' | 'symbolic';
 
@@ -31,6 +32,7 @@ export interface SimulationBatchConfig {
   progressInterval?: number;
   debugSingle?: boolean;
   splitOutputShards?: boolean;
+  trajectoryRecording?: boolean;
 }
 
 export interface NormalizedSimulationBatchConfig {
@@ -44,6 +46,7 @@ export interface NormalizedSimulationBatchConfig {
   progressInterval: number;
   debugSingle: boolean;
   splitOutputShards: boolean;
+  trajectoryRecording: boolean;
 }
 
 export interface PlannedSimulationRun {
@@ -309,6 +312,8 @@ export interface WorkerRunChunk {
   shardPath: string;
   progressInterval: number;
   debugSingle?: boolean;
+  trajectoryRecording?: boolean;
+  trajectoryDir?: string;
 }
 
 export interface WorkerProgressMessage {
@@ -339,6 +344,7 @@ export type WorkerMessage = WorkerProgressMessage | WorkerResultMessage | Worker
 export interface RunExecutionResult {
   record: SimulationRecord;
   terminalCommandLogLength: number;
+  trajectory?: VictoryTrajectory;
 }
 
 export type SimulationCommand = Exclude<EngineCommand, { type: 'StartGame' | 'SaveSnapshot' | 'LoadSnapshot' | 'RemoveQueuedIntent' | 'ReorderQueuedIntent' }>;
