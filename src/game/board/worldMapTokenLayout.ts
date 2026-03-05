@@ -283,14 +283,15 @@ export function buildTokenGroupLayout(
   let tokenIndex = 0;
 
   if (useSmartStack) {
-    const topRowCount = dimensions.topRowCount;
-    const bottomRowCount = dimensions.bottomRowCount;
-    const topRowWidth = options.tokenSize + Math.max(0, topRowCount - 1) * dimensions.stackStepX;
+    const smartDimensions = dimensions as ReturnType<typeof getSmartStackDimensions>;
+    const topRowCount = smartDimensions.topRowCount;
+    const bottomRowCount = smartDimensions.bottomRowCount;
+    const topRowWidth = options.tokenSize + Math.max(0, topRowCount - 1) * smartDimensions.stackStepX;
     const topStartX = options.padding + (dimensions.gridWidth - topRowWidth) / 2;
     const topY = options.padding + options.tokenSize / 2;
 
     for (let columnIndex = 0; columnIndex < topRowCount; columnIndex += 1) {
-      const x = topStartX + columnIndex * dimensions.stackStepX + options.tokenSize / 2;
+      const x = topStartX + columnIndex * smartDimensions.stackStepX + options.tokenSize / 2;
       const relativeX = snapToGrid(x - groupCenterX + options.opticalCorrection.x, GRID_STEP);
       const relativeY = snapToGrid(topY - groupCenterY + options.opticalCorrection.y, GRID_STEP);
       units.push({
@@ -303,12 +304,12 @@ export function buildTokenGroupLayout(
     }
 
     if (bottomRowCount > 0) {
-      const bottomRowWidth = options.tokenSize + Math.max(0, bottomRowCount - 1) * dimensions.stackStepX;
-      const bottomStartX = options.padding + (dimensions.gridWidth - bottomRowWidth) / 2 + dimensions.stackStepX * 0.5;
-      const bottomY = options.padding + options.tokenSize / 2 + dimensions.stackStepY;
+      const bottomRowWidth = options.tokenSize + Math.max(0, bottomRowCount - 1) * smartDimensions.stackStepX;
+      const bottomStartX = options.padding + (dimensions.gridWidth - bottomRowWidth) / 2 + smartDimensions.stackStepX * 0.5;
+      const bottomY = options.padding + options.tokenSize / 2 + smartDimensions.stackStepY;
 
       for (let columnIndex = 0; columnIndex < bottomRowCount; columnIndex += 1) {
-        const x = bottomStartX + columnIndex * dimensions.stackStepX + options.tokenSize / 2;
+        const x = bottomStartX + columnIndex * smartDimensions.stackStepX + options.tokenSize / 2;
         const relativeX = snapToGrid(x - groupCenterX + options.opticalCorrection.x, GRID_STEP);
         const relativeY = snapToGrid(bottomY - groupCenterY + options.opticalCorrection.y, GRID_STEP);
         units.push({

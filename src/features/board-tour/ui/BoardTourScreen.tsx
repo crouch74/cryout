@@ -28,11 +28,11 @@ const BOARD_STATE = initializeGame({
   seed: 19790125,
 });
 
-const TOUR_PREVIEW_STATE = {
+const TOUR_PREVIEW_STATE: typeof BOARD_STATE = {
   ...BOARD_STATE,
   round: 2,
   commandLog: [],
-} as const;
+};
 
 const BOARD_TOUR_STEPS: BoardTourStep[] = [
   { id: 'mapRegions' },

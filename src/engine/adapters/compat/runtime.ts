@@ -1054,7 +1054,7 @@ function canResolvePublicVictory(state: EngineState, content: CompiledContent, c
     }
   }
 
-  const requiredExtractionRemoved = gate.requiredProgress?.extractionRemoved;
+  const requiredExtractionRemoved = gate?.requiredProgress?.extractionRemoved;
   if (requiredExtractionRemoved !== undefined && ensureVictoryProgress(state).extractionRemoved < requiredExtractionRemoved) {
     return false;
   }

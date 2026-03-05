@@ -32,3 +32,6 @@ npm-debug.log*
 
 # Docker
 .docker/
+
+# Local Netlify folder
+.netlify
