@@ -53,30 +53,50 @@ test('score mode awards victory when threshold is met', () => {
   const next = dispatchCommand(state, { type: 'ResolveResolutionPhase' }, content);
   assert.equal(next.phase, 'WIN');
   assert.equal(next.terminalOutcome?.victoryScore, 100);
-  assert.equal(next.terminalOutcome?.victoryThreshold, 70);
+  assert.equal(next.terminalOutcome?.victoryThreshold, 45);
 });
 
 test('score cap prevents success when catastrophic condition is active', () => {
-  const content = compileContent('tahrir_square');
-  const state = initializeGame(tahrirStartCommand);
+  const mounted = applyScenarioPatch({
+    experimentId: 'unit_victory_cap_enforced',
+    scenarioId: 'tahrir_square',
+    patch: {
+      victoryScoring: {
+        mode: 'score',
+        threshold: 70,
+        publicVictoryWeight: 30,
+        mandatesWeight: 70,
+      },
+    },
+  });
 
-  for (const region of Object.values(state.regions)) {
-    region.extractionTokens = 0;
-  }
-  for (const region of Object.values(state.regions)) {
-    region.comradesPresent[0] = 0;
-  }
-  state.regions.Cairo.comradesPresent[0] = 1;
-  state.round = 3;
-  state.phase = 'RESOLUTION';
-  for (const player of state.players) {
-    player.mandateSatisfied = true;
-  }
+  try {
+    const content = compileContent(mounted.treatmentScenarioId);
+    const state = initializeGame({
+      ...tahrirStartCommand,
+      rulesetId: mounted.treatmentScenarioId,
+    });
 
-  const next = dispatchCommand(state, { type: 'ResolveResolutionPhase' }, content);
-  assert.notEqual(next.phase, 'WIN');
-  assert.equal(next.victoryProgress?.lastVictoryScore, 69);
-  assert.equal(next.victoryProgress?.lastVictoryThreshold, 70);
+    for (const region of Object.values(state.regions)) {
+      region.extractionTokens = 0;
+    }
+    for (const region of Object.values(state.regions)) {
+      region.comradesPresent[0] = 0;
+    }
+    state.regions.Cairo.comradesPresent[0] = 1;
+    state.round = 3;
+    state.phase = 'RESOLUTION';
+    for (const player of state.players) {
+      player.mandateSatisfied = true;
+    }
+
+    const next = dispatchCommand(state, { type: 'ResolveResolutionPhase' }, content);
+    assert.notEqual(next.phase, 'WIN');
+    assert.equal(next.victoryProgress?.lastVictoryScore, 69);
+    assert.equal(next.victoryProgress?.lastVictoryThreshold, 70);
+  } finally {
+    mounted.unregister();
+  }
 });
 
 test('score mode still respects victory gate minimum round', () => {

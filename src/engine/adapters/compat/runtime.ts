@@ -985,6 +985,22 @@ function validateVictoryScoringConfig(content: CompiledContent): VictoryScoringC
   if (!Number.isFinite(threshold) || threshold < 0 || threshold > 100) {
     throw new Error(`Invalid victoryScoring.threshold=${String(config.threshold)}. Expected 0..100.`);
   }
+  if (
+    config.survivalScorePerRound !== undefined
+    && (!Number.isFinite(config.survivalScorePerRound) || config.survivalScorePerRound < 0 || config.survivalScorePerRound > 25)
+  ) {
+    throw new Error(
+      `Invalid victoryScoring.survivalScorePerRound=${String(config.survivalScorePerRound)}. Expected 0..25.`,
+    );
+  }
+  if (
+    config.beaconProgressScore !== undefined
+    && (!Number.isFinite(config.beaconProgressScore) || config.beaconProgressScore < 0 || config.beaconProgressScore > 100)
+  ) {
+    throw new Error(
+      `Invalid victoryScoring.beaconProgressScore=${String(config.beaconProgressScore)}. Expected 0..100.`,
+    );
+  }
 
   const components = config.components ?? [];
   const penalties = config.penalties ?? [];
@@ -1067,6 +1083,14 @@ function computeMandateCompletionRatio(state: EngineState) {
   }
   const satisfied = state.players.filter((player) => player.mandateSatisfied).length;
   return Math.max(0, Math.min(1, satisfied / state.players.length));
+}
+
+function computeActiveBeaconCompletionRatio(state: EngineState) {
+  if (state.activeBeaconIds.length === 0) {
+    return 0;
+  }
+  const completed = state.activeBeaconIds.filter((beaconId) => state.beacons[beaconId]?.complete).length;
+  return Math.max(0, Math.min(1, completed / state.activeBeaconIds.length));
 }
 
 function evaluateComponentRatio(
@@ -1190,6 +1214,22 @@ function computeVictoryScore(
     const points = config.mandatesAsScore.weight * ratio;
     breakdown.mandates_bucket = Number(points.toFixed(6));
     score += points;
+  }
+
+  // Survivability should matter: sustained resistance contributes incremental score over time.
+  if (config.survivalScorePerRound && config.survivalScorePerRound > 0) {
+    const survivalPoints = Math.max(0, Math.min(100, state.round * config.survivalScorePerRound));
+    breakdown.survival_rounds = Number(survivalPoints.toFixed(6));
+    score += survivalPoints;
+    console.log(`⏳ Survival score applied: round=${state.round} perRound=${config.survivalScorePerRound.toFixed(2)} points=${survivalPoints.toFixed(2)}`);
+  }
+
+  if (config.beaconProgressScore && config.beaconProgressScore > 0) {
+    const beaconCompletionRatio = computeActiveBeaconCompletionRatio(state);
+    const beaconPoints = Math.max(0, Math.min(config.beaconProgressScore, config.beaconProgressScore * beaconCompletionRatio));
+    breakdown.beacon_progress = Number(beaconPoints.toFixed(6));
+    score += beaconPoints;
+    console.log(`🕯️ Beacon progress score applied: ratio=${beaconCompletionRatio.toFixed(2)} points=${beaconPoints.toFixed(2)}`);
   }
 
   for (const penalty of config.penalties ?? []) {

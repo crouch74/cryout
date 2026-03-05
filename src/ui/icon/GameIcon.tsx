@@ -59,7 +59,6 @@ import type { GameIconName } from './iconTypes.ts';
 
 const ICON_BY_NAME: Record<GameIconName, LucideIcon> = {
   comrades: Users,
-  comrades: Users,
   crisis: TriangleAlert,
   close: X,
   copy: Copy,

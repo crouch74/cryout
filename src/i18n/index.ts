@@ -87,6 +87,9 @@ function normalizeInterpolationValues(values: Record<string, InterpolationValue>
   );
 }
 
+const isSimulationWorker = typeof process !== 'undefined'
+  && process.env?.SIMULATION_WORKER === '1';
+
 await i18n
   .use(LanguageDetector)
   .use(initReactI18next)
@@ -108,12 +111,12 @@ await i18n
     showSupportNotice: false,
   });
 
-if (process.env.SIMULATION_WORKER !== '1') {
+if (!isSimulationWorker) {
   console.log(`🌍 [i18n] Runtime initialized for locale: ${getActiveLocale()}`);
 }
 
 export async function changeLocale(locale: Locale) {
-  if (process.env.SIMULATION_WORKER !== '1') {
+  if (!isSimulationWorker) {
     console.log(`🌍 [i18n] Changing locale to: ${locale}`);
   }
   await i18n.changeLanguage(locale);

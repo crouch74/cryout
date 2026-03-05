@@ -331,12 +331,14 @@ export const compatRuleset: RulesetDefinition = {
     },
     victoryScoring: {
         mode: 'score',
-        threshold: 70,
+        threshold: 45,
+        survivalScorePerRound: 2.5,
+        beaconProgressScore: 10,
         components: [
             {
                 id: 'publicVictory',
                 label: 'Public Victory',
-                weight: 45,
+                weight: 30,
                 type: 'binaryCondition',
                 source: {
                     type: 'publicVictory',
@@ -345,7 +347,7 @@ export const compatRuleset: RulesetDefinition = {
         ],
         mandatesAsScore: {
             enabled: true,
-            weight: 55,
+            weight: 70,
             mandateProgressMode: 'binary',
         },
         caps: {
@@ -423,10 +425,10 @@ export const compatRuleset: RulesetDefinition = {
             ],
         },
         outcomeBands: [
-            { id: 'defeat', min: 0, max: 49.999999 },
-            { id: 'continuation', min: 50, max: 69.999999 },
-            { id: 'win_with_consequence', min: 70, max: 84.999999 },
-            { id: 'breakthrough', min: 85, max: 100 },
+            { id: 'defeat', min: 0, max: 29.999999 },
+            { id: 'continuation', min: 30, max: 44.999999 },
+            { id: 'win_with_consequence', min: 45, max: 74.999999 },
+            { id: 'breakthrough', min: 75, max: 100 },
         ],
     },
     setup: {
@@ -434,7 +436,7 @@ export const compatRuleset: RulesetDefinition = {
         northernWarMachine: 7,
         extractionPool: 72,
         extractionSeeds: {
-            Cairo: 2,
+            Cairo: 1,
             Alexandria: 1,
             NileDelta: 1,
             Suez: 1,

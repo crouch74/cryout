@@ -196,6 +196,8 @@ export interface VictoryScoreCapRule {
 export interface VictoryScoringConfig {
   mode?: VictoryScoreMode;
   threshold?: number;
+  survivalScorePerRound?: number;
+  beaconProgressScore?: number;
   components?: VictoryScoreComponent[];
   penalties?: VictoryScoreComponent[];
   caps?: {
