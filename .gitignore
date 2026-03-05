@@ -9,6 +9,7 @@ __pycache__/
 # Build output
 dist/
 simulation_output/
+output/playwright/
 
 # Environment
 .env

@@ -32,6 +32,12 @@ jobs:
       - name: Build frontend and backend targets
         run: npm run build
 
+      - name: Install Playwright browser
+        run: npx playwright install chromium
+
+      - name: Run Playwright e2e suite
+        run: npm run test:e2e
+
       - name: Deploy to Netlify production
         uses: netlify/actions/cli@master
         with:

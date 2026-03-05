@@ -11,7 +11,7 @@ Use this guide to route work to the correct surface quickly and avoid accidental
 - `src/ui/`: shared reusable UI primitives and tokens.
 - `src/styles/`: shared foundation styles and shell/game CSS layers.
 - `docs/`: policy, references, audits, and contributor documentation.
-- `tests/`: unit and integration suite (plus end-to-end style integration tests).
+- `tests/`: unit, integration, and browser end-to-end suites.
 - `room-service/`: multiplayer room backend and lobby/session API surface.
 
 ## Task Routing: If Task Is X, Go To Y
@@ -22,7 +22,7 @@ Use this guide to route work to the correct surface quickly and avoid accidental
 | Shell UI alignment (Home-consistent) | `src/features/*/ui/*`, `src/styles/shell/*`, `src/ui/*` | Audit adjacent shell screens for visual drift. |
 | Scenario content/mechanics change | `src/scenarios/<scenario_id>/*` | Update scenario-local rules/content/decks/setup together. |
 | Localization update | `src/i18n/*.json`, `src/scenarios/*/locales/*.json` | Keep term parity with localization glossary and AGENTS canon. |
-| Test addition or fix | `tests/unit/*.test.ts`, `tests/integration/*.test.ts` | Add focused tests for changed behavior and avoid unrelated churn. |
+| Test addition or fix | `tests/unit/*.test.ts`, `tests/integration/*.test.ts`, `tests/e2e/*.spec.ts` | Add focused tests for changed behavior and avoid unrelated churn. |
 | Room flow or lobby change | `room-service/server.ts`, `src/features/room-session/*` | Keep schemas and server/client contract aligned. |
 
 ## Common Command Matrix
@@ -33,6 +33,8 @@ Use this guide to route work to the correct surface quickly and avoid accidental
 | Room service dev server | `npm run dev:rooms` |
 | Lint | `npm run lint` |
 | Full tests | `npm test` |
+| Browser e2e tests | `npm run test:e2e` |
+| Room-service integration tests | `npm run test:rooms` |
 | Engine-focused tests | `npm run test:engine` |
 | UI-focused tests | `npm run test:ui` |
 | Build | `npm run build` |

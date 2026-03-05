@@ -82,6 +82,19 @@ Rooms are intentionally ephemeral and disappear when the room-service process st
 npm test
 ```
 
+### Browser E2E Suite (Playwright)
+
+```bash
+npm run test:e2e
+```
+
+Useful local variants:
+
+- `npm run test:e2e:headed` for headed browser runs.
+- `npm run test:e2e:debug` for step-through debugging.
+
+Detailed setup and CI notes: [`docs/e2e-playwright.md`](/Users/aeid/git_tree/boardgames/The%20stones%20are%20crying%20outt/docs/e2e-playwright.md).
+
 ### Autoplay Simulation
 
 Run deterministic headless balance simulations with NDJSON output:

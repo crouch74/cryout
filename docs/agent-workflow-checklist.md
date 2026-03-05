@@ -30,6 +30,7 @@ Use this checklist to keep task delivery consistent with project rules, mechanic
 - Run broader checks when warranted:
   - `npm run lint`
   - `npm test`
+  - `npm run test:e2e`
   - `npm run build`
 - Manually verify mechanics if rules were touched:
   - `Launch Campaign` roll baseline (`2d6`, target `8+`)
