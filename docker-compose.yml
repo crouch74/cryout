@@ -1,6 +1,6 @@
 services:
   frontend:
-    image: node:23-alpine
+    image: node:22-alpine
     working_dir: /app
     volumes:
       - .:/app
@@ -17,7 +17,7 @@ services:
       - all
 
   room-service:
-    image: node:23-alpine
+    image: node:22-alpine
     working_dir: /app
     volumes:
       - .:/app
