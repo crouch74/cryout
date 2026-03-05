@@ -21,6 +21,7 @@ test('scenario optimizer writes iteration artifacts and final recommendation', a
     runtime: 'balanced',
     significance: 'balanced',
     mode: 'liberation',
+    strategy: 'full_optimizer',
     victoryModes: ['liberation'],
     playerCounts: [2, 3, 4],
     useBalanceSearchSeeding: false,
@@ -39,6 +40,7 @@ test('scenario optimizer writes iteration artifacts and final recommendation', a
   await stat(join(report.outputDir, 'iteration_01', 'baseline_summary.json'));
   await stat(join(report.outputDir, 'iteration_01', 'analysis.json'));
   await stat(join(report.outputDir, 'iteration_01', 'trajectory_summary.json'));
+  await stat(join(report.outputDir, 'iteration_01', 'victory_trajectory_analysis.json'));
   await stat(join(report.outputDir, 'iteration_01', 'candidate_patches.json'));
   await stat(join(report.outputDir, 'iteration_01', 'candidate_rankings.json'));
   await stat(join(report.outputDir, 'iteration_01', 'selected_candidate.json'));

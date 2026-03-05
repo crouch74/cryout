@@ -21,7 +21,7 @@ import {
   renderHtmlReport,
   renderMarkdownReport,
 } from './report.ts';
-import type { ExperimentDefinition, ExperimentResult, VictoryMode } from './types.ts';
+import type { ExperimentDefinition, ExperimentResult, StructuralDiagnostics, VictoryMode } from './types.ts';
 
 const DEFAULT_OUT_DIR = resolve(process.cwd(), 'simulation_output/experiments');
 const MAX_TRAJECTORIES_PER_EXPERIMENT = 200;
@@ -224,6 +224,48 @@ function buildComparisonOutput(
   };
 }
 
+function detectStructuralDiagnostics(armA: ExperimentResult['armA'], armB: ExperimentResult['armB']): StructuralDiagnostics {
+  const impossibleMandates = [
+    ...armA.mandateFailureDistribution
+      .filter((entry) => entry.attempts > 0 && entry.failureRate > 0.95)
+      .map((entry) => ({
+        arm: 'A' as const,
+        mandateId: entry.mandateId,
+        failureRate: entry.failureRate,
+        attempts: entry.attempts,
+      })),
+    ...armB.mandateFailureDistribution
+      .filter((entry) => entry.attempts > 0 && entry.failureRate > 0.95)
+      .map((entry) => ({
+        arm: 'B' as const,
+        mandateId: entry.mandateId,
+        failureRate: entry.failureRate,
+        attempts: entry.attempts,
+      })),
+  ];
+
+  const turnOneVictoryWarning = armA.turnOnePublicVictoryRate > 0.05 || armB.turnOnePublicVictoryRate > 0.05;
+  const noGameplayWarning = armA.turns.average < 2 || armB.turns.average < 2;
+  const summary: string[] = [];
+
+  if (turnOneVictoryWarning) {
+    summary.push('Victory condition satisfied during setup or turn 1. This indicates victory predicate is reachable before gameplay.');
+  }
+  if (noGameplayWarning) {
+    summary.push('Simulation ends before meaningful gameplay occurs. Victory gating likely required.');
+  }
+  if (impossibleMandates.length > 0) {
+    summary.push('One or more mandates appear structurally impossible under current rules.');
+  }
+
+  return {
+    turnOneVictoryWarning,
+    noGameplayWarning,
+    impossibleMandates,
+    summary,
+  };
+}
+
 export async function runExperiment(definition: ExperimentDefinition, options?: RunExperimentOptions): Promise<ExperimentResult> {
   assertPlayerCounts(definition.playerCounts);
   assertVictoryModes(definition.victoryModes);
@@ -327,12 +369,22 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
     const confidence = definition.decisionRule.confidence ?? 0.95;
     const comparison = compareArms(armA, armB, confidence);
     const recommendation = buildRecommendation(definition, comparison);
+    const structuralDiagnostics = detectStructuralDiagnostics(armA, armB);
 
     const winRate = comparison.metrics.winRate;
     console.log(
       `📊 winRate A=${formatMetric(winRate.armA)} B=${formatMetric(winRate.armB)} lift=${winRate.absoluteLift >= 0 ? '+' : ''}${formatMetric(winRate.absoluteLift)} p=${winRate.proportionStats?.pValue ?? 'n/a'}`,
     );
     console.log(`🧠 Decision=${recommendation.decision} reason=${recommendation.rationale.join(' | ')}`);
+    if (structuralDiagnostics.turnOneVictoryWarning) {
+      console.log('🚨 Structural Warning: Victory condition satisfied during setup or turn 1. This indicates victory predicate is reachable before gameplay.');
+    }
+    if (structuralDiagnostics.noGameplayWarning) {
+      console.log('🚨 Structural Warning: Simulation ends before meaningful gameplay occurs. Victory gating likely required.');
+    }
+    for (const mandate of structuralDiagnostics.impossibleMandates) {
+      console.log(`⚠️ Mandate appears structurally impossible under current rules. arm=${mandate.arm} mandate=${mandate.mandateId} failureRate=${mandate.failureRate.toFixed(6)} attempts=${mandate.attempts}`);
+    }
 
     const finishedAtMs = Date.now();
     const result: ExperimentResult = {
@@ -345,6 +397,7 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
       armB,
       comparison,
       recommendation,
+      structuralDiagnostics,
     };
 
     console.log('🧾 Writing report...');
@@ -357,6 +410,7 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
     await writeJson(join(outputDir, 'arm_B_summary.json'), armB);
     await writeJson(join(outputDir, 'comparison.json'), buildComparisonOutput(comparison, armA, armB));
     await writeJson(join(outputDir, 'recommendation.json'), recommendation);
+    await writeJson(join(outputDir, 'structural_diagnostics.json'), structuralDiagnostics);
 
     const reportMarkdown = renderMarkdownReport({
       definition,

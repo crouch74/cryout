@@ -56,13 +56,23 @@ export function summarizeTrajectories(trajectories: VictoryTrajectory[]): Trajec
 
   const firstActionCounts = new Map<string, number>();
   const sequenceCounts = new Map<string, number>();
+  const roundVictoryCounts = new Map<number, number>();
 
   let turnsTotal = 0;
   let extractionRemovedTotal = 0;
+  let roundVictoryTotal = 0;
+  let progressExtractionRemovedTotal = 0;
 
   for (const trajectory of trajectories) {
     turnsTotal += trajectory.turnsPlayed;
     extractionRemovedTotal += trajectory.steps.reduce((sum, step) => sum + (step.result.extractionRemoved ?? 0), 0);
+    roundVictoryTotal += trajectory.roundVictoryTriggered ?? trajectory.turnsPlayed;
+    progressExtractionRemovedTotal += trajectory.progressAtVictory?.extractionRemoved
+      ?? trajectory.steps.reduce((sum, step) => sum + (step.result.extractionRemoved ?? 0), 0);
+    roundVictoryCounts.set(
+      trajectory.roundVictoryTriggered ?? trajectory.turnsPlayed,
+      (roundVictoryCounts.get(trajectory.roundVictoryTriggered ?? trajectory.turnsPlayed) ?? 0) + 1,
+    );
 
     const first = trajectory.steps[0]?.action;
     if (first) {
@@ -89,6 +99,14 @@ export function summarizeTrajectories(trajectories: VictoryTrajectory[]): Trajec
       rate: entry.rate,
     }));
 
+  const distributionOfVictoryRounds = Array.from(roundVictoryCounts.entries())
+    .sort((left, right) => left[0] - right[0])
+    .map(([round, count]) => ({
+      round,
+      count,
+      rate: toRate(count, total),
+    }));
+
   return {
     totalTrajectories: total,
     averageTurnsToVictory: toAvg(turnsTotal, total),
@@ -97,6 +115,11 @@ export function summarizeTrajectories(trajectories: VictoryTrajectory[]): Trajec
     mostCommonActionSequence: topActionSequences[0] ?? null,
     topFirstActions,
     topActionSequences,
+    averageRoundVictory: toAvg(roundVictoryTotal, total),
+    distributionOfVictoryRounds,
+    progressBeforeVictory: {
+      averageExtractionRemoved: toAvg(progressExtractionRemovedTotal, total),
+    },
   };
 }
 
@@ -179,9 +202,17 @@ export async function analyzeTrajectoriesCli(argv: string[]) {
 
   const trajectories = await loadTrajectories(inputDir);
   const summary = summarizeTrajectories(trajectories);
+  const victoryTrajectoryAnalysis = {
+    averageRoundVictory: summary.averageRoundVictory,
+    distributionOfVictoryRounds: summary.distributionOfVictoryRounds,
+    progressBeforeVictory: summary.progressBeforeVictory,
+    actionsLeadingToVictory: summary.topActionSequences,
+  };
 
   await mkdir(dirname(outputPath), { recursive: true });
   await writeFile(outputPath, `${JSON.stringify(summary, null, 2)}\n`, 'utf8');
+  const victoryAnalysisPath = join(dirname(outputPath), 'victory_trajectory_analysis.json');
+  await writeFile(victoryAnalysisPath, `${JSON.stringify(victoryTrajectoryAnalysis, null, 2)}\n`, 'utf8');
 
   console.log(`📊 Found ${summary.totalTrajectories} trajectories`);
   console.log(`📊 Average turns to public victory: ${summary.averageTurnsToVictory.toFixed(2)}`);
@@ -191,7 +222,9 @@ export async function analyzeTrajectoriesCli(argv: string[]) {
     console.log('📊 Most common opening action: n/a');
   }
   console.log(`📊 Average extraction removed before victory: ${summary.averageExtractionRemovedBeforeVictory.toFixed(2)}`);
+  console.log(`📊 Average round victory triggered: ${summary.averageRoundVictory.toFixed(2)}`);
   console.log(`📊 Trajectory analysis complete: ${outputPath}`);
+  console.log(`📊 Victory trajectory analysis complete: ${victoryAnalysisPath}`);
 }
 
 const isMainModule = process.argv[1] ? import.meta.url === pathToFileURL(process.argv[1]).href : false;

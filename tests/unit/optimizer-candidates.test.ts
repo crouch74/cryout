@@ -24,6 +24,11 @@ test('candidate generator builds deterministic candidate count with dedup', asyn
     },
     topFirstActions: [],
     topActionSequences: [],
+    averageRoundVictory: 7.2,
+    distributionOfVictoryRounds: [],
+    progressBeforeVictory: {
+      averageExtractionRemoved: 1.2,
+    },
   };
 
   const candidates = await generateCandidatePatches({
@@ -33,6 +38,7 @@ test('candidate generator builds deterministic candidate count with dedup', asyn
     targetCount: 10,
     candidateRuns: 200,
     runtime: 'balanced',
+    strategyMode: 'full_optimizer',
     analysis: {
       outOfRange: {
         publicVictoryRate: true,
@@ -45,6 +51,11 @@ test('candidate generator builds deterministic candidate count with dedup', asyn
         comradesExhaustedRate: 0.2,
         suddenDeathRate: 0.1,
         pressureDetected: true,
+      },
+      structural: {
+        turnOnePublicVictoryRate: 0,
+        noGameplayDetected: false,
+        impossibleMandates: [],
       },
       topMandateFailures: [],
       insights: ['Average turns are short and may indicate early collapse.'],
@@ -84,4 +95,45 @@ test('patch normalization prunes zero deltas and empty branches', () => {
   });
   assert.equal(isScenarioPatchEmpty(normalized), false);
   assert.equal(isScenarioPatchEmpty(normalizeScenarioPatch({ note: 'noop' })), true);
+});
+
+test('victory gating exploration mode emits victory gate strategies', async () => {
+  const candidates = await generateCandidatePatches({
+    scenarioId: 'base_design',
+    iteration: 2,
+    seed: 42,
+    targetCount: 10,
+    candidateRuns: 200,
+    runtime: 'balanced',
+    strategyMode: 'victory_gating_exploration',
+    analysis: {
+      outOfRange: {
+        publicVictoryRate: true,
+        winRate: true,
+        mandateFailRateGivenPublic: true,
+        averageTurns: true,
+      },
+      defeatPressure: {
+        extractionBreachRate: 0.2,
+        comradesExhaustedRate: 0.1,
+        suddenDeathRate: 0.1,
+        pressureDetected: false,
+      },
+      structural: {
+        turnOnePublicVictoryRate: 0.4,
+        noGameplayDetected: true,
+        impossibleMandates: [],
+      },
+      topMandateFailures: [],
+      insights: ['Turn-1 public victories are structurally high; victory gating should be explored.'],
+    },
+    trajectorySummary: null,
+    hillClimbSourcePatch: null,
+    balanceSeedOutputDir: '/tmp/optimizer-candidate-tests',
+    useBalanceSearchSeeding: false,
+  });
+
+  assert.equal(candidates.some((entry) => entry.strategy === 'victory_gating_round'), true);
+  assert.equal(candidates.some((entry) => entry.strategy === 'victory_gating_action'), true);
+  assert.equal(candidates.some((entry) => entry.strategy === 'victory_gating_progress'), true);
 });

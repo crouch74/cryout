@@ -2,7 +2,12 @@ import { join } from 'node:path';
 import { balanceCandidateToPatch, runBalanceSearch } from '../balance/SearchEngine.ts';
 import type { ScenarioPatch } from '../experiments/patchDsl.ts';
 import type { TrajectorySummary } from '../trajectory/types.ts';
-import type { OptimizerAnalysis, OptimizerCandidate, OptimizerRuntimeProfile } from './types.ts';
+import type {
+  OptimizerAnalysis,
+  OptimizerCandidate,
+  OptimizerRuntimeProfile,
+  OptimizerStrategyMode,
+} from './types.ts';
 
 interface CandidateGenerationInput {
   scenarioId: string;
@@ -11,6 +16,7 @@ interface CandidateGenerationInput {
   targetCount: number;
   candidateRuns: number;
   runtime: OptimizerRuntimeProfile;
+  strategyMode: OptimizerStrategyMode;
   analysis: OptimizerAnalysis;
   trajectorySummary: TrajectorySummary | null;
   hillClimbSourcePatch: ScenarioPatch | null;
@@ -337,6 +343,78 @@ function runtimeSeedIterations(runtime: OptimizerRuntimeProfile) {
   return 4;
 }
 
+function includeNumericStrategies(mode: OptimizerStrategyMode) {
+  return mode === 'numeric_balancing' || mode === 'full_optimizer';
+}
+
+function includeTrajectoryStrategies(mode: OptimizerStrategyMode) {
+  return mode === 'trajectory_discovery' || mode === 'full_optimizer';
+}
+
+function includeVictoryGateStrategies(mode: OptimizerStrategyMode, analysis: OptimizerAnalysis) {
+  if (mode === 'victory_gating_exploration' || mode === 'full_optimizer') {
+    return true;
+  }
+  // If structural alarms are active, always allow victory gating candidates.
+  return analysis.structural.noGameplayDetected || analysis.structural.turnOnePublicVictoryRate > 0.05;
+}
+
+function buildVictoryGatingCandidates(mode: OptimizerStrategyMode, analysis: OptimizerAnalysis): OptimizerCandidate[] {
+  if (!includeVictoryGateStrategies(mode, analysis)) {
+    return [];
+  }
+
+  const patches: Array<Omit<OptimizerCandidate, 'candidateId'>> = [];
+
+  for (const minRoundBeforeCheck of [2, 3, 4]) {
+    patches.push({
+      strategy: 'victory_gating_round',
+      patch: normalizeScenarioPatch({
+        note: `🧠 Victory gate round >= ${minRoundBeforeCheck}`,
+        victoryGate: { minRoundBeforeCheck },
+      }),
+    });
+  }
+
+  for (const actionId of ['launch_liberation_campaign', 'global_media_push', 'coalition_strike']) {
+    patches.push({
+      strategy: 'victory_gating_action',
+      patch: normalizeScenarioPatch({
+        note: `🧠 Victory gate action=${actionId}`,
+        victoryGate: { requiredAction: { actionId } },
+      }),
+    });
+  }
+
+  for (const extractionRemoved of [2, 3, 4]) {
+    patches.push({
+      strategy: 'victory_gating_progress',
+      patch: normalizeScenarioPatch({
+        note: `🧠 Victory gate extraction_removed >= ${extractionRemoved}`,
+        victoryGate: { requiredProgress: { extractionRemoved } },
+      }),
+    });
+    for (const minRoundBeforeCheck of [2, 3, 4]) {
+      patches.push({
+        strategy: 'victory_gating_progress',
+        patch: normalizeScenarioPatch({
+          note: `🧠 Victory gate combo round>=${minRoundBeforeCheck} extraction_removed>=${extractionRemoved}`,
+          victoryGate: {
+            minRoundBeforeCheck,
+            requiredProgress: { extractionRemoved },
+          },
+        }),
+      });
+    }
+  }
+
+  return patches.map((entry, index) => ({
+    candidateId: `gate_seed_${String(index + 1).padStart(3, '0')}`,
+    strategy: entry.strategy,
+    patch: entry.patch,
+  }));
+}
+
 export async function generateCandidatePatches(input: CandidateGenerationInput): Promise<OptimizerCandidate[]> {
   const rng = createRng(mixSeed(input.seed, stableHash(`optimizer-candidates:${input.iteration}`)));
   const dedup = new Map<string, Omit<OptimizerCandidate, 'candidateId'>>();
@@ -356,16 +434,24 @@ export async function generateCandidatePatches(input: CandidateGenerationInput):
     });
   };
 
-  for (const patch of buildParameterSweepCandidates(input.analysis)) {
-    addCandidate('parameter_sweep', patch);
+  if (includeNumericStrategies(input.strategyMode)) {
+    for (const patch of buildParameterSweepCandidates(input.analysis)) {
+      addCandidate('parameter_sweep', patch);
+    }
   }
 
-  const trajectoryPatch = buildTrajectoryGuidedPatch(input.trajectorySummary, input.analysis);
-  if (trajectoryPatch) {
-    addCandidate('trajectory_guided', trajectoryPatch);
+  if (includeTrajectoryStrategies(input.strategyMode)) {
+    const trajectoryPatch = buildTrajectoryGuidedPatch(input.trajectorySummary, input.analysis);
+    if (trajectoryPatch) {
+      addCandidate('trajectory_guided', trajectoryPatch);
+    }
   }
 
-  if (input.hillClimbSourcePatch) {
+  for (const entry of buildVictoryGatingCandidates(input.strategyMode, input.analysis)) {
+    addCandidate(entry.strategy, entry.patch);
+  }
+
+  if (input.hillClimbSourcePatch && includeNumericStrategies(input.strategyMode)) {
     const hillSource = toGenome(input.hillClimbSourcePatch);
     for (let index = 0; index < 4; index += 1) {
       const mutated = mutateGenome(hillSource, rng);
@@ -373,7 +459,7 @@ export async function generateCandidatePatches(input: CandidateGenerationInput):
     }
   }
 
-  if (input.useBalanceSearchSeeding && input.iteration % 3 === 0) {
+  if (input.useBalanceSearchSeeding && includeNumericStrategies(input.strategyMode) && input.iteration % 3 === 0) {
     try {
       console.log('🧪 Seeding candidates from balance search module');
       const result = await runBalanceSearch({
@@ -395,6 +481,32 @@ export async function generateCandidatePatches(input: CandidateGenerationInput):
   }
 
   while (dedup.size < input.targetCount) {
+    if (input.strategyMode === 'victory_gating_exploration') {
+      const roundGate = [2, 3, 4][rng() % 3];
+      const progressGate = [2, 3, 4][rng() % 3];
+      addCandidate('victory_gating_progress', {
+        note: '🎲 Victory-gating exploration mutation',
+        victoryGate: {
+          minRoundBeforeCheck: roundGate,
+          requiredProgress: { extractionRemoved: progressGate },
+        },
+      });
+      continue;
+    }
+
+    if (includeVictoryGateStrategies(input.strategyMode, input.analysis) && rng() % 3 === 0) {
+      const roundGate = [2, 3, 4][rng() % 3];
+      const progressGate = [2, 3, 4][rng() % 3];
+      addCandidate('victory_gating_progress', {
+        note: '🎲 Random victory-gating mutation',
+        victoryGate: {
+          minRoundBeforeCheck: roundGate,
+          requiredProgress: { extractionRemoved: progressGate },
+        },
+      });
+      continue;
+    }
+
     const patch = fromGenome(randomGenome(rng), '🎲 Randomized mutation');
     addCandidate('random', patch);
   }

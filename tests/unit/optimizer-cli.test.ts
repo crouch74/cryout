@@ -15,6 +15,7 @@ test('optimizer CLI parser reads all explicit flags', () => {
     '--mode', 'both',
     '--runtime', 'thorough',
     '--significance', 'strict',
+    '--strategy', 'trajectory_discovery',
   ]);
 
   assert.equal(parsed.scenarioId, 'base_design');
@@ -27,6 +28,7 @@ test('optimizer CLI parser reads all explicit flags', () => {
   assert.equal(parsed.mode, 'both');
   assert.equal(parsed.runtime, 'thorough');
   assert.equal(parsed.significance, 'strict');
+  assert.equal(parsed.strategy, 'trajectory_discovery');
 });
 
 test('optimizer config applies balanced defaults when optional flags are omitted', async () => {
@@ -41,6 +43,7 @@ test('optimizer config applies balanced defaults when optional flags are omitted
   assert.equal(config.mode, 'liberation');
   assert.deepEqual(config.victoryModes, ['liberation']);
   assert.equal(config.significance, 'balanced');
+  assert.equal(config.strategy, 'full_optimizer');
   assert.equal(config.patience, 3);
   assert.equal(config.seed, 42);
 });

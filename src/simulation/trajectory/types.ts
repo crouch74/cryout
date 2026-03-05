@@ -38,6 +38,11 @@ export type VictoryTrajectory = {
   mandateFailure: boolean;
 
   turnsPlayed: number;
+  roundVictoryTriggered: number;
+  progressAtVictory: {
+    extractionRemoved: number;
+  };
+  actionsLeadingToVictory: string[];
 
   steps: TrajectoryStep[];
 };
@@ -66,4 +71,13 @@ export type TrajectorySummary = {
     count: number;
     rate: number;
   }>;
+  averageRoundVictory: number;
+  distributionOfVictoryRounds: Array<{
+    round: number;
+    count: number;
+    rate: number;
+  }>;
+  progressBeforeVictory: {
+    averageExtractionRemoved: number;
+  };
 };

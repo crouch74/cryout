@@ -928,6 +928,26 @@ export function runSingleSimulation(
       fullVictory: record.result.type === 'victory',
       mandateFailure: record.mandateFailure,
       turnsPlayed: record.turnsPlayed,
+      roundVictoryTriggered: record.turnsPlayed,
+      progressAtVictory: {
+        extractionRemoved: state.victoryProgress?.extractionRemoved
+          ?? state.eventLog
+            .flatMap((event) => event.trace)
+            .flatMap((trace) => trace.deltas)
+            .reduce((sum, delta) => {
+              if (delta.kind !== 'extraction') {
+                return sum;
+              }
+              if (typeof delta.before !== 'number' || typeof delta.after !== 'number') {
+                return sum;
+              }
+              return delta.after < delta.before ? sum + (delta.before - delta.after) : sum;
+            }, 0),
+      },
+      actionsLeadingToVictory: state.eventLog
+        .filter((event) => event.sourceType === 'action')
+        .map((event) => event.sourceId)
+        .slice(-8),
     })
     : undefined;
 

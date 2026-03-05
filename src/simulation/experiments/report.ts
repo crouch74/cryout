@@ -42,6 +42,7 @@ export interface ArmAccumulator {
   n: number;
   wins: number;
   publicVictories: number;
+  publicVictoriesByRoundOne: number;
   mandateFailuresAmongPublic: number;
   totalTurns: number;
   defeatReasons: {
@@ -241,6 +242,7 @@ export function createArmAccumulator(
     n: 0,
     wins: 0,
     publicVictories: 0,
+    publicVictoriesByRoundOne: 0,
     mandateFailuresAmongPublic: 0,
     totalTurns: 0,
     defeatReasons: {
@@ -277,6 +279,9 @@ export function ingestArmRecord(accumulator: ArmAccumulator, record: SimulationR
 
   if (record.publicVictoryAchieved) {
     accumulator.publicVictories += 1;
+    if (record.turnsPlayed <= 1) {
+      accumulator.publicVictoriesByRoundOne += 1;
+    }
     if (record.mandateFailure) {
       accumulator.mandateFailuresAmongPublic += 1;
     }
@@ -312,6 +317,8 @@ export function finalizeArmSummary(accumulator: ArmAccumulator): ExperimentArmSu
     winRate: ratio(accumulator.wins, accumulator.n),
     publicVictories: accumulator.publicVictories,
     publicVictoryRate: ratio(accumulator.publicVictories, accumulator.n),
+    publicVictoriesByRoundOne: accumulator.publicVictoriesByRoundOne,
+    turnOnePublicVictoryRate: ratio(accumulator.publicVictoriesByRoundOne, accumulator.n),
     mandateFailuresAmongPublic: accumulator.mandateFailuresAmongPublic,
     mandateFailRateGivenPublic: ratio(accumulator.mandateFailuresAmongPublic, accumulator.publicVictories),
     mandateFailureDistribution: buildMandateFailureDistribution(

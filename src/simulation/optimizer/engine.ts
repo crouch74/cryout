@@ -49,6 +49,13 @@ function pad2(value: number) {
   return String(value).padStart(2, '0');
 }
 
+function formatProgressPercent(completed: number, total: number) {
+  if (total <= 0) {
+    return '100.0';
+  }
+  return ((completed / total) * 100).toFixed(1);
+}
+
 function stableHash(value: string) {
   let hash = 2166136261 >>> 0;
   for (let index = 0; index < value.length; index += 1) {
@@ -163,6 +170,24 @@ export function mergeScenarioPatches(base: ScenarioPatch, incoming: ScenarioPatc
     };
   }
 
+  if (incoming.victoryGate) {
+    merged.victoryGate = { ...(merged.victoryGate ?? {}) };
+    if (incoming.victoryGate.minRoundBeforeCheck !== undefined) {
+      merged.victoryGate.minRoundBeforeCheck = incoming.victoryGate.minRoundBeforeCheck;
+    }
+    if (incoming.victoryGate.requiredAction?.actionId !== undefined) {
+      merged.victoryGate.requiredAction = {
+        actionId: incoming.victoryGate.requiredAction.actionId,
+      };
+    }
+    if (incoming.victoryGate.requiredProgress?.extractionRemoved !== undefined) {
+      merged.victoryGate.requiredProgress = {
+        ...(merged.victoryGate.requiredProgress ?? {}),
+        extractionRemoved: incoming.victoryGate.requiredProgress.extractionRemoved,
+      };
+    }
+  }
+
   return normalizeScenarioPatch(merged);
 }
 
@@ -263,6 +288,10 @@ function analyzeBaselineMetrics(arm: ExperimentArmSummary, score: OptimizerScore
     insights.push('Average turns are long and pacing is slow.');
   }
 
+  if (arm.turnOnePublicVictoryRate > 0.05) {
+    insights.push('Turn-1 public victories are structurally high; victory gating should be explored.');
+  }
+
   if (defeatPressure.pressureDetected) {
     insights.push('System pressure defeats are elevated.');
   }
@@ -281,6 +310,13 @@ function analyzeBaselineMetrics(arm: ExperimentArmSummary, score: OptimizerScore
         failureRate: entry.failureRate,
         attempts: entry.attempts,
       })),
+    structural: {
+      turnOnePublicVictoryRate: arm.turnOnePublicVictoryRate,
+      noGameplayDetected: arm.turns.average < 2,
+      impossibleMandates: arm.mandateFailureDistribution
+        .filter((entry) => entry.failureRate > 0.95 && entry.attempts > 0)
+        .map((entry) => entry.mandateId),
+    },
     insights,
   };
 }
@@ -333,6 +369,7 @@ function evaluateGate(input: {
   const guardrailsPassed = extractionRegression <= thresholds.maxGuardrailRegression
     && comradesRegression <= thresholds.maxGuardrailRegression
     && suddenRegression <= thresholds.maxGuardrailRegression;
+  const minimumGameplayPassed = input.candidateMetrics.turns.average >= 3;
 
   let statisticallyMeaningful = false;
   if (stats) {
@@ -370,6 +407,12 @@ function evaluateGate(input: {
     );
   }
 
+  if (minimumGameplayPassed) {
+    reasons.push('minimum gameplay gate passed (average turns >= 3)');
+  } else {
+    reasons.push(`minimum gameplay gate failed (average turns=${roundTo(input.candidateMetrics.turns.average)} < 3)`);
+  }
+
   if (movedTowardTarget) {
     reasons.push(`primary metric ${primaryMetric} moved toward target range`);
   } else {
@@ -383,7 +426,11 @@ function evaluateGate(input: {
   }
 
   return {
-    accepted: fitnessLiftPassed && guardrailsPassed && statisticallyMeaningful && movedTowardTarget,
+    accepted: fitnessLiftPassed
+      && guardrailsPassed
+      && statisticallyMeaningful
+      && movedTowardTarget
+      && minimumGameplayPassed,
     primaryMetric,
     statisticallyMeaningful,
     fitnessLiftPassed,
@@ -463,10 +510,16 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
   let stopReason: OptimizerStopReason = 'max_iterations_reached';
   let hillClimbSourcePatch: ScenarioPatch | null = null;
   let iterationsCompleted = 0;
+  const estimatedTotalExperiments = (config.iterations * (1 + config.candidates)) + 1;
+  let completedExperiments = 0;
+
+  console.log(`🧠 Run start scenario=${config.scenarioId} strategy=${config.strategy} runtime=${config.runtime}`);
+  console.log(`🧠 Estimated experiment workload=${estimatedTotalExperiments} (baselines + candidates + final confirmation)`);
 
   for (let iteration = 1; iteration <= config.iterations; iteration += 1) {
     iterationsCompleted = iteration;
-    console.log(`🧠 Optimization iteration=${iteration} scenario=${config.scenarioId}`);
+    const iterationPercent = formatProgressPercent(iteration - 1, config.iterations);
+    console.log(`🧠 Optimization iteration=${iteration}/${config.iterations} scenario=${config.scenarioId} overall=${iterationPercent}%`);
 
     const iterationDir = join(outputDir, `iteration_${pad2(iteration)}`);
     const experimentsDir = join(iterationDir, 'experiments');
@@ -493,6 +546,8 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
         outDir: experimentsDir,
         recordTrajectories: true,
       });
+      completedExperiments += 1;
+      console.log(`🔁 Overall run progress ${completedExperiments}/${estimatedTotalExperiments} (${formatProgressPercent(completedExperiments, estimatedTotalExperiments)}%) after baseline`);
       console.log('📊 Baseline metrics computed');
 
       const baselineMetrics = baselineResult.armA;
@@ -509,6 +564,14 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
       console.log('🧭 Exploring victory trajectories');
       const trajectorySummary = await summarizeBaselineTrajectories(baselineResult.outputDir, mountedBaseline.scenarioId);
       await writeJson(join(iterationDir, 'trajectory_summary.json'), trajectorySummary);
+      await writeJson(join(iterationDir, 'victory_trajectory_analysis.json'), trajectorySummary
+        ? {
+          averageRoundVictory: trajectorySummary.averageRoundVictory,
+          distributionOfVictoryRounds: trajectorySummary.distributionOfVictoryRounds,
+          progressBeforeVictory: trajectorySummary.progressBeforeVictory,
+          actionsLeadingToVictory: trajectorySummary.topActionSequences,
+        }
+        : null);
       if (trajectorySummary?.mostCommonActionSequence) {
         console.log(`🧭 Most common sequence: ${trajectorySummary.mostCommonActionSequence.sequence}`);
       } else {
@@ -543,6 +606,7 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
         targetCount: config.candidates,
         candidateRuns: config.candidateRuns,
         runtime: config.runtime,
+        strategyMode: config.strategy,
         analysis,
         trajectorySummary,
         hillClimbSourcePatch,
@@ -553,9 +617,10 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
       console.log(`🧠 ${candidates.length} candidates created`);
 
       const evaluations: OptimizerCandidateEvaluation[] = [];
-      for (const candidate of candidates) {
+      for (let candidateIndex = 0; candidateIndex < candidates.length; candidateIndex += 1) {
+        const candidate = candidates[candidateIndex];
         const candidateExperimentId = `optimizer_${config.scenarioId}_iter_${pad2(iteration)}_${candidate.candidateId}`;
-        console.log(`🧪 Running A/B experiment candidate=${candidate.candidateId}`);
+        console.log(`🧪 Running A/B experiment candidate=${candidate.candidateId} (${candidateIndex + 1}/${candidates.length})`);
         try {
           const definition = createExperimentDefinition({
             id: candidateExperimentId,
@@ -573,6 +638,8 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
             outDir: experimentsDir,
             recordTrajectories: false,
           });
+          completedExperiments += 1;
+          console.log(`🔁 Overall run progress ${completedExperiments}/${estimatedTotalExperiments} (${formatProgressPercent(completedExperiments, estimatedTotalExperiments)}%)`);
           const scoreBreakdown = scoreArmSummary(result.armB);
           const gate = evaluateGate({
             baselineMetrics,
@@ -702,6 +769,8 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
         recordTrajectories: false,
       },
     );
+    completedExperiments += 1;
+    console.log(`🔁 Overall run progress ${completedExperiments}/${estimatedTotalExperiments} (${formatProgressPercent(completedExperiments, estimatedTotalExperiments)}%) after final confirmation`);
     finalMetrics = {
       scenarioId: config.scenarioId,
       baselineScenarioId: finalMounted.scenarioId,
@@ -732,6 +801,7 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
   await writeMarkdown(join(outputDir, 'final_report.md'), renderFinalReportMarkdown(report));
 
   console.log('🏆 Optimization complete');
+  console.log(`🏆 Run progress completed ${completedExperiments}/${estimatedTotalExperiments} (${formatProgressPercent(completedExperiments, estimatedTotalExperiments)}%)`);
   console.log(`🏆 Best configuration discovered for scenario=${config.scenarioId}`);
   console.log(`📊 Win Rate: ${percent(finalMetrics.metrics.winRate)}`);
   console.log(`📊 Public Victory Rate: ${percent(finalMetrics.metrics.publicVictoryRate)}`);

@@ -72,6 +72,11 @@ interface DisabledReasonDetail {
   values?: Record<string, string | number>;
 }
 
+interface VictoryCheckContext {
+  trigger: 'resolution' | 'action';
+  actionId?: string;
+}
+
 function compactRecord<T extends Record<string, unknown>>(value: T) {
   return Object.fromEntries(
     Object.entries(value).filter(([, entry]) => entry !== undefined),
@@ -896,7 +901,49 @@ function checkComradesExhaustedLoss(state: EngineState) {
   return true;
 }
 
-function checkPositiveVictory(state: EngineState, content: CompiledContent): boolean {
+function ensureVictoryProgress(state: EngineState) {
+  if (!state.victoryProgress) {
+    state.victoryProgress = {
+      extractionRemoved: 0,
+      actionsById: {},
+      lastResolvedActionId: null,
+    };
+  }
+  return state.victoryProgress;
+}
+
+function canEvaluatePublicVictory(state: EngineState, content: CompiledContent, context: VictoryCheckContext) {
+  const gate = content.ruleset.victoryGate;
+  if (!gate) {
+    return true;
+  }
+
+  if (gate.minRoundBeforeCheck !== undefined && state.round < gate.minRoundBeforeCheck) {
+    return false;
+  }
+
+  if (gate.requiredAction?.actionId) {
+    if (context.trigger !== 'action') {
+      return false;
+    }
+    if (context.actionId !== gate.requiredAction.actionId) {
+      return false;
+    }
+  }
+
+  const requiredExtractionRemoved = gate.requiredProgress?.extractionRemoved;
+  if (requiredExtractionRemoved !== undefined && ensureVictoryProgress(state).extractionRemoved < requiredExtractionRemoved) {
+    return false;
+  }
+
+  return true;
+}
+
+function checkPositiveVictory(state: EngineState, content: CompiledContent, context: VictoryCheckContext): boolean {
+  if (!canEvaluatePublicVictory(state, content, context)) {
+    return false;
+  }
+
   const liberationCondition = content.ruleset.victoryConditions?.liberation;
   const symbolicCondition = content.ruleset.victoryConditions?.symbolic;
   const liberationComplete = state.mode === 'LIBERATION'
@@ -1230,6 +1277,10 @@ function applyEffects(state: EngineState, content: CompiledContent, effects: Eff
             trace.deltas.push(
               createDelta('extraction', `${regionId}.extraction`, beforeExtraction, region.extractionTokens),
             );
+            if (effect.type === 'remove_extraction' && region.extractionTokens < beforeExtraction) {
+              const progress = ensureVictoryProgress(state);
+              progress.extractionRemoved += beforeExtraction - region.extractionTokens;
+            }
           }
         }
         state.extractionPool = calculateExtractionPool(state, content);
@@ -1645,6 +1696,11 @@ function createInitialState(command: StartGameCommand, content: CompiledContent)
     tahrirMartyrCount: 0,
     scenarioFlags: Object.fromEntries((content.ruleset.scenarioFlags ?? []).map((flag) => [flag, false])),
     triggeredScenarioThresholds: {},
+    victoryProgress: {
+      extractionRemoved: 0,
+      actionsById: {},
+      lastResolvedActionId: null,
+    },
   };
 
   resolveStartupWithdrawals(state, content);
@@ -2223,6 +2279,10 @@ function resolveQueuedAction(state: EngineState, content: CompiledContent, seat:
     traces,
     eventContext,
   );
+
+  const progress = ensureVictoryProgress(state);
+  progress.lastResolvedActionId = action.id;
+  progress.actionsById[action.id] = (progress.actionsById[action.id] ?? 0) + 1;
 }
 
 export function normalizeEngineState(state: EngineState): EngineState {
@@ -2244,6 +2304,11 @@ export function normalizeEngineState(state: EngineState): EngineState {
   next.terminalOutcome = next.terminalOutcome ?? null;
   next.scenarioFlags = next.scenarioFlags ?? {};
   next.triggeredScenarioThresholds = next.triggeredScenarioThresholds ?? {};
+  next.victoryProgress = next.victoryProgress ?? {
+    extractionRemoved: 0,
+    actionsById: {},
+    lastResolvedActionId: null,
+  };
   next.eventLog = (next.eventLog ?? []).map((event) => ({
     ...event,
     ...(event.context
@@ -2497,6 +2562,12 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
         if (next.terminalOutcome) {
           return next;
         }
+        if (content.ruleset.victoryGate?.requiredAction?.actionId) {
+          updateBeaconCompletion(next, content);
+          if (checkPositiveVictory(next, content, { trigger: 'action', actionId: intent.actionId })) {
+            return next;
+          }
+        }
         if (checkExtractionLoss(next)) {
           return next;
         }
@@ -2521,7 +2592,7 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
       if (checkComradesExhaustedLoss(next)) {
         return next;
       }
-      if (checkPositiveVictory(next, content)) {
+      if (checkPositiveVictory(next, content, { trigger: 'resolution' })) {
         return next;
       }
       if (checkExtractionLoss(next)) {

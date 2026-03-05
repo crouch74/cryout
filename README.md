@@ -38,6 +38,7 @@ Each round follows three phases:
 - Any seat reduced to `0` Comrades is an immediate loss.
 - `Liberation`: win if all six regions are at `1` or fewer Extraction Tokens at the end of Resolution.
 - `Symbolic`: win if all three active Beacons are complete at the end of Resolution.
+- Some scenarios may define optional victory gates (minimum round, required action, required progress) that must be satisfied before public victory can trigger.
 - In online room play, every Secret Mandate must also be satisfied or the coalition still fails.
 - In local play, Secret Mandates are removed so the coalition coordinates entirely in the open.
 
@@ -210,16 +211,16 @@ Run iterative autonomous scenario balancing that combines:
 Run with explicit scenario:
 
 ```bash
-npm run optimize-scenario -- --scenario tahrir_square
+npm run optimize -- --scenario tahrir_square
 ```
 
 Run without a scenario (interactive selector):
 
 ```bash
-npm run optimize-scenario --
+npm run optimize
 ```
 
-Interactive mode prompts for the main optimizer controls (runtime, mode, significance, iterations, run budgets, candidate count, patience, seed, and output path).
+Interactive mode prompts for the main optimizer controls (runtime, strategy, mode, significance, iterations, run budgets, candidate count, patience, seed, and output path) with short impact descriptions showing the accuracy/runtime tradeoff for each setting.
 
 Common options:
 
@@ -234,6 +235,7 @@ Common options:
 - `--mode liberation|symbolic|both`
 - `--runtime fast|balanced|thorough`
 - `--significance strict|balanced|lenient`
+- `--strategy numeric_balancing|victory_gating_exploration|trajectory_discovery|full_optimizer`
 
 Outputs are written to:
 
@@ -250,6 +252,7 @@ Artifacts include:
 - `iteration_<NN>/baseline_summary.json`
 - `iteration_<NN>/analysis.json`
 - `iteration_<NN>/trajectory_summary.json`
+- `iteration_<NN>/victory_trajectory_analysis.json`
 - `iteration_<NN>/candidate_patches.json`
 - `iteration_<NN>/candidate_rankings.json`
 - `iteration_<NN>/selected_candidate.json`

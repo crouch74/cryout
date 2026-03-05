@@ -365,6 +365,16 @@ export interface RulesetDefinition {
     liberation?: Condition;
     symbolic?: Condition;
   };
+  victoryGate?: {
+    // Prevent public victory checks before this round (inclusive gate start).
+    minRoundBeforeCheck?: number;
+    requiredAction?: {
+      actionId: string;
+    };
+    requiredProgress?: {
+      extractionRemoved?: number;
+    };
+  };
 }
 
 export interface CompiledContent {
@@ -599,6 +609,11 @@ export interface EngineState {
   tahrirMartyrCount: number;
   scenarioFlags: Record<string, boolean>;
   triggeredScenarioThresholds: Record<string, boolean>;
+  victoryProgress?: {
+    extractionRemoved: number;
+    actionsById: Record<string, number>;
+    lastResolvedActionId: string | null;
+  };
 }
 
 export interface StartGameCommand {

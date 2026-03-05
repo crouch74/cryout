@@ -27,4 +27,13 @@ export type ScenarioPatch = {
   actions?: {
     removeActionIds?: string[];
   };
+  victoryGate?: {
+    minRoundBeforeCheck?: number;
+    requiredAction?: {
+      actionId: string;
+    };
+    requiredProgress?: {
+      extractionRemoved?: number;
+    };
+  };
 };

@@ -64,6 +64,7 @@ export function GuidelinesScreen({
             <p>{t('ui.mode.symbolic', 'Symbolic')}: {t('ui.guide.victoryModes2', 'Complete all active Beacons before sudden death closes the window.')}</p>
             <p>{t('ui.guide.victoryModes3', 'In room play, public victory still fails if any Secret Mandate fails.')}</p>
             <p>{t('ui.guide.victoryModes4', 'Local play removes Secret Mandates so every seat can plan in the open.')}</p>
+            <p>{t('ui.guide.victoryModes5', 'Some scenarios add victory gates (minimum round, required action, or progress threshold) before public victory can trigger.')}</p>
           </PaperSheet>
 
           <PaperSheet tone="tray" className="shell-card shell-surface-note">

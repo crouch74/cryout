@@ -323,6 +323,31 @@ function applyPatchToRuleset(ruleset: RulesetDefinition, patch: ScenarioPatch) {
     }
   }
 
+  if (patch.victoryGate) {
+    ruleset.victoryGate = ruleset.victoryGate ?? {};
+
+    if (patch.victoryGate.minRoundBeforeCheck !== undefined) {
+      const roundGate = Math.max(1, Math.floor(patch.victoryGate.minRoundBeforeCheck));
+      ruleset.victoryGate.minRoundBeforeCheck = roundGate;
+    }
+
+    if (patch.victoryGate.requiredAction?.actionId !== undefined) {
+      const actionId = patch.victoryGate.requiredAction.actionId.trim();
+      if (actionId.length === 0) {
+        failPatch('victoryGate.requiredAction.actionId must not be empty');
+      }
+      ruleset.victoryGate.requiredAction = { actionId };
+    }
+
+    if (patch.victoryGate.requiredProgress?.extractionRemoved !== undefined) {
+      const extractionRemoved = Math.max(0, Math.floor(patch.victoryGate.requiredProgress.extractionRemoved));
+      ruleset.victoryGate.requiredProgress = {
+        ...(ruleset.victoryGate.requiredProgress ?? {}),
+        extractionRemoved,
+      };
+    }
+  }
+
   if (patch.mandates?.relaxAllThresholdsBy !== undefined) {
     const step = patch.mandates.relaxAllThresholdsBy;
     let totalAdjustments = 0;

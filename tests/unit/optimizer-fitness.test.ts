@@ -11,6 +11,8 @@ function makeArmSummary(input?: Partial<ExperimentArmSummary>): ExperimentArmSum
     winRate: input?.winRate ?? 0.3,
     publicVictories: input?.publicVictories ?? 500,
     publicVictoryRate: input?.publicVictoryRate ?? 0.5,
+    publicVictoriesByRoundOne: input?.publicVictoriesByRoundOne ?? 20,
+    turnOnePublicVictoryRate: input?.turnOnePublicVictoryRate ?? 0.02,
     mandateFailuresAmongPublic: input?.mandateFailuresAmongPublic ?? 175,
     mandateFailRateGivenPublic: input?.mandateFailRateGivenPublic ?? 0.35,
     mandateFailureDistribution: input?.mandateFailureDistribution ?? [],

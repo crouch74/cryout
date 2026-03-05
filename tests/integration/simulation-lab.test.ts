@@ -26,12 +26,18 @@ test('experiment output includes mandate diagnostics in arm summaries, compariso
   const armA = JSON.parse(await readFile(join(experimentDir, 'arm_A_summary.json'), 'utf8')) as ExperimentArmSummary;
   const armB = JSON.parse(await readFile(join(experimentDir, 'arm_B_summary.json'), 'utf8')) as ExperimentArmSummary;
   const comparison = JSON.parse(await readFile(join(experimentDir, 'comparison.json'), 'utf8')) as Record<string, unknown>;
+  const diagnostics = JSON.parse(await readFile(join(experimentDir, 'structural_diagnostics.json'), 'utf8')) as {
+    turnOneVictoryWarning: boolean;
+    noGameplayWarning: boolean;
+  };
   const report = await readFile(join(experimentDir, 'report.md'), 'utf8');
 
   assert.equal(Array.isArray(armA.mandateFailureDistribution), true);
   assert.equal(Array.isArray(armB.mandateFailureDistribution), true);
   assert.equal(typeof comparison.armA, 'object');
   assert.equal(typeof comparison.armB, 'object');
+  assert.equal(typeof diagnostics.turnOneVictoryWarning, 'boolean');
+  assert.equal(typeof diagnostics.noGameplayWarning, 'boolean');
   assert.match(report, /Mandate Failure Ranking \(Arm A\)/);
   assert.match(report, /Mandate Failure Ranking \(Arm B\)/);
 });

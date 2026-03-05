@@ -111,4 +111,6 @@ test('mandate failure distribution aggregates, computes rates, and sorts descend
   assert.equal(byId.international_attention?.failureRate, 0.333333);
   assert.equal(byId.protect_land?.failureRate, 0);
   assert.equal(byId.stop_extraction?.failureRate, 0);
+  assert.equal(summary.publicVictoriesByRoundOne, 0);
+  assert.equal(summary.turnOnePublicVictoryRate, 0);
 });

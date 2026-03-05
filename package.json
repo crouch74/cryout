@@ -12,6 +12,7 @@
     "experiment": "node src/simulation/experiments/cli.ts",
     "experiment:all": "node src/simulation/experiments/cli.ts --all",
     "balance-search": "node src/simulation/balance/cli.ts",
+    "optimize": "node src/simulation/optimizer/cli.ts",
     "optimize-scenario": "node src/simulation/optimizer/cli.ts",
     "simulator": "node src/simulation/cli/interactive.ts",
     "trajectories": "node src/simulation/trajectory/analyzeTrajectories.ts",

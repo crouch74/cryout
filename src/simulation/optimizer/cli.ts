@@ -8,6 +8,7 @@ import type {
   OptimizerMode,
   OptimizerRuntimeProfile,
   OptimizerSignificanceMode,
+  OptimizerStrategyMode,
 } from './types.ts';
 
 interface CliArgs {
@@ -22,6 +23,7 @@ interface CliArgs {
   mode?: OptimizerMode;
   runtime?: OptimizerRuntimeProfile;
   significance?: OptimizerSignificanceMode;
+  strategy?: OptimizerStrategyMode;
 }
 
 interface InteractiveConfigAnswers {
@@ -29,6 +31,7 @@ interface InteractiveConfigAnswers {
   runtime: OptimizerRuntimeProfile;
   mode: OptimizerMode;
   significance: OptimizerSignificanceMode;
+  strategy: OptimizerStrategyMode;
   iterations: number;
   baselineRuns: number;
   candidateRuns: number;
@@ -92,6 +95,21 @@ function parseSignificance(raw: string): OptimizerSignificanceMode {
     return value;
   }
   throw new Error(`Unsupported --significance value "${raw}". Use strict, balanced, or lenient.`);
+}
+
+function parseStrategy(raw: string): OptimizerStrategyMode {
+  const value = raw.toLowerCase();
+  if (
+    value === 'numeric_balancing'
+    || value === 'victory_gating_exploration'
+    || value === 'trajectory_discovery'
+    || value === 'full_optimizer'
+  ) {
+    return value;
+  }
+  throw new Error(
+    `Unsupported --strategy value "${raw}". Use numeric_balancing, victory_gating_exploration, trajectory_discovery, or full_optimizer.`,
+  );
 }
 
 function modeToVictoryModes(mode: OptimizerMode): OptimizerConfig['victoryModes'] {
@@ -164,6 +182,10 @@ export function parseArgs(argv: string[]): CliArgs {
       args.significance = parseSignificance(readValue());
       continue;
     }
+    if (arg === '--strategy') {
+      args.strategy = parseStrategy(readValue());
+      continue;
+    }
 
     throw new Error(`Unknown argument: ${arg}`);
   }
@@ -195,13 +217,13 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
     console.log('');
 
     if (!process.stdin.isTTY || !process.stdout.isTTY) {
-      throw new Error('No scenario specified and interactive prompt is unavailable (TTY required).');
+      throw new Error('No scenario specified and interactive prompt is unavailable (TTY required). Re-run with --scenario <id>.');
     }
 
     const inquirerModule = await import('inquirer');
     const prompt = (inquirerModule.default as { prompt: InquirerPrompt }).prompt;
 
-    const firstPass = await prompt<Pick<InteractiveConfigAnswers, 'scenarioId' | 'runtime' | 'mode' | 'significance'>>([
+    const firstPass = await prompt<Pick<InteractiveConfigAnswers, 'scenarioId' | 'runtime' | 'mode' | 'significance' | 'strategy'>>([
       {
         type: 'list',
         name: 'scenarioId',
@@ -211,12 +233,24 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
       {
         type: 'list',
         name: 'runtime',
-        message: 'Runtime profile',
+        message: 'Runtime profile (controls default run budgets and speed)',
         default: prefill.runtime ?? 'balanced',
         choices: [
-          { name: 'fast', value: 'fast' },
-          { name: 'balanced', value: 'balanced' },
-          { name: 'thorough', value: 'thorough' },
+          { name: 'fast - quickest, lowest statistical stability', value: 'fast' },
+          { name: 'balanced - default tradeoff between runtime and accuracy', value: 'balanced' },
+          { name: 'thorough - slowest, strongest metric stability', value: 'thorough' },
+        ],
+      },
+      {
+        type: 'list',
+        name: 'strategy',
+        message: 'Select optimization strategy:',
+        default: prefill.strategy ?? 'full_optimizer',
+        choices: [
+          { name: 'numeric balancing - tune numeric pressure/threshold knobs', value: 'numeric_balancing' },
+          { name: 'victory gating exploration - focus on round/action/progress gates', value: 'victory_gating_exploration' },
+          { name: 'trajectory discovery - prioritize trajectory-guided mutations', value: 'trajectory_discovery' },
+          { name: 'full optimizer (all methods) - widest search, longest runtime', value: 'full_optimizer' },
         ],
       },
       {
@@ -233,12 +267,12 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
       {
         type: 'list',
         name: 'significance',
-        message: 'Statistical strictness',
+        message: 'Statistical strictness (acceptance gate sensitivity)',
         default: prefill.significance ?? 'balanced',
         choices: [
-          { name: 'strict', value: 'strict' },
-          { name: 'balanced', value: 'balanced' },
-          { name: 'lenient', value: 'lenient' },
+          { name: 'strict - fewer false positives, slower acceptance', value: 'strict' },
+          { name: 'balanced - recommended confidence gate', value: 'balanced' },
+          { name: 'lenient - faster acceptance, higher regression risk', value: 'lenient' },
         ],
       },
     ]);
@@ -249,35 +283,35 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
       {
         type: 'input',
         name: 'iterations',
-        message: 'Max iterations',
+        message: 'Max iterations (more iterations = broader search, longer runtime)',
         default: prefill.iterations ?? 10,
         filter: (value: unknown) => toPositiveInteger(String(value), 'iterations'),
       },
       {
         type: 'input',
         name: 'baselineRuns',
-        message: 'Baseline runs per arm',
+        message: 'Baseline runs per arm (higher = more accurate baseline metrics, slower)',
         default: prefill.baselineRuns ?? runtimeDefaults.baselineRuns,
         filter: (value: unknown) => toPositiveInteger(String(value), 'baselineRuns'),
       },
       {
         type: 'input',
         name: 'candidateRuns',
-        message: 'Candidate runs per arm',
+        message: 'Candidate runs per arm (higher = better candidate ranking accuracy, slower)',
         default: prefill.candidateRuns ?? runtimeDefaults.candidateRuns,
         filter: (value: unknown) => toPositiveInteger(String(value), 'candidateRuns'),
       },
       {
         type: 'input',
         name: 'candidates',
-        message: 'Candidates per iteration',
+        message: 'Candidates per iteration (more exploration, more experiment time)',
         default: prefill.candidates ?? runtimeDefaults.candidates,
         filter: (value: unknown) => toPositiveInteger(String(value), 'candidates'),
       },
       {
         type: 'input',
         name: 'patience',
-        message: 'No-improvement patience',
+        message: 'No-improvement patience (higher = continue searching longer before stopping)',
         default: prefill.patience ?? 3,
         filter: (value: unknown) => toPositiveInteger(String(value), 'patience'),
       },
@@ -314,6 +348,7 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
   const runtime = args.runtime ?? 'balanced';
   const runtimeDefaults = RUNTIME_DEFAULTS[runtime];
   const mode = args.mode ?? 'liberation';
+  const strategy = args.strategy ?? 'full_optimizer';
   const scenarioId = args.scenarioId ? validateScenarioId(args.scenarioId) : validateScenarioId(interactiveAnswers?.scenarioId ?? '');
 
   return {
@@ -327,6 +362,7 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
     outDir: args.outDir ?? DEFAULT_OUT_DIR,
     runtime,
     significance: args.significance ?? 'balanced',
+    strategy,
     mode,
     victoryModes: modeToVictoryModes(mode),
     playerCounts: [2, 3, 4],
@@ -348,6 +384,7 @@ export async function runCli(argv: string[]) {
     runtime: config.runtime,
     significance: config.significance,
     mode: config.mode,
+    strategy: config.strategy,
     outDir: config.outDir,
   }, null, 2));
 

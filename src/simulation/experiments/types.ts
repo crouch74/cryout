@@ -53,6 +53,8 @@ export interface ExperimentArmSummary {
   publicVictoryRate: number;
   mandateFailuresAmongPublic: number;
   mandateFailRateGivenPublic: number;
+  publicVictoriesByRoundOne: number;
+  turnOnePublicVictoryRate: number;
   mandateFailureDistribution: MandateFailureDistribution[];
   turns: {
     average: number;
@@ -111,6 +113,20 @@ export interface ExperimentRecommendation {
   primaryMetric: 'winRate' | 'publicVictoryRate';
 }
 
+export interface StructuralMandateDiagnostic {
+  arm: ExperimentArm;
+  mandateId: string;
+  failureRate: number;
+  attempts: number;
+}
+
+export interface StructuralDiagnostics {
+  turnOneVictoryWarning: boolean;
+  noGameplayWarning: boolean;
+  impossibleMandates: StructuralMandateDiagnostic[];
+  summary: string[];
+}
+
 export interface ExperimentResult {
   definition: ExperimentDefinition;
   outputDir: string;
@@ -121,4 +137,5 @@ export interface ExperimentResult {
   armB: ExperimentArmSummary;
   comparison: MetricComparison;
   recommendation: ExperimentRecommendation;
+  structuralDiagnostics?: StructuralDiagnostics;
 }

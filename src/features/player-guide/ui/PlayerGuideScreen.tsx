@@ -50,6 +50,7 @@ export function PlayerGuideScreen({
             <p>{t('ui.guide.loop2', 'Coalition Phase: each seat prepares two moves, then all seats mark ready.')}</p>
             <p>{t('ui.guide.loop3', 'Resolution Phase: prepared moves resolve by priority, then the table checks victory, defeat, and mandate fallout.')}</p>
             <p>{t('ui.guide.loop4', 'Launch Campaign always resolves as 2d6 with target 8+, then modifiers and outcomes apply.')}</p>
+            <p>{t('ui.guide.loop5', 'Scenario-specific victory gates can require a minimum round, a named action trigger, or gameplay progress before victory checks apply.')}</p>
           </PaperSheet>
 
           <PaperSheet tone="tray" className="shell-card shell-surface-note">

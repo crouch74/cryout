@@ -6,6 +6,21 @@ import type { VictoryMode } from '../experiments/types.ts';
 export type OptimizerRuntimeProfile = 'fast' | 'balanced' | 'thorough';
 export type OptimizerSignificanceMode = 'strict' | 'balanced' | 'lenient';
 export type OptimizerMode = 'liberation' | 'symbolic' | 'both';
+export type OptimizerStrategyMode =
+  | 'numeric_balancing'
+  | 'victory_gating_exploration'
+  | 'trajectory_discovery'
+  | 'full_optimizer';
+
+export type OptimizerCandidateStrategy =
+  | 'random'
+  | 'hill_climb'
+  | 'trajectory_guided'
+  | 'parameter_sweep'
+  | 'balance_seed'
+  | 'victory_gating_round'
+  | 'victory_gating_action'
+  | 'victory_gating_progress';
 
 export interface OptimizerConfig {
   scenarioId: string;
@@ -19,6 +34,7 @@ export interface OptimizerConfig {
   runtime: OptimizerRuntimeProfile;
   significance: OptimizerSignificanceMode;
   mode: OptimizerMode;
+  strategy: OptimizerStrategyMode;
   victoryModes: VictoryMode[];
   playerCounts: number[];
   useBalanceSearchSeeding?: boolean;
@@ -64,12 +80,17 @@ export interface OptimizerAnalysis {
     failureRate: number;
     attempts: number;
   }>;
+  structural: {
+    turnOnePublicVictoryRate: number;
+    noGameplayDetected: boolean;
+    impossibleMandates: string[];
+  };
   insights: string[];
 }
 
 export interface OptimizerCandidate {
   candidateId: string;
-  strategy: 'random' | 'hill_climb' | 'trajectory_guided' | 'parameter_sweep' | 'balance_seed';
+  strategy: OptimizerCandidateStrategy;
   patch: ScenarioPatch;
 }
 
@@ -85,7 +106,7 @@ export interface OptimizerGateDecision {
 
 export interface OptimizerCandidateEvaluation {
   candidateId: string;
-  strategy: OptimizerCandidate['strategy'];
+  strategy: OptimizerCandidateStrategy;
   experimentId: string;
   outputDir: string;
   patch: ScenarioPatch;
@@ -132,7 +153,7 @@ export interface OptimizerFinalReport {
   acceptedPatches: Array<{
     iteration: number;
     candidateId: string;
-    strategy: OptimizerCandidate['strategy'];
+    strategy: OptimizerCandidateStrategy;
     score: number;
     scoreDeltaFromBaseline: number;
     patch: ScenarioPatch;
