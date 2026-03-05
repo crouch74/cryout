@@ -24,6 +24,24 @@ interface CliArgs {
   significance?: OptimizerSignificanceMode;
 }
 
+interface InteractiveConfigAnswers {
+  scenarioId: string;
+  runtime: OptimizerRuntimeProfile;
+  mode: OptimizerMode;
+  significance: OptimizerSignificanceMode;
+  iterations: number;
+  baselineRuns: number;
+  candidateRuns: number;
+  candidates: number;
+  patience: number;
+  seed: number;
+  outDir: string;
+}
+
+interface InquirerPrompt {
+  <T>(questions: unknown[]): Promise<T>;
+}
+
 const DEFAULT_OUT_DIR = resolve(process.cwd(), 'simulation_output/optimizer');
 
 const RUNTIME_DEFAULTS: Record<OptimizerRuntimeProfile, Pick<OptimizerConfig, 'baselineRuns' | 'candidateRuns' | 'candidates'>> = {
@@ -153,50 +171,150 @@ export function parseArgs(argv: string[]): CliArgs {
   return args;
 }
 
-async function resolveScenarioId(cliScenarioId: string | undefined) {
+export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
+  const parsed = parseArgs(argv);
   const scenarioIds = listRulesets().map((ruleset) => ruleset.id).sort((left, right) => left.localeCompare(right));
 
-  if (cliScenarioId) {
-    if (!scenarioIds.includes(cliScenarioId)) {
-      throw new Error(`Unknown scenario "${cliScenarioId}". Available: ${scenarioIds.join(', ')}`);
+  const validateScenarioId = (value: string) => {
+    if (!scenarioIds.includes(value)) {
+      throw new Error(`Unknown scenario "${value}". Available: ${scenarioIds.join(', ')}`);
     }
-    return cliScenarioId;
-  }
+    return value;
+  };
 
-  console.log('🧠 Scenario Optimizer');
-  console.log('');
-  console.log('No scenario specified.');
-  console.log('');
-  console.log('Available scenarios:');
-  console.log('');
-  for (const scenarioId of scenarioIds) {
-    console.log(scenarioId);
-  }
-  console.log('');
+  const promptInteractiveConfig = async (prefill: CliArgs): Promise<InteractiveConfigAnswers> => {
+    console.log('🧠 Scenario Optimizer');
+    console.log('');
+    console.log('No scenario specified.');
+    console.log('');
+    console.log('Available scenarios:');
+    console.log('');
+    for (const scenarioId of scenarioIds) {
+      console.log(scenarioId);
+    }
+    console.log('');
 
-  if (!process.stdin.isTTY || !process.stdout.isTTY) {
-    throw new Error('No scenario specified and interactive prompt is unavailable (TTY required).');
-  }
+    if (!process.stdin.isTTY || !process.stdout.isTTY) {
+      throw new Error('No scenario specified and interactive prompt is unavailable (TTY required).');
+    }
 
-  const inquirer = (await import('inquirer')).default;
-  const { scenarioId } = await inquirer.prompt<{ scenarioId: string }>([
-    {
-      type: 'list',
-      name: 'scenarioId',
-      message: 'Select scenario to optimize:',
-      choices: scenarioIds,
-    },
-  ]);
-  return scenarioId;
-}
+    const inquirerModule = await import('inquirer');
+    const prompt = (inquirerModule.default as { prompt: InquirerPrompt }).prompt;
 
-export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
-  const args = parseArgs(argv);
+    const firstPass = await prompt<Pick<InteractiveConfigAnswers, 'scenarioId' | 'runtime' | 'mode' | 'significance'>>([
+      {
+        type: 'list',
+        name: 'scenarioId',
+        message: 'Select scenario to optimize:',
+        choices: scenarioIds,
+      },
+      {
+        type: 'list',
+        name: 'runtime',
+        message: 'Runtime profile',
+        default: prefill.runtime ?? 'balanced',
+        choices: [
+          { name: 'fast', value: 'fast' },
+          { name: 'balanced', value: 'balanced' },
+          { name: 'thorough', value: 'thorough' },
+        ],
+      },
+      {
+        type: 'list',
+        name: 'mode',
+        message: 'Victory mode scope',
+        default: prefill.mode ?? 'liberation',
+        choices: [
+          { name: 'liberation', value: 'liberation' },
+          { name: 'symbolic', value: 'symbolic' },
+          { name: 'both', value: 'both' },
+        ],
+      },
+      {
+        type: 'list',
+        name: 'significance',
+        message: 'Statistical strictness',
+        default: prefill.significance ?? 'balanced',
+        choices: [
+          { name: 'strict', value: 'strict' },
+          { name: 'balanced', value: 'balanced' },
+          { name: 'lenient', value: 'lenient' },
+        ],
+      },
+    ]);
+
+    const runtimeDefaults = RUNTIME_DEFAULTS[firstPass.runtime];
+
+    const secondPass = await prompt<Omit<InteractiveConfigAnswers, 'scenarioId' | 'runtime' | 'mode' | 'significance'>>([
+      {
+        type: 'input',
+        name: 'iterations',
+        message: 'Max iterations',
+        default: prefill.iterations ?? 10,
+        filter: (value: unknown) => toPositiveInteger(String(value), 'iterations'),
+      },
+      {
+        type: 'input',
+        name: 'baselineRuns',
+        message: 'Baseline runs per arm',
+        default: prefill.baselineRuns ?? runtimeDefaults.baselineRuns,
+        filter: (value: unknown) => toPositiveInteger(String(value), 'baselineRuns'),
+      },
+      {
+        type: 'input',
+        name: 'candidateRuns',
+        message: 'Candidate runs per arm',
+        default: prefill.candidateRuns ?? runtimeDefaults.candidateRuns,
+        filter: (value: unknown) => toPositiveInteger(String(value), 'candidateRuns'),
+      },
+      {
+        type: 'input',
+        name: 'candidates',
+        message: 'Candidates per iteration',
+        default: prefill.candidates ?? runtimeDefaults.candidates,
+        filter: (value: unknown) => toPositiveInteger(String(value), 'candidates'),
+      },
+      {
+        type: 'input',
+        name: 'patience',
+        message: 'No-improvement patience',
+        default: prefill.patience ?? 3,
+        filter: (value: unknown) => toPositiveInteger(String(value), 'patience'),
+      },
+      {
+        type: 'input',
+        name: 'seed',
+        message: 'Seed',
+        default: prefill.seed ?? 42,
+        filter: (value: unknown) => toPositiveInteger(String(value), 'seed') >>> 0,
+      },
+      {
+        type: 'input',
+        name: 'outDir',
+        message: 'Output directory',
+        default: prefill.outDir ?? DEFAULT_OUT_DIR,
+        filter: (value: unknown) => resolve(String(value).trim() || DEFAULT_OUT_DIR),
+      },
+    ]);
+
+    return {
+      ...firstPass,
+      ...secondPass,
+    };
+  };
+
+  const interactiveAnswers = parsed.scenarioId ? null : await promptInteractiveConfig(parsed);
+
+  // CLI flags remain authoritative when provided; interactive answers fill missing primary inputs.
+  const args: CliArgs = {
+    ...(interactiveAnswers ?? {}),
+    ...parsed,
+  };
+
   const runtime = args.runtime ?? 'balanced';
   const runtimeDefaults = RUNTIME_DEFAULTS[runtime];
   const mode = args.mode ?? 'liberation';
-
-  const scenarioId = await resolveScenarioId(args.scenarioId);
+  const scenarioId = args.scenarioId ? validateScenarioId(args.scenarioId) : validateScenarioId(interactiveAnswers?.scenarioId ?? '');
 
   return {
     scenarioId,

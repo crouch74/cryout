@@ -219,6 +219,8 @@ Run without a scenario (interactive selector):
 npm run optimize-scenario --
 ```
 
+Interactive mode prompts for the main optimizer controls (runtime, mode, significance, iterations, run budgets, candidate count, patience, seed, and output path).
+
 Common options:
 
 - `--scenario <id>`
