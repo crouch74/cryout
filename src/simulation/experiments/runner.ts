@@ -24,6 +24,7 @@ import {
   renderHtmlReport,
   renderMarkdownReport,
 } from './report.ts';
+import type { ScenarioPatch } from './patchDsl.ts';
 import type { ExperimentDefinition, ExperimentResult, StructuralDiagnostics, VictoryMode } from './types.ts';
 
 const DEFAULT_OUT_DIR = resolve(process.cwd(), 'simulation_output/experiments');
@@ -42,6 +43,7 @@ export interface RunExperimentOptions {
   recordTrajectories?: boolean;
   parallelWorkers?: number;
   logMode?: 'verbose' | 'aggregated';
+  baselinePatch?: ScenarioPatch;
 }
 
 class TrajectoryReservoir {
@@ -265,6 +267,107 @@ function buildComparisonOutput(
   };
 }
 
+function deepClone<T>(value: T): T {
+  if (typeof structuredClone === 'function') {
+    return structuredClone(value);
+  }
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function mergeScenarioPatchForExperiment(basePatch: ScenarioPatch | undefined, treatmentPatch: ScenarioPatch): ScenarioPatch {
+  if (!basePatch) {
+    return deepClone(treatmentPatch);
+  }
+
+  const merged = deepClone(basePatch);
+  const incoming = deepClone(treatmentPatch);
+
+  if (incoming.note) {
+    merged.note = incoming.note;
+  }
+
+  if (incoming.setup) {
+    merged.setup = { ...(merged.setup ?? {}) };
+    if (incoming.setup.globalGazeDelta !== undefined) {
+      merged.setup.globalGazeDelta = (merged.setup.globalGazeDelta ?? 0) + incoming.setup.globalGazeDelta;
+    }
+    if (incoming.setup.northernWarMachineDelta !== undefined) {
+      merged.setup.northernWarMachineDelta = (merged.setup.northernWarMachineDelta ?? 0) + incoming.setup.northernWarMachineDelta;
+    }
+    if (incoming.setup.seededExtractionTotalDelta !== undefined) {
+      merged.setup.seededExtractionTotalDelta = (merged.setup.seededExtractionTotalDelta ?? 0) + incoming.setup.seededExtractionTotalDelta;
+    }
+    if (incoming.setup.frontSeedDeltas) {
+      const next = { ...(merged.setup.frontSeedDeltas ?? {}) };
+      for (const [front, delta] of Object.entries(incoming.setup.frontSeedDeltas)) {
+        next[front] = (next[front] ?? 0) + delta;
+      }
+      merged.setup.frontSeedDeltas = next;
+    }
+  }
+
+  if (incoming.victory) {
+    merged.victory = { ...(merged.victory ?? {}) };
+    if (incoming.victory.liberationThresholdDelta !== undefined) {
+      merged.victory.liberationThresholdDelta = (merged.victory.liberationThresholdDelta ?? 0) + incoming.victory.liberationThresholdDelta;
+    }
+    if (incoming.victory.overrideLiberationExtractionCap !== undefined) {
+      merged.victory.overrideLiberationExtractionCap = incoming.victory.overrideLiberationExtractionCap;
+    }
+    if (incoming.victory.beaconThresholdTweaks) {
+      merged.victory.beaconThresholdTweaks = [
+        ...(merged.victory.beaconThresholdTweaks ?? []),
+        ...incoming.victory.beaconThresholdTweaks,
+      ];
+    }
+  }
+
+  if (incoming.pressure) {
+    merged.pressure = { ...(merged.pressure ?? {}) };
+    if (incoming.pressure.crisisSpikeExtractionDelta !== undefined) {
+      merged.pressure.crisisSpikeExtractionDelta = (merged.pressure.crisisSpikeExtractionDelta ?? 0) + incoming.pressure.crisisSpikeExtractionDelta;
+    }
+    if (incoming.pressure.maxExtractionAddedPerRound !== undefined) {
+      merged.pressure.maxExtractionAddedPerRound = incoming.pressure.maxExtractionAddedPerRound;
+    }
+  }
+
+  if (incoming.mandates) {
+    merged.mandates = { ...(merged.mandates ?? {}) };
+    if (incoming.mandates.relaxAllThresholdsBy !== undefined) {
+      merged.mandates.relaxAllThresholdsBy = (merged.mandates.relaxAllThresholdsBy ?? 0) + incoming.mandates.relaxAllThresholdsBy;
+    }
+    if (incoming.mandates.classifyMandateFailureAs !== undefined) {
+      merged.mandates.classifyMandateFailureAs = incoming.mandates.classifyMandateFailureAs;
+    }
+  }
+
+  if (incoming.actions?.removeActionIds) {
+    merged.actions = {
+      ...(merged.actions ?? {}),
+      removeActionIds: Array.from(new Set([...(merged.actions?.removeActionIds ?? []), ...incoming.actions.removeActionIds])),
+    };
+  }
+
+  if (incoming.victoryGate) {
+    merged.victoryGate = { ...(merged.victoryGate ?? {}) };
+    if (incoming.victoryGate.minRoundBeforeVictory !== undefined) {
+      merged.victoryGate.minRoundBeforeVictory = incoming.victoryGate.minRoundBeforeVictory;
+    }
+    if (incoming.victoryGate.requiredAction?.actionId !== undefined) {
+      merged.victoryGate.requiredAction = { actionId: incoming.victoryGate.requiredAction.actionId };
+    }
+    if (incoming.victoryGate.requiredProgress?.extractionRemoved !== undefined) {
+      merged.victoryGate.requiredProgress = {
+        ...(merged.victoryGate.requiredProgress ?? {}),
+        extractionRemoved: incoming.victoryGate.requiredProgress.extractionRemoved,
+      };
+    }
+  }
+
+  return merged;
+}
+
 function detectStructuralDiagnostics(armA: ExperimentResult['armA'], armB: ExperimentResult['armB']): StructuralDiagnostics {
   const impossibleMandates = [
     ...armA.mandateFailureDistribution
@@ -350,10 +453,19 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
   const startedAtMs = Date.now();
   const startedAt = new Date(startedAtMs).toISOString();
 
+  const baselinePatch = options?.baselinePatch;
+  const baselineMounted = baselinePatch
+    ? applyScenarioPatch({
+      experimentId: `${definition.id}_baseline_A`,
+      scenarioId: definition.scenarioId,
+      patch: baselinePatch,
+    })
+    : null;
+  const treatmentPatch = mergeScenarioPatchForExperiment(baselinePatch, definition.patch);
   const patchedScenario = applyScenarioPatch({
     experimentId: definition.id,
     scenarioId: definition.scenarioId,
-    patch: definition.patch,
+    patch: treatmentPatch,
   });
   const previousSimulationQuiet = process.env.SIMULATION_QUIET;
   if (aggregatedLogs) {
@@ -379,12 +491,13 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
     const progressInterval = Math.max(1, Math.floor(definition.runsPerArm / 20));
     const plannedRunsA: PlannedSimulationRun[] = [];
     const plannedRunsB: PlannedSimulationRun[] = [];
+    const baselineScenarioId = baselineMounted?.treatmentScenarioId ?? patchedScenario.baselineScenarioId;
     for (let runIndex = 0; runIndex < definition.runsPerArm; runIndex += 1) {
       const sampleProfile = buildSampleProfile(runIndex, definition, factionIds, strategyIds);
       plannedRunsA.push(buildRun(
         runIndex,
         'A',
-        patchedScenario.baselineScenarioId,
+        baselineScenarioId,
         definition.seed,
         sampleProfile,
         definition.id,
@@ -399,7 +512,7 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
       ));
     }
 
-    const workerBatchCompatible = !patchedScenario.baselineScenarioId.includes('__exp__');
+    const workerBatchCompatible = true;
     if (parallelWorkers > 1 && workerBatchCompatible) {
       logInfo(`⚙️ Experiment worker batching enabled parallelWorkers=${parallelWorkers}`);
       const tempRoot = join(outputRoot, `.tmp_${definition.id}_${Date.now()}`);
@@ -417,6 +530,15 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
           progressLabel: `Experiment ${definition.id} arm A progress`,
           progressThrottleMs: aggregatedLogs ? 5000 : 0,
           suppressSanityWarnings: aggregatedLogs,
+          scenarioPatches: baselinePatch
+            ? [
+              {
+                experimentId: `${definition.id}_baseline_A`,
+                scenarioId: definition.scenarioId,
+                patch: baselinePatch,
+              },
+            ]
+            : undefined,
         });
         const armBResult = await executePlannedRunsWithWorkers({
           runs: plannedRunsB,
@@ -429,10 +551,19 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
           progressThrottleMs: aggregatedLogs ? 5000 : 0,
           suppressSanityWarnings: aggregatedLogs,
           scenarioPatches: [
+            ...(baselinePatch
+              ? [
+                {
+                  experimentId: `${definition.id}_baseline_A`,
+                  scenarioId: definition.scenarioId,
+                  patch: baselinePatch,
+                },
+              ]
+              : []),
             {
               experimentId: definition.id,
-              scenarioId: patchedScenario.baselineScenarioId,
-              patch: definition.patch,
+              scenarioId: definition.scenarioId,
+              patch: treatmentPatch,
             },
           ],
         });
@@ -448,9 +579,6 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
         await rm(tempRoot, { recursive: true, force: true });
       }
     } else {
-      if (parallelWorkers > 1 && !workerBatchCompatible) {
-        logInfo('⚠️ Worker batching disabled because baseline scenario is an in-memory mounted experiment ruleset.');
-      }
       const sequentialProgressInterval = aggregatedLogs
         ? Math.max(1, Math.floor(definition.runsPerArm / 10))
         : progressInterval;
@@ -599,6 +727,7 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
         process.env.SIMULATION_QUIET = previousSimulationQuiet;
       }
     }
+    baselineMounted?.unregister();
     patchedScenario.unregister();
   }
 }

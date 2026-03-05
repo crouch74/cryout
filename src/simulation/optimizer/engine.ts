@@ -1,12 +1,11 @@
 import { join } from 'node:path';
 import { getRulesetDefinition } from '../../engine/index.ts';
-import { applyScenarioPatch } from '../experiments/applyScenarioPatch.ts';
 import type { ScenarioPatch } from '../experiments/patchDsl.ts';
 import { runExperiment } from '../experiments/runner.ts';
 import type { ExperimentArmSummary, ExperimentDefinition, MetricComparison } from '../experiments/types.ts';
 import { summarizeTrajectories } from '../trajectory/analyzeTrajectories.ts';
 import type { TrajectorySummary } from '../trajectory/types.ts';
-import { generateCandidatePatches, isScenarioPatchEmpty, normalizeScenarioPatch } from './candidates.ts';
+import { generateCandidatePatches, normalizeScenarioPatch } from './candidates.ts';
 import {
   choosePrimaryMetricForGate,
   directionTowardRange,
@@ -495,31 +494,6 @@ ${JSON.stringify(report.recommendedPatch, null, 2)}
 `;
 }
 
-function mountBaselineScenario(
-  scenarioId: string,
-  accumulatedPatch: ScenarioPatch,
-  seed: number,
-  iteration: number,
-) {
-  if (isScenarioPatchEmpty(accumulatedPatch)) {
-    return {
-      scenarioId,
-      unmount: () => {},
-    };
-  }
-
-  const mountExperimentId = `optimizer_baseline_mount_${scenarioId}_${seed}_${iteration}`;
-  const mounted = applyScenarioPatch({
-    experimentId: mountExperimentId,
-    scenarioId,
-    patch: accumulatedPatch,
-  });
-  return {
-    scenarioId: mounted.treatmentScenarioId,
-    unmount: mounted.unregister,
-  };
-}
-
 export async function runScenarioOptimizer(config: OptimizerConfig): Promise<OptimizerFinalReport> {
   const scenario = getRulesetDefinition(config.scenarioId);
   if (!scenario) {
@@ -558,13 +532,11 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
     const experimentsDir = join(iterationDir, 'experiments');
     await ensureDir(experimentsDir);
 
-    const mountedBaseline = mountBaselineScenario(config.scenarioId, accumulatedPatch, config.seed, iteration);
-    try {
       const baselineExperimentId = `optimizer_${config.scenarioId}_iter_${pad2(iteration)}_baseline`;
       const baselineDefinition = createExperimentDefinition({
         id: baselineExperimentId,
         title: `Optimizer baseline iteration ${iteration}`,
-        scenarioId: mountedBaseline.scenarioId,
+        scenarioId: config.scenarioId,
         patch: { note: '📊 Baseline control patch (no-op)' },
         runsPerArm: config.baselineRuns,
         seed: mixSeed(config.seed, stableHash(`baseline:${iteration}`)),
@@ -580,6 +552,7 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
         recordTrajectories: true,
         parallelWorkers: config.parallelWorkers,
         logMode: 'aggregated',
+        baselinePatch: accumulatedPatch,
       });
       completedExperiments += 1;
       console.log(`🔁 Overall run progress ${completedExperiments}/${estimatedTotalExperiments} (${formatProgressPercent(completedExperiments, estimatedTotalExperiments)}%) after baseline`);
@@ -597,7 +570,7 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
       console.log(`📊 Analysis summary: ${analysis.insights.join(' | ') || 'No major imbalances detected'}`);
 
       console.log('🧭 Exploring victory trajectories');
-      const trajectorySummary = await summarizeBaselineTrajectories(baselineResult.outputDir, mountedBaseline.scenarioId);
+      const trajectorySummary = await summarizeBaselineTrajectories(baselineResult.outputDir, config.scenarioId);
       await writeJson(join(iterationDir, 'trajectory_summary.json'), trajectorySummary);
       await writeJson(join(iterationDir, 'victory_trajectory_analysis.json'), trajectorySummary
         ? {
@@ -617,7 +590,7 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
         stopReason = 'targets_reached';
         history.push({
           iteration,
-          baselineScenarioId: mountedBaseline.scenarioId,
+          baselineScenarioId: config.scenarioId,
           baselineExperimentId,
           baselineMetrics,
           baselineScore,
@@ -635,7 +608,7 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
 
       console.log('🧠 Generating candidate rule patches');
       const candidates = await generateCandidatePatches({
-        scenarioId: mountedBaseline.scenarioId,
+        scenarioId: config.scenarioId,
         iteration,
         seed: config.seed,
         targetCount: config.candidates,
@@ -668,7 +641,7 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
           const definition = createExperimentDefinition({
             id: candidateExperimentId,
             title: `Optimizer candidate ${candidate.candidateId}`,
-            scenarioId: mountedBaseline.scenarioId,
+            scenarioId: config.scenarioId,
             patch: candidate.patch,
             runsPerArm: config.candidateRuns,
             seed: mixSeed(config.seed, stableHash(`candidate:${iteration}:${candidate.candidateId}`)),
@@ -682,6 +655,7 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
             recordTrajectories: false,
             parallelWorkers: workersPerCandidateExperiment,
             logMode: 'aggregated',
+            baselinePatch: accumulatedPatch,
           });
           completedExperiments += 1;
           console.log(`🔁 Overall run progress ${completedExperiments}/${estimatedTotalExperiments} (${formatProgressPercent(completedExperiments, estimatedTotalExperiments)}%)`);
@@ -770,7 +744,7 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
 
       history.push({
         iteration,
-        baselineScenarioId: mountedBaseline.scenarioId,
+        baselineScenarioId: config.scenarioId,
         baselineExperimentId,
         baselineMetrics,
         baselineScore,
@@ -794,25 +768,20 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
         console.log('🔁 Patience limit reached without meaningful improvement');
         break;
       }
-    } finally {
-      mountedBaseline.unmount();
-    }
   }
 
   if (history.length > 0 && stopReason === 'max_iterations_reached') {
     console.log('🔁 Maximum iterations reached');
   }
 
-  const finalMounted = mountBaselineScenario(config.scenarioId, accumulatedPatch, config.seed, config.iterations + 1);
   let finalMetrics: OptimizerFinalMetrics;
-  try {
     const finalExperimentId = `optimizer_${config.scenarioId}_final_confirmation`;
     console.log('📊 Running final baseline confirmation');
     const result = await runExperiment(
       createExperimentDefinition({
         id: finalExperimentId,
         title: 'Optimizer final confirmation',
-        scenarioId: finalMounted.scenarioId,
+        scenarioId: config.scenarioId,
         patch: { note: '📊 Final confirmation control patch (no-op)' },
         runsPerArm: config.baselineRuns,
         seed: mixSeed(config.seed, stableHash('final-confirmation')),
@@ -826,20 +795,18 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
         recordTrajectories: false,
         parallelWorkers: config.parallelWorkers,
         logMode: 'aggregated',
+        baselinePatch: accumulatedPatch,
       },
     );
     completedExperiments += 1;
     console.log(`🔁 Overall run progress ${completedExperiments}/${estimatedTotalExperiments} (${formatProgressPercent(completedExperiments, estimatedTotalExperiments)}%) after final confirmation`);
     finalMetrics = {
       scenarioId: config.scenarioId,
-      baselineScenarioId: finalMounted.scenarioId,
+      baselineScenarioId: config.scenarioId,
       experimentId: finalExperimentId,
       metrics: result.armA,
       score: scoreArmSummary(result.armA),
     };
-  } finally {
-    finalMounted.unmount();
-  }
 
   const report: OptimizerFinalReport = {
     scenarioId: config.scenarioId,
