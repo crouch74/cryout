@@ -4,6 +4,14 @@ This file ensures that all AI agents (Codex, GPT-based systems, automated writer
 
 Agents must treat this document as binding guidance.
 
+AGENT ONBOARDING DOCS
+
+Start here for agent-specific onboarding and delivery workflow:
+
+- [Agent Onboarding](docs/agent-onboarding.md) — first-pass orientation, non-negotiables, and 5-minute startup flow.
+- [Agent Workflow Checklist](docs/agent-workflow-checklist.md) — execution checklist from intake through validation and delivery.
+- [Agent Repo Map](docs/agent-repo-map.md) — fast routing for where to edit, what to run, and what to avoid.
+
 NON-NEGOTIABLE DESIGN PILLARS
 
 Agents must validate every output against these principles:
