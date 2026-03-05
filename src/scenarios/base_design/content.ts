@@ -11,6 +11,43 @@ import { crisisCards } from './decks/crisisDeck.ts';
 import { resistanceCards } from './decks/resistanceDeck.ts';
 import { systemCards } from './decks/systemEscalationDeck.ts';
 
+const BASE_EXTRACTION_SEEDS = {
+  Levant: 2,
+  Congo: 2,
+  Amazon: 1,
+  Sahel: 1,
+  Mekong: 1,
+  Andes: 1,
+} as const;
+
+const SEEDED_EXTRACTION_REDUCTION = 2;
+
+function reduceSeededExtractionByHighestRegions(
+  seeds: Partial<Record<RegionDefinition['id'], number>>,
+  totalReduction: number,
+): Partial<Record<RegionDefinition['id'], number>> {
+  const nextSeeds = { ...seeds };
+  // Pressure rebalance rule: remove tokens from the highest-seeded regions first.
+  const orderedRegions = Object.entries(nextSeeds)
+    .sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0))
+    .map(([regionId]) => regionId as RegionDefinition['id']);
+
+  let remainingReduction = totalReduction;
+  for (const regionId of orderedRegions) {
+    if (remainingReduction <= 0) {
+      break;
+    }
+    const current = nextSeeds[regionId] ?? 0;
+    if (current <= 0) {
+      continue;
+    }
+    nextSeeds[regionId] = current - 1;
+    remainingReduction -= 1;
+  }
+
+  return nextSeeds;
+}
+
 const domains: DomainDefinition[] = [
   {
     id: 'WarMachine',
@@ -366,19 +403,12 @@ export const compatRuleset: RulesetDefinition = {
   resistanceCards,
   crisisCards,
   systemCards,
-  liberationThreshold: 1,
+  liberationThreshold: 2,
   suddenDeathRound: 12,
   setup: {
-    globalGaze: 5,
-    northernWarMachine: 7,
-    extractionSeeds: {
-      Levant: 2,
-      Congo: 2,
-      Amazon: 1,
-      Sahel: 1,
-      Mekong: 1,
-      Andes: 1,
-    },
+    globalGaze: 6,
+    northernWarMachine: 6,
+    extractionSeeds: reduceSeededExtractionByHighestRegions(BASE_EXTRACTION_SEEDS, SEEDED_EXTRACTION_REDUCTION),
   },
 };
 

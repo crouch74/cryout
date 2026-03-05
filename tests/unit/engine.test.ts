@@ -115,7 +115,7 @@ test('startup withdrawal applies Archive Leak immediately for the owning seat', 
     (entry) => entry.context?.actingSeat === 0 && entry.context?.cardReveals?.[0]?.cardId === 'res_archive_leak',
   );
 
-  assert.equal(state.globalGaze, 6);
+  assert.equal(state.globalGaze, 7);
   assert.equal(state.players[0]?.evidence, 2);
   assert.equal(state.decks.resistance.discardPile.includes('res_archive_leak'), true);
   assert.equal(event.context?.cardReveals?.[0]?.origin, 'startup_withdrawal');
@@ -466,9 +466,10 @@ test('a failed mandate voids a public liberation win', () => {
 
 test('sudden death writes a terminal defeat summary', () => {
   const content = compileContent(startCommand.rulesetId);
-  const state = initializeGame(startCommand);
+  const state = initializeGame(localStartCommand);
   state.phase = 'RESOLUTION';
   state.round = content.ruleset.suddenDeathRound;
+  state.regions.Congo.extractionTokens = 3;
 
   const next = dispatchCommand(state, { type: 'ResolveResolutionPhase' }, content);
 

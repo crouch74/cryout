@@ -4,6 +4,7 @@ export const metadata = {
   id: compatRuleset.id,
   name: compatRuleset.name,
   version: '0.10.1',
+  balanceVersion: '0.2-pressure-rebalanced',
   supportedLocales: ['en', 'fr', 'ar', 'ar-EG'] as string[],
   summary: compatRuleset.description,
   assets: {

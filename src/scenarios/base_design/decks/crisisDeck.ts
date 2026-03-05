@@ -1,6 +1,8 @@
 import type { CrisisCardDefinition } from '../../../engine/adapters/compat/types.ts';
 
-export const crisisCards: CrisisCardDefinition[] = [
+const CRISIS_EXTRACTION_REDUCTION = 1;
+
+const baseCrisisCards: CrisisCardDefinition[] = [
   {
     id: 'crisis_military_raid',
     deck: 'crisis',
@@ -104,3 +106,21 @@ export const crisisCards: CrisisCardDefinition[] = [
     ],
   },
 ];
+
+function applyCrisisExtractionRebalance(card: CrisisCardDefinition): CrisisCardDefinition {
+  return {
+    ...card,
+    // Pressure rebalance rule: every crisis extraction effect is reduced by 1 (floor at 0).
+    effects: card.effects.map((effect) => {
+      if (effect.type !== 'add_extraction') {
+        return effect;
+      }
+      return {
+        ...effect,
+        amount: Math.max(0, effect.amount - CRISIS_EXTRACTION_REDUCTION),
+      };
+    }),
+  };
+}
+
+export const crisisCards: CrisisCardDefinition[] = baseCrisisCards.map(applyCrisisExtractionRebalance);
