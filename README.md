@@ -102,6 +102,85 @@ Outputs:
 - `simulation_output/simulations.ndjson`
 - `simulation_output/simulation_summary.json`
 
+### A/B Experiment Engine
+
+Run deterministic scientific-method A/B tests where:
+
+- `A` = shipped baseline scenario rules
+- `B` = scenario-local treatment patch (baseline is not mutated)
+
+Single experiment:
+
+```bash
+npm run experiment -- --id base_design_trim_setup_pressure --runs 100000 --seed 42
+```
+
+Run whole hypothesis backlog:
+
+```bash
+npm run experiment:all -- --runs 50000 --seed 42
+```
+
+Common options:
+
+- `--id <experimentId>`: run one experiment from `src/simulation/experiments/hypotheses/backlog.ts`
+- `--runs <n>`: override `runsPerArm`
+- `--seed <n>`: deterministic seed (same seed => same report outputs)
+- `--out <path>`: output root (default `simulation_output/experiments`)
+- `--modes liberation,symbolic`: override victory modes
+- `--players 2,3,4`: override player-count distribution
+
+Per-experiment outputs:
+
+- `simulation_output/experiments/<experimentId>/experiment_definition.json`
+- `simulation_output/experiments/<experimentId>/arm_A_summary.json`
+- `simulation_output/experiments/<experimentId>/arm_B_summary.json`
+- `simulation_output/experiments/<experimentId>/comparison.json`
+- `simulation_output/experiments/<experimentId>/recommendation.json`
+- `simulation_output/experiments/<experimentId>/report.md`
+- `simulation_output/experiments/<experimentId>/report.html`
+
+Backlog run output:
+
+- `simulation_output/experiments/index.json`
+
+Where experiments are defined:
+
+- `src/simulation/experiments/hypotheses/backlog.ts`
+- Add or edit items in `EXPERIMENT_BACKLOG`.
+
+Example:
+
+```ts
+export const EXPERIMENT_BACKLOG: ExperimentDefinition[] = [
+  {
+    id: 'base_design_trim_setup_pressure',
+    title: 'Base design: trim opening pressure to test early survivability and pacing.',
+    scenarioId: 'base_design',
+    victoryModes: ['liberation', 'symbolic'],
+    runsPerArm: 50000,
+    playerCounts: [2, 3, 4],
+    seed: 42,
+    patch: {
+      note: 'WarMachine -1, GlobalGaze +1, seeded extraction -2',
+      setup: {
+        globalGazeDelta: 1,
+        northernWarMachineDelta: -1,
+        seededExtractionTotalDelta: -2,
+      },
+    },
+    expectedEffects: {
+      winRate: 'Should rise with less opening pressure.',
+    },
+    decisionRule: {
+      primary: 'winRate',
+      minLift: 0.01,
+      confidence: 0.95,
+    },
+  },
+];
+```
+
 ### Production Build
 
 ```bash

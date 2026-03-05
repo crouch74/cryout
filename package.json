@@ -9,6 +9,8 @@
     "dev:rooms": "node room-service/server.ts",
     "generate:scenario-maps": "node scripts/generate-scenario-maps.mjs",
     "simulate": "node src/simulation/runSimulation.ts",
+    "experiment": "node src/simulation/experiments/cli.ts",
+    "experiment:all": "node src/simulation/experiments/cli.ts --all",
     "build": "tsc -p tsconfig.app.json && tsc -p tsconfig.room-service.json && vite build",
     "build:pages": "tsc -p tsconfig.app.json && tsc -p tsconfig.room-service.json && vite build --mode pages",
     "lint": "eslint .",
