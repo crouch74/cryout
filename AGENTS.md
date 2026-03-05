@@ -30,6 +30,25 @@ They must never repair broken base systems.
 
 If a request contradicts these pillars, the agent must ask for clarification or reframe the request.
 
+UI CONSISTENCY DIRECTIVE (NON-NEGOTIABLE)
+
+The Home screen is the canonical visual baseline for shell-level UI.
+
+When generating or modifying UI:
+
+All non-game shell screens (Rules Brief, Player Guide, Board Tour, Room Lobby, and future siblings) must match Home style language.
+
+Use the same flatness profile:
+compact radii, thin borders, restrained shadows, and no legacy beveled/puffy card treatment.
+
+Use icon-led controls and action labels consistent with Home patterns.
+
+Reuse shared tokens and shared component patterns instead of screen-specific visual forks.
+
+When updating one shell screen, audit adjacent shell screens for drift and align them in the same change set.
+
+If a requested UI change introduces style drift from Home, reframe it to preserve cross-screen consistency.
+
 CANONICAL TERMINOLOGY (Allow for translations and localisation)
 
 Extraction Tokens — Black hexes placed in regions (0–6).

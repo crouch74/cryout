@@ -430,11 +430,33 @@ test('route screens point at the production guides and setup shell', () => {
   const guidelines = readFileSync(new URL('../../src/features/rules-brief/ui/RulesBriefScreen.tsx', import.meta.url), 'utf8');
   const playerGuide = readFileSync(new URL('../../src/features/player-guide/ui/PlayerGuideScreen.tsx', import.meta.url), 'utf8');
   const boardTour = readFileSync(new URL('../../src/features/board-tour/ui/BoardTourScreen.tsx', import.meta.url), 'utf8');
+  const appRoot = readFileSync(new URL('../../src/app/AppRoot.tsx', import.meta.url), 'utf8');
 
   assert.match(home, /Campaign Briefing|Human Players/);
   assert.match(guidelines, /ui\.guide\.victoryModes|Victory Modes/);
-  assert.match(playerGuide, /ui\.guide\.coalitionFieldNotes|Coalition Field Notes/);
+  assert.match(playerGuide, /localizeRulesetField/);
   assert.match(boardTour, /ui\.guide\.boardTourTitle|Board Tour/);
+  assert.match(guidelines, /compileContent\(rulesetId\)/);
+  assert.match(playerGuide, /compileContent\(rulesetId\)/);
+  assert.doesNotMatch(guidelines, /compileContent\('base_design'\)/);
+  assert.doesNotMatch(playerGuide, /compileContent\('base_design'\)/);
+  assert.match(appRoot, /<GuidelinesScreen[\s\S]*rulesetId=\{activeRulesetId\}/);
+  assert.match(appRoot, /<PlayerGuideScreen[\s\S]*rulesetId=\{activeRulesetId\}/);
+});
+
+test('non-home shell screens use shared shell primitives and avoid copied guide-flat classes', () => {
+  const guidelines = readFileSync(new URL('../../src/features/rules-brief/ui/RulesBriefScreen.tsx', import.meta.url), 'utf8');
+  const playerGuide = readFileSync(new URL('../../src/features/player-guide/ui/PlayerGuideScreen.tsx', import.meta.url), 'utf8');
+  const boardTour = readFileSync(new URL('../../src/features/board-tour/ui/BoardTourScreen.tsx', import.meta.url), 'utf8');
+  const roomLobby = readFileSync(new URL('../../src/features/room-session/ui/RoomLobbyScreen.tsx', import.meta.url), 'utf8');
+
+  for (const source of [guidelines, playerGuide, boardTour, roomLobby]) {
+    assert.match(source, /shell-table/);
+    assert.match(source, /shell-board/);
+    assert.match(source, /shell-card/);
+    assert.match(source, /shell-actions/);
+    assert.doesNotMatch(source, /guide-flat-/);
+  }
 });
 
 test('homepage source keeps hero hierarchy, utility strip, and dominant launch action', () => {

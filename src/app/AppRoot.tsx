@@ -752,12 +752,74 @@ export default function AppRoot({ runtime }: { runtime: AppRuntimeOptions }) {
           />
         )
       ) : route.page === 'guidelines' ? (
-        <GuidelinesScreen
-          onBackHome={() => goToPage(runtime.defaultPage)}
-          onOpenOffline={() => goToPage('offline')}
-        />
+        <>
+          <SessionSetupScreen
+            config={setupDraft}
+            roomPlayAvailable={roomServiceReachable}
+            roomPlayChecking={roomServiceChecking}
+            roomPlayDisabledByBuild={runtime.forceOfflineOnly}
+            onConfigChange={(patch) => setSetupDraft((current) => applyScenarioDefaults({ ...current, ...patch }))}
+            onStart={startSession}
+            onOpenGuidelines={() => goToPage('guidelines')}
+            onOpenPlayerGuide={() => goToPage('player-guide')}
+            onOpenBoardTour={() => goToPage('board-tour')}
+            mode={runtime.defaultPage === 'offline' ? 'offline' : 'home'}
+          />
+          <div
+            className="modal-shell guide-sheet-modal-shell"
+            role="presentation"
+            onClick={() => goToPage(runtime.defaultPage)}
+          >
+            <div
+              className="modal-card guide-sheet-modal-card"
+              role="dialog"
+              aria-modal="true"
+              aria-label={t('ui.guide.rulesBrief', 'Rules Brief')}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <GuidelinesScreen
+                rulesetId={activeRulesetId}
+                presentation="modal"
+                onBackHome={() => goToPage(runtime.defaultPage)}
+                onOpenOffline={() => goToPage('offline')}
+              />
+            </div>
+          </div>
+        </>
       ) : route.page === 'player-guide' ? (
-        <PlayerGuideScreen onBackHome={() => goToPage(runtime.defaultPage)} />
+        <>
+          <SessionSetupScreen
+            config={setupDraft}
+            roomPlayAvailable={roomServiceReachable}
+            roomPlayChecking={roomServiceChecking}
+            roomPlayDisabledByBuild={runtime.forceOfflineOnly}
+            onConfigChange={(patch) => setSetupDraft((current) => applyScenarioDefaults({ ...current, ...patch }))}
+            onStart={startSession}
+            onOpenGuidelines={() => goToPage('guidelines')}
+            onOpenPlayerGuide={() => goToPage('player-guide')}
+            onOpenBoardTour={() => goToPage('board-tour')}
+            mode={runtime.defaultPage === 'offline' ? 'offline' : 'home'}
+          />
+          <div
+            className="modal-shell guide-sheet-modal-shell"
+            role="presentation"
+            onClick={() => goToPage(runtime.defaultPage)}
+          >
+            <div
+              className="modal-card guide-sheet-modal-card"
+              role="dialog"
+              aria-modal="true"
+              aria-label={t('ui.guide.playerGuide', 'Player Guide')}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <PlayerGuideScreen
+                rulesetId={activeRulesetId}
+                presentation="modal"
+                onBackHome={() => goToPage(runtime.defaultPage)}
+              />
+            </div>
+          </div>
+        </>
       ) : route.page === 'board-tour' ? (
         <BoardTourScreen
           onBackHome={() => goToPage(runtime.defaultPage)}

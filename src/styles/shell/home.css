@@ -277,10 +277,12 @@ html[dir='rtl'] .scenario-select-major {
   align-items: center;
   min-width: 0;
   padding: 14px 54px 14px 16px;
-  border: 1px dashed var(--accent-primary);
+  border: 0.8px solid color-mix(in srgb, var(--color-border) 56%, transparent);
   border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.06);
+  background: color-mix(in srgb, var(--color-surface-elevated) 94%, var(--color-surface-tint) 6%);
   font-family: var(--font-data);
+  color: var(--color-text-primary);
+  font-size: var(--type-1);
   word-break: break-all;
 }
 
@@ -300,27 +302,26 @@ html[dir='rtl'] .scenario-select-major {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   padding: 0;
-  border: 1px solid rgba(83, 70, 56, 0.22);
-  border-radius: 10px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.18)),
-    var(--legacy-color-efe2c7);
-  box-shadow: 0 6px 18px rgba(66, 47, 30, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.72);
-  color: var(--text-1);
+  border: 0.8px solid color-mix(in srgb, var(--color-border) 56%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-surface) 94%, var(--color-surface-tint) 6%);
+  box-shadow: none;
+  color: var(--color-text-primary);
   transform: translateY(-50%);
 }
 
 .room-lobby-link-copy:hover,
 .room-lobby-link-copy:focus-visible {
-  transform: translateY(calc(-50% - 1px));
+  transform: translateY(-50%);
+  background: color-mix(in srgb, var(--color-surface) 90%, var(--color-surface-tint) 10%);
 }
 
 .room-lobby-note,
 .room-owner-status {
-  color: var(--text-2);
+  color: color-mix(in srgb, var(--color-text-muted) 82%, var(--color-text-primary) 18%);
 }
 
 .room-owner-grid {
@@ -333,14 +334,14 @@ html[dir='rtl'] .scenario-select-major {
   display: grid;
   gap: var(--space-2);
   padding: 18px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--tier-a-border);
-  background: var(--tier-a-bg);
-  box-shadow: var(--shadow-1);
+  border-radius: var(--radius-md);
+  border: 0.8px solid color-mix(in srgb, var(--color-border) 56%, transparent);
+  background: color-mix(in srgb, var(--color-surface-elevated) 95%, var(--color-surface-tint) 5%);
+  box-shadow: none;
 }
 
 .room-owner-card.is-claimed {
-  border-color: var(--accent-secondary);
+  border-color: color-mix(in srgb, var(--color-accent) 42%, var(--color-border) 58%);
 }
 
 .room-owner-card-header {
@@ -355,11 +356,20 @@ html[dir='rtl'] .scenario-select-major {
   gap: 4px;
 }
 
+.room-owner-card-header strong,
+.room-owner-card p {
+  color: var(--color-text-primary);
+}
+
+.room-owner-card-header span {
+  color: color-mix(in srgb, var(--color-text-muted) 80%, var(--color-text-primary) 20%);
+}
+
 .room-owner-badge {
   padding: 4px 10px;
   border-radius: 999px;
-  background: var(--accent-primary);
-  color: var(--surface-0);
+  background: var(--color-focus-surface);
+  color: var(--color-text-inverted);
   font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;

@@ -9,6 +9,7 @@ const HEX_PATTERN = /#[0-9A-Fa-f]{3,8}\b/g;
 const Z_INDEX_LITERAL_PATTERN = /\bz-index\s*:\s*\d+\b|\bzIndex\s*:\s*\d+\b/g;
 const INLINE_STYLE_PATTERN = /style=\{\{/g;
 const EMOJI_PATTERN = /[\u{1F300}-\u{1FAFF}]/gu;
+const HOME_VARIABLE_DECLARATION_PATTERN = /--home-[\w-]+\s*:/g;
 
 function walk(dir: string, filter: (filePath: string) => boolean): string[] {
   const results: string[] = [];
@@ -150,4 +151,40 @@ test('inline styles only exist in layout-critical allowlisted files', () => {
   }
 
   assert.deepEqual(offenders, []);
+});
+
+test('home-only css variables stay scoped to home.css', () => {
+  const styleFiles = PLAYER_STYLE_ROOTS.flatMap((rootDir) => walk(rootDir, (filePath) => filePath.endsWith('.css')));
+  const offenders: string[] = [];
+
+  for (const filePath of styleFiles) {
+    const rel = relative(filePath);
+    if (rel === 'src/styles/shell/home.css') {
+      continue;
+    }
+
+    const source = readFileSync(filePath, 'utf8');
+    const match = source.match(HOME_VARIABLE_DECLARATION_PATTERN);
+    if (match && match.length > 0) {
+      offenders.push(`${rel} => ${match[0]}`);
+    }
+  }
+
+  assert.deepEqual(offenders, []);
+});
+
+test('shared shell primitive section avoids legacy color variables', () => {
+  const tabletopPath = path.join(ROOT, 'styles', 'tabletop', 'tabletop.css');
+  const source = readFileSync(tabletopPath, 'utf8');
+  const startMarker = '/* Shared shell primitives start */';
+  const endMarker = '/* Shared shell primitives end */';
+  const start = source.indexOf(startMarker);
+  const end = source.indexOf(endMarker);
+
+  assert.notEqual(start, -1);
+  assert.notEqual(end, -1);
+  assert.equal(end > start, true);
+
+  const sharedShellSection = source.slice(start, end);
+  assert.equal(sharedShellSection.includes('var(--legacy-color-'), false);
 });

@@ -3,6 +3,8 @@ import { compileContent, initializeGame } from '../../../engine/index.ts';
 import { GameSessionScreen } from '../../../game/screens/GameSessionScreen.tsx';
 import type { SessionViewport } from '../../session-setup/model/sessionTypes.ts';
 import { t } from '../../../i18n/index.ts';
+import { Icon } from '../../../ui/icon/Icon.tsx';
+import { GameIcon } from '../../../ui/icon/GameIcon.tsx';
 import { EngravedHeader, LocaleSwitcher, PaperSheet, TableSurface, ThemePlate } from '../../../ui/layout/tabletop.tsx';
 
 interface BoardTourScreenProps {
@@ -12,12 +14,6 @@ interface BoardTourScreenProps {
 
 interface BoardTourStep {
   id: string;
-  pointer: {
-    x: number;
-    y: number;
-    bubbleX: number;
-    bubbleY: number;
-  };
 }
 
 const BOARD_CONTENT = compileContent('base_design');
@@ -39,50 +35,17 @@ const TOUR_PREVIEW_STATE = {
 } as const;
 
 const BOARD_TOUR_STEPS: BoardTourStep[] = [
-  {
-    id: 'mapRegions',
-    pointer: { x: 45, y: 48, bubbleX: 8, bubbleY: 8 },
-  },
-  {
-    id: 'extractionTokens',
-    pointer: { x: 65, y: 46, bubbleX: 70, bubbleY: 8 },
-  },
-  {
-    id: 'globalGaze',
-    pointer: { x: 13, y: 11, bubbleX: 4, bubbleY: 20 },
-  },
-  {
-    id: 'warMachine',
-    pointer: { x: 25, y: 11, bubbleX: 4, bubbleY: 20 },
-  },
-  {
-    id: 'domains',
-    pointer: { x: 38, y: 11, bubbleX: 4, bubbleY: 20 },
-  },
-  {
-    id: 'playerStrip',
-    pointer: { x: 68, y: 11, bubbleX: 55, bubbleY: 20 },
-  },
-  {
-    id: 'actionDock',
-    pointer: { x: 27, y: 85, bubbleX: 4, bubbleY: 63 },
-  },
-  {
-    id: 'decks',
-    pointer: { x: 84, y: 84, bubbleX: 63, bubbleY: 63 },
-  },
-  {
-    id: 'beacons',
-    pointer: { x: 84, y: 70, bubbleX: 63, bubbleY: 52 },
-  },
-  {
-    id: 'secretMandates',
-    pointer: { x: 58, y: 11, bubbleX: 55, bubbleY: 20 },
-  },
-  {
-    id: 'terminalWarnings',
-    pointer: { x: 48, y: 56, bubbleX: 34, bubbleY: 8 },
-  },
+  { id: 'mapRegions' },
+  { id: 'extractionTokens' },
+  { id: 'globalGaze' },
+  { id: 'warMachine' },
+  { id: 'domains' },
+  { id: 'playerStrip' },
+  { id: 'actionDock' },
+  { id: 'decks' },
+  { id: 'beacons' },
+  { id: 'secretMandates' },
+  { id: 'terminalWarnings' },
 ];
 
 export function BoardTourScreen({ onBackHome, onOpenOffline }: BoardTourScreenProps) {
@@ -105,46 +68,84 @@ export function BoardTourScreen({ onBackHome, onOpenOffline }: BoardTourScreenPr
   const stepWatch = t(`ui.guide.boardTourSteps.${step.id}.watch`, '');
 
   return (
-    <TableSurface className="guide-table board-tour-table">
-      <PaperSheet tone="board" className="guide-tab-rail">
+    <TableSurface className="guide-table board-tour-table shell-table shell-depth-surface">
+      <PaperSheet tone="board" className="shell-board shell-surface shell-surface-focus">
         <EngravedHeader
           eyebrow={t('ui.guide.boardTour', 'Board Tour')}
           title={t('ui.guide.boardTourTitle', 'Read the table before it breaks')}
           detail={t('ui.guide.boardTourDetail', 'Each panel explains what a board component means, how to use it, and what danger signals to monitor.')}
           actions={
-            <div className="header-action-plates">
-              <LocaleSwitcher />
-              <ThemePlate label={t('ui.guide.backHome', 'Back Home')} onClick={onBackHome} />
-              <ThemePlate label={t('ui.guide.openTable', 'Open Table')} onClick={onOpenOffline} />
+            <div className="header-action-plates shell-actions">
+              <LocaleSwitcher showLabel={false} compact />
+              <ThemePlate
+                size="sm"
+                variant="utility"
+                label={(
+                  <span className="plate-label-with-icon">
+                    <GameIcon name="home" size="xs" ariaLabel={t('ui.guide.backHome', 'Back Home')} />
+                    <span>{t('ui.guide.backHome', 'Back Home')}</span>
+                  </span>
+                )}
+                onClick={onBackHome}
+              />
+              <ThemePlate
+                size="sm"
+                variant="primary"
+                label={(
+                  <span className="plate-label-with-icon">
+                    <GameIcon name="launchCampaign" size="xs" ariaLabel={t('ui.guide.openTable', 'Open Table')} />
+                    <span>{t('ui.guide.openTable', 'Open Table')}</span>
+                  </span>
+                )}
+                onClick={onOpenOffline}
+              />
             </div>
           }
         />
 
         <div className="board-tour-stage">
-          <PaperSheet tone="tray" className="board-tour-sequence-card">
+          <PaperSheet tone="tray" className="board-tour-sequence-card shell-card shell-surface-note">
             <div className="board-tour-sequence-head">
-              <span className="engraved-eyebrow">{t('ui.guide.boardTourSequence', 'Guided Sequence')}</span>
-              <strong>{progress}</strong>
+              <span className="engraved-eyebrow shell-title-row"><Icon type="objective" size="xs" ariaLabel={t('ui.guide.boardTourSequence', 'Guided Sequence')} />{t('ui.guide.boardTourSequence', 'Guided Sequence')}</span>
+              <strong className="shell-progress-chip">{progress}</strong>
             </div>
             <h3>{stepTitle}</h3>
-            <p><strong>{t('ui.guide.whatItIs', 'What it is')}:</strong> {stepWhat}</p>
-            <p><strong>{t('ui.guide.howToUseIt', 'How to use it')}:</strong> {stepHow}</p>
-            <p><strong>{t('ui.guide.whatToWatchFor', 'What to watch for')}:</strong> {stepWatch}</p>
+            <p>
+              <strong className="shell-copy-label"><Icon type="scrollText" size="xs" ariaLabel={t('ui.guide.whatItIs', 'What it is')} />{t('ui.guide.whatItIs', 'What it is')}:</strong> {stepWhat}
+            </p>
+            <p>
+              <strong className="shell-copy-label"><Icon type="settings" size="xs" ariaLabel={t('ui.guide.howToUseIt', 'How to use it')} />{t('ui.guide.howToUseIt', 'How to use it')}:</strong> {stepHow}
+            </p>
+            <p>
+              <strong className="shell-copy-label"><Icon type="crisis" size="xs" ariaLabel={t('ui.guide.whatToWatchFor', 'What to watch for')} />{t('ui.guide.whatToWatchFor', 'What to watch for')}:</strong> {stepWatch}
+            </p>
 
             <div className="board-tour-sequence-actions">
               <ThemePlate
-                label={t('ui.guide.previousStep', 'Previous')}
+                size="sm"
+                label={(
+                  <span className="plate-label-with-icon">
+                    <GameIcon name="chevronDown" size="xs" className="shell-chevron is-left" ariaLabel={t('ui.guide.previousStep', 'Previous')} />
+                    <span>{t('ui.guide.previousStep', 'Previous')}</span>
+                  </span>
+                )}
                 variant="quiet"
                 onClick={() => setStepIndex((current) => Math.max(0, current - 1))}
               />
               <ThemePlate
-                label={t('ui.guide.nextStep', 'Next')}
+                size="sm"
+                label={(
+                  <span className="plate-label-with-icon">
+                    <span>{t('ui.guide.nextStep', 'Next')}</span>
+                    <GameIcon name="chevronDown" size="xs" className="shell-chevron is-right" ariaLabel={t('ui.guide.nextStep', 'Next')} />
+                  </span>
+                )}
                 variant="primary"
                 onClick={() => setStepIndex((current) => Math.min(BOARD_TOUR_STEPS.length - 1, current + 1))}
               />
             </div>
           </PaperSheet>
-          <PaperSheet tone="tray" className="board-tour-map-card">
+          <PaperSheet tone="tray" className="board-tour-map-card shell-card shell-surface-note">
             <div className="board-tour-live-session">
               <GameSessionScreen
                 state={TOUR_PREVIEW_STATE}
@@ -158,21 +159,9 @@ export function BoardTourScreen({ onBackHome, onOpenOffline }: BoardTourScreenPr
                 autoAdvanceTransientUi
               />
 
-              <div className="board-tour-overlay" aria-hidden="true">
-                <div
-                  className="board-tour-pointer"
-                  style={{
-                    left: `${step.pointer.x}%`,
-                    top: `${step.pointer.y}%`,
-                  }}
-                />
-                <div
-                  className="board-tour-bubble"
-                  style={{
-                    left: `${step.pointer.bubbleX}%`,
-                    top: `${step.pointer.bubbleY}%`,
-                  }}
-                >
+              <div className={`board-tour-overlay board-tour-overlay-step-${step.id}`.trim()} aria-hidden="true">
+                <div className="board-tour-pointer" />
+                <div className="board-tour-bubble">
                   <span>{stepTitle}</span>
                 </div>
               </div>

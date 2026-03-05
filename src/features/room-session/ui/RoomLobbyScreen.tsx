@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { listRulesets, type FactionId } from '../../../engine/index.ts';
 import { formatNumber, localizeFactionField, localizeRulesetField, t } from '../../../i18n/index.ts';
 import type { RoomLobbySnapshot } from '../api/schemas.ts';
+import { Icon } from '../../../ui/icon/Icon.tsx';
 import { GameIcon } from '../../../ui/icon/GameIcon.tsx';
 import { EngravedHeader, LocaleSwitcher, PaperSheet, TableSurface, ThemePlate } from '../../../ui/layout/tabletop.tsx';
 
@@ -46,9 +47,9 @@ export function RoomLobbyScreen({
   const viewerIsHost = viewerOwnerId === snapshot.hostOwnerId;
 
   return (
-    <TableSurface className="room-lobby-table">
+    <TableSurface className="room-lobby-table shell-table shell-depth-surface">
       <div className="room-lobby-scene">
-        <PaperSheet tone="board" className="room-lobby-board">
+        <PaperSheet tone="board" className="room-lobby-board shell-board shell-surface shell-surface-focus">
           <EngravedHeader
             eyebrow={t('ui.room.lobbyEyebrow', 'Room Lobby')}
             title={localizeRulesetField(snapshot.config.rulesetId, 'name', ruleset?.name ?? snapshot.config.rulesetId)}
@@ -57,24 +58,34 @@ export function RoomLobbyScreen({
               'Claim one player slot, gather the full coalition, then let the host launch the room into active play.',
             )}
             actions={(
-              <div className="header-action-plates">
-                <LocaleSwitcher />
-                <ThemePlate label={t('ui.guide.backHome', 'Back Home')} onClick={onBack} />
+              <div className="header-action-plates shell-actions">
+                <LocaleSwitcher showLabel={false} compact />
+                <ThemePlate
+                  size="sm"
+                  variant="utility"
+                  label={(
+                    <span className="plate-label-with-icon">
+                      <GameIcon name="home" size="xs" ariaLabel={t('ui.guide.backHome', 'Back Home')} />
+                      <span>{t('ui.guide.backHome', 'Back Home')}</span>
+                    </span>
+                  )}
+                  onClick={onBack}
+                />
               </div>
             )}
           />
 
           <div className="room-lobby-grid">
-            <PaperSheet tone="tray" className="room-lobby-summary">
-              <span className="engraved-eyebrow">{t('ui.room.roomCode', 'Room Code')}</span>
+            <PaperSheet tone="tray" className="room-lobby-summary shell-card shell-surface-note">
+              <span className="engraved-eyebrow shell-title-row"><Icon type="mandate" size="xs" ariaLabel={t('ui.room.roomCode', 'Room Code')} />{t('ui.room.roomCode', 'Room Code')}</span>
               <h2>{roomId}</h2>
               <p>{t('ui.room.shareRoom', 'Share this room link with the coalition so each player can claim their own slot.')}</p>
               <div className="room-lobby-link-row">
-                <div className="room-lobby-link">
+                <div className="room-lobby-link shell-inline-field">
                   <span className="room-lobby-link-text">{shareUrl}</span>
                   <button
                     type="button"
-                    className="room-lobby-link-copy"
+                    className="room-lobby-link-copy shell-icon-button"
                     onClick={() => onCopyRoomLink(shareUrl)}
                     aria-label={t('ui.room.copyRoomLink', 'Copy Room Link')}
                     title={t('ui.room.copyRoomLink', 'Copy Room Link')}
@@ -96,15 +107,15 @@ export function RoomLobbyScreen({
               </p>
             </PaperSheet>
 
-            <PaperSheet tone="tray" className="room-lobby-owners">
-              <span className="engraved-eyebrow">{t('ui.room.coalitionRoster', 'Coalition Roster')}</span>
+            <PaperSheet tone="tray" className="room-lobby-owners shell-card shell-surface-note">
+              <span className="engraved-eyebrow shell-title-row"><Icon type="bodies" size="xs" ariaLabel={t('ui.room.coalitionRoster', 'Coalition Roster')} />{t('ui.room.coalitionRoster', 'Coalition Roster')}</span>
               <div className="room-owner-grid">
                 {ownerFactionMap.map((owner) => {
                   const isViewer = owner.ownerId === viewerOwnerId;
                   const canClaim = viewerOwnerId === null && !owner.claimed;
 
                   return (
-                    <div key={owner.ownerId} className={`room-owner-card ${owner.claimed ? 'is-claimed' : 'is-open'}`.trim()}>
+                    <div key={owner.ownerId} className={`room-owner-card shell-card ${owner.claimed ? 'is-claimed' : 'is-open'}`.trim()}>
                       <div className="room-owner-card-header">
                         <div>
                           <strong>{t('ui.home.playerSeatGroup', 'Player {{seat}}', { seat: owner.ownerId + 1 })}</strong>
@@ -140,8 +151,8 @@ export function RoomLobbyScreen({
             </PaperSheet>
           </div>
 
-          <PaperSheet tone="note" className="room-lobby-actions">
-            <span className="engraved-eyebrow">{t('ui.room.launchRoom', 'Launch Room')}</span>
+          <PaperSheet tone="note" className="room-lobby-actions shell-card shell-surface-note">
+            <span className="engraved-eyebrow shell-title-row"><Icon type="launchCampaign" size="xs" ariaLabel={t('ui.room.launchRoom', 'Launch Room')} />{t('ui.room.launchRoom', 'Launch Room')}</span>
             <p>
               {viewerIsHost
                 ? allClaimed
@@ -152,9 +163,16 @@ export function RoomLobbyScreen({
                   : t('ui.room.waitingForCoalition', 'Waiting for the remaining players to claim their slots.')}
             </p>
             {viewerIsHost ? (
-              <div className="header-action-plates">
+              <div className="header-action-plates shell-actions">
                 <ThemePlate
-                  label={t('ui.room.startRoom', 'Start Room Match')}
+                  size="sm"
+                  variant="primary"
+                  label={(
+                    <span className="plate-label-with-icon">
+                      <GameIcon name="launchCampaign" size="xs" ariaLabel={t('ui.room.startRoom', 'Start Room Match')} />
+                      <span>{t('ui.room.startRoom', 'Start Room Match')}</span>
+                    </span>
+                  )}
                   disabled={!allClaimed}
                   onClick={() => onStartRoom()}
                 />
