@@ -305,7 +305,7 @@ const actions: ActionDefinition[] = [
     resolvePriority: 500,
     needsRegion: true,
     needsDomain: true,
-    needsBodies: true,
+    needsComrades: true,
     needsEvidence: true,
     needsCard: true,
     cardType: 'support',
@@ -338,7 +338,7 @@ const actions: ActionDefinition[] = [
     description: 'Convert Comrades into a one-round Defense Rating against the next intervention.',
     resolvePriority: 260,
     needsRegion: true,
-    needsBodies: true,
+    needsComrades: true,
   },
   {
     id: 'play_card',

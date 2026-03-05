@@ -4,7 +4,7 @@ import { formatNumber, localizeFactionField, localizeRulesetField, t } from '../
 import type { RoomLobbySnapshot } from '../api/schemas.ts';
 import { Icon } from '../../../ui/icon/Icon.tsx';
 import { GameIcon } from '../../../ui/icon/GameIcon.tsx';
-import { EngravedHeader, LocaleSwitcher, PaperSheet, TableSurface, ThemePlate } from '../../../ui/layout/tabletop.tsx';
+import { EngravedHeader, PaperSheet, TableSurface, ThemePlate } from '../../../ui/layout/tabletop.tsx';
 
 interface RoomLobbyScreenProps {
   roomId: string;
@@ -59,7 +59,6 @@ export function RoomLobbyScreen({
             )}
             actions={(
               <div className="header-action-plates shell-actions">
-                <LocaleSwitcher showLabel={false} compact />
                 <ThemePlate
                   size="sm"
                   variant="utility"
@@ -108,7 +107,7 @@ export function RoomLobbyScreen({
             </PaperSheet>
 
             <PaperSheet tone="tray" className="room-lobby-owners shell-card shell-surface-note">
-              <span className="engraved-eyebrow shell-title-row"><Icon type="bodies" size="xs" ariaLabel={t('ui.room.coalitionRoster', 'Coalition Roster')} />{t('ui.room.coalitionRoster', 'Coalition Roster')}</span>
+              <span className="engraved-eyebrow shell-title-row"><Icon type="comrades" size="xs" ariaLabel={t('ui.room.coalitionRoster', 'Coalition Roster')} />{t('ui.room.coalitionRoster', 'Coalition Roster')}</span>
               <div className="room-owner-grid">
                 {ownerFactionMap.map((owner) => {
                   const isViewer = owner.ownerId === viewerOwnerId;

@@ -124,7 +124,7 @@ export interface PlayerStripSummary {
   factionName: string;
   shortName: string;
   homeRegion: string;
-  bodies: number;
+  comrades: number;
   evidence: number;
   moves: number;
   passivePrimary: string;
@@ -525,7 +525,7 @@ export function getPlayerStripSummary(player: PlayerState, content: CompiledCont
     factionName: localizeFactionField(faction.id, 'name', faction.name),
     shortName: localizeFactionField(faction.id, 'shortName', faction.shortName),
     homeRegion: localizeRegionField(faction.homeRegion, 'name', content.regions[faction.homeRegion].name),
-    bodies: getPlayerBodyTotal(state, player.seat),
+    comrades: getPlayerBodyTotal(state, player.seat),
     evidence: player.evidence,
     moves: player.actionsRemaining,
     passivePrimary: passive.primary,
@@ -652,13 +652,13 @@ export function getActionQuickQueue(state: EngineState, content: CompiledContent
     regionId: action.needsRegion ? homeRegion : undefined,
     domainId: action.needsDomain ? (faction.campaignDomainBonus ?? 'WarMachine') : undefined,
     targetSeat: action.needsTargetSeat ? firstOtherSeat : undefined,
-    bodiesCommitted: action.needsBodies ? 1 : undefined,
+    comradesCommitted: action.needsComrades ? 1 : undefined,
     evidenceCommitted: action.needsEvidence ? 1 : undefined,
     cardId: undefined,
   };
 
   if (actionId === 'build_solidarity') {
-    draft.bodiesCommitted = 3;
+    draft.comradesCommitted = 3;
   }
 
   if (actionId === 'international_outreach') {
@@ -721,16 +721,16 @@ export function buildIntentPreview(
     });
   }
 
-  if (action.needsBodies) {
+  if (action.needsComrades) {
     chips.push({
-      id: 'cost-bodies',
+      id: 'cost-comrades',
       tone: 'cost',
       label: t('ui.game.cost', 'Cost'),
-      value: t('ui.game.comradesCount', '{{count}} comrades', { count: formatNumber(draft.bodiesCommitted ?? 1) }),
+      value: t('ui.game.comradesCount', '{{count}} comrades', { count: formatNumber(draft.comradesCommitted ?? 1) }),
     });
   } else if (draft.actionId === 'build_solidarity') {
     chips.push({
-      id: 'cost-bodies-fixed',
+      id: 'cost-comrades-fixed',
       tone: 'cost',
       label: t('ui.game.cost', 'Cost'),
       value: t('ui.game.comradesCount', '{{count}} comrades', { count: formatNumber(3) }),

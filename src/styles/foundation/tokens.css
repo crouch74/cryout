@@ -368,7 +368,7 @@
     /* End legacy literal color tokens */
 }
 
-html[lang='ar-EG'] {
+html[lang^='ar'] {
   --font-display: 'Cairo', sans-serif;
   --font-body: 'IBM Plex Sans Arabic', sans-serif;
 }

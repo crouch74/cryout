@@ -19,7 +19,7 @@ function intentKey(intent: {
   regionId?: string;
   domainId?: string;
   targetSeat?: number;
-  bodiesCommitted?: number;
+  comradesCommitted?: number;
   evidenceCommitted?: number;
   cardId?: string;
 }) {
@@ -28,7 +28,7 @@ function intentKey(intent: {
     intent.regionId ?? null,
     intent.domainId ?? null,
     intent.targetSeat ?? null,
-    intent.bodiesCommitted ?? null,
+    intent.comradesCommitted ?? null,
     intent.evidenceCommitted ?? null,
     intent.cardId ?? null,
   ]);
@@ -45,7 +45,7 @@ function createCoalitionSnapshot() {
     player.evidence = 2;
   });
 
-  state.regions.Congo.bodiesPresent[0] = 5;
+  state.regions.Congo.comradesPresent[0] = 5;
   state.regions.Congo.extractionTokens = 5;
   state.globalGaze = 8;
   state.northernWarMachine = 6;

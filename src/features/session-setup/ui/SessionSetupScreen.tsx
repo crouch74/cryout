@@ -225,22 +225,20 @@ export function SessionSetupScreen({
                         <Icon type="crisis" size="md" ariaLabel={t('ui.home.existentialThreat', 'Existential Threat')} />
                         <span>{t('ui.home.existentialThreat', 'Existential Threat')}</span>
                       </div>
-                      <p>
-                        {t('ui.home.threatValue', 'If any region reaches 6 Extraction Tokens, the coalition loses.')}
-                        {highestExtractionRegionId ? (
-                          <strong>{` ${t('ui.home.currentPeakRegion', 'Current peak: {{region}}.', { region: getRegionLabel(highestExtractionRegionId) })}`}</strong>
-                        ) : null}
-                      </p>
+                      <p>{t('ui.home.threatValue', 'If any region reaches 6 Extraction Tokens, the coalition loses.')}</p>
+                      {highestExtractionRegionId ? (
+                        <p><strong>{t('ui.home.currentPeakRegion', 'Current peak: {{region}}.', { region: getRegionLabel(highestExtractionRegionId) })}</strong></p>
+                      ) : null}
                     </div>
                   </section>
 
                   <section className="setup-launch-tray">
                     <PaperSheet tone="tray" className="home-surface launch-surface coalition-setup-surface">
                       <div className="coalition-panel-head">
+                        <span className="engraved-eyebrow">{t('ui.home.launch', 'Open Table')}</span>
                         <div className="setup-utility-strip" aria-label={t('ui.home.utilities', 'Utilities')}>
                           <LocaleSwitcher showLabel={false} compact />
                         </div>
-                        <span className="engraved-eyebrow">{t('ui.home.launch', 'Open Table')}</span>
                       </div>
                       <h3 className="coalition-setup-title">
                         <GameIcon name="settings" size="sm" ariaLabel={t('ui.home.coalitionSetup', 'Coalition Setup')} />

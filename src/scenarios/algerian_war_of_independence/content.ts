@@ -260,7 +260,7 @@ const actions: ActionDefinition[] = [
         resolvePriority: 500,
         needsRegion: true,
         needsDomain: true,
-        needsBodies: true,
+        needsComrades: true,
         needsEvidence: true,
         needsCard: true,
         cardType: 'support',
@@ -293,7 +293,7 @@ const actions: ActionDefinition[] = [
         description: 'Convert Comrades into a one-round Defense Rating against the next intervention.',
         resolvePriority: 260,
         needsRegion: true,
-        needsBodies: true,
+        needsComrades: true,
     },
     {
         id: 'play_card',
@@ -402,7 +402,7 @@ export const compatRuleset: RulesetDefinition = {
         maxTrackRoundPenalty: {
             trackId: 'repression_cycle',
             effects: [
-                { type: 'remove_bodies', region: 'target_region', seat: 'acting_player', amount: 1 },
+                { type: 'remove_comrades', region: 'target_region', seat: 'acting_player', amount: 1 },
             ],
         },
     },

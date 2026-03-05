@@ -30,7 +30,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
         name: 'Diaspora Protest Rally',
         text: 'Add 2 Comrades to the target region for the acting faction.',
         effects: [
-            { type: 'add_bodies', region: 'target_region', seat: 'acting_player', amount: 2 }
+            { type: 'add_comrades', region: 'target_region', seat: 'acting_player', amount: 2 }
         ]
     }
 ];

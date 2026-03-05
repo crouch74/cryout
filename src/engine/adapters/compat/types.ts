@@ -115,7 +115,7 @@ export interface ConditionCompareLeft {
   | 'domain_progress'
   | 'region_extraction'
   | 'player_evidence'
-  | 'player_total_bodies'
+  | 'player_total_comrades'
   | 'custom_track'
   | 'scenario_flag';
   domain?: DomainId;
@@ -193,8 +193,8 @@ export type Effect =
   | { type: 'modify_custom_track'; trackId: string; delta: number; clamp?: Clamp }
   | { type: 'add_extraction'; region: RegionSelector; amount: number }
   | { type: 'remove_extraction'; region: RegionSelector; amount: number }
-  | { type: 'add_bodies'; region: RegionSelector; seat: SeatSelector; amount: number }
-  | { type: 'remove_bodies'; region: RegionSelector; seat: SeatSelector; amount: number }
+  | { type: 'add_comrades'; region: RegionSelector; seat: SeatSelector; amount: number }
+  | { type: 'remove_comrades'; region: RegionSelector; seat: SeatSelector; amount: number }
   | { type: 'gain_evidence'; seat: SeatSelector; amount: number }
   | { type: 'lose_evidence'; seat: SeatSelector; amount: number }
   | { type: 'set_defense'; region: RegionSelector; amount: number }
@@ -250,7 +250,7 @@ export interface ActionDefinition {
   needsRegion?: boolean;
   needsDomain?: boolean;
   needsTargetSeat?: boolean;
-  needsBodies?: boolean;
+  needsComrades?: boolean;
   needsEvidence?: boolean;
   needsCard?: boolean;
   cardType?: ResistanceCardType;
@@ -280,7 +280,7 @@ export interface BoardRegionMapEntry {
   };
   clusterRadius: number;
   labelOffsetY: number;
-  opticalCenteringByTokenType: Record<'extraction' | 'defense' | 'bodies', { x: number; y: number }>;
+  opticalCenteringByTokenType: Record<'extraction' | 'defense' | 'comrades', { x: number; y: number }>;
   labelOffset: {
     x: string;
     y: string;
@@ -389,7 +389,7 @@ export interface RegionState {
   extractionTokens: number;
   vulnerability: Partial<Record<DomainId, number>>;
   defenseRating: number;
-  bodiesPresent: Record<number, number>;
+  comradesPresent: Record<number, number>;
   hijabEnforcement: number;
 }
 
@@ -399,7 +399,7 @@ export interface QueuedIntent {
   regionId?: RegionId;
   domainId?: DomainId;
   targetSeat?: number;
-  bodiesCommitted?: number;
+  comradesCommitted?: number;
   evidenceCommitted?: number;
   cardId?: string;
 }
@@ -479,7 +479,7 @@ export interface CampaignResolvedEventPayload {
   domainDelta: number;
   globalGazeDelta: number;
   warMachineDelta: number;
-  committedBodies?: number;
+  committedComrades?: number;
   committedEvidence?: number;
 }
 
@@ -512,7 +512,7 @@ export interface TerminalOutcomeSummary {
 }
 
 export interface StateDelta {
-  kind: 'track' | 'domain' | 'extraction' | 'bodies' | 'evidence' | 'defense' | 'card' | 'player' | 'hijab';
+  kind: 'track' | 'domain' | 'extraction' | 'comrades' | 'evidence' | 'defense' | 'card' | 'player' | 'hijab';
   label: string;
   before: number | string | boolean | null;
   after: number | string | boolean | null;
@@ -544,7 +544,7 @@ export interface DomainEvent {
     sourceDeckId?: RevealDeckId;
     actionId?: ActionId;
     readyState?: boolean;
-    committedBodies?: number;
+    committedComrades?: number;
     committedEvidence?: number;
     campaignModifiers?: CampaignModifierEntry[];
     cardReveals?: CardRevealEvent[];
@@ -693,12 +693,12 @@ export interface DisabledActionReason {
   | 'select_region'
   | 'select_domain'
   | 'select_another_seat'
-  | 'need_three_bodies'
+  | 'need_three_comrades'
   | 'not_enough_evidence'
   | 'no_evidence_to_move'
   | 'need_one_body'
   | 'commit_one_body'
-  | 'not_enough_bodies'
+  | 'not_enough_comrades'
   | 'support_card_unavailable'
   | 'action_card_unavailable'
   | 'select_card';

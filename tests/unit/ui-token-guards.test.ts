@@ -114,6 +114,8 @@ test('player-facing UI rendering has no emoji literals', () => {
   const tsxFiles = PLAYER_UI_ROOTS.flatMap((rootDir) => walk(rootDir, (filePath) => filePath.endsWith('.tsx')));
   const localeFiles = [
     path.join(ROOT, 'i18n', 'en.json'),
+    path.join(ROOT, 'i18n', 'fr.json'),
+    path.join(ROOT, 'i18n', 'ar.json'),
     path.join(ROOT, 'i18n', 'ar-EG.json'),
   ];
 

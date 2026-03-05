@@ -5,7 +5,7 @@ import type { SessionViewport } from '../../session-setup/model/sessionTypes.ts'
 import { t } from '../../../i18n/index.ts';
 import { Icon } from '../../../ui/icon/Icon.tsx';
 import { GameIcon } from '../../../ui/icon/GameIcon.tsx';
-import { EngravedHeader, LocaleSwitcher, PaperSheet, TableSurface, ThemePlate } from '../../../ui/layout/tabletop.tsx';
+import { EngravedHeader, PaperSheet, TableSurface, ThemePlate } from '../../../ui/layout/tabletop.tsx';
 
 interface BoardTourScreenProps {
   onBackHome: () => void;
@@ -76,7 +76,6 @@ export function BoardTourScreen({ onBackHome, onOpenOffline }: BoardTourScreenPr
           detail={t('ui.guide.boardTourDetail', 'Each panel explains what a board component means, how to use it, and what danger signals to monitor.')}
           actions={
             <div className="header-action-plates shell-actions">
-              <LocaleSwitcher showLabel={false} compact />
               <ThemePlate
                 size="sm"
                 variant="utility"

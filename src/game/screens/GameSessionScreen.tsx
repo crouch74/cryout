@@ -173,7 +173,7 @@ function createDraft(actionId: ActionId, regions: RegionId[], domains: DomainId[
     regionId: regions[0],
     domainId: domains[0],
     targetSeat: 1,
-    bodiesCommitted: 1,
+    comradesCommitted: 1,
     evidenceCommitted: 0,
     cardId: undefined,
   };
@@ -335,10 +335,10 @@ function summarizeCardEffect(effect: Effect, content: CompiledContent) {
       return formatSignedLabel(effect.amount, t('ui.game.extractionTokens', 'Extraction Tokens'));
     case 'remove_extraction':
       return formatSignedLabel(effect.amount * -1, t('ui.game.extractionTokens', 'Extraction Tokens'));
-    case 'add_bodies':
-      return formatSignedLabel(effect.amount, t('ui.game.bodies', 'Comrades'));
-    case 'remove_bodies':
-      return formatSignedLabel(effect.amount * -1, t('ui.game.bodies', 'Comrades'));
+    case 'add_comrades':
+      return formatSignedLabel(effect.amount, t('ui.game.comrades', 'Comrades'));
+    case 'remove_comrades':
+      return formatSignedLabel(effect.amount * -1, t('ui.game.comrades', 'Comrades'));
     case 'gain_evidence':
       return formatSignedLabel(effect.amount, t('ui.game.evidence', 'Evidence'));
     case 'lose_evidence':
@@ -552,20 +552,20 @@ function getVisualDeltaGlyph(delta: EngineState['eventLog'][number]['deltas'][nu
         targetKeys: regionId ? [`region:${regionId}`, `region:${regionId}:defense`] : [],
       };
     }
-    case 'bodies': {
+    case 'comrades': {
       const regionId = getRegionIdFromDeltaLabel(delta.label, content);
       const seat = getSeatFromDeltaLabel(delta.label);
       return {
         glyph: {
           id: `${delta.kind}:${delta.label}`,
-          icon: 'bodies',
+          icon: 'comrades',
           value: signedDelta ?? '*',
           tone: 'resource',
-          ariaLabel: `${regionId ? localizeRegionField(regionId, 'name', content.regions[regionId].name) : t('ui.game.bodies', 'Comrades')} ${t('ui.game.bodies', 'Comrades')} ${signedDelta ?? ''}`.trim(),
+          ariaLabel: `${regionId ? localizeRegionField(regionId, 'name', content.regions[regionId].name) : t('ui.game.comrades', 'Comrades')} ${t('ui.game.comrades', 'Comrades')} ${signedDelta ?? ''}`.trim(),
         } satisfies VisualDeltaGlyph,
         targetKeys: [
-          ...(regionId ? [`region:${regionId}`, `region:${regionId}:bodies`] : []),
-          ...(seat === null ? [] : [`player:${seat}:bodies`]),
+          ...(regionId ? [`region:${regionId}`, `region:${regionId}:comrades`] : []),
+          ...(seat === null ? [] : [`player:${seat}:comrades`]),
         ],
       };
     }
@@ -943,14 +943,14 @@ export function GameSessionScreen({
           </label>
         ) : null}
 
-        {draftAction.needsBodies ? (
+        {draftAction.needsComrades ? (
           <label>
-            <span>{t('ui.game.bodiesCommitted', 'Comrades Committed')}</span>
+            <span>{t('ui.game.comradesCommitted', 'Comrades Committed')}</span>
             <input
               type="number"
               min={1}
-              value={draft.bodiesCommitted ?? 1}
-              onChange={(event) => setDraft((current) => ({ ...current, bodiesCommitted: Number(event.target.value) }))}
+              value={draft.comradesCommitted ?? 1}
+              onChange={(event) => setDraft((current) => ({ ...current, comradesCommitted: Number(event.target.value) }))}
             />
           </label>
         ) : null}
@@ -1467,7 +1467,7 @@ export function GameSessionScreen({
                   <>
                     <div className="dock-queue-summary">
                       <strong>{localizeFactionField(faction.id, 'shortName', faction.shortName)}</strong>
-                      <span>{formatNumber(getPlayerBodyTotal(state, focusedPlayer.seat))} {t('ui.game.bodies', 'Comrades')}</span>
+                      <span>{formatNumber(getPlayerBodyTotal(state, focusedPlayer.seat))} {t('ui.game.comrades', 'Comrades')}</span>
                       <span>{formatNumber(focusedPlayer.evidence)} {t('ui.game.evidence', 'Evidence')}</span>
                       <span>{t('ui.game.queuedCount', '{{count}} queued', { count: focusedPlayer.queuedIntents.length })}</span>
                     </div>

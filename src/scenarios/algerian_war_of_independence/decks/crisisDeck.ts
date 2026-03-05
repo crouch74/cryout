@@ -27,7 +27,7 @@ export const crisisCards: CrisisCardDefinition[] = [
     name: 'Rural Village Burned',
     text: 'Remove 1 Comrade from Sahara South for seat 3 and add 1 Extraction Token to Sahara South.',
     effects: [
-      { type: 'remove_bodies', region: 'SaharaSouth', seat: 2, amount: 1 },
+      { type: 'remove_comrades', region: 'SaharaSouth', seat: 2, amount: 1 },
       { type: 'add_extraction', region: 'SaharaSouth', amount: 1 },
     ],
   },
@@ -111,7 +111,7 @@ export const crisisCards: CrisisCardDefinition[] = [
     text: 'Reduce Revolutionary Wave by 1 and remove 1 Comrade from Algiers for seat 1.',
     effects: [
       { type: 'modify_domain', domain: 'RevolutionaryWave', delta: -1 },
-      { type: 'remove_bodies', region: 'Algiers', seat: 0, amount: 1 },
+      { type: 'remove_comrades', region: 'Algiers', seat: 0, amount: 1 },
     ],
   },
   {

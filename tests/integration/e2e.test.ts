@@ -21,7 +21,7 @@ function runLocalSequence() {
     { type: 'QueueIntent', seat: 0, action: { actionId: 'organize', regionId: 'Congo' } },
     { type: 'QueueIntent', seat: 0, action: { actionId: 'investigate', regionId: 'Congo' } },
     { type: 'SetReady', seat: 0, ready: true },
-    { type: 'QueueIntent', seat: 1, action: { actionId: 'defend', regionId: 'Levant', bodiesCommitted: 1 } },
+    { type: 'QueueIntent', seat: 1, action: { actionId: 'defend', regionId: 'Levant', comradesCommitted: 1 } },
     { type: 'QueueIntent', seat: 1, action: { actionId: 'international_outreach' } },
     { type: 'SetReady', seat: 1, ready: true },
     { type: 'QueueIntent', seat: 2, action: { actionId: 'organize', regionId: 'Mekong' } },
@@ -104,7 +104,7 @@ test('room snapshots reveal private data only for seats owned by the same human 
   const activated = claimAndStartRoom(controller);
   controller.applyCommands(activated.roomId, activated.ownerTokens.get(0) ?? '', [
     { type: 'ResolveSystemPhase' },
-    { type: 'QueueIntent', seat: 1, action: { actionId: 'defend', regionId: 'Levant', bodiesCommitted: 1 } },
+    { type: 'QueueIntent', seat: 1, action: { actionId: 'defend', regionId: 'Levant', comradesCommitted: 1 } },
   ]);
 
   const ownerZero = controller.getRoom(activated.roomId, activated.ownerTokens.get(0) ?? '') as { state: EngineState; ownerId: number; phase: 'ACTIVE' };
@@ -114,9 +114,9 @@ test('room snapshots reveal private data only for seats owned by the same human 
   assert.equal(ownerZero.ownerId, 0);
   assert.equal(ownerOne.ownerId, 1);
   assert.equal(ownerZero.state.players[1]?.queuedIntents.length, 1);
-  assert.equal(ownerZero.state.players[1]?.queuedIntents[0]?.bodiesCommitted, 1);
+  assert.equal(ownerZero.state.players[1]?.queuedIntents[0]?.comradesCommitted, 1);
   assert.equal(ownerOne.state.players[1]?.queuedIntents[0]?.actionId, 'defend');
-  assert.equal(ownerOne.state.players[1]?.queuedIntents[0]?.bodiesCommitted, undefined);
+  assert.equal(ownerOne.state.players[1]?.queuedIntents[0]?.comradesCommitted, undefined);
   assert.equal(ownerOne.state.players[1]?.mandateId, '');
   assert.equal(ownerZero.state.secretMandatesEnabled, true);
 });

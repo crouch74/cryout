@@ -30,6 +30,7 @@ export interface SimulationBatchConfig {
   outputDir?: string;
   progressInterval?: number;
   debugSingle?: boolean;
+  splitOutputShards?: boolean;
 }
 
 export interface NormalizedSimulationBatchConfig {
@@ -42,6 +43,7 @@ export interface NormalizedSimulationBatchConfig {
   outputDir: string;
   progressInterval: number;
   debugSingle: boolean;
+  splitOutputShards: boolean;
 }
 
 export interface PlannedSimulationRun {
@@ -110,7 +112,7 @@ export interface RoundSnapshot {
     defense?: number;
   }>;
   resources: {
-    totalBodies: number;
+    totalComrades: number;
     totalEvidence: number;
   };
   actions: {
@@ -139,12 +141,12 @@ export interface PreDefeatSnapshot {
   round: number;
   phase: string;
   totals: {
-    bodies: number;
+    comrades: number;
     evidence: number;
   };
   seats: Array<{
     seatId: string;
-    bodies: number;
+    comrades: number;
     evidence: number;
   }>;
   fronts: Record<string, {
@@ -198,7 +200,7 @@ export interface SimulationRecord {
     backlashFailures: number;
   };
   resourceStats: {
-    bodiesSpent: number;
+    comradesSpent: number;
     evidenceSpent: number;
   };
   actionCounts: {

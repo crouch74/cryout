@@ -28,7 +28,7 @@ test('serialized command log replays to the same snapshot', () => {
     { type: 'QueueIntent', seat: 0, action: { actionId: 'organize', regionId: 'Congo' } },
     { type: 'QueueIntent', seat: 0, action: { actionId: 'investigate', regionId: 'Congo' } },
     { type: 'SetReady', seat: 0, ready: true },
-    { type: 'QueueIntent', seat: 1, action: { actionId: 'defend', regionId: 'Levant', bodiesCommitted: 1 } },
+    { type: 'QueueIntent', seat: 1, action: { actionId: 'defend', regionId: 'Levant', comradesCommitted: 1 } },
     { type: 'QueueIntent', seat: 1, action: { actionId: 'international_outreach' } },
     { type: 'SetReady', seat: 1, ready: true },
     { type: 'QueueIntent', seat: 2, action: { actionId: 'organize', regionId: 'Mekong' } },

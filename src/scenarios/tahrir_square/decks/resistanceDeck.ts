@@ -34,7 +34,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
         text: 'Add 1 Comrade to Cairo for the acting faction.',
         regionBonus: 'Cairo',
         effects: [
-            { type: 'add_bodies', region: 'Cairo', seat: 'acting_player', amount: 1 }
+            { type: 'add_comrades', region: 'Cairo', seat: 'acting_player', amount: 1 }
         ]
     },
     {
@@ -46,7 +46,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
         domainBonus: 'PatriarchalGrip',
         effects: [
             { type: 'modify_domain', domain: 'PatriarchalGrip', delta: 1 },
-            { type: 'add_bodies', region: 'Alexandria', seat: 'acting_player', amount: 1 }
+            { type: 'add_comrades', region: 'Alexandria', seat: 'acting_player', amount: 1 }
         ]
     }
 ];

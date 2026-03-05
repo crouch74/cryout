@@ -59,10 +59,10 @@ test('disabled reason explains phase gating and body requirements', () => {
   assert.equal(systemReason.reason, 'Phase locked');
 
   state.phase = 'COALITION';
-  state.regions.Congo.bodiesPresent[0] = 0;
+  state.regions.Congo.comradesPresent[0] = 0;
   const solidarityReason = getSeatDisabledReason(state, content, 0, { actionId: 'build_solidarity', regionId: 'Congo', domainId: 'DyingPlanet' });
   assert.equal(solidarityReason.disabled, true);
-  assert.equal(solidarityReason.reasonCode, 'need_three_bodies');
+  assert.equal(solidarityReason.reasonCode, 'need_three_comrades');
   assert.equal(solidarityReason.reason, 'Need 3 Comrades in region');
 });
 
@@ -103,7 +103,7 @@ test('history presenter localizes reveal details and disabled reasons', async ()
   assert.match(english.cardReveals[0]?.body ?? '', /Global Gaze/);
   assert.doesNotMatch(english.cardReveals[0]?.body ?? '', /Affected region\(s\):/);
   assert.doesNotMatch(english.cardReveals[0]?.body ?? '', /Affected faction\(s\):/);
-  assert.equal(localizeDisabledReason({ reasonCode: 'need_three_bodies' }), 'Need 3 Comrades in region');
+  assert.equal(localizeDisabledReason({ reasonCode: 'need_three_comrades' }), 'Need 3 Comrades in region');
 
   await changeLocale('ar-EG');
   const arabic = presentHistoryEvent(revealEvent, content, state);
@@ -111,7 +111,7 @@ test('history presenter localizes reveal details and disabled reasons', async ()
   assert.match(arabic.cardReveals[0]?.body ?? '', /النظرة العالمية/);
   assert.doesNotMatch(arabic.cardReveals[0]?.body ?? '', /المنطقة أو المناطق المتأثرة/);
   assert.doesNotMatch(arabic.cardReveals[0]?.body ?? '', /الفصيل أو الفصائل المتأثرة/);
-  assert.match(localizeDisabledReason({ reasonCode: 'need_three_bodies' }) ?? '', /الرفاق/);
+  assert.match(localizeDisabledReason({ reasonCode: 'need_three_comrades' }) ?? '', /الرفاق/);
 
   await changeLocale('en');
 });
@@ -190,7 +190,7 @@ test('phase and preview helpers expose calibrated presentation copy', () => {
   const strip = getPlayerStripSummary(state.players[0], content, state);
   const localStrip = getPlayerStripSummary(localState.players[0], content, localState);
   const preview = buildIntentPreview(
-    { actionId: 'launch_campaign', regionId: 'Congo', domainId: 'WarMachine', bodiesCommitted: 2, evidenceCommitted: 1 },
+    { actionId: 'launch_campaign', regionId: 'Congo', domainId: 'WarMachine', comradesCommitted: 2, evidenceCommitted: 1 },
     content.actions.launch_campaign,
     state,
     content,
@@ -486,7 +486,8 @@ test('player-facing icon usage is centralized through GameIcon', () => {
   assert.match(tabletop, /DropdownMenuRoot/);
   assert.match(tabletop, /locale-icon-trigger/);
   assert.match(gameIcon, /crisis: TriangleAlert/);
-  assert.match(gameIcon, /extraction: Hexagon/);
+  assert.match(gameIcon, /extraction: Pickaxe/);
+  assert.match(gameIcon, /extractionToken: Pickaxe/);
   assert.match(gameIcon, /evidence: FileText/);
   assert.match(gameIcon, /comrades: Users/);
   assert.match(iconPack, /GameIcon/);
@@ -519,7 +520,7 @@ test('Arabic catalog stays key-complete and localizes canonical mechanic names',
   assert.equal(requiredUiHomeKeys.every((key) => englishKeys.has(key) && arabicKeys.has(key)), true);
 
   const arUi = arCatalog.ui as Record<string, Record<string, string>>;
-  assert.equal(arUi.game.bodies, 'الرفاق');
+  assert.equal(arUi.game.comrades, 'الرفاق');
   assert.equal(arUi.game.evidence, 'الأدلة');
   assert.equal(arUi.game.extractionTokens, 'رموز الاستخراج');
   assert.equal(arUi.game.globalGaze, 'النظرة العالمية');
@@ -631,6 +632,10 @@ test('track fractions invert order in RTL while keeping Arabic-Indic numerals', 
   await changeLocale('en');
   assert.equal(formatTrackFraction(5, 20), '5/20');
 
+  await changeLocale('ar');
+  assert.equal(formatTrackFraction(5, 20), '٢٠/٥');
+  assert.equal(formatTrackFraction(7, 12), '١٢/٧');
+
   await changeLocale('ar-EG');
   assert.equal(formatTrackFraction(5, 20), '٢٠/٥');
   assert.equal(formatTrackFraction(7, 12), '١٢/٧');
@@ -640,6 +645,8 @@ test('track fractions invert order in RTL while keeping Arabic-Indic numerals', 
 
 test('locale direction stays aligned with the supported locales', () => {
   assert.equal(getLocaleDirection('en'), 'ltr');
+  assert.equal(getLocaleDirection('fr'), 'ltr');
+  assert.equal(getLocaleDirection('ar'), 'rtl');
   assert.equal(getLocaleDirection('ar-EG'), 'rtl');
 });
 
@@ -647,12 +654,32 @@ test('locale options keep autonym labels under each active locale', async () => 
   await changeLocale('en');
   assert.deepEqual(getLocaleOptions(), [
     { value: 'en', label: 'English' },
+    { value: 'fr', label: 'Français' },
+    { value: 'ar', label: 'العربية الفصحى' },
+    { value: 'ar-EG', label: 'العربية المصرية' },
+  ]);
+
+  await changeLocale('fr');
+  assert.deepEqual(getLocaleOptions(), [
+    { value: 'en', label: 'English' },
+    { value: 'fr', label: 'Français' },
+    { value: 'ar', label: 'العربية الفصحى' },
+    { value: 'ar-EG', label: 'العربية المصرية' },
+  ]);
+
+  await changeLocale('ar');
+  assert.deepEqual(getLocaleOptions(), [
+    { value: 'en', label: 'English' },
+    { value: 'fr', label: 'Français' },
+    { value: 'ar', label: 'العربية الفصحى' },
     { value: 'ar-EG', label: 'العربية المصرية' },
   ]);
 
   await changeLocale('ar-EG');
   assert.deepEqual(getLocaleOptions(), [
     { value: 'en', label: 'English' },
+    { value: 'fr', label: 'Français' },
+    { value: 'ar', label: 'العربية الفصحى' },
     { value: 'ar-EG', label: 'العربية المصرية' },
   ]);
 
@@ -663,6 +690,14 @@ test('changing locale updates translated text and number formatting in one flow'
   await changeLocale('en');
   assert.equal(t('ui.language.label', 'Language'), 'Language');
   assert.equal(formatNumber(12), '12');
+
+  await changeLocale('fr');
+  assert.equal(t('ui.language.label', 'Language'), 'Langue');
+  assert.equal(formatNumber(12), '12');
+
+  await changeLocale('ar');
+  assert.equal(t('ui.language.label', 'Language'), 'اللغة');
+  assert.equal(formatNumber(12), '١٢');
 
   await changeLocale('ar-EG');
   assert.equal(t('ui.language.label', 'Language'), 'اللغة');

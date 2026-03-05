@@ -11,6 +11,7 @@ export interface SimulationCliOptions {
   seed?: number;
   parallelWorkers: number;
   debugSingle: boolean;
+  splitShards: boolean;
 }
 
 function toPositiveInteger(value: string, label: string) {
@@ -47,6 +48,7 @@ export function parseCliArgs(argv: string[]): SimulationCliOptions {
   let seed: number | undefined;
   let parallelWorkers = defaultParallelWorkers();
   let debugSingle = false;
+  let splitShards = false;
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -98,6 +100,11 @@ export function parseCliArgs(argv: string[]): SimulationCliOptions {
       continue;
     }
 
+    if (arg === '--split-shards') {
+      splitShards = true;
+      continue;
+    }
+
     throw new Error(`Unknown argument: ${arg}`);
   }
 
@@ -108,6 +115,7 @@ export function parseCliArgs(argv: string[]): SimulationCliOptions {
     seed,
     parallelWorkers,
     debugSingle,
+    splitShards,
   };
 }
 
@@ -123,6 +131,7 @@ export async function runCli(argv: string[]) {
     randomSeed: parsed.seed,
     parallelWorkers: parsed.debugSingle ? 1 : parsed.parallelWorkers,
     debugSingle: parsed.debugSingle,
+    splitOutputShards: parsed.splitShards,
   };
 
   console.log('🎛️ Simulation CLI options resolved');
@@ -133,6 +142,7 @@ export async function runCli(argv: string[]) {
     randomSeed: config.randomSeed ?? 'auto',
     parallelWorkers: config.parallelWorkers,
     debugSingle: config.debugSingle ?? false,
+    splitShards: config.splitOutputShards ?? false,
   }, null, 2));
   console.log('📸 Round snapshots are enabled (max 25 per simulation run).');
 

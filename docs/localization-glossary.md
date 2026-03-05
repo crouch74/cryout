@@ -12,7 +12,7 @@
 
 | Concept | English | Arabic | Notes | Avoid |
 | --- | --- | --- | --- | --- |
-| Resource: people | Comrades | الرفاق | Use for all player-facing references to people, organizing strength, and sacrifice. | Bodies, units |
+| Resource: people | Comrades | الرفاق | Use for all player-facing references to people, organizing strength, and sacrifice. | Comrades, units |
 | Resource: proof | Evidence | الأدلة | Treat as testimony, records, and proof in motion. | clues, data points |
 | Threat marker | Extraction Tokens | رموز الاستخراج | Mechanical term; keep exact and consistent. | extraction, counters |
 | Attention track | Global Gaze | النظرة العالمية | Public attention with political weight, not passive visibility. | awareness meter |

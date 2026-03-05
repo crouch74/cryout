@@ -23,7 +23,6 @@ import {
   Hammer,
   HandCoins,
   Handshake,
-  Hexagon,
   House,
   Languages,
   Leaf,
@@ -59,14 +58,14 @@ import { uiTokens } from '../tokens/index.ts';
 import type { GameIconName } from './iconTypes.ts';
 
 const ICON_BY_NAME: Record<GameIconName, LucideIcon> = {
-  bodies: Users,
+  comrades: Users,
   comrades: Users,
   crisis: TriangleAlert,
   close: X,
   copy: Copy,
   evidence: FileText,
   defense: ShieldPlus,
-  extraction: Hexagon,
+  extraction: Pickaxe,
   extractionToken: Pickaxe,
   pool: Database,
   globalGaze: Eye,

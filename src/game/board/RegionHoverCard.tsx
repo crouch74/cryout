@@ -5,13 +5,13 @@ export function RegionHoverCard({
   regionName,
   extraction,
   defense,
-  bodies,
+  comrades,
   strainLabel,
 }: {
   regionName: string;
   extraction: number;
   defense: number;
-  bodies: number;
+  comrades: number;
   strainLabel: string;
 }) {
   return (
@@ -20,7 +20,7 @@ export function RegionHoverCard({
       <div className="region-hover-row">
         <span><Icon type="extraction" size="xs" title={t('ui.game.extractionTokens', 'Extraction Tokens')} /> {formatNumber(extraction)}</span>
         <span><Icon type="defense" size="xs" title={t('ui.game.defense', 'Defense')} /> {formatNumber(defense)}</span>
-        <span><Icon type="bodies" size="xs" title={t('ui.game.bodies', 'Comrades')} /> {formatNumber(bodies)}</span>
+        <span><Icon type="comrades" size="xs" title={t('ui.game.comrades', 'Comrades')} /> {formatNumber(comrades)}</span>
       </div>
       <span>{strainLabel}</span>
     </article>

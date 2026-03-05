@@ -14,7 +14,7 @@ This document describes the currently shipped scenarios and runtime rules in thi
 
 ## Canonical Terms Used Here
 
-- **Comrades**: movement capacity represented in code as `Bodies`.
+- **Comrades**: movement capacity represented in code as `Comrades`.
 - **Evidence**: documentation/proof.
 - **Domains**: systemic pressure fronts tracked from `0` to `12`.
 - **Fronts**: scenario regions where extraction and Comrades pressure play out.

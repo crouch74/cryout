@@ -9,7 +9,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     text: 'Acting faction gains 1 Evidence and adds 1 Comrade to the target region.',
     effects: [
       { type: 'gain_evidence', seat: 'acting_player', amount: 1 },
-      { type: 'add_bodies', region: 'target_region', seat: 'acting_player', amount: 1 },
+      { type: 'add_comrades', region: 'target_region', seat: 'acting_player', amount: 1 },
     ],
   },
   {
@@ -40,7 +40,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     text: 'Advance Empty Stomach by 1 and add 1 Comrade to Oran for the acting faction.',
     effects: [
       { type: 'modify_domain', domain: 'EmptyStomach', delta: 1 },
-      { type: 'add_bodies', region: 'Oran', seat: 'acting_player', amount: 1 },
+      { type: 'add_comrades', region: 'Oran', seat: 'acting_player', amount: 1 },
     ],
   },
   {
@@ -70,7 +70,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     name: 'Mass Funeral Mobilization',
     text: 'Add 2 Comrades to Algiers for the acting faction and advance Revolutionary Wave by 1.',
     effects: [
-      { type: 'add_bodies', region: 'Algiers', seat: 'acting_player', amount: 2 },
+      { type: 'add_comrades', region: 'Algiers', seat: 'acting_player', amount: 2 },
       { type: 'modify_domain', domain: 'RevolutionaryWave', delta: 1 },
     ],
   },
@@ -92,7 +92,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     name: 'Cross-Border Supply',
     text: 'Add 2 Comrades to Tunisian Border for the acting faction and gain 1 Evidence.',
     effects: [
-      { type: 'add_bodies', region: 'TunisianBorder', seat: 'acting_player', amount: 2 },
+      { type: 'add_comrades', region: 'TunisianBorder', seat: 'acting_player', amount: 2 },
       { type: 'gain_evidence', seat: 'acting_player', amount: 1 },
     ],
   },

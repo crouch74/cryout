@@ -1,5 +1,5 @@
 export type GameIconName =
-  | 'bodies'
+  | 'comrades'
   | 'comrades'
   | 'crisis'
   | 'close'

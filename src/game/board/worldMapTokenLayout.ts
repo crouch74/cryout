@@ -1,7 +1,7 @@
 import type { RegionId } from '../../engine/index.ts';
 import type { MapViewport, BoardRegionMapEntry } from './worldMapSvgManifest.ts';
 
-export type RegionTokenVisual = 'extraction' | 'defense' | 'bodies';
+export type RegionTokenVisual = 'extraction' | 'defense' | 'comrades';
 
 export interface RegionTokenUnit {
   key: string;
@@ -75,7 +75,7 @@ export interface RegionLayoutResult {
 export interface RegionCountSummary {
   extraction: number;
   defense: number;
-  bodies: number;
+  comrades: number;
 }
 
 interface LayoutViewport {
@@ -119,7 +119,7 @@ const ANCHOR_SNAP_STEP_Y = 8;
 const MAX_VISIBLE_TOKENS = 8;
 const MAX_NEIGHBOR_OFFSET = 12;
 const SMART_STACK_THRESHOLD = 7;
-const TYPE_ORDER: RegionTokenVisual[] = ['extraction', 'defense', 'bodies'];
+const TYPE_ORDER: RegionTokenVisual[] = ['extraction', 'defense', 'comrades'];
 
 function percentToNumber(value: string) {
   return Number.parseFloat(value.replace('%', ''));
@@ -504,7 +504,7 @@ function buildAvoidanceVector(source: RegionLayoutResult, target: RegionLayoutRe
 }
 
 function getTotalTokenCount(counts: RegionCountSummary) {
-  return counts.extraction + counts.defense + counts.bodies;
+  return counts.extraction + counts.defense + counts.comrades;
 }
 
 export function buildRegionLayouts(input: BuildRegionLayoutsInput) {
@@ -626,7 +626,7 @@ export function buildRegionLayouts(input: BuildRegionLayoutsInput) {
 export function buildRegionCountSummary(
   extraction: number,
   defense: number,
-  bodies: number,
+  comrades: number,
 ): RegionCountSummary {
-  return { extraction, defense, bodies };
+  return { extraction, defense, comrades };
 }

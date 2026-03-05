@@ -31,7 +31,7 @@ function getImpactedRegionLabels(event: DomainEvent, content: CompiledContent) {
   }
 
   for (const delta of event.deltas) {
-    if (delta.kind === 'extraction' || delta.kind === 'defense' || delta.kind === 'bodies' || delta.kind === 'hijab') {
+    if (delta.kind === 'extraction' || delta.kind === 'defense' || delta.kind === 'comrades' || delta.kind === 'hijab') {
       const regionId = getRegionFromDeltaLabel(delta.label, content);
       if (regionId) {
         impacted.add(regionId);
@@ -53,7 +53,7 @@ function getImpactedFactionLabels(event: DomainEvent, content: CompiledContent, 
   }
 
   for (const delta of event.deltas) {
-    if (delta.kind === 'bodies' || delta.kind === 'evidence') {
+    if (delta.kind === 'comrades' || delta.kind === 'evidence') {
       const seat = getSeatFromDeltaLabel(delta.label);
       if (seat !== null) {
         impactedSeats.add(seat);

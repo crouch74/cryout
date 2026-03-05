@@ -45,7 +45,7 @@ function buildIntentKey(intent: Omit<QueuedIntent, 'slot'>) {
     intent.regionId ?? null,
     intent.domainId ?? null,
     intent.targetSeat ?? null,
-    intent.bodiesCommitted ?? null,
+    intent.comradesCommitted ?? null,
     intent.evidenceCommitted ?? null,
     intent.cardId ?? null,
   ]);
@@ -101,22 +101,22 @@ function getOutreachCost(state: EngineState, content: CompiledContent, seat: num
 }
 
 function getResourceSpend(state: EngineState, content: CompiledContent, seat: number, action: Omit<QueuedIntent, 'slot'>) {
-  let bodies = 0;
+  let comrades = 0;
   let evidence = 0;
 
   switch (action.actionId) {
     case 'launch_campaign':
-      bodies += action.bodiesCommitted ?? 0;
+      comrades += action.comradesCommitted ?? 0;
       evidence += action.evidenceCommitted ?? 0;
       break;
     case 'build_solidarity':
-      bodies += 3;
+      comrades += 3;
       break;
     case 'smuggle_evidence':
-      bodies += 1;
+      comrades += 1;
       break;
     case 'defend':
-      bodies += action.bodiesCommitted ?? 0;
+      comrades += action.comradesCommitted ?? 0;
       break;
     case 'international_outreach':
       evidence += getOutreachCost(state, content, seat);
@@ -135,7 +135,7 @@ function getResourceSpend(state: EngineState, content: CompiledContent, seat: nu
       break;
   }
 
-  return { bodies, evidence };
+  return { comrades, evidence };
 }
 
 function getSupportBonus(state: EngineState, content: CompiledContent, seat: number, action: Omit<QueuedIntent, 'slot'>) {
@@ -173,11 +173,11 @@ function estimateCampaignMargin(state: EngineState, content: CompiledContent, se
   const faction = player ? content.factions[player.factionId] : null;
   const pressure = getSystemPressure(state, content);
 
-  const committedBodies = action.bodiesCommitted ?? 0;
+  const committedComrades = action.comradesCommitted ?? 0;
   const committedEvidence = action.evidenceCommitted ?? 0;
 
   let modifier = 0;
-  modifier += Math.floor(committedBodies / 2);
+  modifier += Math.floor(committedComrades / 2);
   modifier += committedEvidence;
   modifier += Math.floor(state.globalGaze / 5);
   modifier -= Math.floor(state.northernWarMachine / 4);
@@ -324,9 +324,9 @@ function applyMandateHunter(candidate: StrategyCandidate, context: StrategyConte
 
 function applyRiskTaker(candidate: StrategyCandidate, context: StrategyContext) {
   if (candidate.action.actionId === 'launch_campaign') {
-    const committedBodies = candidate.action.bodiesCommitted ?? 0;
+    const committedComrades = candidate.action.comradesCommitted ?? 0;
     const committedEvidence = candidate.action.evidenceCommitted ?? 0;
-    candidate.score += 28 + committedBodies * 3 + committedEvidence * 4;
+    candidate.score += 28 + committedComrades * 3 + committedEvidence * 4;
     candidate.reasons.push('aggressive campaign posture');
   }
 

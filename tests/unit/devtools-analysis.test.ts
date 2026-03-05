@@ -39,7 +39,7 @@ test('action legality explorer exposes projected launch campaign math', () => {
     actionId: 'launch_campaign',
     regionId: 'Congo',
     domainId: 'DyingPlanet',
-    bodiesCommitted: 2,
+    comradesCommitted: 2,
     evidenceCommitted: 1,
     targetSeat: undefined,
     cardId: undefined,
@@ -54,12 +54,12 @@ test('narrative lint flags savior framing and canonical terminology drift', () =
   const content = compileContent(baseStartCommand.rulesetId);
   const mutated = structuredClone(content);
   mutated.ruleset.description = 'A hero arrives to save the third world.';
-  mutated.ruleset.actions[0].description = 'Spend Bodies to civilize the frontier.';
+  mutated.ruleset.actions[0].description = 'Track the Northern War Machine while we civilize the frontier.';
 
   const findings = lintNarrativeContent(mutated);
 
   assert.equal(findings.some((finding) => finding.detail.includes('savior framing')), true);
-  assert.equal(findings.some((finding) => finding.detail.includes('Canonical term is Comrades')), true);
+  assert.equal(findings.some((finding) => finding.detail.includes('Prefer the canonical track name War Machine')), true);
 });
 
 test('probability sandbox returns aggregate outcome counts for seeded simulations', () => {

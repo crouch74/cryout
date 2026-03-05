@@ -16,14 +16,14 @@ const TOKEN_OPTIONS = {
   opticalCorrection: { x: 0, y: 0 },
 } as const;
 
-function createRegionCounts(overrides: Partial<Record<RegionId, { extraction: number; defense: number; bodies: number }>>) {
+function createRegionCounts(overrides: Partial<Record<RegionId, { extraction: number; defense: number; comrades: number }>>) {
   return Object.fromEntries(
     getAvailableRegions().map((regionId) => [
       regionId,
       buildRegionCountSummary(
         overrides[regionId]?.extraction ?? 0,
         overrides[regionId]?.defense ?? 0,
-        overrides[regionId]?.bodies ?? 0,
+        overrides[regionId]?.comrades ?? 0,
       ),
     ]),
   ) as Record<RegionId, ReturnType<typeof buildRegionCountSummary>>;
@@ -56,8 +56,8 @@ test('single token group centers one token', () => {
 });
 
 test('two and three token groups stay on one row and three-token groups arc slightly', () => {
-  const twoTokenLayout = buildTokenGroupLayout('Congo', 'bodies', 2, TOKEN_OPTIONS);
-  const threeTokenLayout = buildTokenGroupLayout('Congo', 'bodies', 3, TOKEN_OPTIONS);
+  const twoTokenLayout = buildTokenGroupLayout('Congo', 'comrades', 2, TOKEN_OPTIONS);
+  const threeTokenLayout = buildTokenGroupLayout('Congo', 'comrades', 3, TOKEN_OPTIONS);
 
   assert.ok(twoTokenLayout);
   assert.deepEqual(twoTokenLayout.units.map((unit) => unit.y), [0, 0]);
@@ -110,19 +110,19 @@ test('optical centering offsets token types deterministically', () => {
   assert.ok(shifted);
   assert.equal(shifted.units[0].y, 0);
 
-  const bodyShifted = buildTokenGroupLayout('Congo', 'bodies', 1, {
+  const comradeShifted = buildTokenGroupLayout('Congo', 'comrades', 1, {
     ...TOKEN_OPTIONS,
     opticalCorrection: { x: 8, y: 0 },
   });
 
-  assert.ok(bodyShifted);
-  assert.equal(bodyShifted.units[0].x, 8);
+  assert.ok(comradeShifted);
+  assert.equal(comradeShifted.units[0].x, 8);
 });
 
 test('region layout compression only triggers past the cluster radius threshold and caps at ten percent', () => {
   const layouts = buildLayouts(createRegionCounts({
-    Congo: { extraction: 12, defense: 12, bodies: 12 },
-    Levant: { extraction: 1, defense: 0, bodies: 0 },
+    Congo: { extraction: 12, defense: 12, comrades: 12 },
+    Levant: { extraction: 1, defense: 0, comrades: 0 },
   }), {
     defaultVisibleWorldWidth: 653,
     currentVisibleWorldWidth: 520,
@@ -135,7 +135,7 @@ test('region layout compression only triggers past the cluster radius threshold 
 
 test('anchor snap stays within four pixels of the unsnapped anchor', () => {
   const layouts = buildLayouts(createRegionCounts({
-    Congo: { extraction: 2, defense: 0, bodies: 1 },
+    Congo: { extraction: 2, defense: 0, comrades: 1 },
   }));
 
   for (const regionId of getAvailableRegions()) {
@@ -147,9 +147,9 @@ test('anchor snap stays within four pixels of the unsnapped anchor', () => {
 
 test('neighbor avoidance remains bounded and deterministic across repeated runs', () => {
   const regionCounts = createRegionCounts({
-    Levant: { extraction: 6, defense: 3, bodies: 4 },
-    Sahel: { extraction: 6, defense: 3, bodies: 4 },
-    Congo: { extraction: 1, defense: 0, bodies: 0 },
+    Levant: { extraction: 6, defense: 3, comrades: 4 },
+    Sahel: { extraction: 6, defense: 3, comrades: 4 },
+    Congo: { extraction: 1, defense: 0, comrades: 0 },
   });
 
   const first = buildLayouts(regionCounts, { selectedRegionId: 'Levant' });
@@ -163,7 +163,7 @@ test('neighbor avoidance remains bounded and deterministic across repeated runs'
 
 test('token size shrinks when the visible map is broader and grows slightly when focus zooms in', () => {
   const regionCounts = createRegionCounts({
-    Congo: { extraction: 3, defense: 2, bodies: 4 },
+    Congo: { extraction: 3, defense: 2, comrades: 4 },
   });
   const broad = buildLayouts(regionCounts, {
     defaultVisibleWorldWidth: 653,
@@ -181,7 +181,7 @@ test('token size shrinks when the visible map is broader and grows slightly when
 
 test('effective cluster radius scales with viewport zoom', () => {
   const regionCounts = createRegionCounts({
-    Congo: { extraction: 3, defense: 2, bodies: 4 },
+    Congo: { extraction: 3, defense: 2, comrades: 4 },
   });
   const broad = buildLayouts(regionCounts, {
     defaultVisibleWorldWidth: 653,

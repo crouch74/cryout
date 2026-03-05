@@ -249,7 +249,7 @@ const actions: ActionDefinition[] = [
         resolvePriority: 500,
         needsRegion: true,
         needsDomain: true,
-        needsBodies: true,
+        needsComrades: true,
         needsEvidence: true,
         needsCard: true,
         cardType: 'support',
@@ -276,7 +276,7 @@ const actions: ActionDefinition[] = [
         description: 'Convert Comrades into Defense Rating.',
         resolvePriority: 260,
         needsRegion: true,
-        needsBodies: true,
+        needsComrades: true,
     },
     {
         id: 'play_card',

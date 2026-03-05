@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { runSimulationBatch } from '../../src/simulation/autoplayEngine.ts';
@@ -93,4 +93,25 @@ test('simulation engine writes NDJSON records and summary with expected coverage
   assert.equal(typeof summary.sanity, 'object');
   assert.equal(typeof summary.scenarioStats, 'object');
   assert.equal(typeof summary.strategyPerformance, 'object');
+});
+
+test('simulation engine can write split NDJSON output shards', async () => {
+  const outputDir = await mkdtemp(join(tmpdir(), 'stones-sim-shards-'));
+  const result = await runSimulationBatch({
+    runsPerScenario: 1,
+    randomSeed: 54321,
+    parallelWorkers: 1,
+    outputDir,
+    splitOutputShards: true,
+  });
+
+  assert.match(result.outputPath, /simulations_\*\.ndjson$/);
+  const files = await readdir(outputDir);
+  const shardFiles = files.filter((name) => /^simulations_\d{3}\.ndjson$/.test(name)).sort();
+  assert.equal(shardFiles.length >= 1, true);
+
+  const shardContent = await readFile(join(outputDir, shardFiles[0] ?? 'simulations_000.ndjson'), 'utf8');
+  const records = parseNdjson<Record<string, unknown>>(shardContent);
+  assert.equal(records.length >= 1, true);
+  assert.equal(Number(result.summary.runs), EXPECTED_SCENARIOS.length);
 });

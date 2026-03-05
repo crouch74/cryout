@@ -100,7 +100,7 @@ function buildCampaignResolvedPayload(
     domainDelta: roll.domainDelta,
     globalGazeDelta: roll.globalGazeDelta,
     warMachineDelta: roll.warMachineDelta,
-    committedBodies: event.context?.committedBodies,
+    committedComrades: event.context?.committedComrades,
     committedEvidence: event.context?.committedEvidence,
   });
 }
@@ -339,8 +339,8 @@ function toLegacyDisabledReason(detail: DisabledReasonDetail): string {
       return t('ui.game.selectDomain', 'Select a domain');
     case 'select_another_seat':
       return t('ui.game.selectAnotherSeat', 'Select another seat');
-    case 'need_three_bodies':
-      return t('ui.game.needThreeBodies', 'Need 3 Comrades in region');
+    case 'need_three_comrades':
+      return t('ui.game.needThreeComrades', 'Need 3 Comrades in region');
     case 'not_enough_evidence':
       return t('ui.game.notEnoughEvidence', 'Not enough Evidence');
     case 'no_evidence_to_move':
@@ -349,8 +349,8 @@ function toLegacyDisabledReason(detail: DisabledReasonDetail): string {
       return t('ui.game.needOneBody', 'Need 1 Comrade in region');
     case 'commit_one_body':
       return t('ui.game.commitOneBody', 'Commit at least 1 Comrade');
-    case 'not_enough_bodies':
-      return t('ui.game.notEnoughBodies', 'Not enough Comrades in region');
+    case 'not_enough_comrades':
+      return t('ui.game.notEnoughComrades', 'Not enough Comrades in region');
     case 'support_card_unavailable':
       return t('ui.game.supportCardUnavailable', 'Support card unavailable');
     case 'action_card_unavailable':
@@ -384,12 +384,12 @@ function addCardRevealEvent(
   );
 }
 
-function getSeatTotalBodies(state: EngineState, seat: number) {
-  return Object.values(state.regions).reduce((sum, region) => sum + (region.bodiesPresent[seat] ?? 0), 0);
+function getSeatTotalComrades(state: EngineState, seat: number) {
+  return Object.values(state.regions).reduce((sum, region) => sum + (region.comradesPresent[seat] ?? 0), 0);
 }
 
-function getTotalBodies(state: EngineState) {
-  return state.players.reduce((sum, player) => sum + getSeatTotalBodies(state, player.seat), 0);
+function getTotalComrades(state: EngineState) {
+  return state.players.reduce((sum, player) => sum + getSeatTotalComrades(state, player.seat), 0);
 }
 
 function getRulesetSetup(content: CompiledContent) {
@@ -511,8 +511,8 @@ function evaluateCondition(
         case 'player_evidence':
           left = state.players[resolveSeatSelector(condition.left.player ?? 'seat_owner', context)]?.evidence ?? 0;
           break;
-        case 'player_total_bodies':
-          left = getSeatTotalBodies(state, resolveSeatSelector(condition.left.player ?? 'seat_owner', context));
+        case 'player_total_comrades':
+          left = getSeatTotalComrades(state, resolveSeatSelector(condition.left.player ?? 'seat_owner', context));
           break;
         case 'custom_track':
           left = getCustomTrackState(state, assertExists(condition.left.track, 'Missing track on compare ref.'))?.value ?? 0;
@@ -680,13 +680,13 @@ function processScenarioRoundPenalty(state: EngineState, content: CompiledConten
   const targetedRegion = Object.values(state.regions)
     .map((region) => ({
       regionId: region.id,
-      bodies: Object.entries(region.bodiesPresent).map(([seat, amount]) => ({ seat: Number(seat), amount })).sort((left, right) => right.amount - left.amount),
-      totalBodies: Object.values(region.bodiesPresent).reduce((sum, amount) => sum + amount, 0),
+      comrades: Object.entries(region.comradesPresent).map(([seat, amount]) => ({ seat: Number(seat), amount })).sort((left, right) => right.amount - left.amount),
+      totalComrades: Object.values(region.comradesPresent).reduce((sum, amount) => sum + amount, 0),
     }))
-    .sort((left, right) => right.totalBodies - left.totalBodies)[0];
+    .sort((left, right) => right.totalComrades - left.totalComrades)[0];
 
-  const targetRegionId = targetedRegion?.totalBodies ? targetedRegion.regionId : undefined;
-  const actingSeat = targetedRegion?.bodies[0]?.amount ? targetedRegion.bodies[0].seat : undefined;
+  const targetRegionId = targetedRegion?.totalComrades ? targetedRegion.regionId : undefined;
+  const actingSeat = targetedRegion?.comrades[0]?.amount ? targetedRegion.comrades[0].seat : undefined;
 
   const traces = applyEffects(
     state,
@@ -874,8 +874,8 @@ function checkExtractionLoss(state: EngineState) {
 }
 
 function checkComradesExhaustedLoss(state: EngineState) {
-  const coalitionBodies = getTotalBodies(state);
-  if (coalitionBodies > 0) {
+  const coalitionComrades = getTotalComrades(state);
+  if (coalitionComrades > 0) {
     return false;
   }
 
@@ -1235,17 +1235,17 @@ function applyEffects(state: EngineState, content: CompiledContent, effects: Eff
         state.extractionPool = calculateExtractionPool(state, content);
         break;
       }
-      case 'add_bodies':
-      case 'remove_bodies': {
+      case 'add_comrades':
+      case 'remove_comrades': {
         const regionIds = resolveRegionSelector(state, content, effect.region, source.context);
         const seat = resolveSeatSelector(effect.seat, source.context);
         for (const regionId of regionIds) {
           const region = state.regions[regionId];
-          const before = region.bodiesPresent[seat] ?? 0;
-          region.bodiesPresent[seat] = effect.type === 'add_bodies'
+          const before = region.comradesPresent[seat] ?? 0;
+          region.comradesPresent[seat] = effect.type === 'add_comrades'
             ? before + effect.amount
             : Math.max(0, before - effect.amount);
-          trace.deltas.push(createDelta('bodies', `${regionId}.seat:${seat}`, before, region.bodiesPresent[seat]));
+          trace.deltas.push(createDelta('comrades', `${regionId}.seat:${seat}`, before, region.comradesPresent[seat]));
         }
         break;
       }
@@ -1307,15 +1307,15 @@ function applyEffects(state: EngineState, content: CompiledContent, effects: Eff
 
   // MARTYRDOM LOGIC (Tahrir Square)
   if (state.rulesetId === 'tahrir_square' && source.context.actingSeat !== undefined) {
-    const bodiesDelta = traces.filter(t => t.effectType === 'remove_bodies').reduce((sum, t) => {
-      const d = t.deltas.find(d => d.kind === 'bodies' && d.label.includes('Cairo'));
+    const comradesDelta = traces.filter(t => t.effectType === 'remove_comrades').reduce((sum, t) => {
+      const d = t.deltas.find(d => d.kind === 'comrades' && d.label.includes('Cairo'));
       if (d && typeof d.before === 'number' && typeof d.after === 'number') {
         return sum + (d.before - d.after);
       }
       return sum;
     }, 0);
-    if (bodiesDelta > 0) {
-      state.tahrirMartyrCount += bodiesDelta;
+    if (comradesDelta > 0) {
+      state.tahrirMartyrCount += comradesDelta;
       const waveGain = Math.floor(state.tahrirMartyrCount / 4);
       if (waveGain > 0) {
         state.tahrirMartyrCount %= 4;
@@ -1388,23 +1388,23 @@ function resolveMilitaryIntervention(state: EngineState, content: CompiledConten
   }
 
   const seatPresence = state.players
-    .map((player) => ({ seat: player.seat, bodies: region.bodiesPresent[player.seat] ?? 0 }))
-    .sort((left, right) => right.bodies - left.bodies);
-  const targetSeat = seatPresence[0]?.bodies ? seatPresence[0].seat : null;
+    .map((player) => ({ seat: player.seat, comrades: region.comradesPresent[player.seat] ?? 0 }))
+    .sort((left, right) => right.comrades - left.comrades);
+  const targetSeat = seatPresence[0]?.comrades ? seatPresence[0].seat : null;
 
   if (targetSeat !== null) {
-    const before = region.bodiesPresent[targetSeat];
-    region.bodiesPresent[targetSeat] = Math.max(0, before - 2);
+    const before = region.comradesPresent[targetSeat];
+    region.comradesPresent[targetSeat] = Math.max(0, before - 2);
     addEvent(state, 'system', 'military_intervention', '⚔️', `Military intervention hit ${targetRegionId}.`, ['intervention'], [
       {
         effectType: 'system_phase',
         status: 'executed',
         message: t('ui.runtime.traceComrades', 'Comrades {{before}} -> {{after}}.', {
           before,
-          after: region.bodiesPresent[targetSeat],
+          after: region.comradesPresent[targetSeat],
         }),
         causedBy: ['intervention'],
-        deltas: [createDelta('bodies', `${targetRegionId}.seat:${targetSeat}`, before, region.bodiesPresent[targetSeat])],
+        deltas: [createDelta('comrades', `${targetRegionId}.seat:${targetSeat}`, before, region.comradesPresent[targetSeat])],
       },
     ]);
     return;
@@ -1552,7 +1552,7 @@ function createInitialState(command: StartGameCommand, content: CompiledContent)
           RevolutionaryWave: 0, PatriarchalGrip: 0, UnfinishedJustice: 0
         },
         defenseRating: 0,
-        bodiesPresent: Object.fromEntries(players.map((player) => [player.seat, 0])),
+        comradesPresent: Object.fromEntries(players.map((player) => [player.seat, 0])),
         hijabEnforcement: 0,
       },
     ]),
@@ -1571,7 +1571,7 @@ function createInitialState(command: StartGameCommand, content: CompiledContent)
 
   for (const player of players) {
     const faction = content.factions[player.factionId];
-    regions[faction.homeRegion].bodiesPresent[player.seat] = 4;
+    regions[faction.homeRegion].comradesPresent[player.seat] = 4;
   }
 
   const beacons = Object.fromEntries(
@@ -1701,8 +1701,8 @@ function getDisabledReasonForIntent(
     return { code: 'select_another_seat' };
   }
   if (action.id === 'build_solidarity') {
-    if ((state.regions[intent.regionId!].bodiesPresent[seat] ?? 0) < 3) {
-      return { code: 'need_three_bodies' };
+    if ((state.regions[intent.regionId!].comradesPresent[seat] ?? 0) < 3) {
+      return { code: 'need_three_comrades' };
     }
   }
   if (action.id === 'international_outreach') {
@@ -1715,24 +1715,24 @@ function getDisabledReasonForIntent(
     if (player.evidence <= 0) {
       return { code: 'no_evidence_to_move' };
     }
-    if ((state.regions[intent.regionId!].bodiesPresent[seat] ?? 0) < 1) {
+    if ((state.regions[intent.regionId!].comradesPresent[seat] ?? 0) < 1) {
       return { code: 'need_one_body' };
     }
   }
   if (action.id === 'defend') {
-    if (!intent.bodiesCommitted || intent.bodiesCommitted < 1) {
+    if (!intent.comradesCommitted || intent.comradesCommitted < 1) {
       return { code: 'commit_one_body' };
     }
-    if ((state.regions[intent.regionId!].bodiesPresent[seat] ?? 0) < intent.bodiesCommitted) {
-      return { code: 'not_enough_bodies' };
+    if ((state.regions[intent.regionId!].comradesPresent[seat] ?? 0) < intent.comradesCommitted) {
+      return { code: 'not_enough_comrades' };
     }
   }
   if (action.id === 'launch_campaign') {
-    if (!intent.bodiesCommitted || intent.bodiesCommitted < 1) {
+    if (!intent.comradesCommitted || intent.comradesCommitted < 1) {
       return { code: 'commit_one_body' };
     }
-    if ((state.regions[intent.regionId!].bodiesPresent[seat] ?? 0) < intent.bodiesCommitted) {
-      return { code: 'not_enough_bodies' };
+    if ((state.regions[intent.regionId!].comradesPresent[seat] ?? 0) < intent.comradesCommitted) {
+      return { code: 'not_enough_comrades' };
     }
     if ((intent.evidenceCommitted ?? 0) > player.evidence) {
       return { code: 'not_enough_evidence', values: { count: intent.evidenceCommitted ?? 0 } };
@@ -1799,17 +1799,17 @@ function resolveOrganize(state: EngineState, content: CompiledContent, seat: num
   const regionId = assertExists(intent.regionId, 'Organize requires region.');
   const region = state.regions[regionId];
   const roll = rollDie(state, 6);
-  let bodies = roll + (region.extractionTokens >= 4 ? 2 : 0);
+  let comrades = roll + (region.extractionTokens >= 4 ? 2 : 0);
   if (regionId === faction.homeRegion) {
-    bodies += faction.organizeBonus;
+    comrades += faction.organizeBonus;
   } else if (faction.id === 'levant_sumud') {
-    bodies = Math.max(1, bodies - 1);
+    comrades = Math.max(1, comrades - 1);
   }
 
   return applyEffects(
     state,
     content,
-    [{ type: 'add_bodies', region: regionId, seat, amount: bodies }],
+    [{ type: 'add_comrades', region: regionId, seat, amount: comrades }],
     {
       sourceType: 'action',
       sourceId: 'organize',
@@ -1851,7 +1851,7 @@ function resolveBuildSolidarity(state: EngineState, content: CompiledContent, se
     state,
     content,
     [
-      { type: 'remove_bodies', region: regionId, seat, amount: 3 },
+      { type: 'remove_comrades', region: regionId, seat, amount: 3 },
       { type: 'modify_domain', domain: domainId, delta: 1 },
     ],
     {
@@ -1874,7 +1874,7 @@ function resolveSmuggleEvidence(state: EngineState, content: CompiledContent, se
     state,
     content,
     [
-      { type: 'remove_bodies', region: regionId, seat, amount: 1 },
+      { type: 'remove_comrades', region: regionId, seat, amount: 1 },
       { type: 'lose_evidence', seat, amount: transferAmount },
       { type: 'gain_evidence', seat: targetSeat, amount: transferAmount },
     ],
@@ -1911,14 +1911,14 @@ function resolveInternationalOutreach(state: EngineState, content: CompiledConte
 
 function resolveDefend(state: EngineState, content: CompiledContent, seat: number, intent: QueuedIntent): EffectTrace[] {
   const regionId = assertExists(intent.regionId, 'Defend requires region.');
-  const bodies = assertExists(intent.bodiesCommitted, 'Defend requires committed bodies.');
+  const comrades = assertExists(intent.comradesCommitted, 'Defend requires committed comrades.');
   const faction = getFaction(content, state.players[seat]);
-  const defenseAmount = bodies + (regionId === faction.homeRegion ? faction.defenseBonus : 0) - (faction.id === 'mekong_echo_network' && regionId !== 'Mekong' ? 1 : 0);
+  const defenseAmount = comrades + (regionId === faction.homeRegion ? faction.defenseBonus : 0) - (faction.id === 'mekong_echo_network' && regionId !== 'Mekong' ? 1 : 0);
   return applyEffects(
     state,
     content,
     [
-      { type: 'remove_bodies', region: regionId, seat, amount: bodies },
+      { type: 'remove_comrades', region: regionId, seat, amount: comrades },
       { type: 'set_defense', region: regionId, amount: Math.max(1, defenseAmount) },
     ],
     {
@@ -1979,7 +1979,7 @@ function resolveLaunchCampaign(
 ): { traces: EffectTrace[]; roll: RollResolution; modifiers: CampaignModifierEntry[] } {
   const regionId = assertExists(intent.regionId, 'Launch Campaign requires region.');
   const domainId = assertExists(intent.domainId, 'Launch Campaign requires domain.');
-  const committedBodies = assertExists(intent.bodiesCommitted, 'Launch Campaign requires bodies.');
+  const committedComrades = assertExists(intent.comradesCommitted, 'Launch Campaign requires comrades.');
   const committedEvidence = intent.evidenceCommitted ?? 0;
   const player = state.players[seat];
   const faction = getFaction(content, player);
@@ -1991,7 +1991,7 @@ function resolveLaunchCampaign(
     state,
     content,
     [
-      { type: 'remove_bodies', region: regionId, seat, amount: committedBodies },
+      { type: 'remove_comrades', region: regionId, seat, amount: committedComrades },
       { type: 'lose_evidence', seat, amount: committedEvidence },
     ],
     {
@@ -2013,7 +2013,7 @@ function resolveLaunchCampaign(
   const dieTwo = rollDie(state, 6);
   let modifier = 0;
 
-  const comradesModifier = Math.floor(committedBodies / 2);
+  const comradesModifier = Math.floor(committedComrades / 2);
   if (comradesModifier !== 0) {
     campaignModifiers.push({ source: 'committed_comrades', value: comradesModifier });
     modifier += comradesModifier;
@@ -2152,7 +2152,7 @@ function resolveQueuedAction(state: EngineState, content: CompiledContent, seat:
     actingSeat: seat,
     targetRegionId: intent.regionId,
     targetDomainId: intent.domainId,
-    committedBodies: intent.bodiesCommitted,
+    committedComrades: intent.comradesCommitted,
     committedEvidence: intent.evidenceCommitted,
     causedBy: [],
   };
@@ -2192,7 +2192,7 @@ function resolveQueuedAction(state: EngineState, content: CompiledContent, seat:
       });
       break;
     case 'burn_veil':
-      traces = applyEffects(state, content, [{ type: 'remove_bodies', region: intent.regionId!, seat, amount: 1 }, { type: 'modify_gaze', delta: 2 }], {
+      traces = applyEffects(state, content, [{ type: 'remove_comrades', region: intent.regionId!, seat, amount: 1 }, { type: 'modify_gaze', delta: 2 }], {
         sourceType: 'action', sourceId: 'burn_veil', emoji: '🔥', message: 'Burning the veil.', causedBy: ['burn_veil'], context: eventContext as ResolveContext
       });
       break;
@@ -2453,8 +2453,8 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
 
       // THE SQUARE (Tahrir Square)
       if (next.rulesetId === 'tahrir_square') {
-        const cairoBodies = Object.values(next.regions['Cairo'].bodiesPresent).reduce((a, b) => a + b, 0);
-        if (cairoBodies === 0) {
+        const cairoComrades = Object.values(next.regions['Cairo'].comradesPresent).reduce((a, b) => a + b, 0);
+        if (cairoComrades === 0) {
           next.tahrirEmptyRounds += 1;
           if (next.tahrirEmptyRounds >= 2) {
             next.domains['RevolutionaryWave'].progress = Math.max(0, next.domains['RevolutionaryWave'].progress - 1);

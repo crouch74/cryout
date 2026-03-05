@@ -165,7 +165,51 @@ export function TabletopControls({ compact = false }: { compact?: boolean }) {
 
 export function LocaleSwitcher({ showLabel = true, compact = false }: { showLabel?: boolean; compact?: boolean }) {
   const { changeLocale, locale, localeOptions } = useAppLocale();
-  const currentLocaleLabel = localeOptions.find((option) => option.value === locale)?.label ?? locale;
+  const activeOption = localeOptions.find((option) => option.value === locale) ?? { value: locale, label: locale };
+  const localeFlagClass = (value: string) => {
+    switch (value) {
+      case 'fr':
+        return 'locale-flag-fr';
+      case 'ar':
+        return 'locale-flag-ar';
+      case 'ar-EG':
+        return 'locale-flag-ar-eg';
+      default:
+        return 'locale-flag-en';
+    }
+  };
+
+  const renderLocaleLabel = (value: string, label: string) => (
+    <span className="locale-option-label">
+      <span className={`locale-flag ${localeFlagClass(value)}`} aria-hidden="true" />
+      <span>{label}</span>
+    </span>
+  );
+
+  const renderLocaleMenu = () => (
+    <DropdownMenuPortal>
+      <DropdownMenuContent
+        className="locale-dropdown-menu"
+        align="end"
+        side="bottom"
+        sideOffset={8}
+      >
+        {localeOptions.map((option) => (
+          <DropdownMenuItem
+            key={option.value}
+            className="locale-dropdown-item"
+            data-active={option.value === locale ? 'true' : 'false'}
+            onSelect={() => {
+              void changeLocale(option.value as typeof locale);
+            }}
+          >
+            {renderLocaleLabel(option.value, option.label)}
+            {option.value === locale ? <GameIcon name="check" size="xs" ariaLabel={t('ui.language.label', 'Language')} /> : null}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenuPortal>
+  );
 
   if (compact) {
     return (
@@ -176,34 +220,14 @@ export function LocaleSwitcher({ showLabel = true, compact = false }: { showLabe
               type="button"
               className="locale-icon-trigger"
               aria-label={t('ui.language.label', 'Language')}
-              title={currentLocaleLabel}
+              title={activeOption.label}
             >
               <GameIcon name="language" size="sm" ariaLabel={t('ui.language.label', 'Language')} />
+              <span className={`locale-flag ${localeFlagClass(activeOption.value)}`} aria-hidden="true" />
               <GameIcon name="chevronDown" size="xs" ariaLabel={t('ui.language.label', 'Language')} />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuPortal>
-            <DropdownMenuContent
-              className="locale-dropdown-menu"
-              align="end"
-              side="bottom"
-              sideOffset={8}
-            >
-              {localeOptions.map((option) => (
-                <DropdownMenuItem
-                  key={option.value}
-                  className="locale-dropdown-item"
-                  data-active={option.value === locale ? 'true' : 'false'}
-                  onSelect={() => {
-                    void changeLocale(option.value as typeof locale);
-                  }}
-                >
-                  <span>{option.label}</span>
-                  {option.value === locale ? <GameIcon name="check" size="xs" ariaLabel={t('ui.language.label', 'Language')} /> : null}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenuPortal>
+          {renderLocaleMenu()}
         </DropdownMenuRoot>
       </div>
     );
@@ -212,22 +236,20 @@ export function LocaleSwitcher({ showLabel = true, compact = false }: { showLabe
   return (
     <div className="locale-switcher">
       {showLabel ? <span className="engraved-eyebrow">{t('ui.language.label', 'Language')}</span> : null}
-      <div className="locale-switcher-select-shell">
-        <GameIcon name="language" size="sm" ariaLabel={t('ui.language.label', 'Language')} />
-        <select
-          value={locale}
-          onChange={(event) => {
-            void changeLocale(event.target.value as typeof locale);
-          }}
-          aria-label={t('ui.language.label', 'Language')}
-        >
-          {localeOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </div>
+      <DropdownMenuRoot>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className="locale-selector-trigger"
+            aria-label={t('ui.language.label', 'Language')}
+            title={activeOption.label}
+          >
+            {renderLocaleLabel(activeOption.value, activeOption.label)}
+            <GameIcon name="chevronDown" size="xs" ariaLabel={t('ui.language.label', 'Language')} />
+          </button>
+        </DropdownMenuTrigger>
+        {renderLocaleMenu()}
+      </DropdownMenuRoot>
     </div>
   );
 }

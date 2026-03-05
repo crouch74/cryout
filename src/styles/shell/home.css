@@ -192,12 +192,12 @@
   letter-spacing: 0.06em;
 }
 
-html[lang='ar-EG'] .setup-header h1 {
+html[lang^='ar'] .setup-header h1 {
   letter-spacing: 0.01em;
   text-transform: none;
 }
 
-html[lang='ar-EG'] .home-primary-action {
+html[lang^='ar'] .home-primary-action {
   letter-spacing: 0.01em;
   text-transform: none;
 }
@@ -208,10 +208,6 @@ html[dir='rtl'] .setup-utility-strip {
 
 html[dir='rtl'] .setup-header-minimal {
   justify-content: flex-end;
-}
-
-html[dir='rtl'] .coalition-panel-head {
-  flex-direction: row-reverse;
 }
 
 html[dir='rtl'] .scenario-select-major {

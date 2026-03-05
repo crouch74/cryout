@@ -6,7 +6,7 @@ import {
 } from '../../../i18n/index.ts';
 import { Icon } from '../../../ui/icon/Icon.tsx';
 import { GameIcon } from '../../../ui/icon/GameIcon.tsx';
-import { EngravedHeader, LocaleSwitcher, PaperSheet, TableSurface, ThemePlate } from '../../../ui/layout/tabletop.tsx';
+import { EngravedHeader, PaperSheet, TableSurface, ThemePlate } from '../../../ui/layout/tabletop.tsx';
 
 interface PlayerGuideScreenProps {
   rulesetId: string;
@@ -28,7 +28,6 @@ export function PlayerGuideScreen({
           detail={localizeRulesetField(content.ruleset.id, 'description', content.ruleset.description)}
           actions={
             <div className="header-action-plates shell-actions">
-              <LocaleSwitcher showLabel={false} compact />
               <ThemePlate
                 size="sm"
                 variant="utility"

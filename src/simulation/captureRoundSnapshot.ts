@@ -1,5 +1,5 @@
 import type { EngineState } from '../engine/index.ts';
-import { totalBodies, totalEvidence } from './invariants.ts';
+import { totalComrades, totalEvidence } from './invariants.ts';
 import type { RoundSnapshot, SimulationRecord } from './types.ts';
 
 const FRONT_ACTION_KEY_MAP = {
@@ -88,7 +88,7 @@ function collectFronts(state: EngineState): RoundSnapshot['fronts'] {
   const fronts: RoundSnapshot['fronts'] = {};
 
   for (const [frontId, frontState] of Object.entries(state.regions)) {
-    const comradesTotal = Object.values(frontState.bodiesPresent).reduce((sum, value) => sum + value, 0);
+    const comradesTotal = Object.values(frontState.comradesPresent).reduce((sum, value) => sum + value, 0);
     fronts[frontId] = {
       extraction: frontState.extractionTokens,
       comradesTotal,
@@ -114,7 +114,7 @@ function collectDomains(state: EngineState): RoundSnapshot['domains'] {
 
 function collectResources(state: EngineState): RoundSnapshot['resources'] {
   return {
-    totalBodies: totalBodies(state),
+    totalComrades: totalComrades(state),
     totalEvidence: totalEvidence(state),
   };
 }

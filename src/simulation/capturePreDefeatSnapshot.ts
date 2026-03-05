@@ -1,5 +1,5 @@
 import type { DomainId, EngineState } from '../engine/index.ts';
-import { seatBodies, totalBodies, totalEvidence } from './invariants.ts';
+import { seatComrades, totalComrades, totalEvidence } from './invariants.ts';
 import type { PreDefeatSnapshot } from './types.ts';
 
 const CANONICAL_DOMAIN_ORDER: DomainId[] = [
@@ -34,7 +34,7 @@ function collectFronts(state: EngineState): PreDefeatSnapshot['fronts'] {
   for (const [frontId, front] of Object.entries(state.regions)) {
     fronts[frontId] = {
       extraction: front.extractionTokens,
-      comradesTotal: Object.values(front.bodiesPresent).reduce((sum, count) => sum + count, 0),
+      comradesTotal: Object.values(front.comradesPresent).reduce((sum, count) => sum + count, 0),
     };
   }
 
@@ -47,7 +47,7 @@ export function capturePreDefeatSnapshot(
 ): PreDefeatSnapshot {
   const seats = state.players.map((player) => ({
     seatId: String(player.seat),
-    bodies: seatBodies(state, player.seat),
+    comrades: seatComrades(state, player.seat),
     evidence: player.evidence,
   }));
 
@@ -55,7 +55,7 @@ export function capturePreDefeatSnapshot(
     round: state.round,
     phase,
     totals: {
-      bodies: totalBodies(state),
+      comrades: totalComrades(state),
       evidence: totalEvidence(state),
     },
     seats,

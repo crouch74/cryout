@@ -60,7 +60,7 @@ export function getSeatDisabledReason(
 }
 
 export function getPlayerBodyTotal(state: EngineState, seat: number) {
-  return Object.values(state.regions).reduce((sum, region) => sum + (region.bodiesPresent[seat] ?? 0), 0);
+  return Object.values(state.regions).reduce((sum, region) => sum + (region.comradesPresent[seat] ?? 0), 0);
 }
 
 export function getMandateStatus(state: EngineState, content: CompiledContent, seat: number) {

@@ -79,7 +79,7 @@ function toCorePlayers(state: EngineState): Record<string, CorePlayerState> {
           targetIds: intent.targetSeat !== undefined ? [`seat:${intent.targetSeat}`] : [],
           params: {
             domainId: intent.domainId ?? null,
-            bodiesCommitted: intent.bodiesCommitted ?? null,
+            comradesCommitted: intent.comradesCommitted ?? null,
             evidenceCommitted: intent.evidenceCommitted ?? null,
             cardId: intent.cardId ?? null,
           },
@@ -153,7 +153,7 @@ function toCoreZones(state: EngineState): Record<string, CoreZoneState> {
           extractionTokens: region.extractionTokens,
           defenseRating: region.defenseRating,
           hijabEnforcement: region.hijabEnforcement,
-          ...Object.fromEntries(Object.entries(region.bodiesPresent).map(([seat, value]) => [`bodies:${seat}`, value])),
+          ...Object.fromEntries(Object.entries(region.comradesPresent).map(([seat, value]) => [`comrades:${seat}`, value])),
         },
         resources: {},
         entities: [],

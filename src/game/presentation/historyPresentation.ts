@@ -230,13 +230,13 @@ function formatDeltaLabel(delta: StateDelta, content: CompiledContent) {
       const regionLabel = regionId ? localizeRegionField(regionId, 'name', content.regions[regionId].name) : delta.label;
       return `${regionLabel} · ${t('ui.game.defense', 'Defense')}`;
     }
-    case 'bodies': {
+    case 'comrades': {
       const regionId = getRegionFromDeltaLabel(delta.label);
       const seat = getSeatFromDeltaLabel(delta.label);
       const regionLabel = regionId ? localizeRegionField(regionId, 'name', content.regions[regionId].name) : delta.label;
       return seat === null
-        ? `${regionLabel} · ${t('ui.game.bodies', 'Comrades')}`
-        : `${regionLabel} · ${formatSeatLabel(seat)} · ${t('ui.game.bodies', 'Comrades')}`;
+        ? `${regionLabel} · ${t('ui.game.comrades', 'Comrades')}`
+        : `${regionLabel} · ${formatSeatLabel(seat)} · ${t('ui.game.comrades', 'Comrades')}`;
     }
     case 'evidence': {
       const seat = getSeatFromDeltaLabel(delta.label);
@@ -287,9 +287,9 @@ function getTraceTitle(trace: EffectTrace, content: CompiledContent) {
       return t('ui.history.addExtraction', 'Add Extraction Tokens');
     case 'remove_extraction':
       return t('ui.history.removeExtraction', 'Remove Extraction Tokens');
-    case 'add_bodies':
-    case 'remove_bodies':
-      return t('ui.history.modifyBodies', 'Modify Comrades');
+    case 'add_comrades':
+    case 'remove_comrades':
+      return t('ui.history.modifyComrades', 'Modify Comrades');
     case 'gain_evidence':
     case 'lose_evidence':
       return t('ui.history.modifyEvidence', 'Modify Evidence');
@@ -496,8 +496,8 @@ export function localizeDisabledReason(reason: Pick<DisabledActionReason, 'reaso
       return t('ui.game.selectDomain', 'Select a domain');
     case 'select_another_seat':
       return t('ui.game.selectAnotherSeat', 'Select another seat');
-    case 'need_three_bodies':
-      return t('ui.game.needThreeBodies', 'Need 3 Comrades in region');
+    case 'need_three_comrades':
+      return t('ui.game.needThreeComrades', 'Need 3 Comrades in region');
     case 'not_enough_evidence':
       return t('ui.game.notEnoughEvidence', 'Not enough Evidence');
     case 'no_evidence_to_move':
@@ -506,8 +506,8 @@ export function localizeDisabledReason(reason: Pick<DisabledActionReason, 'reaso
       return t('ui.game.needOneBody', 'Need 1 Comrade in region');
     case 'commit_one_body':
       return t('ui.game.commitOneBody', 'Commit at least 1 Comrade');
-    case 'not_enough_bodies':
-      return t('ui.game.notEnoughBodies', 'Not enough Comrades in region');
+    case 'not_enough_comrades':
+      return t('ui.game.notEnoughComrades', 'Not enough Comrades in region');
     case 'support_card_unavailable':
       return t('ui.game.supportCardUnavailable', 'Support card unavailable');
     case 'action_card_unavailable':

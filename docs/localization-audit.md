@@ -17,14 +17,14 @@
 | UI helpers | Several visible strings in `gameUiHelpers.ts` were hardcoded in English. | Fixed |
 | Selectors | Phase summaries were hardcoded in English. | Fixed |
 | Setup UI | Room URL placeholder was hardcoded. | Fixed |
-| Presentation labels | Several fallbacks still exposed `Bodies` instead of `Comrades`. | Fixed |
+| Presentation labels | Several fallbacks still exposed `Comrades` instead of `Comrades`. | Fixed |
 | Ruleset metadata | Arabic lacked top-level ruleset localization for `tahrir_square` and `woman_life_freedom`. | Fixed |
 
 ## High-Impact Term Rewrites
 
 | Before | After |
 | --- | --- |
-| Bodies | Comrades / الرفاق |
+| Comrades | Comrades / الرفاق |
 | End Resolution with every region at 1 Extraction or less. | Reach the end of Resolution with every region at 1 Extraction Token or fewer. |
 | Feedback | Aftermath |
 | Operational Briefing | Campaign Briefing |
@@ -59,4 +59,4 @@
 
 ## Dehumanizing Terminology Check
 
-Active user-facing copy no longer presents people as `Bodies`. Internal engine field names remain unchanged for code stability, but presentation layers now consistently render the canonical people-facing term `Comrades` / `الرفاق`.
+Active user-facing copy no longer presents people as `Comrades`. Internal engine field names remain unchanged for code stability, but presentation layers now consistently render the canonical people-facing term `Comrades` / `الرفاق`.

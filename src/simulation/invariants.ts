@@ -2,12 +2,12 @@ import type { EngineState } from '../engine/index.ts';
 
 export type GameState = EngineState;
 
-export function seatBodies(gameState: GameState, seat: number) {
-  return Object.values(gameState.regions).reduce((sum, region) => sum + (region.bodiesPresent[seat] ?? 0), 0);
+export function seatComrades(gameState: GameState, seat: number) {
+  return Object.values(gameState.regions).reduce((sum, region) => sum + (region.comradesPresent[seat] ?? 0), 0);
 }
 
-export function totalBodies(gameState: GameState) {
-  return gameState.players.reduce((sum, player) => sum + seatBodies(gameState, player.seat), 0);
+export function totalComrades(gameState: GameState) {
+  return gameState.players.reduce((sum, player) => sum + seatComrades(gameState, player.seat), 0);
 }
 
 export function totalEvidence(gameState: GameState) {
@@ -16,18 +16,18 @@ export function totalEvidence(gameState: GameState) {
 
 export function validateResourceInvariants(gameState: GameState) {
   for (const player of gameState.players) {
-    const seatTotal = seatBodies(gameState, player.seat);
+    const seatTotal = seatComrades(gameState, player.seat);
     if (seatTotal < 0) {
-      throw new Error(`💥 Bodies resource underflow detected for seat ${player.seat}`);
+      throw new Error(`💥 Comrades resource underflow detected for seat ${player.seat}`);
     }
   }
 
-  const coalitionBodies = totalBodies(gameState);
-  if (coalitionBodies < 0) {
-    throw new Error('💥 Bodies resource underflow detected');
+  const coalitionComrades = totalComrades(gameState);
+  if (coalitionComrades < 0) {
+    throw new Error('💥 Comrades resource underflow detected');
   }
 
-  if (coalitionBodies === 0 && gameState.round === 1) {
-    console.warn('⚠️ Bodies exhausted in round 1 — possible bug');
+  if (coalitionComrades === 0 && gameState.round === 1) {
+    console.warn('⚠️ Comrades exhausted in round 1 — possible bug');
   }
 }

@@ -2,26 +2,34 @@ import i18n, { type Resource } from 'i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import { initReactI18next, useTranslation } from 'react-i18next';
 import enCatalog from './en.json' with { type: 'json' };
+import frCatalog from './fr.json' with { type: 'json' };
+import arCatalog from './ar.json' with { type: 'json' };
 import arEGCatalog from './ar-EG.json' with { type: 'json' };
 import type { ActionDefinition } from '../engine/index.ts';
 
 type InterpolationValue = string | number;
-export type Locale = 'en' | 'ar-EG';
+export type Locale = 'en' | 'fr' | 'ar' | 'ar-EG';
 
 export const LOCALE_STORAGE_KEY = 'stones-cutover-locale';
 
 const resources = {
   en: { translation: enCatalog },
+  fr: { translation: frCatalog },
+  ar: { translation: arCatalog },
   'ar-EG': { translation: arEGCatalog },
 } satisfies Resource;
 
 const LOCALE_META: Record<Locale, { dir: 'ltr' | 'rtl'; intlLocale: string; zero: string }> = {
   en: { dir: 'ltr', intlLocale: 'en', zero: '0' },
+  fr: { dir: 'ltr', intlLocale: 'fr', zero: '0' },
+  ar: { dir: 'rtl', intlLocale: 'ar-u-nu-arab', zero: '٠' },
   'ar-EG': { dir: 'rtl', intlLocale: 'ar-EG-u-nu-arab', zero: '٠' },
 };
 
 const LOCALE_AUTONYMS: Record<Locale, string> = {
   en: 'English',
+  fr: 'Français',
+  ar: 'العربية الفصحى',
   'ar-EG': 'العربية المصرية',
 };
 
@@ -39,18 +47,25 @@ function getNumberFormatter(locale: Locale) {
 }
 
 export function isLocale(value: string): value is Locale {
-  return value === 'en' || value === 'ar-EG';
+  return value === 'en' || value === 'fr' || value === 'ar' || value === 'ar-EG';
 }
 
 function normalizeLocale(value?: string | null): Locale {
   if (!value) {
     return 'en';
   }
+  const normalized = value.toLowerCase();
   if (isLocale(value)) {
     return value;
   }
-  if (value.startsWith('ar')) {
+  if (normalized.startsWith('fr')) {
+    return 'fr';
+  }
+  if (normalized.startsWith('ar-eg')) {
     return 'ar-EG';
+  }
+  if (normalized.startsWith('ar')) {
+    return 'ar';
   }
   return 'en';
 }
@@ -78,7 +93,7 @@ await i18n
   .init({
     resources,
     fallbackLng: 'en',
-    supportedLngs: ['en', 'ar-EG'],
+    supportedLngs: ['en', 'fr', 'ar', 'ar-EG'],
     defaultNS: 'translation',
     ns: ['translation'],
     interpolation: {
@@ -242,6 +257,8 @@ export function formatEffectPreview(action: ActionDefinition) {
 export function getLocaleOptions(): Array<{ value: Locale; label: string }> {
   return [
     { value: 'en', label: LOCALE_AUTONYMS.en },
+    { value: 'fr', label: LOCALE_AUTONYMS.fr },
+    { value: 'ar', label: LOCALE_AUTONYMS.ar },
     { value: 'ar-EG', label: LOCALE_AUTONYMS['ar-EG'] },
   ];
 }

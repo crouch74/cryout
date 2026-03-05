@@ -28,7 +28,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     text: 'Advance Silenced Truth by 1 and add 1 Comrade to the target region for the acting faction.',
     effects: [
       { type: 'modify_domain', domain: 'SilencedTruth', delta: 1 },
-      { type: 'add_bodies', region: 'target_region', seat: 'acting_player', amount: 1 },
+      { type: 'add_comrades', region: 'target_region', seat: 'acting_player', amount: 1 },
     ],
   },
   {
@@ -37,7 +37,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     type: 'action',
     name: 'Strike Fund',
     text: 'Add 3 Comrades to the target region for the acting faction.',
-    effects: [{ type: 'add_bodies', region: 'target_region', seat: 'acting_player', amount: 3 }],
+    effects: [{ type: 'add_comrades', region: 'target_region', seat: 'acting_player', amount: 3 }],
   },
   {
     id: 'res_lawyers_brief',

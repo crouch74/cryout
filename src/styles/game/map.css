@@ -298,7 +298,7 @@
   color: var(--color-state-info);
 }
 
-.game-screen-compressed .board-region-token-bodies {
+.game-screen-compressed .board-region-token-comrades {
   --token-glyph-scale: 0.92;
   color: var(--color-state-danger);
 }

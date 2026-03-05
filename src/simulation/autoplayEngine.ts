@@ -1,8 +1,9 @@
 import { cpus } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
-import { rm, mkdir, writeFile } from 'node:fs/promises';
+import { rm, mkdir, writeFile, readdir } from 'node:fs/promises';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { Worker } from 'node:worker_threads';
+import { createInterface } from 'node:readline';
 import {
   buildBalancedSeatOwners,
   compileContent,
@@ -18,7 +19,7 @@ import {
 import { buildStrategyCandidatesForSeat, getStrategyProfile, listStrategyProfiles } from './strategies.ts';
 import { captureRoundSnapshot, convertRoundSnapshotsToTimeline } from './captureRoundSnapshot.ts';
 import { capturePreDefeatSnapshot } from './capturePreDefeatSnapshot.ts';
-import { seatBodies, totalBodies, validateResourceInvariants } from './invariants.ts';
+import { seatComrades, totalComrades, validateResourceInvariants } from './invariants.ts';
 import type {
   NormalizedSimulationBatchConfig,
   PlannedSimulationRun,
@@ -175,6 +176,7 @@ function normalizeBatchConfig(config: SimulationBatchConfig): NormalizedSimulati
   const outputDir = resolve(config.outputDir ?? resolve(process.cwd(), 'simulation_output'));
   const progressInterval = Math.max(1, Math.floor(config.progressInterval ?? 250));
   const debugSingle = Boolean(config.debugSingle);
+  const splitOutputShards = Boolean(config.splitOutputShards);
 
   return {
     scenarios,
@@ -186,6 +188,7 @@ function normalizeBatchConfig(config: SimulationBatchConfig): NormalizedSimulati
     outputDir,
     progressInterval,
     debugSingle,
+    splitOutputShards,
   };
 }
 
@@ -248,7 +251,7 @@ function buildIntentKey(command: EngineCommand) {
     command.action.regionId ?? null,
     command.action.domainId ?? null,
     command.action.targetSeat ?? null,
-    command.action.bodiesCommitted ?? null,
+    command.action.comradesCommitted ?? null,
     command.action.evidenceCommitted ?? null,
     command.action.cardId ?? null,
   ]);
@@ -394,7 +397,7 @@ function buildRunRecord(
   };
 
   const resourceStats = {
-    bodiesSpent: 0,
+    comradesSpent: 0,
     evidenceSpent: 0,
   };
 
@@ -426,8 +429,8 @@ function buildRunRecord(
 
     for (const trace of event.trace) {
       for (const delta of trace.deltas) {
-        if (delta.kind === 'bodies' && typeof delta.before === 'number' && typeof delta.after === 'number' && delta.after < delta.before) {
-          resourceStats.bodiesSpent += delta.before - delta.after;
+        if (delta.kind === 'comrades' && typeof delta.before === 'number' && typeof delta.after === 'number' && delta.after < delta.before) {
+          resourceStats.comradesSpent += delta.before - delta.after;
         }
         if (delta.kind === 'evidence' && typeof delta.before === 'number' && typeof delta.after === 'number' && delta.after < delta.before) {
           resourceStats.evidenceSpent += delta.before - delta.after;
@@ -531,7 +534,7 @@ function isPhaseCommand(command: SimulationCommand) {
 }
 
 function collectSeatBodyTotals(state: EngineState) {
-  return new Map(state.players.map((player) => [player.seat, seatBodies(state, player.seat)]));
+  return new Map(state.players.map((player) => [player.seat, seatComrades(state, player.seat)]));
 }
 
 function logPhaseHeader(state: EngineState, command: SimulationCommand, debug: boolean) {
@@ -542,7 +545,7 @@ function logPhaseHeader(state: EngineState, command: SimulationCommand, debug: b
   switch (command.type) {
     case 'ResolveSystemPhase':
       console.log(`🎲 Round ${state.round} start`);
-      console.log(`👥 Bodies total = ${totalBodies(state)}`);
+      console.log(`👥 Comrades total = ${totalComrades(state)}`);
       break;
     case 'CommitCoalitionIntent':
       console.log('⚙️ Player actions');
@@ -560,11 +563,11 @@ function logBodySpend(before: Map<number, number>, afterState: EngineState, debu
     return;
   }
 
-  for (const [seat, beforeBodies] of before.entries()) {
-    const afterBodies = seatBodies(afterState, seat);
-    if (afterBodies < beforeBodies) {
-      const cost = beforeBodies - afterBodies;
-      console.log('🔻 Bodies spent', `seat${seat + 1}`, cost);
+  for (const [seat, beforeComrades] of before.entries()) {
+    const afterComrades = seatComrades(afterState, seat);
+    if (afterComrades < beforeComrades) {
+      const cost = beforeComrades - afterComrades;
+      console.log('🔻 Comrades spent', `seat${seat + 1}`, cost);
     }
   }
 }
@@ -599,7 +602,7 @@ function logPhaseEffects(
   }
 
   if (isPhaseCommand(command)) {
-    console.log('🧠 Resource state', state.round, totalBodies(state));
+    console.log('🧠 Resource state', state.round, totalComrades(state));
   }
 
   if (command.type === 'ResolveResolutionPhase') {
@@ -643,13 +646,13 @@ export function runSingleSimulation(
       break;
     }
 
-    const seatBodiesBefore = collectSeatBodyTotals(state);
+    const seatComradesBefore = collectSeatBodyTotals(state);
     const eventStartIndex = state.eventLog.length;
     logPhaseHeader(state, command, debug);
     // Capture immediately before dispatching commands that can evaluate defeat.
     appendPreDefeatSnapshot(preDefeatSnapshots, state, command, debug);
     state = dispatchCommand(state, command, content);
-    logBodySpend(seatBodiesBefore, state, debug);
+    logBodySpend(seatComradesBefore, state, debug);
     logPhaseEffects(state, command, eventStartIndex, debug);
 
     if (isPhaseCommand(command)) {
@@ -981,6 +984,53 @@ async function mergeShardFiles(shardPaths: string[], outputPath: string) {
   }
 }
 
+function formatOutputShardName(index: number) {
+  return `simulations_${String(index).padStart(3, '0')}.ndjson`;
+}
+
+async function removeLegacyOutputShards(outputDir: string) {
+  const entries = await readdir(outputDir, { withFileTypes: true });
+  const shardPattern = /^simulations_\d{3}\.ndjson$/;
+  await Promise.all(entries
+    .filter((entry) => entry.isFile() && shardPattern.test(entry.name))
+    .map((entry) => rm(join(outputDir, entry.name), { force: true })));
+}
+
+async function writeOutputAsShards(shardPaths: string[], outputDir: string) {
+  await removeLegacyOutputShards(outputDir);
+
+  // Keep shard size modest to avoid very large files while preserving streaming writes.
+  const maxLinesPerShard = 50_000;
+  let shardIndex = 0;
+  let linesInShard = 0;
+  let writer = createWriteStream(join(outputDir, formatOutputShardName(shardIndex)), { flags: 'w', encoding: 'utf8' });
+
+  const rotateShard = async () => {
+    await closeStream(writer);
+    shardIndex += 1;
+    linesInShard = 0;
+    writer = createWriteStream(join(outputDir, formatOutputShardName(shardIndex)), { flags: 'w', encoding: 'utf8' });
+  };
+
+  for (const shardPath of shardPaths) {
+    const input = createReadStream(shardPath, { encoding: 'utf8' });
+    const reader = createInterface({ input, crlfDelay: Infinity });
+
+    for await (const line of reader) {
+      if (line.length === 0) {
+        continue;
+      }
+      if (linesInShard >= maxLinesPerShard) {
+        await rotateShard();
+      }
+      writer.write(`${line}\n`);
+      linesInShard += 1;
+    }
+  }
+
+  await closeStream(writer);
+}
+
 async function runWorkerChunk(chunk: WorkerRunChunk, totalRuns: number, progressByWorker: Map<number, number>) {
   return await new Promise<WorkerResultMessage>((resolvePromise, rejectPromise) => {
     const worker = new Worker(new URL('./worker.ts', import.meta.url), {
@@ -1044,6 +1094,7 @@ export async function runSimulationBatch(config: SimulationBatchConfig): Promise
   console.log(`🧠 Strategy profiles loaded (${normalized.strategyIds.join(', ')})`);
 
   const outputPath = join(normalized.outputDir, 'simulations.ndjson');
+  const outputShardGlob = join(normalized.outputDir, 'simulations_*.ndjson');
   const summaryPath = join(normalized.outputDir, 'simulation_summary.json');
   const shardDir = join(normalized.outputDir, '.workers');
 
@@ -1098,7 +1149,11 @@ export async function runSimulationBatch(config: SimulationBatchConfig): Promise
   }
 
   console.log('💾 Writing NDJSON output');
-  await mergeShardFiles(shardPaths, outputPath);
+  if (normalized.splitOutputShards) {
+    await writeOutputAsShards(shardPaths, normalized.outputDir);
+  } else {
+    await mergeShardFiles(shardPaths, outputPath);
+  }
 
   const summary = finalizeSummary(aggregate);
   if (summary.sanity.endedBeforeRound2 > 0) {
@@ -1114,7 +1169,7 @@ export async function runSimulationBatch(config: SimulationBatchConfig): Promise
     runs: summary.runs,
     seed: normalized.randomSeed,
     parallelWorkers: Math.max(1, Math.min(normalized.parallelWorkers, totalRuns)),
-    outputPath,
+    outputPath: normalized.splitOutputShards ? outputShardGlob : outputPath,
     summaryPath,
     summary,
     durationMs: Date.now() - startedAt,

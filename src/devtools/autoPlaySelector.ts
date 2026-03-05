@@ -179,7 +179,7 @@ function getImplicitBodySpend(actionId: string, intent: Omit<QueuedIntent, 'slot
   switch (actionId) {
     case 'launch_campaign':
     case 'defend':
-      return intent.bodiesCommitted ?? 0;
+      return intent.comradesCommitted ?? 0;
     case 'build_solidarity':
       return 3;
     case 'smuggle_evidence':
@@ -219,7 +219,7 @@ function buildIntentKey(intent: Omit<QueuedIntent, 'slot'>) {
     intent.regionId ?? null,
     intent.domainId ?? null,
     intent.targetSeat ?? null,
-    intent.bodiesCommitted ?? null,
+    intent.comradesCommitted ?? null,
     intent.evidenceCommitted ?? null,
     intent.cardId ?? null,
   ]);
@@ -259,15 +259,15 @@ function scoreActionSpecificAdjustments(
   const { seat, action } = candidate;
   const player = state.players[seat];
   const region = action.regionId ? state.regions[action.regionId] : null;
-  const regionBodies = region ? (region.bodiesPresent[seat] ?? 0) : 0;
+  const regionComrades = region ? (region.comradesPresent[seat] ?? 0) : 0;
   const support = getCampaignSupportBonus(state, content, seat, action);
   const pressure = getSystemPressure(state, content);
 
   switch (action.actionId) {
     case 'launch_campaign': {
-      const committedBodies = action.bodiesCommitted ?? 0;
+      const committedComrades = action.comradesCommitted ?? 0;
       const committedEvidence = action.evidenceCommitted ?? 0;
-      const comradesModifier = Math.floor(committedBodies / 2);
+      const comradesModifier = Math.floor(committedComrades / 2);
       const gazeModifier = Math.floor(state.globalGaze / 5);
       const warMachineModifier = -Math.floor(state.northernWarMachine / 4);
       let staticModifier = comradesModifier + committedEvidence + gazeModifier + warMachineModifier + pressure.campaignModifierDelta;
@@ -309,7 +309,7 @@ function scoreActionSpecificAdjustments(
         candidate.score += 8;
         reasons.push('aligned support');
       }
-      if (!support.card && committedBodies <= 1 && committedEvidence === 0) {
+      if (!support.card && committedComrades <= 1 && committedEvidence === 0) {
         candidate.score -= 10;
       }
       break;
@@ -323,7 +323,7 @@ function scoreActionSpecificAdjustments(
       if (action.domainId && state.domains[action.domainId].progress < 5) {
         candidate.score += 8;
       }
-      if (region && regionBodies - 3 < 2) {
+      if (region && regionComrades - 3 < 2) {
         candidate.score -= 12;
       }
       break;
@@ -342,7 +342,7 @@ function scoreActionSpecificAdjustments(
       break;
     }
     case 'organize': {
-      if (regionBodies < 3) {
+      if (regionComrades < 3) {
         candidate.score += 12;
       }
       if ((region?.extractionTokens ?? 0) >= 4) {
@@ -390,7 +390,7 @@ function scoreActionSpecificAdjustments(
       break;
     }
     case 'call_labor_strike': {
-      if (regionBodies < 3) {
+      if (regionComrades < 3) {
         candidate.score += 10;
       }
       if ((region?.extractionTokens ?? 0) >= 4) {
@@ -403,7 +403,7 @@ function scoreActionSpecificAdjustments(
         candidate.score += 16;
         reasons.push('low gaze');
       }
-      if (region && regionBodies - 1 <= 0) {
+      if (region && regionComrades - 1 <= 0) {
         candidate.score -= 10;
       }
       break;
@@ -471,9 +471,9 @@ export function listAutoPlayIntentsForSeat(
     const cardCandidates = listCardCandidates(state, content, seat, action);
 
     for (const regionId of regionCandidates) {
-      const bodiesInRegion = regionId ? state.regions[regionId].bodiesPresent[seat] ?? 0 : 0;
-      const bodyCandidates = action.needsBodies
-        ? Array.from({ length: Math.max(1, bodiesInRegion) }, (_, index) => index + 1)
+      const comradesInRegion = regionId ? state.regions[regionId].comradesPresent[seat] ?? 0 : 0;
+      const comradeCandidates = action.needsComrades
+        ? Array.from({ length: Math.max(1, comradesInRegion) }, (_, index) => index + 1)
         : [undefined];
       const evidenceCandidates = action.needsEvidence
         ? Array.from({ length: Math.max(player.evidence, 0) + 1 }, (_, index) => index)
@@ -481,7 +481,7 @@ export function listAutoPlayIntentsForSeat(
 
       for (const domainId of domainCandidates) {
         for (const targetSeat of targetSeatCandidates) {
-          for (const bodiesCommitted of bodyCandidates) {
+          for (const comradesCommitted of comradeCandidates) {
             for (const evidenceCommitted of evidenceCandidates) {
               for (const cardId of cardCandidates) {
                 const intent: Omit<QueuedIntent, 'slot'> = {
@@ -489,7 +489,7 @@ export function listAutoPlayIntentsForSeat(
                   regionId: regionId as RegionId | undefined,
                   domainId: domainId as DomainId | undefined,
                   targetSeat,
-                  bodiesCommitted,
+                  comradesCommitted,
                   evidenceCommitted,
                   cardId,
                 };
@@ -544,15 +544,15 @@ export function scoreAutoPlayCandidate(
     reasons.push('faction-aligned domain');
   }
 
-  const bodySpend = getImplicitBodySpend(candidate.action.actionId, candidate.action);
+  const comradeSpend = getImplicitBodySpend(candidate.action.actionId, candidate.action);
   const evidenceSpend = getImplicitEvidenceSpend(state, content, candidate.seat, candidate.action.actionId, candidate.action);
-  candidate.score -= bodySpend * 2;
+  candidate.score -= comradeSpend * 2;
   candidate.score -= evidenceSpend * 3;
 
   if (player.evidence > 0 && player.evidence - evidenceSpend <= 0 && evidenceSpend > 0) {
     candidate.score -= 6;
   }
-  if (region && bodySpend > 0 && (region.bodiesPresent[candidate.seat] ?? 0) - bodySpend <= 0) {
+  if (region && comradeSpend > 0 && (region.comradesPresent[candidate.seat] ?? 0) - comradeSpend <= 0) {
     candidate.score -= 6;
   }
 

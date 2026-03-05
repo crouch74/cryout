@@ -44,7 +44,7 @@ const DOMAIN_ICON_BY_ID: Record<DomainId, IconType> = {
 const REGION_TOKEN_ICON_BY_VISUAL: Record<RegionTokenVisual, IconType> = {
   extraction: 'extractionToken',
   defense: 'defense',
-  bodies: 'comrades',
+  comrades: 'comrades',
 };
 
 function getBoundingBox(points: Point[]) {
@@ -109,11 +109,11 @@ function getRegionSummaryLabel(regionId: RegionId, state: EngineState, content: 
   if (!region) {
     return localizeRegionField(regionId, 'name', content.regions[regionId]?.name ?? regionId);
   }
-  const totalBodies = state.players.reduce((sum, player) => sum + (region.bodiesPresent[player.seat] ?? 0), 0);
+  const totalComrades = state.players.reduce((sum, player) => sum + (region.comradesPresent[player.seat] ?? 0), 0);
   return `${localizeRegionField(regionId, 'name', content.regions[regionId].name)}. `
     + `${t('ui.game.extraction', 'Extraction')} ${formatNumber(region.extractionTokens)}. `
     + `${t('ui.game.defense', 'Defense')} ${formatNumber(region.defenseRating)}. `
-    + `${t('ui.game.bodies', 'Comrades')} ${formatNumber(totalBodies)}.`;
+    + `${t('ui.game.comrades', 'Comrades')} ${formatNumber(totalComrades)}.`;
 }
 
 export function WorldMapBoard({
@@ -200,7 +200,7 @@ export function WorldMapBoard({
     const comradeRegions = regionIds.filter((regionId) => {
       const region = state.regions[regionId];
       if (!region) return false;
-      return state.players.some((player) => (region.bodiesPresent[player.seat] ?? 0) > 0);
+      return state.players.some((player) => (region.comradesPresent[player.seat] ?? 0) > 0);
     });
 
     return comradeRegions;
@@ -240,8 +240,8 @@ export function WorldMapBoard({
       if (!region) {
         return [regionId, buildRegionCountSummary(0, 0, 0)];
       }
-      const totalBodies = state.players.reduce((sum, player) => sum + (region.bodiesPresent[player.seat] ?? 0), 0);
-      return [regionId, buildRegionCountSummary(region.extractionTokens, region.defenseRating, totalBodies)];
+      const totalComrades = state.players.reduce((sum, player) => sum + (region.comradesPresent[player.seat] ?? 0), 0);
+      return [regionId, buildRegionCountSummary(region.extractionTokens, region.defenseRating, totalComrades)];
     }),
   ) as Record<RegionId, ReturnType<typeof buildRegionCountSummary>>, [regionIds, state.players, state.regions]);
   const regionChangeSignatures = useMemo(
@@ -249,10 +249,10 @@ export function WorldMapBoard({
       regionIds.flatMap((regionId) => {
         const counts = regionCounts[regionId];
         return [
-          [`region:${regionId}`, `${counts.extraction}-${counts.defense}-${counts.bodies}`],
+          [`region:${regionId}`, `${counts.extraction}-${counts.defense}-${counts.comrades}`],
           [`region:${regionId}:extraction`, counts.extraction],
           [`region:${regionId}:defense`, counts.defense],
-          [`region:${regionId}:bodies`, counts.bodies],
+          [`region:${regionId}:comrades`, counts.comrades],
         ];
       }),
     ),
@@ -425,8 +425,8 @@ export function WorldMapBoard({
               {t('ui.game.defense', 'Defense')} {formatNumber(state.regions[cardRegionId]?.defenseRating ?? 0)}
             </span>
             <span>
-              <Icon type="bodies" size="sm" />
-              {t('ui.game.bodies', 'Comrades')} {formatNumber(state.players.reduce((sum, p) => sum + (state.regions[cardRegionId]?.bodiesPresent[p.seat] ?? 0), 0))}
+              <Icon type="comrades" size="sm" />
+              {t('ui.game.comrades', 'Comrades')} {formatNumber(state.players.reduce((sum, p) => sum + (state.regions[cardRegionId]?.comradesPresent[p.seat] ?? 0), 0))}
             </span>
           </div>
           <div className="board-region-sidecard-fronts">

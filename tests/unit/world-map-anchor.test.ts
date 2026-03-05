@@ -196,6 +196,6 @@ test('manifest keeps repaired token anchors aligned to the stable marker baselin
     assert.equal(entry.labelOffsetY, -14);
     assert.deepEqual(entry.opticalCenteringByTokenType.extraction, { x: 0, y: -1 });
     assert.deepEqual(entry.opticalCenteringByTokenType.defense, { x: 0, y: 0 });
-    assert.deepEqual(entry.opticalCenteringByTokenType.bodies, { x: 0, y: 0.5 });
+    assert.deepEqual(entry.opticalCenteringByTokenType.comrades, { x: 0, y: 0.5 });
   }
 });

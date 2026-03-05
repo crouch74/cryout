@@ -183,11 +183,11 @@ export function presentCampaignResult(payload: CampaignResolvedEventPayload, con
   }
 
   const effects: PresentedCampaignResultLine[] = [];
-  if ((payload.committedBodies ?? 0) > 0) {
+  if ((payload.committedComrades ?? 0) > 0) {
     effects.push({
-      key: 'committed-bodies',
+      key: 'committed-comrades',
       label: t('ui.campaignResult.effectCommittedComrades', 'Comrades committed'),
-      value: t('ui.campaignResult.effectCommittedComradesValue', '-{{count}}', { count: payload.committedBodies ?? 0 }),
+      value: t('ui.campaignResult.effectCommittedComradesValue', '-{{count}}', { count: payload.committedComrades ?? 0 }),
     });
   }
   if ((payload.committedEvidence ?? 0) > 0) {

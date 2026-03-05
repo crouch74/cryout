@@ -447,15 +447,15 @@ export function DebugOverlay({
               </label>
             ) : null}
 
-            {currentAction.needsBodies ? (
+            {currentAction.needsComrades ? (
               <label className="debug-panel-field">
                 <span>Committed Comrades</span>
                 <input
                   type="number"
                   min="1"
                   max="8"
-                  value={String(legalityDraft.bodiesCommitted ?? 1)}
-                  onChange={(event) => setLegalityDraft((current) => ({ ...current, bodiesCommitted: Number(event.target.value) }))}
+                  value={String(legalityDraft.comradesCommitted ?? 1)}
+                  onChange={(event) => setLegalityDraft((current) => ({ ...current, comradesCommitted: Number(event.target.value) }))}
                 />
               </label>
             ) : null}

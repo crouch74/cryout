@@ -18,6 +18,7 @@ test('CLI parser handles runs, scenarios, mode, seed, and parallel options', () 
   assert.equal(parsed.seed, 999);
   assert.equal(parsed.parallelWorkers, 8);
   assert.equal(parsed.debugSingle, false);
+  assert.equal(parsed.splitShards, false);
 });
 
 test('CLI parser maps mode=both to liberation and symbolic', () => {
@@ -25,9 +26,16 @@ test('CLI parser maps mode=both to liberation and symbolic', () => {
 
   assert.deepEqual(parsed.victoryModes, ['liberation', 'symbolic']);
   assert.equal(parsed.debugSingle, false);
+  assert.equal(parsed.splitShards, false);
 });
 
 test('CLI parser enables debug single mode', () => {
   const parsed = parseCliArgs(['--debug-single']);
   assert.equal(parsed.debugSingle, true);
+  assert.equal(parsed.splitShards, false);
+});
+
+test('CLI parser enables split shards mode', () => {
+  const parsed = parseCliArgs(['--split-shards']);
+  assert.equal(parsed.splitShards, true);
 });

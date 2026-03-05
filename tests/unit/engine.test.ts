@@ -128,7 +128,7 @@ test('startup withdrawal resolves target-region effects against the owning seat 
   );
 
   assert.equal(event.context?.targetRegionId, 'Congo');
-  assert.equal(state.regions.Congo.bodiesPresent[0], 7);
+  assert.equal(state.regions.Congo.comradesPresent[0], 7);
 });
 
 test('startup withdrawal keeps support-only cards as reveal-and-discard only', () => {
@@ -275,12 +275,12 @@ test('Algeria urban campaign success escalates War Machine in Algiers', () => {
   state.phase = 'COALITION';
   state.globalGaze = 15;
   state.players[0].evidence = 4;
-  state.regions.Algiers.bodiesPresent[0] = 8;
+  state.regions.Algiers.comradesPresent[0] = 8;
   state.regions.Algiers.extractionTokens = 2;
   state.players[0].actionsRemaining = 1;
   state = dispatchCommand(
     state,
-    { type: 'QueueIntent', seat: 0, action: { actionId: 'launch_campaign', regionId: 'Algiers', domainId: 'SilencedTruth', bodiesCommitted: 4, evidenceCommitted: 2 } },
+    { type: 'QueueIntent', seat: 0, action: { actionId: 'launch_campaign', regionId: 'Algiers', domainId: 'SilencedTruth', comradesCommitted: 4, evidenceCommitted: 2 } },
     content,
   );
   state.players[0].actionsRemaining = 0;
@@ -483,14 +483,14 @@ test('coalition comrades exhaustion is checked during resolution', () => {
   state = dispatchCommand(state, { type: 'ResolveSystemPhase' }, content);
   for (const region of Object.values(state.regions)) {
     for (const player of state.players) {
-      region.bodiesPresent[player.seat] = 0;
+      region.comradesPresent[player.seat] = 0;
     }
   }
-  state.regions.Congo.bodiesPresent[0] = 1;
+  state.regions.Congo.comradesPresent[0] = 1;
 
   const next = dispatchCommand(
     state,
-    { type: 'QueueIntent', seat: 0, action: { actionId: 'defend', regionId: 'Congo', bodiesCommitted: 1 } },
+    { type: 'QueueIntent', seat: 0, action: { actionId: 'defend', regionId: 'Congo', comradesCommitted: 1 } },
     content,
   );
 
@@ -523,7 +523,7 @@ test('launch campaign consumes 2d6 of rng and can remove extraction on success',
   state.players[0].actionsRemaining = 1;
   state = dispatchCommand(
     state,
-    { type: 'QueueIntent', seat: 0, action: { actionId: 'launch_campaign', regionId: 'Congo', domainId: 'DyingPlanet', bodiesCommitted: 2, evidenceCommitted: 1 } },
+    { type: 'QueueIntent', seat: 0, action: { actionId: 'launch_campaign', regionId: 'Congo', domainId: 'DyingPlanet', comradesCommitted: 2, evidenceCommitted: 1 } },
     content,
   );
   state.players[0].actionsRemaining = 0;
@@ -589,7 +589,7 @@ function runCampaignForBand(seed: number, domainId: 'DyingPlanet' | 'WarMachine'
   }
   state = dispatchCommand(
     state,
-    { type: 'QueueIntent', seat: 0, action: { actionId: 'launch_campaign', regionId: 'Congo', domainId, bodiesCommitted: 1, evidenceCommitted: 0 } },
+    { type: 'QueueIntent', seat: 0, action: { actionId: 'launch_campaign', regionId: 'Congo', domainId, comradesCommitted: 1, evidenceCommitted: 0 } },
     content,
   );
   state.players[0].actionsRemaining = 0;
@@ -711,7 +711,7 @@ test('failed campaigns increment the escalation counter and can unlock the faile
     {
       type: 'QueueIntent',
       seat: 0,
-      action: { actionId: 'launch_campaign', regionId: 'Sahel', domainId: 'WarMachine', bodiesCommitted: 1, evidenceCommitted: 0 },
+      action: { actionId: 'launch_campaign', regionId: 'Sahel', domainId: 'WarMachine', comradesCommitted: 1, evidenceCommitted: 0 },
     },
     content,
   );

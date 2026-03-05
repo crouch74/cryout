@@ -48,7 +48,7 @@ function makeCoalitionState(command: StartGameCommand) {
   for (const region of Object.values(state.regions)) {
     region.defenseRating = 0;
     region.extractionTokens = 0;
-    region.bodiesPresent = Object.fromEntries(state.players.map((player) => [player.seat, 0]));
+    region.comradesPresent = Object.fromEntries(state.players.map((player) => [player.seat, 0]));
   }
   return { state, content };
 }
@@ -63,8 +63,8 @@ test('chooses a higher-scoring coalition action instead of the first legal actio
   state.players[0].actionsRemaining = 1;
   state.players[1].actionsRemaining = 1;
 
-  state.regions.Congo.bodiesPresent[0] = 1;
-  state.regions.Levant.bodiesPresent[1] = 5;
+  state.regions.Congo.comradesPresent[0] = 1;
+  state.regions.Levant.comradesPresent[1] = 5;
   state.regions.Levant.extractionTokens = 5;
   state.players[1].evidence = 2;
   state.players[1].resistanceHand = ['sup_arms_manifest'];
@@ -84,7 +84,7 @@ test('prefers launch campaign over organize when campaign odds and extraction pr
   const { state, content } = makeCoalitionState(baseStartCommand);
 
   state.players[0].actionsRemaining = 1;
-  state.regions.Congo.bodiesPresent[0] = 6;
+  state.regions.Congo.comradesPresent[0] = 6;
   state.regions.Congo.extractionTokens = 5;
   state.players[0].evidence = 2;
   state.players[0].resistanceHand = ['sup_watershed_maps'];
@@ -104,7 +104,7 @@ test('prefers investigate when a seat is starved for evidence and cannot mount a
   const { state, content } = makeCoalitionState(baseStartCommand);
 
   state.players[0].actionsRemaining = 1;
-  state.regions.Congo.bodiesPresent[0] = 0;
+  state.regions.Congo.comradesPresent[0] = 0;
   state.regions.Congo.extractionTokens = 1;
   state.players[0].evidence = 0;
 
@@ -121,9 +121,9 @@ test('smuggle evidence does not outrank stronger local movement plays by default
 
   state.players[0].actionsRemaining = 1;
   state.players[1].actionsRemaining = 1;
-  state.regions.Sahel.bodiesPresent[0] = 1;
+  state.regions.Sahel.comradesPresent[0] = 1;
   state.players[0].evidence = 1;
-  state.regions.Levant.bodiesPresent[1] = 1;
+  state.regions.Levant.comradesPresent[1] = 1;
   state.players[1].evidence = 0;
 
   const selection = selectAutoPlayDecision(state, content);
@@ -137,7 +137,7 @@ test('keeps defend low priority unless the board is under heavy pressure', () =>
   const { state, content } = makeCoalitionState(baseStartCommand);
 
   state.players[0].actionsRemaining = 1;
-  state.regions.Andes.bodiesPresent[0] = 1;
+  state.regions.Andes.comradesPresent[0] = 1;
   state.regions.Andes.extractionTokens = 1;
   state.northernWarMachine = 3;
 
@@ -153,7 +153,7 @@ test('scenario-specific actions are enumerated in shipped non-base scenarios', (
 
   state.players[0].actionsRemaining = 1;
   state.players[0].evidence = 2;
-  state.regions.Cairo.bodiesPresent[0] = 0;
+  state.regions.Cairo.comradesPresent[0] = 0;
   state.northernWarMachine = 9;
   state.globalGaze = 12;
 
@@ -167,8 +167,8 @@ test('seeded tie-breaking is deterministic and does not mutate rng state', () =>
   const { state, content } = makeCoalitionState(baseStartCommand);
 
   state.players[0].actionsRemaining = 1;
-  state.regions.Congo.bodiesPresent[0] = 1;
-  state.regions.Levant.bodiesPresent[0] = 1;
+  state.regions.Congo.comradesPresent[0] = 1;
+  state.regions.Levant.comradesPresent[0] = 1;
   state.regions.Congo.extractionTokens = 3;
   state.regions.Levant.extractionTokens = 3;
   state.globalGaze = 5;
@@ -224,7 +224,7 @@ test('enumerates legal intents for a seat including support-backed campaigns', (
   state.players[0].actionsRemaining = 1;
   state.players[0].evidence = 2;
   state.players[0].resistanceHand = ['sup_watershed_maps'];
-  state.regions.Congo.bodiesPresent[0] = 4;
+  state.regions.Congo.comradesPresent[0] = 4;
   state.regions.Congo.extractionTokens = 4;
 
   const intents = listAutoPlayIntentsForSeat(state, content, 0);
@@ -239,7 +239,7 @@ test('builds a readable preview for queued autoplay actions', () => {
   const { state, content } = makeCoalitionState(baseStartCommand);
 
   state.players[0].actionsRemaining = 1;
-  state.regions.Congo.bodiesPresent[0] = 6;
+  state.regions.Congo.comradesPresent[0] = 6;
   state.regions.Congo.extractionTokens = 5;
   state.players[0].evidence = 2;
   state.players[0].resistanceHand = ['sup_watershed_maps'];

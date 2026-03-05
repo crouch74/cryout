@@ -140,7 +140,7 @@ function getRulesetTrackOptions(content: CompiledContent): TrackOption[] {
 }
 
 function countSeatComrades(state: EngineState, seat: number) {
-  return Object.values(state.regions).reduce((sum, region) => sum + (region.bodiesPresent[seat] ?? 0), 0);
+  return Object.values(state.regions).reduce((sum, region) => sum + (region.comradesPresent[seat] ?? 0), 0);
 }
 
 function buildCommandLabel(command: EngineCommand, content: CompiledContent) {
@@ -327,7 +327,7 @@ function inspectCampaignLegality(
   const faction = getFaction(content, state, seat);
   const support = getCampaignSupportBonus(state, content, seat, action);
   const pressure = getSystemPressure(state, content);
-  const committedBodies = action.bodiesCommitted ?? 0;
+  const committedComrades = action.comradesCommitted ?? 0;
   const committedEvidence = action.evidenceCommitted ?? 0;
   const modifiers: LegalityModifierLine[] = [];
   let totalModifier = 0;
@@ -340,7 +340,7 @@ function inspectCampaignLegality(
     modifiers.push({ label, value });
   };
 
-  pushModifier('Committed Comrades', Math.floor(committedBodies / 2));
+  pushModifier('Committed Comrades', Math.floor(committedComrades / 2));
   pushModifier('Committed Evidence', committedEvidence);
   pushModifier('Global Gaze', Math.floor(state.globalGaze / 5));
   pushModifier('War Machine pressure', -Math.floor(state.northernWarMachine / 4));
@@ -395,7 +395,7 @@ export function inspectActionLegality(
       costs.push({ label: 'Global Gaze gained', amount: 1, type: 'effect' });
       break;
     case 'defend':
-      costs.push({ label: 'Committed Comrades spent', amount: action.bodiesCommitted ?? 0, type: 'cost' });
+      costs.push({ label: 'Committed Comrades spent', amount: action.comradesCommitted ?? 0, type: 'cost' });
       notes.push('Defense is set to the larger of current defense or the computed defense total.');
       break;
     case 'go_viral':
@@ -417,7 +417,7 @@ export function inspectActionLegality(
       notes.push('Opens a replanning window if the action resolves.');
       break;
     case 'launch_campaign':
-      costs.push({ label: 'Committed Comrades spent', amount: action.bodiesCommitted ?? 0, type: 'cost' });
+      costs.push({ label: 'Committed Comrades spent', amount: action.comradesCommitted ?? 0, type: 'cost' });
       costs.push({ label: 'Committed Evidence spent', amount: action.evidenceCommitted ?? 0, type: 'cost' });
       break;
     default:
@@ -515,7 +515,6 @@ export function lintNarrativeContent(content: CompiledContent): NarrativeLintFin
   ];
 
   const canonicalPatterns: Array<{ pattern: RegExp; detail: string }> = [
-    { pattern: /\bBodies\b/, detail: 'Canonical term is Comrades, not Bodies.' },
     { pattern: /\bNorthern War Machine\b/, detail: 'Prefer the canonical track name War Machine in dev-facing copy.' },
   ];
 
@@ -577,7 +576,7 @@ export function buildConformanceChecks(state: EngineState, content: CompiledCont
     launchCampaign
     && launchCampaign.needsRegion
     && launchCampaign.needsDomain
-    && launchCampaign.needsBodies,
+    && launchCampaign.needsComrades,
   );
   checks.push({
     id: 'launch-campaign-shape',
@@ -777,7 +776,7 @@ export function createDefaultLegalityIntent(
     regionId: action.needsRegion ? regions[0] : undefined,
     domainId: action.needsDomain ? domains[0] : undefined,
     targetSeat: action.needsTargetSeat ? otherSeat : undefined,
-    bodiesCommitted: action.needsBodies ? 1 : undefined,
+    comradesCommitted: action.needsComrades ? 1 : undefined,
     evidenceCommitted: action.needsEvidence ? 0 : undefined,
     cardId: undefined,
   };
