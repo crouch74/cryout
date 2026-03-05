@@ -51,6 +51,10 @@ const SYSTEM_ESCALATION_TRIGGER_PRIORITY: SystemEscalationTriggerId[] = [
   'symbolic_round_six',
 ];
 
+function isSimulationQuiet() {
+  return typeof process !== 'undefined' && process.env?.SIMULATION_QUIET === '1';
+}
+
 interface ResolveContext {
   actingSeat?: number;
   targetRegionId?: RegionId;
@@ -1196,7 +1200,9 @@ function computeVictoryScore(
   const breakdown: Record<string, number> = {};
   let score = 0;
 
-  console.log('🧮 Scoring victory');
+  if (!isSimulationQuiet()) {
+    console.log('🧮 Scoring victory');
+  }
 
   for (const component of config.components ?? []) {
     const ratio = evaluateComponentRatio(component, state, content, context, publicVictorySatisfied);
@@ -1221,7 +1227,9 @@ function computeVictoryScore(
     const survivalPoints = Math.max(0, Math.min(100, state.round * config.survivalScorePerRound));
     breakdown.survival_rounds = Number(survivalPoints.toFixed(6));
     score += survivalPoints;
-    console.log(`⏳ Survival score applied: round=${state.round} perRound=${config.survivalScorePerRound.toFixed(2)} points=${survivalPoints.toFixed(2)}`);
+    if (!isSimulationQuiet()) {
+      console.log(`⏳ Survival score applied: round=${state.round} perRound=${config.survivalScorePerRound.toFixed(2)} points=${survivalPoints.toFixed(2)}`);
+    }
   }
 
   if (config.beaconProgressScore && config.beaconProgressScore > 0) {
@@ -1229,7 +1237,9 @@ function computeVictoryScore(
     const beaconPoints = Math.max(0, Math.min(config.beaconProgressScore, config.beaconProgressScore * beaconCompletionRatio));
     breakdown.beacon_progress = Number(beaconPoints.toFixed(6));
     score += beaconPoints;
-    console.log(`🕯️ Beacon progress score applied: ratio=${beaconCompletionRatio.toFixed(2)} points=${beaconPoints.toFixed(2)}`);
+    if (!isSimulationQuiet()) {
+      console.log(`🕯️ Beacon progress score applied: ratio=${beaconCompletionRatio.toFixed(2)} points=${beaconPoints.toFixed(2)}`);
+    }
   }
 
   for (const penalty of config.penalties ?? []) {
@@ -1260,9 +1270,11 @@ function computeVictoryScore(
   const success = roundedScore >= threshold;
   const scoreBandId = resolveScoreBandId(config, roundedScore);
 
-  console.log(`📊 VictoryScore=${roundedScore.toFixed(2)} threshold=${threshold.toFixed(2)}`);
-  if (success) {
-    console.log('🏁 Success by score');
+  if (!isSimulationQuiet()) {
+    console.log(`📊 VictoryScore=${roundedScore.toFixed(2)} threshold=${threshold.toFixed(2)}`);
+    if (success) {
+      console.log('🏁 Success by score');
+    }
   }
 
   return {
