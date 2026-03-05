@@ -302,6 +302,181 @@ export interface ScenarioModule {
 
 Use [src/scenarios/testing/example-hooks/](/Users/aeid/git_tree/boardgames/The%20stones%20are%20crying%20outt/src/scenarios/testing/example-hooks) as the reference.
 
+### Scenario Creation Guide: Balance Calibration Framework
+
+All newly authored scenarios must define two explicit layers:
+
+1. `narrative`: movement-centered political context and historical framing.
+2. `calibration`: structured utility inputs used to derive balance-sensitive mechanics.
+
+The `calibration` section is mandatory for human-authored and LLM-authored scenarios.
+
+#### Two-Layer Scenario Design Model
+
+```json
+{
+  "scenarioId": "example_uprising",
+  "narrative": {
+    "title": "Example Uprising",
+    "description": "Grassroots coalitions resist extraction and militarized repression.",
+    "regions": ["Congo", "Levant", "Amazon"],
+    "historicalContext": "Movement timeline and systemic conditions."
+  },
+  "calibration": {
+    "repressionLevel": "high",
+    "movementCapacity": "medium",
+    "internationalAttention": "low",
+    "timeScale": "short",
+    "victoryType": "symbolic",
+    "economicPressure": "medium",
+    "eliteFragmentation": "low",
+    "externalSupport": "medium",
+    "movementUnity": "high"
+  }
+}
+```
+
+#### Standard Narrative Calibration Fields
+
+| Field | Required | Allowed values | Design signal |
+| --- | --- | --- | --- |
+| `repressionLevel` | yes | `low \| medium \| high` | intensity of state/corporate coercion |
+| `movementCapacity` | yes | `low \| medium \| high` | coalition ability to sustain action |
+| `internationalAttention` | yes | `low \| medium \| high` | visibility and transnational scrutiny |
+| `timeScale` | yes | `low \| medium \| high` | pacing pressure over the campaign window |
+| `victoryType` | yes | `liberation \| symbolic` | primary public victory framing |
+| `economicPressure` | no | `low \| medium \| high` | extraction-linked material strain |
+| `eliteFragmentation` | no | `low \| medium \| high` | fractures in elite/system alignment |
+| `externalSupport` | no | `low \| medium \| high` | material or diplomatic support outside the core movement |
+| `movementUnity` | no | `low \| medium \| high` | coalition cohesion under pressure |
+
+Normalization rule:
+
+- If optional calibration fields are omitted, the Scenario Balance Utility normalizes them to `medium`.
+
+#### Narrative To Mechanics Mapping
+
+Designers should author in narrative terms. The Scenario Balance Utility translates signals into mechanical pressure and pacing.
+
+| Narrative signal | Mechanical effect (derived) |
+| --- | --- |
+| High repression | increase seeded Extraction pressure and growth tendency |
+| Strong movement capacity | increase starting Comrades and recovery tolerance |
+| High international attention | increase starting Global Gaze and mitigation potential |
+| Short uprising window | tighten round pacing toward lower turn counts |
+| Symbolic victory emphasis | tune symbolic scoring/gating thresholds |
+
+#### Balance Calibration Equations
+
+Pressure equation:
+
+- `NetPressure = ExpectedExtractionGrowth - ExpectedExtractionRemoval`
+- Target band: `NetPressure ~= 0.2 - 0.4` Extraction Tokens per round.
+
+Comrades burn-rate equation:
+
+- `BurnRate = ComradesLost - ComradesRecovered`
+- Target outcome: Comrades exhaustion defeat rate `~= 20 - 35%`.
+
+Victory progress equation (score scenarios):
+
+- `ScoreRate = AverageScoreGainPerRound`
+- `VictoryThreshold ~= ScoreRate * TargetTurns`
+- `TargetTurns = 6 - 8`
+
+#### Victory Timing Gate (Required)
+
+All scenarios must include a victory timing gate:
+
+- default: `minRoundBeforeVictory = 3`
+- victory predicates must not be reachable in setup or rounds 1-2.
+
+#### Scenario Balance Targets (Base Difficulty Band)
+
+| Metric | Target range |
+| --- | --- |
+| Win rate | `25 - 35%` |
+| Average turns | `6 - 8` |
+| Early termination | `< 15%` |
+| Extraction breach defeats | `30 - 45%` |
+| Comrades exhausted defeats | `20 - 35%` |
+
+#### Simulation Validation Gate (Required)
+
+Every new scenario must be simulation-validated before acceptance.
+
+Minimum validation run:
+
+- `>= 10,000` simulations.
+
+Acceptance criteria:
+
+- win rate is inside target band
+- no structural early victory
+- no single defeat condition dominates `> 60%`.
+
+#### LLM Scenario Prompt Template
+
+Use this template when requesting LLM-authored scenarios:
+
+```text
+Create a new scenario for Where the Stones Cry Out.
+
+Return two sections:
+1. Narrative description
+2. Calibration parameters
+
+Required calibration fields:
+- repressionLevel (low|medium|high)
+- movementCapacity (low|medium|high)
+- internationalAttention (low|medium|high)
+- timeScale (low|medium|high)
+- victoryType (liberation|symbolic)
+
+Optional calibration fields:
+- economicPressure (low|medium|high)
+- eliteFragmentation (low|medium|high)
+- externalSupport (low|medium|high)
+- movementUnity (low|medium|high)
+```
+
+#### Role Of The Scenario Balance Utility
+
+The utility consumes `calibration` parameters and computes scenario mechanics, including:
+
+- `seededExtraction`
+- `startingBodies` (mapped to canonical Comrades in scenario runtime surfaces)
+- `victoryScoreThreshold`
+- `crisisIntensity`
+- `campaignSuccessRate`
+- `victoryGate`
+
+Scenario source files should not hardcode these derived values unless there is an explicit, documented exception.
+
+#### Design Pillar Safeguard
+
+The calibration framework supports narrative design; it does not replace it. All authored output must preserve:
+
+- Global South agency as protagonist
+- Systemic antagonist framing (not a player-controlled villain)
+- bittersweet outcomes
+- cooperative tension through Secret Mandates
+- educational, respectful representation.
+
+#### Scenario Generation Pipeline
+
+```text
+LLM generates narrative + calibration signals
+        ↓
+Scenario Balance Utility derives mechanical parameters
+        ↓
+Scenario configuration generated
+        ↓
+Simulation validates balance
+        ↓
+Optimizer fine-tunes parameters
+```
+
 Checklist:
 
 1. Create `scenarios/<id>/metadata.ts`.

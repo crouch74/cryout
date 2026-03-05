@@ -245,6 +245,9 @@ Run iterative autonomous scenario balancing that combines:
 - statistical gate checks
 - baseline updates
 
+For scenario authoring inputs used by balancing/simulation, see the Balance Calibration Framework in
+[SCENARIO_FRAMEWORK.md](/Users/aeid/git_tree/boardgames/The%20stones%20are%20crying%20outt/SCENARIO_FRAMEWORK.md#scenario-creation-guide-balance-calibration-framework).
+
 Run with explicit scenario:
 
 ```bash
