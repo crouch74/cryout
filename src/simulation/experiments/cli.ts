@@ -177,8 +177,8 @@ export async function runAll(args: CliArgs) {
     title: string;
     decision: string;
     outputDir: string;
-    winRateA: number;
-    winRateB: number;
+    successRateA: number;
+    successRateB: number;
     publicVictoryRateA: number;
     publicVictoryRateB: number;
     durationMs: number;
@@ -195,8 +195,8 @@ export async function runAll(args: CliArgs) {
       title: result.definition.title,
       decision: result.recommendation.decision,
       outputDir: result.outputDir,
-      winRateA: result.armA.winRate,
-      winRateB: result.armB.winRate,
+      successRateA: result.armA.successRate,
+      successRateB: result.armB.successRate,
       publicVictoryRateA: result.armA.publicVictoryRate,
       publicVictoryRateB: result.armB.publicVictoryRate,
       durationMs: result.durationMs,

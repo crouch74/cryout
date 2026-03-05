@@ -329,6 +329,106 @@ export const compatRuleset: RulesetDefinition = {
     victoryGate: {
         minRoundBeforeVictory: 3,
     },
+    victoryScoring: {
+        mode: 'score',
+        threshold: 70,
+        components: [
+            {
+                id: 'publicVictory',
+                label: 'Public Victory',
+                weight: 45,
+                type: 'binaryCondition',
+                source: {
+                    type: 'publicVictory',
+                },
+            },
+        ],
+        mandatesAsScore: {
+            enabled: true,
+            weight: 55,
+            mandateProgressMode: 'binary',
+        },
+        caps: {
+            capScoreAtIf: [
+                {
+                    id: 'catastrophic_state',
+                    label: 'Catastrophic state cap',
+                    maxScore: 69,
+                    condition: {
+                        kind: 'any',
+                        conditions: [
+                            {
+                                kind: 'compare',
+                                left: { type: 'region_extraction', region: 'Cairo' },
+                                op: '>=',
+                                right: 5,
+                            },
+                            {
+                                kind: 'compare',
+                                left: { type: 'region_extraction', region: 'Alexandria' },
+                                op: '>=',
+                                right: 5,
+                            },
+                            {
+                                kind: 'compare',
+                                left: { type: 'region_extraction', region: 'NileDelta' },
+                                op: '>=',
+                                right: 5,
+                            },
+                            {
+                                kind: 'compare',
+                                left: { type: 'region_extraction', region: 'UpperEgypt' },
+                                op: '>=',
+                                right: 5,
+                            },
+                            {
+                                kind: 'compare',
+                                left: { type: 'region_extraction', region: 'Suez' },
+                                op: '>=',
+                                right: 5,
+                            },
+                            {
+                                kind: 'compare',
+                                left: { type: 'region_extraction', region: 'Sinai' },
+                                op: '>=',
+                                right: 5,
+                            },
+                            {
+                                kind: 'compare',
+                                left: { type: 'player_total_comrades', player: 0 },
+                                op: '<=',
+                                right: 1,
+                            },
+                            {
+                                kind: 'compare',
+                                left: { type: 'player_total_comrades', player: 1 },
+                                op: '<=',
+                                right: 1,
+                            },
+                            {
+                                kind: 'compare',
+                                left: { type: 'player_total_comrades', player: 2 },
+                                op: '<=',
+                                right: 1,
+                            },
+                            {
+                                kind: 'compare',
+                                left: { type: 'player_total_comrades', player: 3 },
+                                op: '<=',
+                                right: 1,
+                            },
+                        ],
+                    },
+                },
+            ],
+        },
+        outcomeBands: [
+            { id: 'defeat', min: 0, max: 49.999999 },
+            { id: 'continuation', min: 50, max: 69.999999 },
+            { id: 'win_with_consequence', min: 70, max: 84.999999 },
+            { id: 'breakthrough', min: 85, max: 100 },
+        ],
+    },
     setup: {
         globalGaze: 5,
         northernWarMachine: 7,

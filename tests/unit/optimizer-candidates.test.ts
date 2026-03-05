@@ -42,7 +42,7 @@ test('candidate generator builds deterministic candidate count with dedup', asyn
     analysis: {
       outOfRange: {
         publicVictoryRate: true,
-        winRate: true,
+        successRate: true,
         mandateFailRateGivenPublic: true,
         averageTurns: false,
       },
@@ -74,7 +74,14 @@ test('candidate generator builds deterministic candidate count with dedup', asyn
 
   assert.equal(candidates.length, 10);
   assert.equal(new Set(candidates.map((entry) => entry.candidateId)).size, 10);
-  assert.equal(candidates.some((entry) => entry.strategy === 'trajectory_guided'), true);
+  assert.equal(
+    candidates.some((entry) => entry.patch.victoryScoring?.threshold !== undefined),
+    true,
+  );
+  assert.equal(
+    candidates.some((entry) => entry.patch.victoryScoring?.publicVictoryWeight !== undefined),
+    true,
+  );
 });
 
 test('patch normalization prunes zero deltas and empty branches', () => {
@@ -111,7 +118,7 @@ test('victory gating exploration mode emits victory gate strategies', async () =
     analysis: {
       outOfRange: {
         publicVictoryRate: true,
-        winRate: true,
+        successRate: true,
         mandateFailRateGivenPublic: true,
         averageTurns: true,
       },

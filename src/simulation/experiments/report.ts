@@ -17,8 +17,12 @@ const DEFAULT_CONFIDENCE: 0.9 | 0.95 | 0.99 = 0.95;
 const DEFAULT_RESERVOIR_SIZE = 8192;
 
 const METRIC_KEYS: ExperimentMetricKey[] = [
-  'winRate',
+  'successRate',
   'publicVictoryRate',
+  'successRateGivenPublicVictory',
+  'victoryScoreMean',
+  'victoryScoreMedian',
+  'victoryScoreP90',
   'mandateFailRateGivenPublic',
   'avgTurns',
   'medianTurns',
@@ -40,13 +44,15 @@ interface Reservoir {
 export interface ArmAccumulator {
   arm: ExperimentArm;
   n: number;
-  wins: number;
+  successes: number;
   publicVictories: number;
   publicVictoriesByRoundOne: number;
   victoriesBeforeAllowedRound: number;
   earlyTerminations: number;
   mandateFailuresAmongPublic: number;
   totalTurns: number;
+  totalVictoryScore: number;
+  componentContributionTotals: Record<string, number>;
   defeatReasons: {
     extraction_breach: number;
     comrades_exhausted: number;
@@ -58,6 +64,7 @@ export interface ArmAccumulator {
   mandateFailuresById: Record<string, number>;
   mandateSuccessesById: Record<string, number>;
   reservoir: Reservoir;
+  scoreReservoir: Reservoir;
   mandateFailureAsCostlyWin: boolean;
 }
 
@@ -153,10 +160,18 @@ function percentile(values: number[], p: number) {
 
 function metricValue(summary: ExperimentArmSummary, metric: ExperimentMetricKey): number {
   switch (metric) {
-    case 'winRate':
-      return summary.winRate;
+    case 'successRate':
+      return summary.successRate;
     case 'publicVictoryRate':
       return summary.publicVictoryRate;
+    case 'successRateGivenPublicVictory':
+      return summary.successRateGivenPublicVictory;
+    case 'victoryScoreMean':
+      return summary.victoryScoreMean;
+    case 'victoryScoreMedian':
+      return summary.victoryScoreMedian;
+    case 'victoryScoreP90':
+      return summary.victoryScoreP90;
     case 'mandateFailRateGivenPublic':
       return summary.mandateFailRateGivenPublic;
     case 'avgTurns':
@@ -242,13 +257,15 @@ export function createArmAccumulator(
   return {
     arm,
     n: 0,
-    wins: 0,
+    successes: 0,
     publicVictories: 0,
     publicVictoriesByRoundOne: 0,
     victoriesBeforeAllowedRound: 0,
     earlyTerminations: 0,
     mandateFailuresAmongPublic: 0,
     totalTurns: 0,
+    totalVictoryScore: 0,
+    componentContributionTotals: {},
     defeatReasons: {
       extraction_breach: 0,
       comrades_exhausted: 0,
@@ -265,6 +282,12 @@ export function createArmAccumulator(
       values: [],
       state: seed >>> 0,
     },
+    scoreReservoir: {
+      capacity: Math.max(256, options?.reservoirSize ?? DEFAULT_RESERVOIR_SIZE),
+      seen: 0,
+      values: [],
+      state: (seed ^ 0xa5a5a5a5) >>> 0,
+    },
     mandateFailureAsCostlyWin: Boolean(options?.mandateFailureAsCostlyWin),
   };
 }
@@ -278,11 +301,18 @@ export function ingestArmRecord(accumulator: ArmAccumulator, record: SimulationR
   }
 
   const isMandateFailure = record.result.reason === 'mandate_failure';
-  const scoredWin = record.result.type === 'victory' || (accumulator.mandateFailureAsCostlyWin && isMandateFailure);
+  const scoreSuccess = record.successByScore ?? false;
+  const success = scoreSuccess
+    || record.result.type === 'victory'
+    || (accumulator.mandateFailureAsCostlyWin && isMandateFailure);
 
-  if (scoredWin) {
-    accumulator.wins += 1;
+  if (success) {
+    accumulator.successes += 1;
   }
+  const victoryScore = record.victoryScore ?? 0;
+  accumulator.totalVictoryScore += victoryScore;
+  addToReservoir(accumulator.scoreReservoir, victoryScore);
+  mergeCountMaps(accumulator.componentContributionTotals, record.scoreComponentContributions ?? {});
 
   if (record.publicVictoryAchieved) {
     accumulator.publicVictories += 1;
@@ -319,14 +349,25 @@ export function ingestArmRecord(accumulator: ArmAccumulator, record: SimulationR
 export function finalizeArmSummary(accumulator: ArmAccumulator): ExperimentArmSummary {
   const medianTurns = percentile(accumulator.reservoir.values, 0.5);
   const p90Turns = percentile(accumulator.reservoir.values, 0.9);
+  const victoryScoreMedian = percentile(accumulator.scoreReservoir.values, 0.5);
+  const victoryScoreP90 = percentile(accumulator.scoreReservoir.values, 0.9);
+  const componentContributionAverages = Object.fromEntries(
+    Object.entries(accumulator.componentContributionTotals)
+      .map(([componentId, value]) => [componentId, ratio(value, accumulator.n)]),
+  );
 
   return {
     arm: accumulator.arm,
     n: accumulator.n,
-    wins: accumulator.wins,
-    winRate: ratio(accumulator.wins, accumulator.n),
+    successes: accumulator.successes,
+    successRate: ratio(accumulator.successes, accumulator.n),
     publicVictories: accumulator.publicVictories,
     publicVictoryRate: ratio(accumulator.publicVictories, accumulator.n),
+    successRateGivenPublicVictory: ratio(accumulator.successes, accumulator.publicVictories),
+    victoryScoreMean: ratio(accumulator.totalVictoryScore, accumulator.n),
+    victoryScoreMedian: roundTo(victoryScoreMedian),
+    victoryScoreP90: roundTo(victoryScoreP90),
+    componentContributionAverages,
     publicVictoriesByRoundOne: accumulator.publicVictoriesByRoundOne,
     turnOnePublicVictoryRate: ratio(accumulator.publicVictoriesByRoundOne, accumulator.n),
     victoryBeforeAllowedRoundRate: ratio(accumulator.victoriesBeforeAllowedRound, accumulator.n),
@@ -394,8 +435,8 @@ export function compareArms(
     const valueB = metricValue(armB, metric);
 
     let proportionStats: ProportionComparisonStats | undefined;
-    if (metric === 'winRate') {
-      proportionStats = compareProportions(armA.wins, armA.n, armB.wins, armB.n, confidence);
+    if (metric === 'successRate') {
+      proportionStats = compareProportions(armA.successes, armA.n, armB.successes, armB.n, confidence);
     }
     if (metric === 'publicVictoryRate') {
       proportionStats = compareProportions(armA.publicVictories, armA.n, armB.publicVictories, armB.n, confidence);

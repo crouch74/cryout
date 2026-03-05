@@ -8,7 +8,7 @@ interface TargetRange {
 
 const TARGET_RANGES = {
   publicVictoryRate: { min: 0.4, max: 0.6 },
-  winRate: { min: 0.25, max: 0.4 },
+  successRate: { min: 0.25, max: 0.4 },
   mandateFailRateGivenPublic: { min: 0.3, max: 0.4 },
   averageTurns: { min: 6, max: 10 },
 } as const satisfies Record<string, TargetRange>;
@@ -62,7 +62,7 @@ function computeCatastrophePenalty(arm: ExperimentArmSummary) {
 
 export function scoreArmSummary(arm: ExperimentArmSummary): OptimizerScoreBreakdown {
   const publicVictoryRate = evaluateTarget('publicVictoryRate', arm.publicVictoryRate, TARGET_RANGES.publicVictoryRate);
-  const winRate = evaluateTarget('winRate', arm.winRate, TARGET_RANGES.winRate);
+  const successRate = evaluateTarget('successRate', arm.successRate, TARGET_RANGES.successRate);
   const mandateFailRateGivenPublic = evaluateTarget(
     'mandateFailRateGivenPublic',
     arm.mandateFailRateGivenPublic,
@@ -73,7 +73,7 @@ export function scoreArmSummary(arm: ExperimentArmSummary): OptimizerScoreBreakd
   const catastrophePenalty = computeCatastrophePenalty(arm);
   const scoreWithoutPenalty = (
     publicVictoryRate.normalizedScore
-    + winRate.normalizedScore
+    + successRate.normalizedScore
     + mandateFailRateGivenPublic.normalizedScore
     + averageTurns.normalizedScore
   ) / 4;
@@ -83,12 +83,12 @@ export function scoreArmSummary(arm: ExperimentArmSummary): OptimizerScoreBreakd
     catastrophePenalty,
     targets: {
       publicVictoryRate,
-      winRate,
+      successRate,
       mandateFailRateGivenPublic,
       averageTurns,
     },
     allTargetsInRange: publicVictoryRate.inRange
-      && winRate.inRange
+      && successRate.inRange
       && mandateFailRateGivenPublic.inRange
       && averageTurns.inRange,
   };
@@ -98,10 +98,10 @@ export function getTargetRange(metric: OptimizerTargetScore['metric']) {
   return TARGET_RANGES[metric];
 }
 
-export function choosePrimaryMetricForGate(score: OptimizerScoreBreakdown): 'winRate' | 'publicVictoryRate' {
-  const winGap = score.targets.winRate.distanceFromRange;
+export function choosePrimaryMetricForGate(score: OptimizerScoreBreakdown): 'successRate' | 'publicVictoryRate' {
+  const winGap = score.targets.successRate.distanceFromRange;
   const publicGap = score.targets.publicVictoryRate.distanceFromRange;
-  return winGap >= publicGap ? 'winRate' : 'publicVictoryRate';
+  return winGap >= publicGap ? 'successRate' : 'publicVictoryRate';
 }
 
 export function directionTowardRange(value: number, range: TargetRange): 'increase' | 'decrease' | 'inside' {

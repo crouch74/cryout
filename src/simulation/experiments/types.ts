@@ -6,8 +6,12 @@ export type VictoryMode = 'liberation' | 'symbolic';
 export type ExperimentArm = 'A' | 'B';
 
 export type ExperimentMetricKey =
-  | 'winRate'
+  | 'successRate'
   | 'publicVictoryRate'
+  | 'successRateGivenPublicVictory'
+  | 'victoryScoreMean'
+  | 'victoryScoreMedian'
+  | 'victoryScoreP90'
   | 'mandateFailRateGivenPublic'
   | 'avgTurns'
   | 'medianTurns'
@@ -21,7 +25,7 @@ export type ExperimentMetricKey =
 export type Decision = 'KEEP' | 'REJECT' | 'NEEDS_MORE_DATA';
 
 export type DecisionRule = {
-  primary: 'winRate' | 'publicVictoryRate';
+  primary: 'successRate' | 'publicVictoryRate';
   minLift: number;
   guardrails?: Array<{
     metric: ExperimentMetricKey;
@@ -47,10 +51,15 @@ export type ExperimentDefinition = {
 export interface ExperimentArmSummary {
   arm: ExperimentArm;
   n: number;
-  wins: number;
-  winRate: number;
+  successes: number;
+  successRate: number;
   publicVictories: number;
   publicVictoryRate: number;
+  successRateGivenPublicVictory: number;
+  victoryScoreMean: number;
+  victoryScoreMedian: number;
+  victoryScoreP90: number;
+  componentContributionAverages: Record<string, number>;
   mandateFailuresAmongPublic: number;
   mandateFailRateGivenPublic: number;
   publicVictoriesByRoundOne: number;
@@ -112,7 +121,7 @@ export interface MetricComparison {
 export interface ExperimentRecommendation {
   decision: Decision;
   rationale: string[];
-  primaryMetric: 'winRate' | 'publicVictoryRate';
+  primaryMetric: 'successRate' | 'publicVictoryRate';
 }
 
 export interface StructuralMandateDiagnostic {
@@ -127,6 +136,8 @@ export interface StructuralDiagnostics {
   victoryPredicateSatisfiedBeforeAllowedRoundWarning: boolean;
   earlyTerminationWarning: boolean;
   noGameplayWarning: boolean;
+  publicVictoryHighButSuccessLowWarning: boolean;
+  unreachableThresholdWarning: boolean;
   impossibleMandates: StructuralMandateDiagnostic[];
   summary: string[];
 }

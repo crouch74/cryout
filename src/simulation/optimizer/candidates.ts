@@ -2,6 +2,7 @@ import { join } from 'node:path';
 import { balanceCandidateToPatch, runBalanceSearch } from '../balance/SearchEngine.ts';
 import type { ScenarioPatch } from '../experiments/patchDsl.ts';
 import type { TrajectorySummary } from '../trajectory/types.ts';
+import { getRulesetDefinition } from '../../engine/index.ts';
 import type {
   OptimizerAnalysis,
   OptimizerCandidate,
@@ -32,6 +33,11 @@ interface PatchGenome {
   liberationThresholdDelta: number;
   relaxAllThresholdsBy: number;
   maxExtractionAddedPerRound: number | null;
+  scoreThreshold: number;
+  publicVictoryWeight: number;
+  mandatesWeight: number;
+  catastrophicCapEnabled: boolean;
+  catastrophicCapValue: number;
 }
 
 const GENOME_LIMITS = {
@@ -41,6 +47,10 @@ const GENOME_LIMITS = {
   crisisSpikeExtractionDelta: { min: -2, max: 2 },
   liberationThresholdDelta: { min: -2, max: 2 },
   relaxAllThresholdsBy: { min: -1, max: 3 },
+  scoreThreshold: { min: 65, max: 75 },
+  publicVictoryWeight: { min: 30, max: 50 },
+  mandatesWeight: { min: 40, max: 60 },
+  catastrophicCapValue: { min: 60, max: 75 },
 } as const;
 
 function stableHash(value: string) {
@@ -83,6 +93,8 @@ function clamp(value: number, min: number, max: number) {
 }
 
 function toGenome(patch: ScenarioPatch | null): PatchGenome {
+  const publicVictoryWeight = patch?.victoryScoring?.publicVictoryWeight ?? 45;
+  const mandatesWeight = patch?.victoryScoring?.mandatesWeight ?? 55;
   return {
     globalGazeDelta: patch?.setup?.globalGazeDelta ?? 0,
     northernWarMachineDelta: patch?.setup?.northernWarMachineDelta ?? 0,
@@ -91,6 +103,11 @@ function toGenome(patch: ScenarioPatch | null): PatchGenome {
     liberationThresholdDelta: patch?.victory?.liberationThresholdDelta ?? 0,
     relaxAllThresholdsBy: patch?.mandates?.relaxAllThresholdsBy ?? 0,
     maxExtractionAddedPerRound: patch?.pressure?.maxExtractionAddedPerRound ?? null,
+    scoreThreshold: patch?.victoryScoring?.threshold ?? 70,
+    publicVictoryWeight,
+    mandatesWeight,
+    catastrophicCapEnabled: patch?.victoryScoring?.catastrophicCapEnabled ?? true,
+    catastrophicCapValue: patch?.victoryScoring?.catastrophicCapValue ?? 69,
   };
 }
 
@@ -134,6 +151,24 @@ function fromGenome(genome: PatchGenome, note: string): ScenarioPatch {
     };
   }
 
+  if (
+    genome.scoreThreshold !== 70
+    || genome.publicVictoryWeight !== 45
+    || genome.mandatesWeight !== 55
+    || genome.catastrophicCapEnabled !== true
+    || genome.catastrophicCapValue !== 69
+  ) {
+    patch.victoryScoring = {
+      mode: 'score',
+      threshold: genome.scoreThreshold,
+      publicVictoryWeight: genome.publicVictoryWeight,
+      mandatesWeight: genome.mandatesWeight,
+      mandateProgressMode: 'binary',
+      catastrophicCapEnabled: genome.catastrophicCapEnabled,
+      catastrophicCapValue: genome.catastrophicCapValue,
+    };
+  }
+
   return normalizeScenarioPatch(patch);
 }
 
@@ -145,6 +180,12 @@ function mutateGenome(base: PatchGenome, rng: () => number): PatchGenome {
   const step = rng() % 2 === 0 ? -1 : 1;
   next[key] = clamp(next[key] + step, bounds.min, bounds.max);
 
+  if (key === 'publicVictoryWeight') {
+    next.mandatesWeight = 100 - next.publicVictoryWeight;
+  } else if (key === 'mandatesWeight') {
+    next.publicVictoryWeight = 100 - next.mandatesWeight;
+  }
+
   if (rng() % 5 === 0) {
     if (next.maxExtractionAddedPerRound === null) {
       next.maxExtractionAddedPerRound = intInRange(rng, 1, 4);
@@ -153,6 +194,10 @@ function mutateGenome(base: PatchGenome, rng: () => number): PatchGenome {
     } else {
       next.maxExtractionAddedPerRound = clamp(next.maxExtractionAddedPerRound + (rng() % 2 === 0 ? -1 : 1), 1, 4);
     }
+  }
+
+  if (rng() % 7 === 0) {
+    next.catastrophicCapEnabled = !next.catastrophicCapEnabled;
   }
 
   return next;
@@ -167,7 +212,13 @@ function randomGenome(rng: () => number): PatchGenome {
     liberationThresholdDelta: intInRange(rng, GENOME_LIMITS.liberationThresholdDelta.min, GENOME_LIMITS.liberationThresholdDelta.max),
     relaxAllThresholdsBy: intInRange(rng, GENOME_LIMITS.relaxAllThresholdsBy.min, GENOME_LIMITS.relaxAllThresholdsBy.max),
     maxExtractionAddedPerRound: null,
+    scoreThreshold: [65, 70, 75][rng() % 3],
+    publicVictoryWeight: [30, 35, 40, 45, 50][rng() % 5],
+    mandatesWeight: 55,
+    catastrophicCapEnabled: rng() % 2 === 0,
+    catastrophicCapValue: [65, 69, 72][rng() % 3],
   };
+  genome.mandatesWeight = 100 - genome.publicVictoryWeight;
 
   if (rng() % 4 === 0) {
     genome.maxExtractionAddedPerRound = intInRange(rng, 1, 4);
@@ -209,6 +260,26 @@ function serializePatch(patch: ScenarioPatch) {
   return JSON.stringify(normalizeValue(patch) ?? {});
 }
 
+function scenarioHasCatastrophicCap(scenarioId: string) {
+  const ruleset = getRulesetDefinition(scenarioId);
+  return Boolean(ruleset?.victoryScoring?.caps?.capScoreAtIf?.some((rule) => rule.id === 'catastrophic_state'));
+}
+
+function sanitizeCapPatch(patch: ScenarioPatch, allowCatastrophicCap: boolean): ScenarioPatch {
+  if (allowCatastrophicCap || !patch.victoryScoring) {
+    return patch;
+  }
+  const sanitized: ScenarioPatch = {
+    ...patch,
+    victoryScoring: {
+      ...patch.victoryScoring,
+    },
+  };
+  delete sanitized.victoryScoring?.catastrophicCapEnabled;
+  delete sanitized.victoryScoring?.catastrophicCapValue;
+  return normalizeScenarioPatch(sanitized);
+}
+
 export function normalizeScenarioPatch(patch: ScenarioPatch): ScenarioPatch {
   const normalized = normalizeValue(patch);
   return (normalized ?? {}) as ScenarioPatch;
@@ -227,7 +298,7 @@ export function isScenarioPatchEmpty(patch: ScenarioPatch) {
 function buildParameterSweepCandidates(analysis: OptimizerAnalysis): ScenarioPatch[] {
   const candidates: ScenarioPatch[] = [];
 
-  if (analysis.outOfRange.winRate || analysis.outOfRange.publicVictoryRate) {
+  if (analysis.outOfRange.successRate || analysis.outOfRange.publicVictoryRate) {
     candidates.push({
       note: '🧠 Sweep: ease opening pressure',
       setup: {
@@ -237,6 +308,45 @@ function buildParameterSweepCandidates(analysis: OptimizerAnalysis): ScenarioPat
       },
       pressure: {
         crisisSpikeExtractionDelta: -1,
+      },
+    });
+  }
+
+  if (analysis.outOfRange.successRate) {
+    for (const threshold of [65, 70, 75]) {
+      candidates.push({
+        note: `🧠 Sweep: scoring threshold=${threshold}`,
+        victoryScoring: {
+          mode: 'score',
+          threshold,
+          publicVictoryWeight: 45,
+          mandatesWeight: 55,
+          catastrophicCapEnabled: true,
+          catastrophicCapValue: 69,
+        },
+      });
+    }
+    for (const publicVictoryWeight of [30, 35, 40, 45, 50]) {
+      candidates.push({
+        note: `🧠 Sweep: score bucket public=${publicVictoryWeight} mandates=${100 - publicVictoryWeight}`,
+        victoryScoring: {
+          mode: 'score',
+          threshold: 70,
+          publicVictoryWeight,
+          mandatesWeight: 100 - publicVictoryWeight,
+          catastrophicCapEnabled: true,
+          catastrophicCapValue: 69,
+        },
+      });
+    }
+    candidates.push({
+      note: '🧠 Sweep: disable catastrophic score cap',
+      victoryScoring: {
+        mode: 'score',
+        threshold: 70,
+        publicVictoryWeight: 45,
+        mandatesWeight: 55,
+        catastrophicCapEnabled: false,
       },
     });
   }
@@ -300,7 +410,7 @@ function buildTrajectoryGuidedPatch(summary: TrajectorySummary | null, analysis:
     note: '🧭 Trajectory-guided mutation',
   };
 
-  if (summary.averageExtractionRemovedBeforeVictory < 1.5 && analysis.outOfRange.winRate) {
+  if (summary.averageExtractionRemovedBeforeVictory < 1.5 && analysis.outOfRange.successRate) {
     patch.setup = {
       ...(patch.setup ?? {}),
       seededExtractionTotalDelta: -1,
@@ -420,10 +530,11 @@ function buildVictoryGatingCandidates(mode: OptimizerStrategyMode, analysis: Opt
 
 export async function generateCandidatePatches(input: CandidateGenerationInput): Promise<OptimizerCandidate[]> {
   const rng = createRng(mixSeed(input.seed, stableHash(`optimizer-candidates:${input.iteration}`)));
+  const allowCatastrophicCap = scenarioHasCatastrophicCap(input.scenarioId);
   const dedup = new Map<string, Omit<OptimizerCandidate, 'candidateId'>>();
 
   const addCandidate = (strategy: OptimizerCandidate['strategy'], patch: ScenarioPatch) => {
-    const normalized = normalizeScenarioPatch(patch);
+    const normalized = sanitizeCapPatch(normalizeScenarioPatch(patch), allowCatastrophicCap);
     if (isScenarioPatchEmpty(normalized)) {
       return;
     }

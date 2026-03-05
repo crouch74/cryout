@@ -102,11 +102,11 @@ export const EXPERIMENT_BACKLOG: ExperimentDefinition[] = [
     expectedEffects: {
       publicVictoryRate:
         'Should remain similar.',
-      winRate:
+      successRate:
         'Should increase substantially if mandate incompatibility is the primary blocker.',
     },
     decisionRule: {
-      primary: 'winRate',
+      primary: 'successRate',
       minLift: 0.02,
       confidence: 0.95,
     },
@@ -132,11 +132,11 @@ export const EXPERIMENT_BACKLOG: ExperimentDefinition[] = [
         'Should stabilize near 40–60%.',
       mandateFailRateGivenPublic:
         'Should stabilize near 30–40%.',
-      winRate:
+      successRate:
         'Should emerge in 20–40% range.',
     },
     decisionRule: {
-      primary: 'winRate',
+      primary: 'successRate',
       minLift: 0.02,
       confidence: 0.95,
     },

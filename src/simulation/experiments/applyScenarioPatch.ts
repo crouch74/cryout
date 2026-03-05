@@ -348,6 +348,132 @@ function applyPatchToRuleset(ruleset: RulesetDefinition, patch: ScenarioPatch) {
     }
   }
 
+  if (patch.victoryScoring) {
+    ruleset.victoryScoring = ruleset.victoryScoring ?? {
+      mode: 'score',
+      threshold: 70,
+      components: [],
+      mandatesAsScore: {
+        enabled: false,
+        weight: 0,
+        mandateProgressMode: 'binary',
+      },
+    };
+
+    const scoring = ruleset.victoryScoring;
+    if (patch.victoryScoring.mode !== undefined) {
+      scoring.mode = patch.victoryScoring.mode;
+    }
+    if (patch.victoryScoring.threshold !== undefined) {
+      const threshold = patch.victoryScoring.threshold;
+      if (!Number.isFinite(threshold) || threshold < 0 || threshold > 100) {
+        failPatch(`victoryScoring.threshold=${String(threshold)} must be between 0 and 100`);
+      }
+      scoring.threshold = threshold;
+    }
+
+    if (patch.victoryScoring.mandateProgressMode !== undefined) {
+      scoring.mandatesAsScore = scoring.mandatesAsScore ?? {
+        enabled: true,
+        weight: 0,
+        mandateProgressMode: 'binary',
+      };
+      scoring.mandatesAsScore.mandateProgressMode = patch.victoryScoring.mandateProgressMode;
+    }
+
+    const components = scoring.components ?? [];
+    const existingPublicIndex = components.findIndex((component) => component.id === 'publicVictory');
+    const ensurePublicComponent = () => {
+      if (existingPublicIndex >= 0) {
+        return existingPublicIndex;
+      }
+      components.push({
+        id: 'publicVictory',
+        label: 'Public Victory',
+        weight: 0,
+        type: 'binaryCondition',
+        source: { type: 'publicVictory' },
+      });
+      return components.length - 1;
+    };
+
+    if (patch.victoryScoring.publicVictoryWeight !== undefined) {
+      const weight = patch.victoryScoring.publicVictoryWeight;
+      if (!Number.isFinite(weight) || weight < 0 || weight > 100) {
+        failPatch(`victoryScoring.publicVictoryWeight=${String(weight)} must be between 0 and 100`);
+      }
+      const index = ensurePublicComponent();
+      components[index].weight = weight;
+    }
+
+    if (patch.victoryScoring.mandatesWeight !== undefined) {
+      const weight = patch.victoryScoring.mandatesWeight;
+      if (!Number.isFinite(weight) || weight < 0 || weight > 100) {
+        failPatch(`victoryScoring.mandatesWeight=${String(weight)} must be between 0 and 100`);
+      }
+      scoring.mandatesAsScore = scoring.mandatesAsScore ?? {
+        enabled: true,
+        weight: 0,
+        mandateProgressMode: 'binary',
+      };
+      scoring.mandatesAsScore.enabled = true;
+      scoring.mandatesAsScore.weight = weight;
+    }
+
+    const publicWeightPatched = patch.victoryScoring.publicVictoryWeight !== undefined;
+    const mandateWeightPatched = patch.victoryScoring.mandatesWeight !== undefined;
+    if (publicWeightPatched !== mandateWeightPatched) {
+      const index = ensurePublicComponent();
+      scoring.mandatesAsScore = scoring.mandatesAsScore ?? {
+        enabled: true,
+        weight: 0,
+        mandateProgressMode: 'binary',
+      };
+      scoring.mandatesAsScore.enabled = true;
+      if (publicWeightPatched) {
+        scoring.mandatesAsScore.weight = 100 - components[index].weight;
+      } else {
+        components[index].weight = 100 - scoring.mandatesAsScore.weight;
+      }
+    }
+
+    scoring.components = components;
+    const caps = scoring.caps?.capScoreAtIf ?? [];
+    const capIndex = caps.findIndex((rule) => rule.id === 'catastrophic_state');
+    if (patch.victoryScoring.catastrophicCapEnabled !== undefined) {
+      if (!patch.victoryScoring.catastrophicCapEnabled) {
+        if (capIndex >= 0) {
+          caps.splice(capIndex, 1);
+        }
+      } else if (capIndex < 0) {
+        failPatch('victoryScoring.catastrophicCapEnabled=true requires an existing cap rule with id=catastrophic_state');
+      }
+    }
+    if (patch.victoryScoring.catastrophicCapValue !== undefined) {
+      const capValue = patch.victoryScoring.catastrophicCapValue;
+      if (!Number.isFinite(capValue) || capValue < 0 || capValue > 100) {
+        failPatch(`victoryScoring.catastrophicCapValue=${String(capValue)} must be between 0 and 100`);
+      }
+      const updatedIndex = caps.findIndex((rule) => rule.id === 'catastrophic_state');
+      if (updatedIndex < 0) {
+        failPatch('victoryScoring.catastrophicCapValue requires an existing cap rule with id=catastrophic_state');
+      }
+      caps[updatedIndex].maxScore = capValue;
+    }
+    if (caps.length > 0) {
+      scoring.caps = scoring.caps ?? {};
+      scoring.caps.capScoreAtIf = caps;
+    } else if (scoring.caps) {
+      delete scoring.caps.capScoreAtIf;
+    }
+
+    const componentWeight = (scoring.components ?? []).reduce((sum, component) => sum + component.weight, 0);
+    const mandateWeight = scoring.mandatesAsScore?.enabled ? (scoring.mandatesAsScore.weight ?? 0) : 0;
+    if (Math.abs(componentWeight + mandateWeight - 100) > 1e-9) {
+      failPatch(`victoryScoring weights must sum to 100 (components=${componentWeight}, mandates=${mandateWeight})`);
+    }
+  }
+
   if (patch.mandates?.relaxAllThresholdsBy !== undefined) {
     const step = patch.mandates.relaxAllThresholdsBy;
     let totalAdjustments = 0;

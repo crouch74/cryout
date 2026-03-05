@@ -178,6 +178,10 @@ export interface SimulationRecord {
   };
   publicVictoryAchieved: boolean;
   victoryPredicateSatisfiedBeforeAllowedRound: boolean;
+  victoryScore?: number;
+  victoryThreshold?: number;
+  successByScore?: boolean;
+  scoreComponentContributions?: Record<string, number>;
   mandateFailure: boolean;
   mandateOutcomeById: MandateFailureStats;
   extractionBreach: boolean;
@@ -234,7 +238,7 @@ export interface SimulationRecord {
 
 export interface ScenarioSummary {
   runs: number;
-  winRate: number;
+  successRate: number;
   averageTurns: number;
   defeatReasons: Record<string, number>;
   campaignSuccessRate: number;
@@ -242,14 +246,19 @@ export interface ScenarioSummary {
 
 export interface StrategyPerformanceSummary {
   runs: number;
-  winRate: number;
+  successRate: number;
   averageTurns: number;
   mandateFailureRate: number;
 }
 
 export interface SimulationSummary {
   runs: number;
-  winRate: number;
+  successRate: number;
+  successRateGivenPublicVictory: number;
+  victoryScoreMean: number;
+  victoryScoreMedian: number;
+  victoryScoreP90: number;
+  componentContributionAverages: Record<string, number>;
   averageTurns: number;
   sanity: {
     endedBeforeRound2: number;
@@ -279,8 +288,11 @@ export interface SimulationBatchResult {
 
 export interface SummaryAccumulator {
   runs: number;
-  wins: number;
+  successes: number;
+  publicVictories: number;
+  totalVictoryScore: number;
   totalTurns: number;
+  componentContributionTotals: Record<string, number>;
   sanity: {
     endedBeforeRound2: number;
   };
@@ -295,7 +307,7 @@ export interface SummaryAccumulator {
   campaignSuccess: number;
   scenarioStats: Record<string, {
     runs: number;
-    wins: number;
+    successes: number;
     totalTurns: number;
     defeatReasons: Record<string, number>;
     campaignAttempts: number;
@@ -303,7 +315,7 @@ export interface SummaryAccumulator {
   }>;
   strategyPerformance: Record<string, {
     runs: number;
-    wins: number;
+    successes: number;
     totalTurns: number;
     mandateFailures: number;
   }>;

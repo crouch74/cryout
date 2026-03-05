@@ -112,6 +112,12 @@ test('mandate failure distribution aggregates, computes rates, and sorts descend
   assert.equal(byId.international_attention?.failureRate, 0.333333);
   assert.equal(byId.protect_land?.failureRate, 0);
   assert.equal(byId.stop_extraction?.failureRate, 0);
+  assert.equal(typeof summary.successRate, 'number');
+  assert.equal(typeof summary.successRateGivenPublicVictory, 'number');
+  assert.equal(typeof summary.victoryScoreMean, 'number');
+  assert.equal(typeof summary.victoryScoreMedian, 'number');
+  assert.equal(typeof summary.victoryScoreP90, 'number');
+  assert.equal(typeof summary.componentContributionAverages, 'object');
   assert.equal(summary.publicVictoriesByRoundOne, 0);
   assert.equal(summary.turnOnePublicVictoryRate, 0);
   assert.equal(summary.victoryBeforeAllowedRoundRate, 0);

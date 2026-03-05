@@ -42,7 +42,7 @@ export interface OptimizerConfig {
 }
 
 export interface OptimizerTargetScore {
-  metric: 'publicVictoryRate' | 'winRate' | 'mandateFailRateGivenPublic' | 'averageTurns';
+  metric: 'publicVictoryRate' | 'successRate' | 'mandateFailRateGivenPublic' | 'averageTurns';
   value: number;
   min: number;
   max: number;
@@ -56,7 +56,7 @@ export interface OptimizerScoreBreakdown {
   catastrophePenalty: number;
   targets: {
     publicVictoryRate: OptimizerTargetScore;
-    winRate: OptimizerTargetScore;
+    successRate: OptimizerTargetScore;
     mandateFailRateGivenPublic: OptimizerTargetScore;
     averageTurns: OptimizerTargetScore;
   };
@@ -66,7 +66,7 @@ export interface OptimizerScoreBreakdown {
 export interface OptimizerAnalysis {
   outOfRange: {
     publicVictoryRate: boolean;
-    winRate: boolean;
+    successRate: boolean;
     mandateFailRateGivenPublic: boolean;
     averageTurns: boolean;
   };
@@ -99,7 +99,7 @@ export interface OptimizerCandidate {
 
 export interface OptimizerGateDecision {
   accepted: boolean;
-  primaryMetric: 'winRate' | 'publicVictoryRate';
+  primaryMetric: 'successRate' | 'publicVictoryRate';
   statisticallyMeaningful: boolean;
   fitnessLiftPassed: boolean;
   guardrailsPassed: boolean;

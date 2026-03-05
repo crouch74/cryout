@@ -499,8 +499,16 @@ function buildRunRecord(
       type: resultType,
       reason: terminalReason,
     },
-    publicVictoryAchieved: resultType === 'victory' || terminalReason === 'mandate_failure',
+    publicVictoryAchieved: resultType === 'victory'
+      || terminalReason === 'mandate_failure'
+      || state.victoryProgress?.lastVictoryScore !== undefined,
     victoryPredicateSatisfiedBeforeAllowedRound: Boolean(state.victoryProgress?.victoryPredicateSatisfiedBeforeAllowedRound),
+    victoryScore: state.terminalOutcome?.victoryScore ?? state.victoryProgress?.lastVictoryScore,
+    victoryThreshold: state.terminalOutcome?.victoryThreshold ?? state.victoryProgress?.lastVictoryThreshold,
+    successByScore: state.terminalOutcome?.victoryScore !== undefined
+      ? (state.terminalOutcome.victoryScore >= (state.terminalOutcome.victoryThreshold ?? 70))
+      : undefined,
+    scoreComponentContributions: state.terminalOutcome?.scoreBreakdown ?? state.victoryProgress?.lastScoreBreakdown,
     mandateFailure: terminalReason === 'mandate_failure',
     mandateOutcomeById,
     extractionBreach: terminalReason === 'extraction_breach',
@@ -962,8 +970,11 @@ export function runSingleSimulation(
 export function createSummaryAccumulator(): SummaryAccumulator {
   return {
     runs: 0,
-    wins: 0,
+    successes: 0,
+    publicVictories: 0,
+    totalVictoryScore: 0,
     totalTurns: 0,
+    componentContributionTotals: {},
     sanity: {
       endedBeforeRound2: 0,
     },
@@ -985,6 +996,12 @@ function incrementCount(map: Record<string, number>, key: string) {
   map[key] = (map[key] ?? 0) + 1;
 }
 
+function mergeNumericMaps(target: Record<string, number>, source: Record<string, number>) {
+  for (const [key, value] of Object.entries(source)) {
+    target[key] = (target[key] ?? 0) + value;
+  }
+}
+
 export function updateSummaryAccumulator(accumulator: SummaryAccumulator, record: SimulationRecord) {
   accumulator.runs += 1;
   accumulator.totalTurns += record.turnsPlayed;
@@ -992,21 +1009,27 @@ export function updateSummaryAccumulator(accumulator: SummaryAccumulator, record
     accumulator.sanity.endedBeforeRound2 += 1;
   }
 
-  if (record.result.type === 'victory') {
-    accumulator.wins += 1;
+  const success = record.successByScore ?? (record.result.type === 'victory');
+  if (success) {
+    accumulator.successes += 1;
   } else {
     if (record.result.reason in accumulator.defeatReasons) {
       const reason = record.result.reason as keyof SummaryAccumulator['defeatReasons'];
       accumulator.defeatReasons[reason] += 1;
     }
   }
+  if (record.publicVictoryAchieved) {
+    accumulator.publicVictories += 1;
+  }
+  accumulator.totalVictoryScore += record.victoryScore ?? 0;
+  mergeNumericMaps(accumulator.componentContributionTotals, record.scoreComponentContributions ?? {});
 
   accumulator.campaignAttempts += record.campaignStats.campaignAttempts;
   accumulator.campaignSuccess += record.campaignStats.campaignSuccess;
 
   const scenarioBucket = accumulator.scenarioStats[record.scenario] ?? {
     runs: 0,
-    wins: 0,
+    successes: 0,
     totalTurns: 0,
     defeatReasons: {},
     campaignAttempts: 0,
@@ -1015,8 +1038,8 @@ export function updateSummaryAccumulator(accumulator: SummaryAccumulator, record
 
   scenarioBucket.runs += 1;
   scenarioBucket.totalTurns += record.turnsPlayed;
-  if (record.result.type === 'victory') {
-    scenarioBucket.wins += 1;
+  if (success) {
+    scenarioBucket.successes += 1;
   } else {
     incrementCount(scenarioBucket.defeatReasons, record.result.reason);
   }
@@ -1027,15 +1050,15 @@ export function updateSummaryAccumulator(accumulator: SummaryAccumulator, record
   for (const strategyId of record.strategies) {
     const strategyBucket = accumulator.strategyPerformance[strategyId] ?? {
       runs: 0,
-      wins: 0,
+      successes: 0,
       totalTurns: 0,
       mandateFailures: 0,
     };
 
     strategyBucket.runs += 1;
     strategyBucket.totalTurns += record.turnsPlayed;
-    if (record.result.type === 'victory') {
-      strategyBucket.wins += 1;
+    if (success) {
+      strategyBucket.successes += 1;
     }
     if (record.mandateFailure) {
       strategyBucket.mandateFailures += 1;
@@ -1047,8 +1070,11 @@ export function updateSummaryAccumulator(accumulator: SummaryAccumulator, record
 
 export function mergeSummaryAccumulators(target: SummaryAccumulator, source: SummaryAccumulator) {
   target.runs += source.runs;
-  target.wins += source.wins;
+  target.successes += source.successes;
+  target.publicVictories += source.publicVictories;
+  target.totalVictoryScore += source.totalVictoryScore;
   target.totalTurns += source.totalTurns;
+  mergeNumericMaps(target.componentContributionTotals, source.componentContributionTotals);
   target.sanity.endedBeforeRound2 += source.sanity.endedBeforeRound2;
 
   target.defeatReasons.extraction_breach += source.defeatReasons.extraction_breach;
@@ -1063,7 +1089,7 @@ export function mergeSummaryAccumulators(target: SummaryAccumulator, source: Sum
   for (const [scenario, sourceScenario] of Object.entries(source.scenarioStats)) {
     const targetScenario = target.scenarioStats[scenario] ?? {
       runs: 0,
-      wins: 0,
+      successes: 0,
       totalTurns: 0,
       defeatReasons: {},
       campaignAttempts: 0,
@@ -1071,7 +1097,7 @@ export function mergeSummaryAccumulators(target: SummaryAccumulator, source: Sum
     };
 
     targetScenario.runs += sourceScenario.runs;
-    targetScenario.wins += sourceScenario.wins;
+    targetScenario.successes += sourceScenario.successes;
     targetScenario.totalTurns += sourceScenario.totalTurns;
     targetScenario.campaignAttempts += sourceScenario.campaignAttempts;
     targetScenario.campaignSuccess += sourceScenario.campaignSuccess;
@@ -1086,13 +1112,13 @@ export function mergeSummaryAccumulators(target: SummaryAccumulator, source: Sum
   for (const [strategyId, sourceStrategy] of Object.entries(source.strategyPerformance)) {
     const targetStrategy = target.strategyPerformance[strategyId] ?? {
       runs: 0,
-      wins: 0,
+      successes: 0,
       totalTurns: 0,
       mandateFailures: 0,
     };
 
     targetStrategy.runs += sourceStrategy.runs;
-    targetStrategy.wins += sourceStrategy.wins;
+    targetStrategy.successes += sourceStrategy.successes;
     targetStrategy.totalTurns += sourceStrategy.totalTurns;
     targetStrategy.mandateFailures += sourceStrategy.mandateFailures;
 
@@ -1115,7 +1141,7 @@ export function finalizeSummary(accumulator: SummaryAccumulator): SimulationSumm
         scenario,
         {
           runs: bucket.runs,
-          winRate: ratio(bucket.wins, bucket.runs),
+          successRate: ratio(bucket.successes, bucket.runs),
           averageTurns: ratio(bucket.totalTurns, bucket.runs),
           defeatReasons: bucket.defeatReasons,
           campaignSuccessRate: ratio(bucket.campaignSuccess, bucket.campaignAttempts),
@@ -1130,7 +1156,7 @@ export function finalizeSummary(accumulator: SummaryAccumulator): SimulationSumm
         strategyId,
         {
           runs: bucket.runs,
-          winRate: ratio(bucket.wins, bucket.runs),
+          successRate: ratio(bucket.successes, bucket.runs),
           averageTurns: ratio(bucket.totalTurns, bucket.runs),
           mandateFailureRate: ratio(bucket.mandateFailures, bucket.runs),
         },
@@ -1139,7 +1165,17 @@ export function finalizeSummary(accumulator: SummaryAccumulator): SimulationSumm
 
   return {
     runs: accumulator.runs,
-    winRate: ratio(accumulator.wins, accumulator.runs),
+    successRate: ratio(accumulator.successes, accumulator.runs),
+    successRateGivenPublicVictory: ratio(accumulator.successes, accumulator.publicVictories),
+    victoryScoreMean: ratio(accumulator.totalVictoryScore, accumulator.runs),
+    victoryScoreMedian: 0,
+    victoryScoreP90: 0,
+    componentContributionAverages: Object.fromEntries(
+      Object.entries(accumulator.componentContributionTotals).map(([componentId, value]) => [
+        componentId,
+        ratio(value, accumulator.runs),
+      ]),
+    ),
     averageTurns: ratio(accumulator.totalTurns, accumulator.runs),
     sanity: {
       endedBeforeRound2: accumulator.sanity.endedBeforeRound2,

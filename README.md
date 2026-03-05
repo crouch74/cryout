@@ -185,16 +185,53 @@ export const EXPERIMENT_BACKLOG: ExperimentDefinition[] = [
       },
     },
     expectedEffects: {
-      winRate: 'Should rise with less opening pressure.',
+      successRate: 'Should rise with less opening pressure.',
     },
     decisionRule: {
-      primary: 'winRate',
+      primary: 'successRate',
       minLift: 0.01,
       confidence: 0.95,
     },
   },
 ];
 ```
+
+### Scenario Victory Scoring
+
+Scenarios can enable non-binary victory scoring:
+
+```ts
+victoryScoring: {
+  mode: 'score',
+  threshold: 70,
+  components: [
+    {
+      id: 'publicVictory',
+      label: 'Public Victory',
+      weight: 45,
+      type: 'binaryCondition',
+      source: { type: 'publicVictory' },
+    },
+  ],
+  mandatesAsScore: {
+    enabled: true,
+    weight: 55,
+    mandateProgressMode: 'binary',
+  },
+}
+```
+
+Tuning notes:
+
+- Raise `threshold` for stricter success criteria.
+- Raise `publicVictory` weight for broader success tolerance.
+- Raise `mandatesAsScore.weight` for stronger mandate pressure.
+- Add caps for "win-with-consequence" ceilings in catastrophic states.
+
+Compatibility:
+
+- Missing `victoryScoring` (or `mode: 'binary'`) keeps legacy binary victory behavior.
+- Experiment and optimizer reports use `successRate` as the primary success metric.
 
 ### Autonomous Scenario Optimizer
 

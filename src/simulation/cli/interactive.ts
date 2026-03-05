@@ -38,8 +38,12 @@ function summarizeArm(arm: ExperimentArmSummary) {
   return [
     `📊 arm=${arm.arm}`,
     `📊 publicVictoryRate=${formatPercent(arm.publicVictoryRate)}`,
-    `📊 winRate=${formatPercent(arm.winRate)}`,
+    `📊 successRate=${formatPercent(arm.successRate)}`,
+    `📊 successRateGivenPublicVictory=${formatPercent(arm.successRateGivenPublicVictory)}`,
     `📊 mandateFailRateGivenPublic=${formatPercent(arm.mandateFailRateGivenPublic)}`,
+    `📊 victoryScoreMean=${arm.victoryScoreMean.toFixed(2)}`,
+    `📊 victoryScoreMedian=${arm.victoryScoreMedian.toFixed(2)}`,
+    `📊 victoryScoreP90=${arm.victoryScoreP90.toFixed(2)}`,
     `📊 defeat_extraction_breach=${arm.defeatReasons.extraction_breach}`,
     `📊 defeat_comrades_exhausted=${arm.defeatReasons.comrades_exhausted}`,
     `📊 defeat_mandate_failure=${arm.defeatReasons.mandate_failure}`,

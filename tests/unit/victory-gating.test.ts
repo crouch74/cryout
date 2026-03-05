@@ -125,3 +125,58 @@ test('progress gate requires minimum extraction removal before victory can trigg
     mounted.unregister();
   }
 });
+
+test('score mode still waits for required extraction progress gate', () => {
+  const tahrirStartCommand: typeof startCommand = {
+    ...startCommand,
+    rulesetId: 'tahrir_square',
+    seatFactionIds: ['april_6_youth', 'labor_movement', 'independent_journalists', 'rights_defenders'],
+  };
+
+  const mounted = applyScenarioPatch({
+    experimentId: 'unit_victory_gate_progress_score',
+    scenarioId: 'tahrir_square',
+    patch: {
+      victoryScoring: {
+        mode: 'score',
+        threshold: 70,
+        publicVictoryWeight: 45,
+        mandatesWeight: 55,
+      },
+      victoryGate: {
+        requiredProgress: {
+          extractionRemoved: 3,
+        },
+      },
+    },
+  });
+
+  try {
+    const content = compileContent(mounted.treatmentScenarioId);
+    const state = initializeGame({ ...tahrirStartCommand, rulesetId: mounted.treatmentScenarioId });
+    for (const region of Object.values(state.regions)) {
+      region.extractionTokens = 0;
+    }
+    for (const player of state.players) {
+      player.mandateSatisfied = true;
+    }
+    state.phase = 'RESOLUTION';
+    state.round = 3;
+    state.victoryProgress = {
+      extractionRemoved: 2,
+      actionsById: {},
+      lastResolvedActionId: null,
+      victoryPredicateSatisfiedBeforeAllowedRound: false,
+    };
+
+    const blocked = dispatchCommand(state, { type: 'ResolveResolutionPhase' }, content);
+    assert.notEqual(blocked.phase, 'WIN');
+
+    blocked.phase = 'RESOLUTION';
+    blocked.victoryProgress.extractionRemoved = 3;
+    const allowed = dispatchCommand(blocked, { type: 'ResolveResolutionPhase' }, content);
+    assert.equal(allowed.phase, 'WIN');
+  } finally {
+    mounted.unregister();
+  }
+});

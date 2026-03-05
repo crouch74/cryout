@@ -36,4 +36,13 @@ export type ScenarioPatch = {
       extractionRemoved?: number;
     };
   };
+  victoryScoring?: {
+    mode?: 'binary' | 'score';
+    threshold?: number;
+    publicVictoryWeight?: number;
+    mandatesWeight?: number;
+    mandateProgressMode?: 'binary' | 'progress';
+    catastrophicCapEnabled?: boolean;
+    catastrophicCapValue?: number;
+  };
 };

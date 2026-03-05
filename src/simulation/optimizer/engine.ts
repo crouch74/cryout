@@ -211,6 +211,31 @@ export function mergeScenarioPatches(base: ScenarioPatch, incoming: ScenarioPatc
     }
   }
 
+  if (incoming.victoryScoring) {
+    merged.victoryScoring = { ...(merged.victoryScoring ?? {}) };
+    if (incoming.victoryScoring.mode !== undefined) {
+      merged.victoryScoring.mode = incoming.victoryScoring.mode;
+    }
+    if (incoming.victoryScoring.threshold !== undefined) {
+      merged.victoryScoring.threshold = incoming.victoryScoring.threshold;
+    }
+    if (incoming.victoryScoring.publicVictoryWeight !== undefined) {
+      merged.victoryScoring.publicVictoryWeight = incoming.victoryScoring.publicVictoryWeight;
+    }
+    if (incoming.victoryScoring.mandatesWeight !== undefined) {
+      merged.victoryScoring.mandatesWeight = incoming.victoryScoring.mandatesWeight;
+    }
+    if (incoming.victoryScoring.mandateProgressMode !== undefined) {
+      merged.victoryScoring.mandateProgressMode = incoming.victoryScoring.mandateProgressMode;
+    }
+    if (incoming.victoryScoring.catastrophicCapEnabled !== undefined) {
+      merged.victoryScoring.catastrophicCapEnabled = incoming.victoryScoring.catastrophicCapEnabled;
+    }
+    if (incoming.victoryScoring.catastrophicCapValue !== undefined) {
+      merged.victoryScoring.catastrophicCapValue = incoming.victoryScoring.catastrophicCapValue;
+    }
+  }
+
   return normalizeScenarioPatch(merged);
 }
 
@@ -222,7 +247,7 @@ function createExperimentDefinition(input: {
   runsPerArm: number;
   seed: number;
   confidence: 0.9 | 0.95 | 0.99;
-  primary: 'winRate' | 'publicVictoryRate';
+  primary: 'successRate' | 'publicVictoryRate';
   victoryModes: ExperimentDefinition['victoryModes'];
   playerCounts: number[];
 }): ExperimentDefinition {
@@ -272,7 +297,7 @@ function getSignificanceThresholds(mode: OptimizerSignificanceMode): OptimizerSi
 function analyzeBaselineMetrics(arm: ExperimentArmSummary, score: OptimizerScoreBreakdown): OptimizerAnalysis {
   const outOfRange = {
     publicVictoryRate: !score.targets.publicVictoryRate.inRange,
-    winRate: !score.targets.winRate.inRange,
+    successRate: !score.targets.successRate.inRange,
     mandateFailRateGivenPublic: !score.targets.mandateFailRateGivenPublic.inRange,
     averageTurns: !score.targets.averageTurns.inRange,
   };
@@ -293,10 +318,10 @@ function analyzeBaselineMetrics(arm: ExperimentArmSummary, score: OptimizerScore
     insights.push('Public victory rate is above target range.');
   }
 
-  if (arm.winRate < score.targets.winRate.min) {
-    insights.push('True win rate is below target range.');
-  } else if (arm.winRate > score.targets.winRate.max) {
-    insights.push('True win rate is above target range.');
+  if (arm.successRate < score.targets.successRate.min) {
+    insights.push('Score success rate is below target range.');
+  } else if (arm.successRate > score.targets.successRate.max) {
+    insights.push('Score success rate is above target range.');
   }
 
   if (arm.mandateFailRateGivenPublic > score.targets.mandateFailRateGivenPublic.max) {
@@ -381,11 +406,11 @@ function evaluateGate(input: {
   const thresholds = getSignificanceThresholds(input.significance);
   const primaryMetric = choosePrimaryMetricForGate(input.baselineScore);
   const range = getTargetRange(primaryMetric);
-  const baselineValue = primaryMetric === 'winRate'
-    ? input.baselineMetrics.winRate
+  const baselineValue = primaryMetric === 'successRate'
+    ? input.baselineMetrics.successRate
     : input.baselineMetrics.publicVictoryRate;
-  const candidateValue = primaryMetric === 'winRate'
-    ? input.candidateMetrics.winRate
+  const candidateValue = primaryMetric === 'successRate'
+    ? input.candidateMetrics.successRate
     : input.candidateMetrics.publicVictoryRate;
   const direction = directionTowardRange(baselineValue, range);
   const metricDelta = input.comparison.metrics[primaryMetric];
@@ -481,7 +506,7 @@ function renderFinalReportMarkdown(report: OptimizerFinalReport) {
 - Accepted patches: ${report.acceptedPatches.length}
 
 ## Final Metrics
-- Win Rate: ${percent(final.metrics.winRate)}
+- Success Rate: ${percent(final.metrics.successRate)}
 - Public Victory Rate: ${percent(final.metrics.publicVictoryRate)}
 - Mandate Failure Given Public: ${percent(final.metrics.mandateFailRateGivenPublic)}
 - Average Turns: ${final.metrics.turns.average.toFixed(2)}
@@ -541,7 +566,7 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
         runsPerArm: config.baselineRuns,
         seed: mixSeed(config.seed, stableHash(`baseline:${iteration}`)),
         confidence: getSignificanceThresholds(config.significance).confidence,
-        primary: 'winRate',
+        primary: 'successRate',
         victoryModes: config.victoryModes,
         playerCounts: config.playerCounts,
       });
@@ -786,7 +811,7 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
         runsPerArm: config.baselineRuns,
         seed: mixSeed(config.seed, stableHash('final-confirmation')),
         confidence: getSignificanceThresholds(config.significance).confidence,
-        primary: 'winRate',
+        primary: 'successRate',
         victoryModes: config.victoryModes,
         playerCounts: config.playerCounts,
       }),
@@ -829,7 +854,7 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
   console.log('🏆 Optimization complete');
   console.log(`🏆 Run progress completed ${completedExperiments}/${estimatedTotalExperiments} (${formatProgressPercent(completedExperiments, estimatedTotalExperiments)}%)`);
   console.log(`🏆 Best configuration discovered for scenario=${config.scenarioId}`);
-  console.log(`📊 Win Rate: ${percent(finalMetrics.metrics.winRate)}`);
+  console.log(`📊 Success Rate: ${percent(finalMetrics.metrics.successRate)}`);
   console.log(`📊 Public Victory Rate: ${percent(finalMetrics.metrics.publicVictoryRate)}`);
   console.log(`📊 Mandate Failure Given Public: ${percent(finalMetrics.metrics.mandateFailRateGivenPublic)}`);
   console.log(`📊 Average Turns: ${finalMetrics.metrics.turns.average.toFixed(2)}`);

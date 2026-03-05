@@ -365,6 +365,31 @@ function mergeScenarioPatchForExperiment(basePatch: ScenarioPatch | undefined, t
     }
   }
 
+  if (incoming.victoryScoring) {
+    merged.victoryScoring = { ...(merged.victoryScoring ?? {}) };
+    if (incoming.victoryScoring.mode !== undefined) {
+      merged.victoryScoring.mode = incoming.victoryScoring.mode;
+    }
+    if (incoming.victoryScoring.threshold !== undefined) {
+      merged.victoryScoring.threshold = incoming.victoryScoring.threshold;
+    }
+    if (incoming.victoryScoring.publicVictoryWeight !== undefined) {
+      merged.victoryScoring.publicVictoryWeight = incoming.victoryScoring.publicVictoryWeight;
+    }
+    if (incoming.victoryScoring.mandatesWeight !== undefined) {
+      merged.victoryScoring.mandatesWeight = incoming.victoryScoring.mandatesWeight;
+    }
+    if (incoming.victoryScoring.mandateProgressMode !== undefined) {
+      merged.victoryScoring.mandateProgressMode = incoming.victoryScoring.mandateProgressMode;
+    }
+    if (incoming.victoryScoring.catastrophicCapEnabled !== undefined) {
+      merged.victoryScoring.catastrophicCapEnabled = incoming.victoryScoring.catastrophicCapEnabled;
+    }
+    if (incoming.victoryScoring.catastrophicCapValue !== undefined) {
+      merged.victoryScoring.catastrophicCapValue = incoming.victoryScoring.catastrophicCapValue;
+    }
+  }
+
   return merged;
 }
 
@@ -393,6 +418,11 @@ function detectStructuralDiagnostics(armA: ExperimentResult['armA'], armB: Exper
     || armB.victoryBeforeAllowedRoundRate > 0;
   const earlyTerminationWarning = armA.earlyTerminationRate > 0.05 || armB.earlyTerminationRate > 0.05;
   const noGameplayWarning = armA.turns.average < 2 || armB.turns.average < 2;
+  const publicVictoryHighButSuccessLowWarning = (armA.publicVictoryRate >= 0.5 && armA.successRate <= 0.05)
+    || (armB.publicVictoryRate >= 0.5 && armB.successRate <= 0.05);
+  const hasScoreSignals = armA.victoryScoreMean > 0 || armB.victoryScoreMean > 0;
+  const unreachableThresholdWarning = hasScoreSignals && ((armA.victoryScoreP90 + 5) < 70
+    || (armB.victoryScoreP90 + 5) < 70);
   const summary: string[] = [];
 
   if (turnOneVictoryWarning) {
@@ -407,6 +437,12 @@ function detectStructuralDiagnostics(armA: ExperimentResult['armA'], armB: Exper
   if (noGameplayWarning) {
     summary.push('Simulation ends before meaningful gameplay occurs. Victory gating likely required.');
   }
+  if (publicVictoryHighButSuccessLowWarning) {
+    summary.push('Public victory is frequently reached, but score success remains near zero. Revisit victory score composition and mandate weighting.');
+  }
+  if (unreachableThresholdWarning) {
+    summary.push('Observed victory score distribution suggests the threshold is structurally unreachable in practice.');
+  }
   if (impossibleMandates.length > 0) {
     summary.push('One or more mandates appear structurally impossible under current rules.');
   }
@@ -416,6 +452,8 @@ function detectStructuralDiagnostics(armA: ExperimentResult['armA'], armB: Exper
     victoryPredicateSatisfiedBeforeAllowedRoundWarning,
     earlyTerminationWarning,
     noGameplayWarning,
+    publicVictoryHighButSuccessLowWarning,
+    unreachableThresholdWarning,
     impossibleMandates,
     summary,
   };
@@ -625,9 +663,9 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
     const recommendation = buildRecommendation(definition, comparison);
     const structuralDiagnostics = detectStructuralDiagnostics(armA, armB);
 
-    const winRate = comparison.metrics.winRate;
+    const successRate = comparison.metrics.successRate;
     logInfo(
-      `📊 winRate A=${formatMetric(winRate.armA)} B=${formatMetric(winRate.armB)} lift=${winRate.absoluteLift >= 0 ? '+' : ''}${formatMetric(winRate.absoluteLift)} p=${winRate.proportionStats?.pValue ?? 'n/a'}`,
+      `📊 successRate A=${formatMetric(successRate.armA)} B=${formatMetric(successRate.armB)} lift=${successRate.absoluteLift >= 0 ? '+' : ''}${formatMetric(successRate.absoluteLift)} p=${successRate.proportionStats?.pValue ?? 'n/a'}`,
     );
     logInfo(`🧠 Decision=${recommendation.decision} reason=${recommendation.rationale.join(' | ')}`);
     if (structuralDiagnostics.turnOneVictoryWarning) {
@@ -641,6 +679,12 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
     }
     if (structuralDiagnostics.noGameplayWarning) {
       console.log('🚨 Structural Warning: Simulation ends before meaningful gameplay occurs. Victory gating likely required.');
+    }
+    if (structuralDiagnostics.publicVictoryHighButSuccessLowWarning) {
+      console.log('🚨 Structural Warning: publicVictoryRate is high while successRate remains near zero. Score composition likely over-constrained.');
+    }
+    if (structuralDiagnostics.unreachableThresholdWarning) {
+      console.log('🚨 Structural Warning: observed victory scores indicate threshold may be unreachable under current configuration.');
     }
     for (const mandate of structuralDiagnostics.impossibleMandates) {
       if (!aggregatedLogs) {

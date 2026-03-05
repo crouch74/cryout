@@ -152,6 +152,67 @@ export type Condition =
     kind: 'all_active_beacons_complete';
   };
 
+export type VictoryScoreMode = 'binary' | 'score';
+
+export type VictoryScoreComponentType = 'binaryCondition' | 'ratioCondition' | 'stepCondition';
+
+export type VictoryScoreSource =
+  | {
+    type: 'publicVictory';
+  }
+  | {
+    type: 'condition';
+    condition: Condition;
+  }
+  | {
+    type: 'mandates';
+  };
+
+export interface VictoryScoreStep {
+  atLeast: number;
+  ratio: number;
+}
+
+export interface VictoryScoreComponent {
+  id: string;
+  label: string;
+  weight: number;
+  type: VictoryScoreComponentType;
+  source: VictoryScoreSource;
+  ratio?: {
+    numerator: Condition;
+    denominator: Condition;
+  };
+  steps?: VictoryScoreStep[];
+}
+
+export interface VictoryScoreCapRule {
+  id: string;
+  label: string;
+  maxScore: number;
+  condition: Condition;
+}
+
+export interface VictoryScoringConfig {
+  mode?: VictoryScoreMode;
+  threshold?: number;
+  components?: VictoryScoreComponent[];
+  penalties?: VictoryScoreComponent[];
+  caps?: {
+    capScoreAtIf?: VictoryScoreCapRule[];
+  };
+  outcomeBands?: Array<{
+    id: string;
+    min: number;
+    max?: number;
+  }>;
+  mandatesAsScore?: {
+    enabled: boolean;
+    weight: number;
+    mandateProgressMode?: 'binary' | 'progress';
+  };
+}
+
 export interface MandateDefinition {
   id: string;
   title: string;
@@ -375,6 +436,7 @@ export interface RulesetDefinition {
       extractionRemoved?: number;
     };
   };
+  victoryScoring?: VictoryScoringConfig;
 }
 
 export interface CompiledContent {
@@ -520,6 +582,10 @@ export interface TerminalOutcomeSummary {
   failedMandateSeatIds?: number[];
   failedMandateIds?: string[];
   exhaustedSeat?: number;
+  victoryScore?: number;
+  victoryThreshold?: number;
+  scoreBandId?: string;
+  scoreBreakdown?: Record<string, number>;
 }
 
 export interface StateDelta {
@@ -615,6 +681,10 @@ export interface EngineState {
     actionsById: Record<string, number>;
     lastResolvedActionId: string | null;
     victoryPredicateSatisfiedBeforeAllowedRound: boolean;
+    lastVictoryScore?: number;
+    lastVictoryThreshold?: number;
+    lastScoreBreakdown?: Record<string, number>;
+    lastScoreBandId?: string;
   };
 }
 

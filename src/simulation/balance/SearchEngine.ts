@@ -48,7 +48,7 @@ export type BalanceCandidateScore = {
   metrics: {
     publicVictoryRate: number;
     mandateFailRateGivenPublic: number;
-    winRate: number;
+    successRate: number;
   };
 };
 
@@ -158,11 +158,11 @@ function buildCandidateKey(candidate: BalanceCandidate) {
 function scoreMetrics(metrics: {
   publicVictoryRate: number;
   mandateFailRateGivenPublic: number;
-  winRate: number;
+  successRate: number;
 }) {
   return -Math.abs(metrics.publicVictoryRate - 0.5)
     - Math.abs(metrics.mandateFailRateGivenPublic - 0.35)
-    - Math.abs(metrics.winRate - 0.30);
+    - Math.abs(metrics.successRate - 0.30);
 }
 
 function buildSampleProfile(
@@ -268,7 +268,7 @@ async function evaluateCandidate(
     const metrics = {
       publicVictoryRate: summary.publicVictoryRate,
       mandateFailRateGivenPublic: summary.mandateFailRateGivenPublic,
-      winRate: summary.winRate,
+      successRate: summary.successRate,
     };
 
     return {
@@ -367,7 +367,7 @@ export function mutateCandidateForTest(current: BalanceCandidate, seed: number) 
 export function scoreMetricsForTest(metrics: {
   publicVictoryRate: number;
   mandateFailRateGivenPublic: number;
-  winRate: number;
+  successRate: number;
 }) {
   return scoreMetrics(metrics);
 }

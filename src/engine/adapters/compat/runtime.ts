@@ -31,6 +31,8 @@ import type {
   StateDelta,
   TerminalOutcomeCause,
   TerminalOutcomeSummary,
+  VictoryScoreComponent,
+  VictoryScoringConfig,
   SystemEscalationTriggerId,
   SystemPersistentModifiers,
 } from './types.ts';
@@ -958,6 +960,60 @@ function ensureVictoryProgress(state: EngineState) {
   return state.victoryProgress;
 }
 
+function getVictoryScoringMode(content: CompiledContent) {
+  return content.ruleset.victoryScoring?.mode ?? 'binary';
+}
+
+function isScoreVictoryMode(content: CompiledContent) {
+  return getVictoryScoringMode(content) === 'score';
+}
+
+function assertValidWeightTotal(components: VictoryScoreComponent[], label: string) {
+  const total = components.reduce((sum, component) => sum + component.weight, 0);
+  if (Math.abs(total - 100) > 1e-9) {
+    throw new Error(`Invalid victoryScoring.${label}: component weights must sum to 100 (received ${total}).`);
+  }
+}
+
+function validateVictoryScoringConfig(content: CompiledContent): VictoryScoringConfig | null {
+  const config = content.ruleset.victoryScoring;
+  if (!config || getVictoryScoringMode(content) !== 'score') {
+    return null;
+  }
+
+  const threshold = config.threshold ?? 70;
+  if (!Number.isFinite(threshold) || threshold < 0 || threshold > 100) {
+    throw new Error(`Invalid victoryScoring.threshold=${String(config.threshold)}. Expected 0..100.`);
+  }
+
+  const components = config.components ?? [];
+  const penalties = config.penalties ?? [];
+  if (penalties.length > 0) {
+    assertValidWeightTotal(penalties, 'penalties');
+  }
+
+  if (config.mandatesAsScore?.enabled) {
+    const weight = config.mandatesAsScore.weight;
+    if (!Number.isFinite(weight) || weight < 0 || weight > 100) {
+      throw new Error(`Invalid victoryScoring.mandatesAsScore.weight=${String(weight)}. Expected 0..100.`);
+    }
+  }
+
+  for (const capRule of config.caps?.capScoreAtIf ?? []) {
+    if (!Number.isFinite(capRule.maxScore) || capRule.maxScore < 0 || capRule.maxScore > 100) {
+      throw new Error(`Invalid victoryScoring.caps.capScoreAtIf[${capRule.id}].maxScore=${String(capRule.maxScore)}. Expected 0..100.`);
+    }
+  }
+
+  const componentWeight = components.reduce((sum, component) => sum + component.weight, 0);
+  const mandateWeight = config.mandatesAsScore?.enabled ? (config.mandatesAsScore.weight ?? 0) : 0;
+  if (Math.abs(componentWeight + mandateWeight - 100) > 1e-9) {
+    throw new Error(`Invalid victoryScoring weights: components + mandate bucket must sum to 100 (received ${componentWeight + mandateWeight}).`);
+  }
+
+  return config;
+}
+
 function getMinRoundBeforePublicVictory(content: CompiledContent) {
   return Math.max(1, Math.floor(content.ruleset.victoryGate?.minRoundBeforeVictory ?? 1));
 }
@@ -1005,6 +1061,180 @@ function evaluatePublicVictoryPredicates(state: EngineState, content: CompiledCo
   return { liberationComplete, symbolicComplete };
 }
 
+function computeMandateCompletionRatio(state: EngineState) {
+  if (!state.secretMandatesEnabled || state.players.length === 0) {
+    return 1;
+  }
+  const satisfied = state.players.filter((player) => player.mandateSatisfied).length;
+  return Math.max(0, Math.min(1, satisfied / state.players.length));
+}
+
+function evaluateComponentRatio(
+  component: VictoryScoreComponent,
+  state: EngineState,
+  content: CompiledContent,
+  context: VictoryCheckContext,
+  publicVictorySatisfied: boolean,
+): number {
+  if (component.source.type === 'publicVictory') {
+    return publicVictorySatisfied ? 1 : 0;
+  }
+
+  if (component.source.type === 'mandates') {
+    const ratio = computeMandateCompletionRatio(state);
+    if (component.type === 'binaryCondition') {
+      return ratio >= 1 ? 1 : 0;
+    }
+    if (component.type === 'stepCondition') {
+      const steps = (component.steps ?? [])
+        .slice()
+        .sort((left, right) => left.atLeast - right.atLeast);
+      const completedMandates = state.players.filter((player) => player.mandateSatisfied).length;
+      let stepRatio = 0;
+      for (const step of steps) {
+        if (completedMandates >= step.atLeast) {
+          stepRatio = Math.max(stepRatio, step.ratio);
+        }
+      }
+      return Math.max(0, Math.min(1, stepRatio));
+    }
+    return ratio;
+  }
+
+  if (component.type === 'ratioCondition') {
+    const numeratorSatisfied = evaluateCondition(state, content, component.ratio?.numerator ?? component.source.condition, {
+      actingSeat: 0,
+      actionId: context.actionId as ActionId | undefined,
+      causedBy: [component.id, 'score_ratio'],
+    } as ResolveContext);
+    const denominatorSatisfied = evaluateCondition(state, content, component.ratio?.denominator ?? component.source.condition, {
+      actingSeat: 0,
+      actionId: context.actionId as ActionId | undefined,
+      causedBy: [component.id, 'score_ratio'],
+    } as ResolveContext);
+    if (!denominatorSatisfied) {
+      return 0;
+    }
+    return numeratorSatisfied ? 1 : 0;
+  }
+
+  if (component.type === 'stepCondition') {
+    const steps = (component.steps ?? [])
+      .slice()
+      .sort((left, right) => left.atLeast - right.atLeast);
+    // Step conditions for Condition sources evaluate as 0/1 progress until richer progress semantics exist.
+    const satisfied = evaluateCondition(state, content, component.source.condition, {
+      actingSeat: 0,
+      actionId: context.actionId as ActionId | undefined,
+      causedBy: [component.id, 'score_step'],
+    } as ResolveContext);
+    const progress = satisfied ? 1 : 0;
+    let stepRatio = 0;
+    for (const step of steps) {
+      if (progress >= step.atLeast) {
+        stepRatio = Math.max(stepRatio, step.ratio);
+      }
+    }
+    return Math.max(0, Math.min(1, stepRatio));
+  }
+
+  return evaluateCondition(state, content, component.source.condition, {
+    actingSeat: 0,
+    actionId: context.actionId as ActionId | undefined,
+    causedBy: [component.id, 'score_binary'],
+  } as ResolveContext)
+    ? 1
+    : 0;
+}
+
+function resolveScoreBandId(config: VictoryScoringConfig, score: number) {
+  for (const band of config.outcomeBands ?? []) {
+    const max = band.max ?? Infinity;
+    if (score >= band.min && score <= max) {
+      return band.id;
+    }
+  }
+  return undefined;
+}
+
+function computeVictoryScore(
+  state: EngineState,
+  content: CompiledContent,
+  context: VictoryCheckContext,
+  publicVictorySatisfied: boolean,
+) {
+  const config = validateVictoryScoringConfig(content);
+  if (!config) {
+    return null;
+  }
+
+  const threshold = config.threshold ?? 70;
+  const breakdown: Record<string, number> = {};
+  let score = 0;
+
+  console.log('🧮 Scoring victory');
+
+  for (const component of config.components ?? []) {
+    const ratio = evaluateComponentRatio(component, state, content, context, publicVictorySatisfied);
+    const points = Math.max(0, Math.min(component.weight, component.weight * ratio));
+    breakdown[component.id] = Number(points.toFixed(6));
+    score += points;
+  }
+
+  if (config.mandatesAsScore?.enabled) {
+    const progressMode = config.mandatesAsScore.mandateProgressMode ?? 'binary';
+    if (progressMode === 'progress') {
+      console.log('⚠️ mandateProgressMode=progress has no native mandate progress signal yet. Falling back to binary mandate completion.');
+    }
+    const ratio = computeMandateCompletionRatio(state);
+    const points = config.mandatesAsScore.weight * ratio;
+    breakdown.mandates_bucket = Number(points.toFixed(6));
+    score += points;
+  }
+
+  for (const penalty of config.penalties ?? []) {
+    const ratio = evaluateComponentRatio(penalty, state, content, context, publicVictorySatisfied);
+    const deduction = Math.max(0, Math.min(penalty.weight, penalty.weight * ratio));
+    breakdown[`penalty:${penalty.id}`] = Number((-deduction).toFixed(6));
+    score -= deduction;
+  }
+
+  let capApplied: { capId: string; maxScore: number } | null = null;
+  for (const capRule of config.caps?.capScoreAtIf ?? []) {
+    const active = evaluateCondition(state, content, capRule.condition, {
+      actingSeat: 0,
+      actionId: context.actionId as ActionId | undefined,
+      causedBy: [capRule.id, 'score_cap'],
+    } as ResolveContext);
+    if (!active) {
+      continue;
+    }
+    if (score > capRule.maxScore) {
+      score = capRule.maxScore;
+      capApplied = { capId: capRule.id, maxScore: capRule.maxScore };
+    }
+  }
+
+  score = Math.max(0, Math.min(100, score));
+  const roundedScore = Number(score.toFixed(6));
+  const success = roundedScore >= threshold;
+  const scoreBandId = resolveScoreBandId(config, roundedScore);
+
+  console.log(`📊 VictoryScore=${roundedScore.toFixed(2)} threshold=${threshold.toFixed(2)}`);
+  if (success) {
+    console.log('🏁 Success by score');
+  }
+
+  return {
+    score: roundedScore,
+    threshold,
+    success,
+    breakdown,
+    capApplied,
+    scoreBandId,
+  };
+}
+
 function checkPositiveVictory(state: EngineState, content: CompiledContent, context: VictoryCheckContext): boolean {
   const { liberationComplete, symbolicComplete } = evaluatePublicVictoryPredicates(state, content);
 
@@ -1017,6 +1247,56 @@ function checkPositiveVictory(state: EngineState, content: CompiledContent, cont
       ensureVictoryProgress(state).victoryPredicateSatisfiedBeforeAllowedRound = true;
     }
     return false;
+  }
+
+  if (isScoreVictoryMode(content)) {
+    const scoreEvaluation = computeVictoryScore(state, content, context, liberationComplete || symbolicComplete);
+    if (!scoreEvaluation || !scoreEvaluation.success) {
+      if (scoreEvaluation) {
+        const progress = ensureVictoryProgress(state);
+        progress.lastVictoryScore = scoreEvaluation.score;
+        progress.lastVictoryThreshold = scoreEvaluation.threshold;
+        progress.lastScoreBreakdown = scoreEvaluation.breakdown;
+        progress.lastScoreBandId = scoreEvaluation.scoreBandId;
+      }
+      return false;
+    }
+
+    const cause: TerminalOutcomeCause = liberationComplete ? 'liberation' : 'symbolic';
+    state.phase = 'WIN';
+    state.winner = liberationComplete
+      ? t('ui.runtime.winnerLiberation', 'Liberation achieved.')
+      : t('ui.runtime.winnerSymbolic', 'Symbolic beacons aligned.');
+    addSimpleEvent(
+      state,
+      'beacon',
+      'victory',
+      '✨',
+      liberationComplete ? '✨ Liberation score threshold secured.' : '✨ Symbolic score threshold secured.',
+      ['victory', 'score_mode'],
+    );
+    const progress = ensureVictoryProgress(state);
+    progress.lastVictoryScore = scoreEvaluation.score;
+    progress.lastVictoryThreshold = scoreEvaluation.threshold;
+    progress.lastScoreBreakdown = scoreEvaluation.breakdown;
+    progress.lastScoreBandId = scoreEvaluation.scoreBandId;
+    finalizeTerminalEvent(
+      state,
+      createTerminalOutcome(
+        state,
+        'victory',
+        cause,
+        t('ui.runtime.outcomeVictory', 'Victory'),
+        state.winner,
+        {
+          victoryScore: scoreEvaluation.score,
+          victoryThreshold: scoreEvaluation.threshold,
+          scoreBandId: scoreEvaluation.scoreBandId,
+          scoreBreakdown: scoreEvaluation.breakdown,
+        },
+      ),
+    );
+    return true;
   }
 
   if (!state.secretMandatesEnabled) {
@@ -2409,6 +2689,7 @@ export function normalizeEngineState(state: EngineState): EngineState {
 
 export function initializeGame(command: StartGameCommand): EngineState {
   const content = compileContent(command.rulesetId);
+  validateVictoryScoringConfig(content);
   validateStartGameCommand(command, content);
   return createInitialState(command, content);
 }

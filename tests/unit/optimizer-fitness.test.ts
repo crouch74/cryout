@@ -7,10 +7,15 @@ function makeArmSummary(input?: Partial<ExperimentArmSummary>): ExperimentArmSum
   return {
     arm: input?.arm ?? 'A',
     n: input?.n ?? 1000,
-    wins: input?.wins ?? 300,
-    winRate: input?.winRate ?? 0.3,
+    successes: input?.successes ?? 300,
+    successRate: input?.successRate ?? 0.3,
     publicVictories: input?.publicVictories ?? 500,
     publicVictoryRate: input?.publicVictoryRate ?? 0.5,
+    successRateGivenPublicVictory: input?.successRateGivenPublicVictory ?? 0.6,
+    victoryScoreMean: input?.victoryScoreMean ?? 72,
+    victoryScoreMedian: input?.victoryScoreMedian ?? 73,
+    victoryScoreP90: input?.victoryScoreP90 ?? 88,
+    componentContributionAverages: input?.componentContributionAverages ?? {},
     publicVictoriesByRoundOne: input?.publicVictoriesByRoundOne ?? 20,
     turnOnePublicVictoryRate: input?.turnOnePublicVictoryRate ?? 0.02,
     mandateFailuresAmongPublic: input?.mandateFailuresAmongPublic ?? 175,
@@ -47,7 +52,7 @@ function makeArmSummary(input?: Partial<ExperimentArmSummary>): ExperimentArmSum
 test('fitness score rewards metrics in target ranges', () => {
   const balanced = makeArmSummary();
   const imbalanced = makeArmSummary({
-    winRate: 0.05,
+    successRate: 0.05,
     publicVictoryRate: 0.2,
     mandateFailRateGivenPublic: 0.8,
     turns: {
@@ -85,14 +90,14 @@ test('fitness applies catastrophe penalties when defeat pressure is high', () =>
 
 test('primary gate metric is chosen from larger win/public target gap', () => {
   const lowWin = scoreArmSummary(makeArmSummary({
-    winRate: 0.1,
+    successRate: 0.1,
     publicVictoryRate: 0.5,
   }));
   const lowPublic = scoreArmSummary(makeArmSummary({
-    winRate: 0.3,
+    successRate: 0.3,
     publicVictoryRate: 0.2,
   }));
 
-  assert.equal(choosePrimaryMetricForGate(lowWin), 'winRate');
+  assert.equal(choosePrimaryMetricForGate(lowWin), 'successRate');
   assert.equal(choosePrimaryMetricForGate(lowPublic), 'publicVictoryRate');
 });
