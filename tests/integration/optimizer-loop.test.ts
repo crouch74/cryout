@@ -58,7 +58,7 @@ test('scenario optimizer writes iteration artifacts and final recommendation', a
   assert.equal(typeof finalMetrics.score.score, 'number');
 });
 
-test('all-scenarios parallel diagnostics writes structural and scenario-specific artifacts', async () => {
+test('all-scenarios parallel mode runs iterative optimization and writes aggregate artifacts', async () => {
   const outputRoot = await mkdtemp(join(tmpdir(), 'stones-optimizer-all-'));
 
   const report = await runAllScenariosParallelDiagnostics({
@@ -69,7 +69,7 @@ test('all-scenarios parallel diagnostics writes structural and scenario-specific
     candidates: 1,
     patience: 1,
     seed: 2026,
-    parallelWorkers: 2,
+    parallelWorkers: 1,
     outDir: outputRoot,
     executionMode: 'all_scenarios_parallel',
     runtime: 'fast',
@@ -82,8 +82,12 @@ test('all-scenarios parallel diagnostics writes structural and scenario-specific
   });
 
   assert.equal(report.scenarios.length >= 1, true);
-  await stat(join(report.outputDir, 'cross_scenario_diagnostics.json'));
-  await stat(join(report.outputDir, 'structural_issues.json'));
-  await stat(join(report.outputDir, 'scenario_specific_issues.json'));
+  await stat(join(report.outputDir, 'all_scenarios_parallel_report.json'));
+  await stat(join(report.outputDir, 'scenario_results.json'));
+  await stat(join(report.outputDir, 'scenario_failures.json'));
   await stat(join(report.outputDir, 'final_report.md'));
+
+  const firstScenario = report.scenarios[0];
+  await stat(join(firstScenario.outputDir, 'optimizer_config.json'));
+  await stat(join(firstScenario.outputDir, 'optimization_history.json'));
 });

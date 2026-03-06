@@ -293,7 +293,7 @@ Common options:
 - `--strategy numeric_balancing|victory_gating_exploration|trajectory_discovery|full_optimizer`
 
 `--parallel-workers` controls both optimizer-level candidate experiment concurrency and per-experiment simulation worker batching.
-`--optimizer-mode all_scenarios_parallel` runs baseline diagnostics for every shipped scenario concurrently and writes shared structural issues plus scenario-specific issue lists.
+`--optimizer-mode all_scenarios_parallel` runs full iterative optimization for every shipped scenario concurrently (with shared worker budget partitioning per scenario).
 
 Outputs are written to:
 

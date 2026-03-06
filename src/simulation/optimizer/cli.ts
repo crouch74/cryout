@@ -94,7 +94,7 @@ const MODE_DESCRIPTIONS: Record<OptimizerMode, string> = {
 
 const EXECUTION_MODE_DESCRIPTIONS: Record<OptimizerExecutionMode, string> = {
   single_scenario: 'Optimize one scenario using iterative candidate search.',
-  all_scenarios_parallel: 'Run baseline diagnostics across all scenarios in parallel to separate structural vs scenario-specific issues.',
+  all_scenarios_parallel: 'Optimize every scenario in parallel; each scenario runs its own multi-iteration candidate search.',
 };
 
 function buildManual() {
@@ -174,11 +174,11 @@ ${scenarioOptions}
 
   --optimizer-mode <single_scenario|all_scenarios_parallel>
     Name: Optimizer Execution Mode
-    Functionality: Selects single-scenario optimization or all-scenarios parallel diagnostics.
+    Functionality: Selects single-scenario optimization or all-scenarios parallel optimization.
     Implementation:
       single_scenario: ${EXECUTION_MODE_DESCRIPTIONS.single_scenario}
       all_scenarios_parallel: ${EXECUTION_MODE_DESCRIPTIONS.all_scenarios_parallel}
-    Impact: all_scenarios_parallel skips candidate patch search and produces cross-scenario issue classification.
+    Impact: all_scenarios_parallel runs iterative optimization per scenario concurrently using a shared worker budget.
 
   --mode <liberation|symbolic|both>
     Name: Victory Mode Scope
@@ -228,7 +228,7 @@ Derived/Fixed Inputs (Not CLI Flags):
 
 Interactive Mode:
   If --scenario is omitted and TTY is available, the CLI prompts for scenario and all major inputs.
-  The scenario selector includes "All scenarios (parallel diagnostics)".
+  The scenario selector includes "All scenarios (parallel optimization)".
   Any explicit CLI flag overrides prompted values.
 
 Examples:
@@ -440,7 +440,7 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
         name: 'scenarioSelection',
         message: 'Select scenario to optimize:',
         choices: [
-          { name: 'All scenarios (parallel diagnostics)', value: ALL_SCENARIOS_SELECTION },
+          { name: 'All scenarios (parallel optimization)', value: ALL_SCENARIOS_SELECTION },
           ...scenarioIds.map((scenarioId) => ({ name: scenarioId, value: scenarioId })),
         ],
         default: prefill.executionMode === 'all_scenarios_parallel'
@@ -647,8 +647,8 @@ export async function runCli(argv: string[]) {
     console.log(JSON.stringify({
       outputDir: report.outputDir,
       scenariosEvaluated: report.scenarios.length,
-      structuralIssueCount: report.structuralIssues.length,
-      scenarioSpecificIssueCount: report.scenarioSpecificIssues.length,
+      failedScenarioCount: report.failedScenarios.length,
+      iterations: report.iterations,
     }, null, 2));
     return;
   }

@@ -168,37 +168,30 @@ export interface OptimizerFinalReport {
   history: OptimizerIterationResult[];
 }
 
-export interface CrossScenarioIssue {
-  code: string;
-  description: string;
-  scenarios: string[];
-}
-
-export interface CrossScenarioScenarioIssue {
+export interface AllScenariosParallelScenarioSummary {
   scenarioId: string;
   scenarioName: string;
-  codes: string[];
+  outputDir: string;
+  stopReason: OptimizerStopReason;
+  iterationsCompleted: number;
+  acceptedPatches: number;
+  finalScore: number;
 }
 
-export interface CrossScenarioDiagnosticScenarioResult {
+export interface AllScenariosParallelErrorSummary {
   scenarioId: string;
   scenarioName: string;
-  experimentId: string;
-  metrics: ExperimentArmSummary;
-  score: OptimizerScoreBreakdown;
-  analysis: OptimizerAnalysis;
-  issueCodes: string[];
+  error: string;
 }
 
-export interface CrossScenarioDiagnosticsReport {
+export interface AllScenariosParallelReport {
   generatedAt: string;
   outputDir: string;
   victoryModes: VictoryMode[];
   playerCounts: number[];
-  baselineRunsPerScenario: number;
-  scenarios: CrossScenarioDiagnosticScenarioResult[];
-  structuralIssues: CrossScenarioIssue[];
-  scenarioSpecificIssues: CrossScenarioScenarioIssue[];
+  iterations: number;
+  scenarios: AllScenariosParallelScenarioSummary[];
+  failedScenarios: AllScenariosParallelErrorSummary[];
 }
 
 export interface OptimizerSignificanceThresholds {
