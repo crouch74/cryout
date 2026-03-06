@@ -127,6 +127,12 @@
   border-color: var(--home-border-color);
 }
 
+.home-table .seat-assembly-card {
+  border-color: var(--home-border-color);
+  border-inline-start-width: 3px;
+  border-inline-start-color: var(--seat-accent, var(--seat-card-accent, var(--color-accent)));
+}
+
 .home-table .locale-icon-trigger,
 .home-table .scenario-select-major,
 .home-table .engraved-plate {

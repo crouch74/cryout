@@ -21,7 +21,10 @@ export function SeatCard({
   className?: string;
 }) {
   const style = accentColor
-    ? ({ ['--seat-card-accent' as string]: accentColor } as CSSProperties)
+    ? ({
+      ['--seat-card-accent' as string]: accentColor,
+      ['--seat-accent' as string]: accentColor,
+    } as CSSProperties)
     : undefined;
 
   return (
