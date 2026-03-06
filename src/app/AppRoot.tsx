@@ -76,7 +76,10 @@ type SessionHandle = LocalSessionHandle | RoomLobbySessionHandle | RoomActiveSes
 
 const AUTOSAVE_KEY = 'stones-cutover-autosave';
 const AVAILABLE_RULESETS = listRulesets();
-const DEFAULT_RULESET_ID = AVAILABLE_RULESETS[0]?.id ?? '';
+const CANONICAL_DEFAULT_RULESET_ID = 'stones_cry_out';
+const DEFAULT_RULESET_ID = AVAILABLE_RULESETS.find((ruleset) => ruleset.id === CANONICAL_DEFAULT_RULESET_ID)?.id
+  ?? AVAILABLE_RULESETS[0]?.id
+  ?? '';
 const ROOM_HEALTH_TIMEOUT_MS = 1_500;
 
 const DEFAULT_SETUP_DRAFT: SessionSetupDraft = {

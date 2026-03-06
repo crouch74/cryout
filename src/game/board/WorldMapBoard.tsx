@@ -4,6 +4,7 @@ import { formatNumber, localizeDomainField, localizeRegionField, t } from '../..
 import { getRegionDangerState } from '../presentation/gameUiHelpers.ts';
 import { Icon } from '../../ui/icon/Icon.tsx';
 import type { IconType } from '../../ui/icon/iconTypes.ts';
+import { getFactionAccent } from '../../theme/factionAccents.ts';
 import {
   extractSvgGeometry,
   getPathDataForId,
@@ -128,6 +129,35 @@ function parseSvgLength(value: string | null, total: number, fallback: number) {
     return (Number.parseFloat(normalized) / 100) * total;
   }
   return Number.parseFloat(normalized);
+}
+
+function getControllingSeatForRegion(state: EngineState, regionId: RegionId): number | null {
+  const region = state.regions[regionId];
+  if (!region) {
+    return null;
+  }
+
+  let controllingSeat: number | null = null;
+  let highestComrades = 0;
+  let isTie = false;
+
+  for (const player of state.players) {
+    const comrades = region.comradesPresent[player.seat] ?? 0;
+    if (comrades <= 0) {
+      continue;
+    }
+    if (comrades > highestComrades) {
+      controllingSeat = player.seat;
+      highestComrades = comrades;
+      isTie = false;
+      continue;
+    }
+    if (comrades === highestComrades) {
+      isTie = true;
+    }
+  }
+
+  return isTie ? null : controllingSeat;
 }
 
 export function WorldMapBoard({
@@ -277,6 +307,22 @@ export function WorldMapBoard({
     () => new Set([...highlightedRegionKeys, ...(externalHighlightKeys ?? new Set<string>())]),
     [externalHighlightKeys, highlightedRegionKeys],
   );
+  const seatAccentBySeat = useMemo(
+    () => Object.fromEntries(
+      state.players.map((player) => [player.seat, getFactionAccent(player.factionId, content.factions[player.factionId])]),
+    ) as Record<number, string>,
+    [content.factions, state.players],
+  );
+  const regionTerritoryAccentById = useMemo(
+    () => Object.fromEntries(
+      regionIds.map((regionId) => {
+        const controllingSeat = getControllingSeatForRegion(state, regionId);
+        const fallbackAccent = boardRegions[regionId]?.accent ?? 'var(--color-accent)';
+        return [regionId, controllingSeat === null ? fallbackAccent : (seatAccentBySeat[controllingSeat] ?? fallbackAccent)];
+      }),
+    ) as Record<RegionId, string>,
+    [boardRegions, regionIds, seatAccentBySeat, state],
+  );
 
   const regionLayouts = useMemo(() => {
     if (canvasSize.width === 0 || canvasSize.height === 0 || !mapCamera) {
@@ -403,7 +449,7 @@ export function WorldMapBoard({
         if (!target) {
           continue;
         }
-        target.style.setProperty('--territory-accent', manifest.accent);
+        target.style.setProperty('--territory-accent', regionTerritoryAccentById[regionId] ?? manifest.accent);
         target.classList.add('map-region-territory');
         target.classList.remove('map-region-fill-active', 'map-region-fill-hover');
       }
@@ -437,7 +483,7 @@ export function WorldMapBoard({
         }
       }
     }
-  }, [boardRegions, hoveredRegionId, regionIds, selectedRegionId, svgMarkup]);
+  }, [boardRegions, hoveredRegionId, regionIds, regionTerritoryAccentById, selectedRegionId, svgMarkup]);
 
   return (
     <section

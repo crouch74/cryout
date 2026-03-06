@@ -40,15 +40,15 @@ function deterministicIndex(state: EngineState, seat: number, strategyId: Strate
 }
 
 function buildIntentKey(intent: Omit<QueuedIntent, 'slot'>) {
-  return JSON.stringify([
+  return [
     intent.actionId,
-    intent.regionId ?? null,
-    intent.domainId ?? null,
-    intent.targetSeat ?? null,
-    intent.comradesCommitted ?? null,
-    intent.evidenceCommitted ?? null,
-    intent.cardId ?? null,
-  ]);
+    intent.regionId ?? '_',
+    intent.domainId ?? '_',
+    intent.targetSeat ?? '_',
+    intent.comradesCommitted ?? '_',
+    intent.evidenceCommitted ?? '_',
+    intent.cardId ?? '_',
+  ].join('|');
 }
 
 function toStrategyCandidate(candidate: AutoPlayCandidate): StrategyCandidate {
@@ -404,20 +404,34 @@ export function buildStrategyCandidatesForSeat(
     return [];
   }
 
-  const candidates = listAutoPlayIntentsForSeat(state, content, seat)
-    .map((intent) => scoreAutoPlayCandidate(state, content, {
-      seat,
-      action: intent,
-      score: 0,
-      reasons: [],
+  const candidates = listAutoPlayIntentsForSeat(state, content, seat, {
+    includeDisabledReasons: false,
+  })
+    .map((intent) => ({
+      intent,
+      intentKey: buildIntentKey(intent),
     }))
-    .map(toStrategyCandidate)
+    .sort((left, right) => left.intentKey.localeCompare(right.intentKey))
+    .map((intent) => ({
+      candidate: scoreAutoPlayCandidate(state, content, {
+        seat,
+        action: intent.intent,
+        score: 0,
+        reasons: [],
+      }),
+      intentKey: intent.intentKey,
+    }))
+    .map(({ candidate, intentKey }) => ({
+      candidate: toStrategyCandidate(candidate),
+      intentKey,
+    }))
     .sort((left, right) => {
-      if (right.baseScore !== left.baseScore) {
-        return right.baseScore - left.baseScore;
+      if (right.candidate.baseScore !== left.candidate.baseScore) {
+        return right.candidate.baseScore - left.candidate.baseScore;
       }
-      return buildIntentKey(left.action).localeCompare(buildIntentKey(right.action));
-    });
+      return left.intentKey.localeCompare(right.intentKey);
+    })
+    .map(({ candidate }) => candidate);
 
   return candidates;
 }

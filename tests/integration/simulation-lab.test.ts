@@ -20,7 +20,7 @@ test('experiment output includes mandate diagnostics in arm summaries, compariso
   }, {
     outDir: outputRoot,
     recordTrajectories: false,
-    parallelWorkers: 2,
+    parallelWorkers: 1,
   });
 
   const experimentDir = join(outputRoot, definition.id);

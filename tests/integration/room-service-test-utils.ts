@@ -54,5 +54,8 @@ export async function requestJson<T>(baseUrl: string, path: string, init?: Reque
     payload = JSON.parse(text) as T | { error: string };
   }
 
-  return { response, payload };
+  return {
+    status: response.status,
+    payload,
+  };
 }

@@ -10,6 +10,7 @@
     "dev:rooms": "node room-service/server.ts",
     "generate:scenario-maps": "node scripts/generate-scenario-maps.mjs",
     "simulate": "node src/simulation/runSimulation.ts",
+    "profile:simulation": "node --no-warnings src/simulation/profileSimulation.ts",
     "experiment": "node src/simulation/experiments/cli.ts",
     "experiment:all": "node src/simulation/experiments/cli.ts --all",
     "balance-search": "node src/simulation/balance/cli.ts",
@@ -53,6 +54,7 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@datadog/pprof": "^5.13.4",
     "@eslint/js": "^9.39.1",
     "@playwright/test": "^1.58.2",
     "@types/node": "^24.10.1",

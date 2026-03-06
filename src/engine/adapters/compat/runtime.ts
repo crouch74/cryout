@@ -2210,6 +2210,7 @@ export function getDisabledActionReason(
   content: CompiledContent,
   seat: number,
   action: Omit<QueuedIntent, 'slot'>,
+  options?: { includeLegacyReason?: boolean },
 ): DisabledActionReason {
   const detail = getDisabledReasonForIntent(state, content, seat, action);
   return {
@@ -2217,7 +2218,7 @@ export function getDisabledActionReason(
     disabled: Boolean(detail),
     reasonCode: detail?.code,
     reasonValues: detail?.values,
-    reason: detail ? toLegacyDisabledReason(detail) : undefined,
+    reason: detail && options?.includeLegacyReason !== false ? toLegacyDisabledReason(detail) : undefined,
   };
 }
 
@@ -2751,7 +2752,12 @@ export function initializeGame(command: StartGameCommand): EngineState {
   return createInitialState(command, content);
 }
 
-export function dispatchCommand(state: EngineState, command: EngineCommand, content: CompiledContent): EngineState {
+export function dispatchCommand(
+  state: EngineState,
+  command: EngineCommand,
+  content: CompiledContent,
+  options?: { assumeNormalized?: boolean },
+): EngineState {
   if (command.type === 'LoadSnapshot') {
     return normalizeEngineState(command.payload.snapshot);
   }
@@ -2767,7 +2773,7 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
     return initializeGame(command);
   }
 
-  const next = normalizeEngineState(state);
+  const next = options?.assumeNormalized ? cloneState(state) : normalizeEngineState(state);
   next.commandLog.push(cloneState(command));
 
   switch (command.type) {

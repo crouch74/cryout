@@ -28,7 +28,7 @@ const registry = {
 test('scenario registry exposes only shipped scenarios', () => {
   const ids = listScenarioMetadata().map((scenario) => scenario.id).sort();
 
-  assert.deepEqual(ids, ['algerian_war_of_independence', 'stones_cry_out', 'tahrir_square', 'woman_life_freedom']);
+  assert.deepEqual(ids, ['algerian_war_of_independence', 'egypt_1919_revolution', 'stones_cry_out', 'tahrir_square', 'woman_life_freedom']);
 });
 
 test('testing scenarios stay outside the shipped registry', () => {

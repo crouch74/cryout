@@ -55,8 +55,9 @@ export function getSeatDisabledReason(
   content: CompiledContent,
   seat: number,
   action: Parameters<typeof getDisabledActionReason>[3],
+  options?: Parameters<typeof getDisabledActionReason>[4],
 ): DisabledActionReason {
-  return getDisabledActionReason(state, content, seat, action);
+  return getDisabledActionReason(state, content, seat, action, options);
 }
 
 export function getPlayerBodyTotal(state: EngineState, seat: number) {

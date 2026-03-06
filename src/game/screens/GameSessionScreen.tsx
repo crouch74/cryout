@@ -809,7 +809,7 @@ export function GameSessionScreen({
         .filter((player) => ownedSeats.includes(player.seat))
         .map((player) => [player.seat, getFactionAccent(player.factionId, content.factions[player.factionId])]),
     ) as Record<number, string>,
-    [ownedSeats, state.players],
+    [content.factions, ownedSeats, state.players],
   );
   const gameSurfaceStyle = {
     ['--faction-accent' as string]: focusedFactionAccent,
@@ -838,7 +838,8 @@ export function GameSessionScreen({
         aria-label={phaseActionLabel}
         title={phaseActionLabel}
       >
-        <Icon type="advancePhase" size="md" title={phaseActionLabel} />
+        <Icon type="advancePhase" size="md" title={phaseActionLabel} ariaHidden />
+        <span className="visually-hidden">{phaseActionLabel}</span>
       </button>
     </div>
   );
@@ -1229,12 +1230,12 @@ export function GameSessionScreen({
     }
 
     if (introOpen) {
-      console.log('📖 [Autoplay] Intro panel dismissed to keep autoplay flow visible.');
+      console.log('[Autoplay] Intro panel dismissed to keep autoplay flow visible.');
       setIntroDismissed(true);
     }
 
     if (contextOpen || selectedRegionId !== null) {
-      console.log('🧭 [Autoplay] Closing open board panels while autoplay is running.');
+      console.log('[Autoplay] Closing open board panels while autoplay is running.');
       closeOpenDrawers();
     }
   }, [autoAdvanceTransientUi, closeOpenDrawers, contextOpen, introOpen, selectedRegionId]);
@@ -1245,23 +1246,23 @@ export function GameSessionScreen({
     }
 
     if (activeCardReveal) {
-      console.log('🃏 [Autoplay] Dismissing active reveal card to keep simulation moving.');
+      console.log('[Autoplay] Dismissing active reveal card to keep simulation moving.');
       startRevealDismiss(false);
     }
 
     if (activeCampaignResult && campaignDismissEnabled) {
-      console.log('🎲 [Autoplay] Dismissing resolved campaign panel.');
+      console.log('[Autoplay] Dismissing resolved campaign panel.');
       setActiveCampaignResult(null);
       setCampaignDismissEnabled(false);
     }
 
     if (startupMandateOpen) {
-      console.log('✉️ [Autoplay] Closing startup mandate reveal while autoplay is active.');
+      console.log('[Autoplay] Closing startup mandate reveal while autoplay is active.');
       setStartupMandateDismissed(true);
     }
 
     if (mandateModalOpen) {
-      console.log('📜 [Autoplay] Closing mandate panel while autoplay is active.');
+      console.log('[Autoplay] Closing mandate panel while autoplay is active.');
       setMandateModalOpen(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1588,12 +1589,17 @@ export function GameSessionScreen({
                 <LocaleSwitcher showLabel={false} compact />
                 <ThemePlate
                   label={(
-                    <Icon
-                      type="home"
-                      size="md"
-                      title={t('ui.game.backHome', 'Back Home')}
-                    />
+                    <>
+                      <Icon
+                        type="home"
+                        size="md"
+                        title={t('ui.game.backHome', 'Back Home')}
+                        ariaHidden
+                      />
+                      <span className="visually-hidden">{t('ui.game.backHome', 'Back Home')}</span>
+                    </>
                   )}
+                  ariaLabel={t('ui.game.backHome', 'Back Home')}
                   onClick={onBack}
                 />
                 {state.secretMandatesEnabled ? (

@@ -755,7 +755,7 @@ html[dir='rtl'] .deck-reveal-deck-label {
 .coalition-file-shell .board-player-strip {
   margin-bottom: -1px;
   position: relative;
-  z-index: 2;
+  z-index: calc(var(--z-base) + 2);
   border-radius: 0;
 }
 
@@ -1853,7 +1853,7 @@ html[dir='rtl'] .deck-reveal-deck-label {
   padding: 0;
   margin-bottom: -1px;
   position: relative;
-  z-index: 4;
+  z-index: calc(var(--z-base) + 4);
 }
 
 .coalition-file-shell .player-seat-chip {
@@ -1863,7 +1863,7 @@ html[dir='rtl'] .deck-reveal-deck-label {
   background: transparent;
   transform: translateY(0);
   margin-bottom: -1px;
-  z-index: 1;
+  z-index: calc(var(--z-base) + 1);
 }
 
 .coalition-file-shell .player-seat-chip+.player-seat-chip {
@@ -1885,7 +1885,7 @@ html[dir='rtl'] .deck-reveal-deck-label {
     0 0 0 1px color-mix(in srgb, var(--skin-text-inverse) 55%, transparent);
   margin-bottom: -1px;
   transform: translateY(-2px);
-  z-index: 6;
+  z-index: calc(var(--z-base) + 6);
 }
 
 .coalition-file-shell .player-seat-chip.is-active .seat-chip-frame {

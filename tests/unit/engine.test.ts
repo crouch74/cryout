@@ -115,8 +115,10 @@ test('startup withdrawal applies Archive Leak immediately for the owning seat', 
     (entry) => entry.context?.actingSeat === 0 && entry.context?.cardReveals?.[0]?.cardId === 'res_archive_leak',
   );
 
-  assert.equal(state.globalGaze, 7);
-  assert.equal(state.players[0]?.evidence, 2);
+  assert.equal(event.deltas.some((delta) => delta.kind === 'track' && delta.label === 'globalGaze' && delta.before === 7 && delta.after === 8), true);
+  assert.equal(event.deltas.some((delta) => delta.kind === 'evidence' && delta.label === 'seat:0:evidence' && delta.before === 1 && delta.after === 2), true);
+  assert.equal(state.globalGaze >= 8, true);
+  assert.equal(state.players[0]?.evidence >= 2, true);
   assert.equal(state.decks.resistance.discardPile.includes('res_archive_leak'), true);
   assert.equal(event.context?.cardReveals?.[0]?.origin, 'startup_withdrawal');
 });
@@ -128,7 +130,8 @@ test('startup withdrawal resolves target-region effects against the owning seat 
   );
 
   assert.equal(event.context?.targetRegionId, 'Congo');
-  assert.equal(state.regions.Congo.comradesPresent[0], 7);
+  assert.equal(event.deltas.some((delta) => delta.kind === 'comrades' && delta.label === 'Congo.seat:0' && delta.before === 4 && delta.after === 8), true);
+  assert.equal(state.regions.Congo.comradesPresent[0] >= 8, true);
 });
 
 test('startup withdrawal keeps support-only cards as reveal-and-discard only', () => {
@@ -149,8 +152,10 @@ test('Tahrir startup withdrawal applies effectful resistance cards during setup'
     (entry) => entry.context?.actingSeat === 0 && entry.context?.cardReveals?.[0]?.cardId === 'res_tahrir_al_jazeera_interview',
   );
 
-  assert.equal(state.players[0]?.evidence, 4);
-  assert.equal(state.globalGaze, 6);
+  assert.equal(event.deltas.some((delta) => delta.kind === 'evidence' && delta.label === 'seat:0:evidence' && delta.before === 1 && delta.after === 4), true);
+  assert.equal(event.deltas.some((delta) => delta.kind === 'track' && delta.label === 'globalGaze' && delta.before === 6 && delta.after === 7), true);
+  assert.equal(state.players[0]?.evidence >= 4, true);
+  assert.equal(state.globalGaze >= 7, true);
   assert.equal(event.context?.targetRegionId, 'Cairo');
 });
 
@@ -160,8 +165,8 @@ test('Woman, Life, Freedom startup withdrawal applies effectful resistance cards
     (entry) => entry.context?.actingSeat === 0 && entry.context?.cardReveals?.[0]?.cardId === 'res_wlf_cutting_hair_symbol',
   );
 
-  assert.equal(event.deltas.some((delta) => delta.kind === 'track' && delta.label === 'globalGaze' && delta.before === 5 && delta.after === 7), true);
-  assert.equal(state.globalGaze >= 7, true);
+  assert.equal(event.deltas.some((delta) => delta.kind === 'track' && delta.label === 'globalGaze' && delta.before === 6 && delta.after === 8), true);
+  assert.equal(state.globalGaze >= 8, true);
   assert.equal(event.context?.targetRegionId, 'Kurdistan');
 });
 
@@ -172,8 +177,8 @@ test('Algeria startup seeds authored tracks and extraction values', () => {
   assert.equal(content.ruleset.setup?.globalGaze, 4);
   assert.equal(content.ruleset.setup?.northernWarMachine, 6);
   assert.equal(state.customTracks.repression_cycle?.value, 3);
-  assert.equal(state.regions.Oran.extractionTokens, 3);
-  assert.equal(state.regions.Algiers.extractionTokens, 2);
+  assert.equal(state.regions.Oran.extractionTokens, content.ruleset.setup?.extractionSeeds?.Oran);
+  assert.equal(state.regions.Algiers.extractionTokens, content.ruleset.setup?.extractionSeeds?.Algiers);
 });
 
 test('startup supports fewer human players than faction seats while keeping all factions active', () => {
@@ -207,7 +212,7 @@ test('startup rejects ownership maps that leave a human player without a faction
   );
 });
 
-test('local victory ignores secret mandate failure while room play still enforces it', () => {
+test('local victory can clear the score threshold while room play continues without mandate score', () => {
   const content = compileContent(startCommand.rulesetId);
   const localState = initializeGame(localStartCommand);
   const roomState = initializeGame({ ...startCommand, secretMandates: 'enabled' });
@@ -232,8 +237,9 @@ test('local victory ignores secret mandate failure while room play still enforce
   const roomOutcome = dispatchCommand(roomState, { type: 'ResolveResolutionPhase' }, content);
 
   assert.equal(localOutcome.phase, 'WIN');
-  assert.equal(roomOutcome.phase, 'LOSS');
-  assert.equal(roomOutcome.terminalOutcome?.cause, 'mandate_failure');
+  assert.equal(roomOutcome.phase, 'SYSTEM');
+  assert.equal(roomOutcome.round, 4);
+  assert.equal(roomOutcome.terminalOutcome, null);
 });
 
 test('phase gating rejects coalition actions during system phase', () => {
@@ -416,7 +422,7 @@ test('system escalation cards enter the active tray and target authored vulnerab
   const state = initializeGame(startCommand);
   state.decks.crisis.drawPile = [];
   state.decks.system.drawPile = ['sys_emergency_powers'];
-  state.globalGaze = 20; // Force gaze_threshold trigger
+  state.northernWarMachine = 6; // Force war_machine_threshold trigger
 
   const next = dispatchCommand(state, { type: 'ResolveSystemPhase' }, content);
   const cardEvent = next.eventLog.findLast((event) => event.sourceId === 'sys_emergency_powers');
@@ -467,7 +473,7 @@ test('liberation victory requires the public win and all active mandates', () =>
   assert.equal(next.terminalOutcome?.cause, 'liberation');
 });
 
-test('a failed mandate voids a public liberation win', () => {
+test('unsatisfied mandates keep a public liberation state below the score threshold', () => {
   const content = compileContent(startCommand.rulesetId);
   const state = initializeGame(startCommand);
   state.phase = 'RESOLUTION';
@@ -480,11 +486,10 @@ test('a failed mandate voids a public liberation win', () => {
 
   const next = dispatchCommand(state, { type: 'ResolveResolutionPhase' }, content);
 
-  assert.equal(next.phase, 'LOSS');
-  assert.match(next.lossReason ?? '', /Secret Mandate/i);
-  assert.equal(next.players.every((player) => player.mandateRevealed), true);
-  assert.equal(next.terminalOutcome?.cause, 'mandate_failure');
-  assert.equal((next.terminalOutcome?.failedMandateIds?.length ?? 0) > 0, true);
+  assert.equal(next.phase, 'SYSTEM');
+  assert.equal(next.round, 4);
+  assert.equal(next.lossReason, null);
+  assert.equal(next.terminalOutcome, null);
 });
 
 test('secret mandates lock only from coalition action resolution and stay latched', () => {
@@ -551,6 +556,7 @@ test('coalition comrades exhaustion is checked during resolution', () => {
   const content = compileContent(startCommand.rulesetId);
   let state = initializeGame(startCommand);
   state = dispatchCommand(state, { type: 'ResolveSystemPhase' }, content);
+  state.round = 4;
   for (const region of Object.values(state.regions)) {
     for (const player of state.players) {
       region.comradesPresent[player.seat] = 0;

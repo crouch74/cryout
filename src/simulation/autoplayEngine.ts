@@ -255,35 +255,37 @@ function buildIntentKey(command: EngineCommand) {
     return command.type;
   }
 
-  return JSON.stringify([
+  return [
     command.action.actionId,
-    command.action.regionId ?? null,
-    command.action.domainId ?? null,
-    command.action.targetSeat ?? null,
-    command.action.comradesCommitted ?? null,
-    command.action.evidenceCommitted ?? null,
-    command.action.cardId ?? null,
-  ]);
+    command.action.regionId ?? '_',
+    command.action.domainId ?? '_',
+    command.action.targetSeat ?? '_',
+    command.action.comradesCommitted ?? '_',
+    command.action.evidenceCommitted ?? '_',
+    command.action.cardId ?? '_',
+  ].join('|');
 }
 
 function chooseDecisionFromTopBand(state: EngineState, runSeed: number, decisions: StrategyDecision[]) {
   const ordered = decisions
-    .slice()
+    .map((decision) => ({
+      decision,
+      intentKey: buildIntentKey({ type: 'QueueIntent', seat: decision.seat, action: decision.action }),
+    }))
     .sort((left, right) => {
-      if (right.score !== left.score) {
-        return right.score - left.score;
+      if (right.decision.score !== left.decision.score) {
+        return right.decision.score - left.decision.score;
       }
-      if (left.seat !== right.seat) {
-        return left.seat - right.seat;
+      if (left.decision.seat !== right.decision.seat) {
+        return left.decision.seat - right.decision.seat;
       }
-      return buildIntentKey({ type: 'QueueIntent', seat: left.seat, action: left.action })
-        .localeCompare(buildIntentKey({ type: 'QueueIntent', seat: right.seat, action: right.action }));
+      return left.intentKey.localeCompare(right.intentKey);
     });
 
-  const bestScore = ordered[0].score;
-  const topBand = ordered.filter((candidate) => candidate.score >= bestScore - 5);
+  const bestScore = ordered[0]?.decision.score ?? 0;
+  const topBand = ordered.filter((candidate) => candidate.decision.score >= bestScore - 5);
   const pickIndex = (state.rng.state ^ state.rng.calls ^ runSeed ^ (state.round * 193)) >>> 0;
-  return topBand[pickIndex % topBand.length] ?? ordered[0];
+  return topBand[pickIndex % topBand.length]?.decision ?? ordered[0]?.decision;
 }
 
 function selectSimulationCommand(
@@ -896,7 +898,7 @@ export function runSingleSimulation(
     logPhaseHeader(state, command, debug);
     // Capture immediately before dispatching commands that can evaluate defeat.
     appendPreDefeatSnapshot(preDefeatSnapshots, state, command, debug);
-    state = dispatchCommand(state, command, content);
+    state = dispatchCommand(state, command, content, { assumeNormalized: true });
     if (trajectoryRecorder && stateBeforeCommand) {
       appendTrajectorySteps(
         trajectoryRecorder,

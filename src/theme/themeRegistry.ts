@@ -306,7 +306,7 @@ export const UI_SKINS: Record<UiSkinId, UiSkinDefinition> = {
     text: {
       primary: '#F6F1E3',
       muted: '#D9CFB1',
-      inverse: '#121810',
+      inverse: '#F6F1E3',
     },
     border: {
       subtle: '#49613D',
@@ -317,14 +317,14 @@ export const UI_SKINS: Record<UiSkinId, UiSkinDefinition> = {
       ring: '0 0 0 3px rgba(214, 84, 69, 0.34)',
     },
     action: {
-      primary: '#C8473C',
+      primary: '#A33A31',
       secondary: '#6E8F3F',
       utility: '#2C3D29',
     },
     state: {
       success: '#7EA34A',
       warning: '#BF9A4B',
-      danger: '#D9483B',
+      danger: '#A13128',
       info: '#5D8E77',
       neutral: '#A89B75',
     },
@@ -383,7 +383,7 @@ export const UI_SKINS: Record<UiSkinId, UiSkinDefinition> = {
     state: {
       success: '#739858',
       warning: '#C58E34',
-      danger: '#C75245',
+      danger: '#D05E52',
       info: '#879C74',
       neutral: '#93A084',
     },

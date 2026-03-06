@@ -214,15 +214,15 @@ function listCardCandidates(
 }
 
 function buildIntentKey(intent: Omit<QueuedIntent, 'slot'>) {
-  return JSON.stringify([
+  return [
     intent.actionId,
-    intent.regionId ?? null,
-    intent.domainId ?? null,
-    intent.targetSeat ?? null,
-    intent.comradesCommitted ?? null,
-    intent.evidenceCommitted ?? null,
-    intent.cardId ?? null,
-  ]);
+    intent.regionId ?? '_',
+    intent.domainId ?? '_',
+    intent.targetSeat ?? '_',
+    intent.comradesCommitted ?? '_',
+    intent.evidenceCommitted ?? '_',
+    intent.cardId ?? '_',
+  ].join('|');
 }
 
 function pushReason(reasons: string[], condition: boolean, reason: string) {
@@ -453,6 +453,7 @@ export function listAutoPlayIntentsForSeat(
   state: EngineState,
   content: CompiledContent,
   seat: number,
+  options?: { includeDisabledReasons?: boolean },
 ): Omit<QueuedIntent, 'slot'>[] {
   const player = state.players[seat];
   if (!player || player.actionsRemaining <= 0) {
@@ -493,7 +494,9 @@ export function listAutoPlayIntentsForSeat(
                   evidenceCommitted,
                   cardId,
                 };
-                const disabledReason = getSeatDisabledReason(state, content, seat, intent);
+                const disabledReason = getSeatDisabledReason(state, content, seat, intent, {
+                  includeLegacyReason: options?.includeDisabledReasons !== false,
+                });
                 if (disabledReason.disabled) {
                   continue;
                 }
