@@ -119,6 +119,7 @@ const factions: FactionDefinition[] = [
                 ],
             },
         },
+        color: '#b43d34',
     },
     {
         id: 'labor_movement',
@@ -145,6 +146,7 @@ const factions: FactionDefinition[] = [
                 ],
             },
         },
+        color: '#8f6a2d',
     },
     {
         id: 'independent_journalists',
@@ -167,6 +169,7 @@ const factions: FactionDefinition[] = [
                 kind: 'compare', left: { type: 'domain_progress', domain: 'SilencedTruth' }, op: '>=', right: 6
             },
         },
+        color: '#2f67ab',
     },
     {
         id: 'rights_defenders',
@@ -189,6 +192,7 @@ const factions: FactionDefinition[] = [
                 kind: 'compare', left: { type: 'northern_war_machine' }, op: '<=', right: 4
             },
         },
+        color: '#7a4ea0',
     }
 ];
 

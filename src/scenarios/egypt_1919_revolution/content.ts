@@ -120,6 +120,7 @@ const factions: FactionDefinition[] = [
         ],
       },
     },
+    color: '#27ae60',
   },
   {
     id: 'railway_workers',
@@ -146,6 +147,7 @@ const factions: FactionDefinition[] = [
         ],
       },
     },
+    color: '#2c3e50',
   },
   {
     id: 'womens_action_circles',
@@ -172,6 +174,7 @@ const factions: FactionDefinition[] = [
         ],
       },
     },
+    color: '#8e44ad',
   },
   {
     id: 'provincial_organizers',
@@ -198,6 +201,7 @@ const factions: FactionDefinition[] = [
         ],
       },
     },
+    color: '#a0522d',
   },
 ];
 

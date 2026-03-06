@@ -155,7 +155,13 @@ export function formatChapterNumber(value: number, locale: Locale = getActiveLoc
   return value < 10 ? `${LOCALE_META[locale].zero}${digits}` : digits;
 }
 
-function localizeContent(section: string, id: string, field: string, fallback: string) {
+function localizeContent(section: string, id: string, field: string, fallback: string, scenarioId?: string) {
+  if (scenarioId) {
+    const scenarioKey = `content.scenarios.${scenarioId}.${section}.${id}.${field}`;
+    if (i18n.exists(scenarioKey)) {
+      return t(scenarioKey, fallback);
+    }
+  }
   return t(`content.${section}.${id}.${field}`, fallback);
 }
 
@@ -163,12 +169,12 @@ export function localizeRulesetField(rulesetId: string, field: 'name' | 'descrip
   return localizeContent('rulesets', rulesetId, field, fallback);
 }
 
-export function localizeDomainField(domainId: string, field: 'name' | 'description', fallback: string) {
-  return localizeContent('domains', domainId, field, fallback);
+export function localizeDomainField(domainId: string, field: 'name' | 'description', fallback: string, scenarioId?: string) {
+  return localizeContent('domains', domainId, field, fallback, scenarioId);
 }
 
-export function localizeRegionField(regionId: string, field: 'name' | 'description' | 'strapline', fallback: string) {
-  return localizeContent('regions', regionId, field, fallback);
+export function localizeRegionField(regionId: string, field: 'name' | 'description' | 'strapline', fallback: string, scenarioId?: string) {
+  return localizeContent('regions', regionId, field, fallback, scenarioId);
 }
 
 export function localizeFactionField(

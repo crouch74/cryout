@@ -1313,6 +1313,21 @@
         "description": "Bedouin marginalization, security vacuums, border violence.",
         "strapline": "Exclusion, security."
       },
+      "DeltaRailCorridor": {
+        "name": "Delta Rail Corridor",
+        "description": "The vital infrastructure link where railway workers sabotage colonial movement.",
+        "strapline": "The Veins of the Nation."
+      },
+      "CanalZone": {
+        "name": "Canal Zone",
+        "description": "British military strongholds and global transport artery under siege by local labor.",
+        "strapline": "Imperial Chokehold."
+      },
+      "RuralVillages": {
+        "name": "Rural Villages",
+        "description": "Fellahin networks organizing against crop seizure and punitive colonial levies.",
+        "strapline": "The Soil and the People."
+      },
       "Tehran": {
         "name": "Tehran",
         "description": "The capital, universities, Evin prison.",
@@ -1407,6 +1422,15 @@
       },
       "Sinai": {
         "name": "Sinai"
+      },
+      "DeltaRailCorridor": {
+        "name": "Delta Rail Corridor"
+      },
+      "CanalZone": {
+        "name": "Canal Zone"
+      },
+      "RuralVillages": {
+        "name": "Rural Villages"
       },
       "Tehran": {
         "name": "Tehran"
@@ -1741,6 +1765,30 @@
       "beacon_alg_tribunal_acknowledgement": {
         "title": "Force International Reckoning",
         "description": "An international tribunal acknowledges colonial abuses."
+      },
+      "beacon_egy_student_strike": {
+        "title": "March 9: The Student Strike",
+        "description": "Students at Al-Azhar and schools across Cairo trigger the mass uprising."
+      },
+      "beacon_egy_railway_sabotage": {
+        "title": "Delta Rail Blockade",
+        "description": "Railway lines are severed, preventing British military reinforcements."
+      },
+      "beacon_egy_womens_march": {
+        "title": "March 16: Women’s Demonstration",
+        "description": "Women take the lead in public defiance, shattering gendered colonial constraints."
+      },
+      "beacon_egy_funerary_uprising": {
+        "title": "The Funerary Uprising",
+        "description": "Funeral processions for fallen comrades become massive political mobilizations."
+      },
+      "beacon_egy_alexandria_dock_strike": {
+        "title": "Alexandria Labor Solidarity",
+        "description": "Dockworkers and factory unions halt the logistics of occupation."
+      },
+      "beacon_egy_provincial_defection": {
+        "title": "Assiut Defiance",
+        "description": "Major provincial centers declare liberation, forcing the British to retreat."
       }
     },
     "cards": {
@@ -2059,6 +2107,18 @@
       "sys_alg_administrative_partition": {
         "name": "Administrative Partition",
         "text": "Fragmentation is used to isolate fronts and discipline the struggle."
+      },
+      "res_egy_1919_committee_communcation": {
+        "name": "Secret Committee Communication",
+        "text": "Draw an extra card."
+      },
+      "crisis_egy_1919_mass_detention": {
+        "name": "Mass Arrests in Cairo",
+        "text": "Lose 2 Comrades in Cairo."
+      },
+      "system_egy_1919_allenby_ultimatum": {
+        "name": "Allenby Ultimatum",
+        "text": "Add 2 Extraction Tokens to Cairo."
       }
     },
     "scenarios": {
@@ -2124,6 +2184,65 @@
           "repression_cycle": {
             "label": "Repression Cycle",
             "description": "At 5 the movement suffers mass detention. At 7 torture is exposed. At 9 a nationwide state of emergency hardens every campaign. At 10 the coalition loses 1 Comrade each round."
+          }
+        }
+      },
+      "egypt_1919_revolution": {
+        "name": "1919 — Egypt Rises",
+        "description": "Bread, Nation, and the Streets.",
+        "introduction": "The 1919 uprising is a mass coalition struggle. Students, railway workers, and women’s Action Circles must hold Cairo and the provinces while British occupation attempts to suppress popular mobilization through detention and martial law.",
+        "story": "The uprising spills from Cairo's universities and the Delta's rail lines into every village and port. Every strike in Alexandria is met by a blockade in the south; every demonstration in the capital is echoed in the Suez Canal Zone.",
+        "dramatization": "British bayonets meet student strikes at Al-Azhar. Women march against the exile of their leaders. The railway lines are cut, and for a few weeks, the colonial machine cannot move.",
+        "gameplay": "Organize strikes and sabotage logistics corridors while holding back mass arrests in Cairo. Symbolic victory requires the full mobilization of provincial networks and the public defiance of colonial constraints.",
+        "moralCenter": "Collective defiance is the only shield. When the whole nation rises, the empire is forced to blink.",
+        "specialRules": {
+          "railway_sabotage": {
+            "label": "Railway Sabotage",
+            "description": "Successful campaigns in Delta Rail Corridor reduce System Escalation speed."
+          },
+          "funerary_mobilization": {
+            "label": "Funerary Mobilization",
+            "description": "Losing Comrades in urban zones adds +1 to Martyrs’ Reckoning progress."
+          }
+        },
+        "domains": {
+          "RevolutionaryWave": {
+            "name": "National Uprising",
+            "description": "The momentum of mass defiance across urban centers and villages."
+          },
+          "SilencedTruth": {
+            "name": "Public Testimony",
+            "description": "The ability to speak colonial crimes to the world and coordinate the movement."
+          },
+          "EmptyStomach": {
+            "name": "Strike Capacity",
+            "description": "Economic disruption through labor refusal and civil disobedience."
+          },
+          "GildedCage": {
+            "name": "Anti-Detention Pressure",
+            "description": "The demand for the return of exiled leaders and the release of political detainees."
+          },
+          "StolenVoice": {
+            "name": "Mass Representation",
+            "description": "Pluralist political representation that outgrows elite negotiation."
+          },
+          "UnfinishedJustice": {
+            "name": "Martyrs’ Reckoning",
+            "description": "The collective memory of those fallen, fueling continued resistance."
+          }
+        },
+        "regions": {
+          "Cairo": {
+            "description": "The administrative heart and center of the student uprising and women’s demonstrations.",
+            "strapline": "The Center of Gravity."
+          },
+          "Alexandria": {
+            "description": "Port city with fierce labor presence and dockworker strikes against colonial logistics.",
+            "strapline": "The Sea and the Docks."
+          },
+          "UpperEgypt": {
+            "description": "Autonomous districts and Assiut’s defiance, where state control is fragile.",
+            "strapline": "The South Resists."
           }
         }
       }

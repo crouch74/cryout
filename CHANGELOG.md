@@ -9,6 +9,8 @@ All notable changes to this project will be documented in this file.
   - New Factions: Student Committees, Railway Workers, Women’s Action Circles, Provincial Organizers.
   - Six historical Beacons representing the timeline of the March 1919 uprising.
   - Specialized mechanics: **Railway Sabotage** (escalation reduction) and **Funerary Mobilization** (martyr-driven surge).
+  - **Full Localization (multi-lingual)**: Comprehensive localization in Egyptian Arabic (ar-EG), Standard Arabic (ar), and French (fr).
+  - **Contextual i18n Overrides**: Enhanced the localization engine to support scenario-specific names and descriptions for shared domains and regions (e.g., "Revolutionary Wave" becoming "National Uprising" specifically in 1919).
 
 - 📜 **New Theme: Papyrus Insurgency** — a high-contrast, premium historical theme inspired by early 20th-century movements.
   - Full semantic token coverage in `themeRegistry.ts`.

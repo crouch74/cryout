@@ -585,7 +585,7 @@ export function GameSessionScreen({
   const focusedSeat = ownedSeats.includes(viewState.focusedSeat) ? viewState.focusedSeat : defaultFocusedSeat;
   const focusedPlayer = state.players[focusedSeat] ?? state.players[0];
   const faction = getSeatFaction(state, content, focusedPlayer.seat);
-  const focusedFactionAccent = getFactionAccent(faction?.id);
+  const focusedFactionAccent = getFactionAccent(faction?.id, faction);
   const REGION_IDS = useMemo(() => getAvailableRegions(content), [content]);
   const DOMAIN_IDS = useMemo(() => getAvailableDomains(content), [content]);
 
@@ -807,7 +807,7 @@ export function GameSessionScreen({
     () => Object.fromEntries(
       state.players
         .filter((player) => ownedSeats.includes(player.seat))
-        .map((player) => [player.seat, getFactionAccent(player.factionId)]),
+        .map((player) => [player.seat, getFactionAccent(player.factionId, content.factions[player.factionId])]),
     ) as Record<number, string>,
     [ownedSeats, state.players],
   );

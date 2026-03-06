@@ -164,6 +164,7 @@ const factions: FactionDefinition[] = [
         ],
       },
     },
+    color: '#2f7a4c',
   },
   {
     id: 'levant_sumud',
@@ -190,6 +191,7 @@ const factions: FactionDefinition[] = [
         ],
       },
     },
+    color: '#b24738',
   },
   {
     id: 'mekong_echo_network',
@@ -216,6 +218,7 @@ const factions: FactionDefinition[] = [
         ],
       },
     },
+    color: '#2f8088',
   },
   {
     id: 'amazon_guardians',
@@ -242,6 +245,7 @@ const factions: FactionDefinition[] = [
         ],
       },
     },
+    color: '#4d8f41',
   },
 ];
 

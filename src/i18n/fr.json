@@ -1126,8 +1126,8 @@
       },
       "egypt_1919_revolution": {
         "name": "1919 — ÉGYPTE SE SOULÈVE",
-        "description": "\"Pain, Nation, et les Rues.\"",
-        "introduction": "Le soulèvement de 1919 est une lutte de coalition de masse. Étudiants, cheminots, et cercles d'action des femmes."
+        "description": "\"Pain, patrie et les rues.\"",
+        "introduction": "Le soulèvement de 1919 est une lutte de coalition de masse. Les étudiants, les cheminots et les cercles d'action des femmes doivent tenir Le Caire et les provinces pendant que l'occupation britannique tente d'écraser la mobilisation populaire par la détention et la loi martiale."
       }
     },
     "domains": {
@@ -1303,6 +1303,21 @@
         "description": "Bedouin marginalization, security vacuums, border violence.",
         "strapline": "Exclusion, security."
       },
+      "DeltaRailCorridor": {
+        "name": "Corridor ferroviaire du Delta",
+        "description": "Le lien d'infrastructure vital où les cheminots sabotent les déplacements coloniaux.",
+        "strapline": "Les veines de la nation."
+      },
+      "CanalZone": {
+        "name": "Zone du Canal",
+        "description": "Des bastions militaires britanniques et une artère de transport mondiale assiégés par le mouvement ouvrier local.",
+        "strapline": "Étranglement impérial."
+      },
+      "RuralVillages": {
+        "name": "Villages ruraux",
+        "description": "Des réseaux fellahs s'organisent contre la saisie des récoltes et les prélèvements coloniaux punitifs.",
+        "strapline": "La terre et le peuple."
+      },
       "Tehran": {
         "name": "Tehran",
         "description": "The capital, universities, Evin prison.",
@@ -1398,6 +1413,15 @@
       "Sinai": {
         "name": "Sinai"
       },
+      "DeltaRailCorridor": {
+        "name": "Corridor du Delta"
+      },
+      "CanalZone": {
+        "name": "Zone du Canal"
+      },
+      "RuralVillages": {
+        "name": "Villages ruraux"
+      },
       "Tehran": {
         "name": "Tehran"
       },
@@ -1436,6 +1460,38 @@
       }
     },
     "factions": {
+      "student_committees": {
+        "name": "Comités étudiants",
+        "shortName": "Étudiants",
+        "passive": "Enquête gagne +1 Preuve au Caire, et les campagnes de Témoignage Public gagnent +1.",
+        "weakness": "Les arrestations de masse au Caire coûtent +1 Camarade si la Machine de Guerre est à 6 ou plus.",
+        "mandateTitle": "Souveraineté des campus",
+        "mandateDescription": "Terminer avec Témoignage Public à 6 ou plus et le Caire à 2 jetons d'extraction ou moins."
+      },
+      "railway_workers": {
+        "name": "Cheminots",
+        "shortName": "Cheminots",
+        "passive": "Capacité de Grève gagne +1, et les mouvements dans le Corridor du Delta coûtent -1 Camarade.",
+        "weakness": "La fermeture des rails réduit la défense dans le corridor de 1.",
+        "mandateTitle": "Arrêter le pillage",
+        "mandateDescription": "Terminer avec Capacité de Grève à 5 ou plus et le Corridor du Delta à 1 jeton d'extraction ou moins."
+      },
+      "womens_action_circles": {
+        "name": "Cercles d'action des femmes",
+        "shortName": "Femmes",
+        "passive": "+1 à toutes les campagnes de Vague Révolutionnaire, et l'Organisation au Caire/Alexandrie gagne +1 Camarade.",
+        "weakness": "La répression des démonstrations populaires réduit la Vague Révolutionnaire de 1.",
+        "mandateTitle": "Défi Public",
+        "mandateDescription": "Terminer avec Vague Révolutionnaire à 7 ou plus et Alexandrie à 2 jetons d'extraction ou moins."
+      },
+      "provincial_organizers": {
+        "name": "Organisateurs provinciaux",
+        "shortName": "Provinces",
+        "passive": "Organisation gagne +1 Camarade en Haute-Égypte/Villages ruraux, et l'Appel Mondial est gratuit.",
+        "weakness": "Les représailles militaires en province retirent 2 Camarades au lieu d'un.",
+        "mandateTitle": "Souveraineté des villages",
+        "mandateDescription": "Terminer avec Représentation de Masse à 5 ou plus et les Villages ruraux à 1 jeton d'extraction ou moins."
+      },
       "congo_basin_collective": {
         "name": "Congo Basin Collective",
         "shortName": "Congo Collective",
@@ -1689,16 +1745,40 @@
         "description": "5 regions at 1 or fewer Extraction and Silenced Truth at 8 or more."
       },
       "beacon_alg_global_gaze_breakthrough": {
-        "title": "Break the Colonial Narrative",
-        "description": "Global Gaze reaches 15 or more."
+        "title": "Briser le récit colonial",
+        "description": "Le Regard Mondial atteint 15 ou plus."
       },
       "beacon_alg_torture_exposed": {
-        "title": "Expose the Torture Network",
-        "description": "The torture system is forced into the open."
+        "title": "Exposer le réseau de torture",
+        "description": "Le système de torture est mis à nu."
       },
       "beacon_alg_tribunal_acknowledgement": {
-        "title": "Force International Reckoning",
-        "description": "An international tribunal acknowledges colonial abuses."
+        "title": "Reconnaissance d'un tribunal international",
+        "description": "Un tribunal international reconnaît les abus coloniaux."
+      },
+      "beacon_egy_student_strike": {
+        "title": "9 Mars : Grève des étudiants",
+        "description": "Les étudiants d'Al-Azhar et des écoles du Caire déclenchent le soulèvement."
+      },
+      "beacon_egy_railway_sabotage": {
+        "title": "Savoir-faire des rails du Delta",
+        "description": "Les lignes ferroviaires sont coupées, empêchant les renforts britanniques."
+      },
+      "beacon_egy_womens_march": {
+        "title": "16 Mars : Marche des femmes",
+        "description": "Les femmes mènent le défi public, brisant les contraintes coloniales."
+      },
+      "beacon_egy_funerary_uprising": {
+        "title": "Soulèvement des funérailles",
+        "description": "Les funérailles des martyrs deviennent des mobilisations politiques massives."
+      },
+      "beacon_egy_alexandria_dock_strike": {
+        "title": "Solidarité d'Alexandrie",
+        "description": "Les travailleurs du port sabotent la logistique de l'occupation."
+      },
+      "beacon_egy_provincial_defection": {
+        "title": "Révolte d'Assiout",
+        "description": "Les centres provinciaux déclarent leur libération, forçant le retrait britannique."
       }
     },
     "cards": {
@@ -2015,8 +2095,20 @@
         "text": "Doctrine spreads forced relocation, intelligence fusion, and punitive raids."
       },
       "sys_alg_administrative_partition": {
-        "name": "Administrative Partition",
-        "text": "Fragmentation is used to isolate fronts and discipline the struggle."
+        "name": "Partition administrative",
+        "text": "Le morcellement est utilisé pour isoler les fronts."
+      },
+      "res_egy_1919_committee_communcation": {
+        "name": "Communication des comités secrets",
+        "text": "Piochez une carte supplémentaire."
+      },
+      "crisis_egy_1919_mass_detention": {
+        "name": "Arrestations de masse au Caire",
+        "text": "Perdez 2 Camarades au Caire."
+      },
+      "system_egy_1919_allenby_ultimatum": {
+        "name": "Ultimatum de Lord Allenby",
+        "text": "Ajoutez 2 jetons d'extraction au Caire."
       }
     },
     "scenarios": {
@@ -2082,6 +2174,65 @@
           "repression_cycle": {
             "label": "Repression Cycle",
             "description": "At 5 the movement suffers mass detention. At 7 torture is exposed. At 9 a nationwide state of emergency hardens every campaign. At 10 the coalition loses 1 Comrade each round."
+          }
+        }
+      },
+      "egypt_1919_revolution": {
+        "name": "1919 — Égypte se soulève",
+        "description": "Pain, Patrie, et les Rues.",
+        "introduction": "Le soulèvement de 1919 est une lutte de coalition de masse. Étudiants, cheminots et cercles d'action des femmes doivent tenir Le Caire et les provinces pendant que l'occupation britannique tente de réprimer la mobilisation populaire.",
+        "story": "Le soulèvement se répand des universités du Caire et du corridor ferroviaire du Delta vers chaque village et port. Chaque grève à Alexandrie rencontre un siège dans la Haute-Égypte ; chaque démonstration dans la capitale fait écho dans la zone du Canal.",
+        "dramatization": "Les baïonnettes britanniques font face aux grèves étudiantes à Al-Azhar. Les femmes marchent en démonstrations contre l'exil des leaders. Les lignes ferroviaires sont coupées, et pendant des semaines, la machine coloniale ne peut plus bouger.",
+        "gameplay": "Organisez des grèves et perturbez les corridors logistiques tout en faisant face aux arrestations de masse au Caire. La victoire symbolique nécessite la mobilisation totale des réseaux provinciaux et le défi public des contraintes coloniales.",
+        "moralCenter": "Le défi collectif est le seul bouclier. Quand la nation entière se lève, l'Empire est contraint de reculer.",
+        "specialRules": {
+          "railway_sabotage": {
+            "label": "Sabotage ferroviaire",
+            "description": "Les campagnes réussies dans le corridor du Delta réduisent la vitesse d'escalade du Système."
+          },
+          "funerary_mobilization": {
+            "label": "Mobilisation funéraire",
+            "description": "Perdre des Camarades dans les zones urbaines ajoute +1 au progrès du Compte des Martyrs."
+          }
+        },
+        "domains": {
+          "RevolutionaryWave": {
+            "name": "Soulèvement National",
+            "description": "L'élan de défi massif à travers les centres urbains et les villages."
+          },
+          "SilencedTruth": {
+            "name": "Témoignage Public",
+            "description": "La capacité de dire les crimes coloniaux au monde et de coordonner le mouvement."
+          },
+          "EmptyStomach": {
+            "name": "Capacité de Grève",
+            "description": "Perturbation économique par le refus du travail et la désobéissance civile."
+          },
+          "GildedCage": {
+            "name": "Pression anti-détention",
+            "description": "L'exigence du retour des leaders exilés et la libération des détenus politiques."
+          },
+          "StolenVoice": {
+            "name": "Représentation de Masse",
+            "description": "Représentation politique pluraliste qui dépasse les négociations d'élite."
+          },
+          "UnfinishedJustice": {
+            "name": "Compte des Martyrs",
+            "description": "La mémoire collective de ceux qui sont tombés, alimentant la résistance continue."
+          }
+        },
+        "regions": {
+          "Cairo": {
+            "description": "Le cœur administratif et le centre du soulèvement étudiant et des démonstrations de femmes.",
+            "strapline": "Le centre de gravité."
+          },
+          "Alexandria": {
+            "description": "Ville portuaire avec une présence ouvrière féroce et des grèves de dockers contre la logistique coloniale.",
+            "strapline": "La mer et les docks."
+          },
+          "UpperEgypt": {
+            "description": "Districts autonomes et défi d'Assiout, là où le contrôle de l'État est fragile.",
+            "strapline": "Le Sud résiste."
           }
         }
       }

@@ -1,8 +1,8 @@
-import type { FactionId } from '../engine/index.ts';
+import type { FactionId, FactionDefinition } from '../engine/index.ts';
 
 const FALLBACK_FACTION_ACCENT = 'var(--color-accent)';
 
-const FACTION_ACCENTS: Record<FactionId, string> = {
+const FACTION_ACCENTS: Record<string, string> = {
   congo_basin_collective: '#2f7a4c',
   levant_sumud: '#b24738',
   mekong_echo_network: '#2f8088',
@@ -20,11 +20,18 @@ const FACTION_ACCENTS: Record<FactionId, string> = {
   kabyle_maquis: '#9e6a2f',
   rural_organizing_committees: '#7d7447',
   border_solidarity_networks: '#2f8291',
+  student_committees: '#27ae60',
+  railway_workers: '#2c3e50',
+  womens_action_circles: '#8e44ad',
+  provincial_organizers: '#a0522d',
 };
 
-export function getFactionAccent(factionId: FactionId | undefined | null): string {
+export function getFactionAccent(factionId: FactionId | undefined | null, definition?: FactionDefinition): string {
+  if (definition?.color) {
+    return definition.color;
+  }
   if (!factionId) {
     return FALLBACK_FACTION_ACCENT;
   }
-  return FACTION_ACCENTS[factionId] ?? FALLBACK_FACTION_ACCENT;
+  return FACTION_ACCENTS[factionId as string] ?? FALLBACK_FACTION_ACCENT;
 }

@@ -243,6 +243,7 @@ export interface FactionDefinition {
   campaignBonus: number;
   outreachPenalty: number;
   mandate: MandateDefinition;
+  color?: string;
 }
 
 export interface BeaconDefinition {

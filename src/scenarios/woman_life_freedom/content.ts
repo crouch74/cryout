@@ -132,6 +132,7 @@ const factions: FactionDefinition[] = [
                 ],
             },
         },
+        color: '#d35400',
     },
     {
         id: 'student_union',
@@ -158,6 +159,7 @@ const factions: FactionDefinition[] = [
                 ]
             },
         },
+        color: '#2980b9',
     },
     {
         id: 'bazaar_strikers',
@@ -180,6 +182,7 @@ const factions: FactionDefinition[] = [
                 kind: 'compare', left: { type: 'domain_progress', domain: 'EmptyStomach' }, op: '>=', right: 5
             },
         },
+        color: '#8e44ad',
     },
     {
         id: 'male_allies',
@@ -201,6 +204,7 @@ const factions: FactionDefinition[] = [
                 kind: 'compare', left: { type: 'domain_progress', domain: 'PatriarchalGrip' }, op: '<=', right: 3
             },
         },
+        color: '#16a085',
     }
 ];
 
