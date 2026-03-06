@@ -206,7 +206,7 @@ const beacons: BeaconDefinition[] = [
         title: 'Labor-Student Alliance',
         description: 'Successfully call 3 Labor Strikes (Represented by high Empty Stomach domain).',
         condition: {
-            kind: 'compare', left: { type: 'domain_progress', domain: 'EmptyStomach' }, op: '>=', right: 8
+            kind: 'compare', left: { type: 'domain_progress', domain: 'EmptyStomach' }, op: '>=', right: 7
         },
     },
     {
@@ -214,7 +214,7 @@ const beacons: BeaconDefinition[] = [
         title: 'No to Military Trials',
         description: 'Unfinished Justice must remain 0.',
         condition: {
-            kind: 'compare', left: { type: 'domain_progress', domain: 'UnfinishedJustice' }, op: '==', right: 0
+            kind: 'compare', left: { type: 'domain_progress', domain: 'UnfinishedJustice' }, op: '<=', right: 1
         },
     }
 ];
@@ -324,14 +324,17 @@ export const compatRuleset: RulesetDefinition = {
     resistanceCards,
     crisisCards,
     systemCards,
-    liberationThreshold: 1,
+    liberationThreshold: 2,
     suddenDeathRound: 12, // (FULL — through coup)
     victoryGate: {
         minRoundBeforeVictory: 3,
     },
+    scenarioHooks: {
+        comradesExhaustionGraceRounds: 2,
+    },
     victoryScoring: {
         mode: 'score',
-        threshold: 45,
+        threshold: 58,
         survivalScorePerRound: 2.5,
         beaconProgressScore: 10,
         components: [
@@ -432,8 +435,8 @@ export const compatRuleset: RulesetDefinition = {
         ],
     },
     setup: {
-        globalGaze: 5,
-        northernWarMachine: 7,
+        globalGaze: 6,
+        northernWarMachine: 6,
         extractionPool: 72,
         extractionSeeds: {
             Cairo: 1,

@@ -115,7 +115,7 @@ const factions: FactionDefinition[] = [
         homeRegion: 'Kurdistan',
         passive: 'Actions cost 1 less Comrade in Kurdistan. Provide heavy combat resistance offset.',
         weakness: 'Targeted heavily by IRGC (War Machine events).',
-        organizeBonus: 1,
+        organizeBonus: 2,
         investigateBonus: 0,
         defenseBonus: 1,
         campaignBonus: 1,
@@ -140,7 +140,7 @@ const factions: FactionDefinition[] = [
         homeRegion: 'Tehran',
         passive: '+1 to all Digital Front (SilencedTruth) campaigns.',
         weakness: 'Defend actions in Balochistan cost +1 Comrade.',
-        organizeBonus: 0,
+        organizeBonus: 1,
         investigateBonus: 1,
         defenseBonus: 0,
         campaignDomainBonus: 'SilencedTruth',
@@ -166,7 +166,7 @@ const factions: FactionDefinition[] = [
         homeRegion: 'Isfahan',
         passive: 'Labor actions gain +2 on success.',
         weakness: 'Global Appeal costs +1 Evidence.',
-        organizeBonus: 0,
+        organizeBonus: 1,
         investigateBonus: 0,
         defenseBonus: 1,
         campaignDomainBonus: 'EmptyStomach',
@@ -188,7 +188,7 @@ const factions: FactionDefinition[] = [
         homeRegion: 'Tehran',
         passive: 'May transfer actions to a female faction without spending Evidence.',
         weakness: 'Cannot resolve Burn Veil action directly.',
-        organizeBonus: 1,
+        organizeBonus: 2,
         investigateBonus: 0,
         defenseBonus: 1,
         campaignBonus: 1,
@@ -208,21 +208,21 @@ const beacons: BeaconDefinition[] = [
     {
         id: 'beacon_wlf_global_solidarity',
         title: 'Global Solidarity',
-        description: 'Ensure Global Gaze >= 12 and Patriarchal Grip <= 4.',
+        description: 'Ensure Global Gaze >= 10 and Patriarchal Grip <= 5.',
         condition: {
             kind: 'all',
             conditions: [
-                { kind: 'compare', left: { type: 'global_gaze' }, op: '>=', right: 12 },
-                { kind: 'compare', left: { type: 'domain_progress', domain: 'PatriarchalGrip' }, op: '<=', right: 4 },
+                { kind: 'compare', left: { type: 'global_gaze' }, op: '>=', right: 10 },
+                { kind: 'compare', left: { type: 'domain_progress', domain: 'PatriarchalGrip' }, op: '<=', right: 5 },
             ]
         },
     },
     {
         id: 'beacon_wlf_no_executions',
         title: 'Halt Executions',
-        description: 'War Machine drops to 3 or lower.',
+        description: 'War Machine drops to 4 or lower.',
         condition: {
-            kind: 'compare', left: { type: 'northern_war_machine' }, op: '<=', right: 3
+            kind: 'compare', left: { type: 'northern_war_machine' }, op: '<=', right: 4
         },
     },
 ];
@@ -332,28 +332,57 @@ export const compatRuleset: RulesetDefinition = {
     resistanceCards,
     crisisCards,
     systemCards,
-    liberationThreshold: 1,
+    liberationThreshold: 2,
     suddenDeathRound: 12,
     victoryGate: {
-        minRoundBeforeVictory: 3,
+        minRoundBeforeVictory: 4,
+    },
+    scenarioHooks: {
+        comradesExhaustionGraceRounds: 3,
+    },
+    victoryScoring: {
+        mode: 'score',
+        threshold: 72,
+        survivalScorePerRound: 1,
+        components: [
+            {
+                id: 'publicVictory',
+                label: 'Public Victory',
+                weight: 40,
+                type: 'binaryCondition',
+                source: {
+                    type: 'publicVictory',
+                },
+            },
+        ],
+        mandatesAsScore: {
+            enabled: true,
+            weight: 60,
+            mandateProgressMode: 'binary',
+        },
+        outcomeBands: [
+            { id: 'defeat', min: 0, max: 34.999999 },
+            { id: 'continuation', min: 35, max: 54.999999 },
+            { id: 'win_with_consequence', min: 55, max: 79.999999 },
+            { id: 'breakthrough', min: 80, max: 100 },
+        ],
     },
     setup: {
-        globalGaze: 5,
-        northernWarMachine: 7,
-        extractionPool: 72,
+        globalGaze: 6,
+        northernWarMachine: 6,
+        extractionPool: 66,
         extractionSeeds: {
-            Tehran: 2,
-            Kurdistan: 2,
+            Tehran: 1,
+            Kurdistan: 1,
             Khuzestan: 1,
-            Balochistan: 1,
         },
         regionHijabEnforcement: {
-            Tehran: 2,
-            Kurdistan: 2,
-            Isfahan: 2,
-            Mashhad: 2,
-            Khuzestan: 2,
-            Balochistan: 2,
+            Tehran: 1,
+            Kurdistan: 1,
+            Isfahan: 1,
+            Mashhad: 1,
+            Khuzestan: 1,
+            Balochistan: 1,
         },
     },
 };

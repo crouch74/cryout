@@ -8,7 +8,6 @@ export const crisisCards: CrisisCardDefinition[] = [
         text: 'The System moves first and forces a hard turn in Tehran. Remove 1 Comrade and add 1 Extraction to Tehran as patrol violence expands control. The coalition must absorb this pressure and reorganize before the next phase.',
         effects: [
             { type: 'remove_comrades', region: 'Tehran', seat: 0, amount: 1 },
-            { type: 'remove_comrades', region: 'Tehran', seat: 1, amount: 1 },
             { type: 'add_extraction', region: 'Tehran', amount: 1 },
         ],
     },
@@ -28,10 +27,9 @@ export const crisisCards: CrisisCardDefinition[] = [
         id: 'crisis_wlf_gas_attacks_on_schools',
         deck: 'crisis',
         name: 'Gas Attacks on Schools',
-        text: 'The System moves first and forces a hard turn through retaliatory repression. Remove 1 Comrade from Kurdistan and Isfahan, then increase War Machine by 1. The coalition must absorb this pressure and reorganize before the next phase.',
+        text: 'The System moves first and forces a hard turn through retaliatory repression. Remove 1 Comrade from Kurdistan, then increase War Machine by 1. The coalition must absorb this pressure and reorganize before the next phase.',
         effects: [
             { type: 'remove_comrades', region: 'Kurdistan', seat: 0, amount: 1 },
-            { type: 'remove_comrades', region: 'Isfahan', seat: 0, amount: 1 },
             { type: 'modify_war_machine', delta: 1 },
         ],
     },
@@ -49,10 +47,10 @@ export const crisisCards: CrisisCardDefinition[] = [
         id: 'crisis_wlf_irgc_deployment',
         deck: 'crisis',
         name: 'IRGC Deployment',
-        text: 'The System moves first and forces a hard turn with direct Guard deployment. Add 2 Extraction across Kurdistan and Balochistan. The coalition must absorb this pressure and reorganize before the next phase.',
+        text: 'The System moves first and forces a hard turn with direct Guard deployment. Add 1 Extraction across Kurdistan and Balochistan. The coalition must absorb this pressure and reorganize before the next phase.',
         effects: [
-            { type: 'add_extraction', region: 'Kurdistan', amount: 2 },
-            { type: 'add_extraction', region: 'Balochistan', amount: 2 },
+            { type: 'add_extraction', region: 'Kurdistan', amount: 1 },
+            { type: 'add_extraction', region: 'Balochistan', amount: 1 },
         ],
     }
 ];

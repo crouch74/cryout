@@ -28,9 +28,9 @@ export const resistanceCards: ResistanceCardDefinition[] = [
         deck: 'resistance',
         type: 'action',
         name: 'Diaspora Protest Rally',
-        text: 'The movement creates a brief opening through collective action. Add 2 Comrades to the target region for the acting faction. Use this shift quickly before the System closes ranks again.',
+        text: 'The movement creates a brief opening through collective action. Add 3 Comrades to the target region for the acting faction. Use this shift quickly before the System closes ranks again.',
         effects: [
-            { type: 'add_comrades', region: 'target_region', seat: 'acting_player', amount: 2 }
+            { type: 'add_comrades', region: 'target_region', seat: 'acting_player', amount: 3 }
         ]
     }
 ];

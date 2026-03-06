@@ -20,7 +20,7 @@ const BASE_EXTRACTION_SEEDS = {
   Andes: 1,
 } as const;
 
-const SEEDED_EXTRACTION_REDUCTION = 2;
+const SEEDED_EXTRACTION_REDUCTION = 3;
 
 function reduceSeededExtractionByHighestRegions(
   seeds: Partial<Record<RegionDefinition['id'], number>>,
@@ -146,7 +146,7 @@ const factions: FactionDefinition[] = [
     homeRegion: 'Congo',
     passive: 'Organize gains +1 Comrade in Congo and Launch Campaign gains +1 there.',
     weakness: 'Global Appeal costs +1 Evidence.',
-    organizeBonus: 1,
+    organizeBonus: 2,
     investigateBonus: 0,
     defenseBonus: 0,
     campaignBonus: 1,
@@ -172,7 +172,7 @@ const factions: FactionDefinition[] = [
     homeRegion: 'Levant',
     passive: 'Defend gains +1 Defense in the Levant and campaigns against War Machine gain +1 there.',
     weakness: 'Organize outside the Levant gains -1 Comrade.',
-    organizeBonus: 0,
+    organizeBonus: 1,
     investigateBonus: 0,
     defenseBonus: 1,
     campaignDomainBonus: 'WarMachine',
@@ -198,7 +198,7 @@ const factions: FactionDefinition[] = [
     homeRegion: 'Mekong',
     passive: 'Investigate gains +1 Evidence in the Mekong and support cards gain +1 on Silenced Truth campaigns.',
     weakness: 'Defend outside the Mekong sets 1 less Defense.',
-    organizeBonus: 0,
+    organizeBonus: 1,
     investigateBonus: 1,
     defenseBonus: 0,
     campaignDomainBonus: 'SilencedTruth',
@@ -224,7 +224,7 @@ const factions: FactionDefinition[] = [
     homeRegion: 'Amazon',
     passive: 'Campaigns in the Amazon or Dying Planet gain +1 and Organize gains +1 Comrade in the Amazon.',
     weakness: 'Smuggle Evidence can move only 1 Evidence at a time.',
-    organizeBonus: 1,
+    organizeBonus: 2,
     investigateBonus: 0,
     defenseBonus: 0,
     campaignDomainBonus: 'DyingPlanet',
@@ -403,14 +403,44 @@ export const compatRuleset: RulesetDefinition = {
   resistanceCards,
   crisisCards,
   systemCards,
-  liberationThreshold: 2,
+  liberationThreshold: 1,
   suddenDeathRound: 12,
   victoryGate: {
     minRoundBeforeVictory: 3,
   },
+  scenarioHooks: {
+    comradesExhaustionGraceRounds: 3,
+  },
+  victoryScoring: {
+    mode: 'score',
+    threshold: 82,
+    survivalScorePerRound: 1,
+    components: [
+      {
+        id: 'publicVictory',
+        label: 'Public Victory',
+        weight: 30,
+        type: 'binaryCondition',
+        source: {
+          type: 'publicVictory',
+        },
+      },
+    ],
+    mandatesAsScore: {
+      enabled: true,
+      weight: 70,
+      mandateProgressMode: 'binary',
+    },
+    outcomeBands: [
+      { id: 'defeat', min: 0, max: 29.999999 },
+      { id: 'continuation', min: 30, max: 49.999999 },
+      { id: 'win_with_consequence', min: 50, max: 74.999999 },
+      { id: 'breakthrough', min: 75, max: 100 },
+    ],
+  },
   setup: {
-    globalGaze: 6,
-    northernWarMachine: 6,
+    globalGaze: 7,
+    northernWarMachine: 4,
     extractionSeeds: reduceSeededExtractionByHighestRegions(BASE_EXTRACTION_SEEDS, SEEDED_EXTRACTION_REDUCTION),
   },
 };

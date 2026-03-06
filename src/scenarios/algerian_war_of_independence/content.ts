@@ -325,12 +325,39 @@ export const compatRuleset: RulesetDefinition = {
     victoryGate: {
         minRoundBeforeVictory: 3,
     },
+    victoryScoring: {
+        mode: 'score',
+        threshold: 70,
+        survivalScorePerRound: 0.8,
+        components: [
+            {
+                id: 'publicVictory',
+                label: 'Public Victory',
+                weight: 50,
+                type: 'binaryCondition',
+                source: {
+                    type: 'publicVictory',
+                },
+            },
+        ],
+        mandatesAsScore: {
+            enabled: true,
+            weight: 50,
+            mandateProgressMode: 'binary',
+        },
+        outcomeBands: [
+            { id: 'defeat', min: 0, max: 39.999999 },
+            { id: 'continuation', min: 40, max: 59.999999 },
+            { id: 'win_with_consequence', min: 60, max: 84.999999 },
+            { id: 'breakthrough', min: 85, max: 100 },
+        ],
+    },
     setup: {
         globalGaze: 4,
         northernWarMachine: 6,
         extractionPool: 72,
         extractionSeeds: {
-            Oran: 3,
+            Oran: 2,
             Algiers: 2,
             KabylieMountains: 2,
             SaharaSouth: 1,

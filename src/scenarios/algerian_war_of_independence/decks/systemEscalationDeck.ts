@@ -60,9 +60,8 @@ export const systemCards: SystemCardDefinition[] = [
     id: 'sys_alg_counter_insurgency_doctrine',
     deck: 'system',
     name: 'Counter-Insurgency Doctrine',
-    text: 'The System moves first and forces a hard turn. Add 1 Extraction Token to the region most vulnerable to Gilded Cage, advance Unfinished Justice by 1, and increase future crisis extraction by 1. The coalition must absorb this pressure and reorganize before the next phase.',
+    text: 'The System moves first and forces a hard turn. Advance Unfinished Justice by 1 and increase future crisis extraction by 1. The coalition must absorb this pressure and reorganize before the next phase.',
     onReveal: [
-      { type: 'add_extraction', region: { byVulnerability: 'GildedCage' }, amount: 1 },
       { type: 'modify_domain', domain: 'UnfinishedJustice', delta: 1 },
     ],
     persistentModifiers: {
@@ -73,9 +72,8 @@ export const systemCards: SystemCardDefinition[] = [
     id: 'sys_alg_administrative_partition',
     deck: 'system',
     name: 'Administrative Partition',
-    text: 'The System moves first and forces a hard turn. Add 1 Extraction Token to Tunisian Border, reduce Revolutionary Wave by 1, increase future campaign targets by 1, and draw 1 extra crisis card during future system pressure. The coalition must absorb this pressure and reorganize before the next phase.',
+    text: 'The System moves first and forces a hard turn. Reduce Revolutionary Wave by 1, increase future campaign targets by 1, and draw 1 extra crisis card during future system pressure. The coalition must absorb this pressure and reorganize before the next phase.',
     onReveal: [
-      { type: 'add_extraction', region: 'TunisianBorder', amount: 1 },
       { type: 'modify_domain', domain: 'RevolutionaryWave', delta: -1 },
     ],
     persistentModifiers: {

@@ -25,10 +25,9 @@ export const crisisCards: CrisisCardDefinition[] = [
     id: 'crs_alg_rural_village_burned',
     deck: 'crisis',
     name: 'Rural Village Burned',
-    text: 'The System moves first and forces a hard turn. Remove 1 Comrade from Sahara South for seat 3 and add 1 Extraction Token to Sahara South. The coalition must absorb this pressure and reorganize before the next phase.',
+    text: 'The System moves first and forces a hard turn. Remove 1 Comrade from Sahara South for seat 3. The coalition must absorb this pressure and reorganize before the next phase.',
     effects: [
       { type: 'remove_comrades', region: 'SaharaSouth', seat: 2, amount: 1 },
-      { type: 'add_extraction', region: 'SaharaSouth', amount: 1 },
     ],
   },
   {

@@ -36,8 +36,8 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     deck: 'resistance',
     type: 'action',
     name: 'Strike Fund',
-    text: 'The movement creates a brief opening through collective action. Add 3 Comrades to the target region for the acting faction. Use this shift quickly before the System closes ranks again.',
-    effects: [{ type: 'add_comrades', region: 'target_region', seat: 'acting_player', amount: 3 }],
+    text: 'The movement creates a brief opening through collective action. Add 4 Comrades to the target region for the acting faction. Use this shift quickly before the System closes ranks again.',
+    effects: [{ type: 'add_comrades', region: 'target_region', seat: 'acting_player', amount: 4 }],
   },
   {
     id: 'res_lawyers_brief',

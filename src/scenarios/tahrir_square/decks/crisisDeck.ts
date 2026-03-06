@@ -5,9 +5,9 @@ export const crisisCards: CrisisCardDefinition[] = [
         id: 'crisis_tahrir_central_security',
         deck: 'crisis',
         name: 'Central Security Forces',
-        text: 'The System moves first and forces a hard turn across Cairo. Military intervention adds 2 Extraction to Cairo immediately. The coalition must absorb this pressure and reorganize before the next phase.',
+        text: 'The System moves first and forces a hard turn across Cairo. Military intervention adds 1 Extraction to Cairo immediately. The coalition must absorb this pressure and reorganize before the next phase.',
         effects: [
-            { type: 'add_extraction', region: 'Cairo', amount: 2 },
+            { type: 'add_extraction', region: 'Cairo', amount: 1 },
         ],
     },
     {
@@ -26,11 +26,10 @@ export const crisisCards: CrisisCardDefinition[] = [
         id: 'crisis_tahrir_camel_battle',
         deck: 'crisis',
         name: 'Camel Battle',
-        text: 'The System moves first and forces a hard turn with organized street violence in Tahrir. Remove 3 Comrades from Cairo and raise Global Gaze by 2 through global outrage. The coalition must absorb this pressure and reorganize before the next phase.',
+        text: 'The System moves first and forces a hard turn with organized street violence in Tahrir. Remove 2 Comrades from Cairo and raise Global Gaze by 2 through global outrage. The coalition must absorb this pressure and reorganize before the next phase.',
         effects: [
             { type: 'remove_comrades', region: 'Cairo', seat: 0, amount: 1 },
             { type: 'remove_comrades', region: 'Cairo', seat: 1, amount: 1 },
-            { type: 'remove_comrades', region: 'Cairo', seat: 2, amount: 1 },
             { type: 'modify_gaze', delta: 2 },
         ],
     },
@@ -69,7 +68,7 @@ export const crisisCards: CrisisCardDefinition[] = [
         text: 'The System moves first and forces a hard turn with a mass crackdown. Gain a permanent +2 Global Gaze as the brutality is witnessed internationally. The coalition must absorb this pressure and reorganize before the next phase.',
         effects: [
             { type: 'modify_gaze', delta: 2 },
-            { type: 'add_extraction', region: 'Cairo', amount: 3 },
+            { type: 'add_extraction', region: 'Cairo', amount: 2 },
         ],
     },
 ];

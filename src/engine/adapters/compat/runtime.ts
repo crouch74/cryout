@@ -927,7 +927,12 @@ function checkExtractionLoss(state: EngineState) {
   return true;
 }
 
-function checkComradesExhaustedLoss(state: EngineState) {
+function checkComradesExhaustedLoss(state: EngineState, content: CompiledContent) {
+  const graceRounds = Math.max(0, content.ruleset.scenarioHooks?.comradesExhaustionGraceRounds ?? 0);
+  if (state.round <= graceRounds) {
+    return false;
+  }
+
   const coalitionComrades = getTotalComrades(state);
   if (coalitionComrades > 0) {
     return false;
@@ -2982,7 +2987,7 @@ export function dispatchCommand(state: EngineState, command: EngineCommand, cont
       }
 
       updateBeaconCompletion(next, content);
-      if (checkComradesExhaustedLoss(next)) {
+      if (checkComradesExhaustedLoss(next, content)) {
         return next;
       }
       if (checkPositiveVictory(next, content, { trigger: 'resolution' })) {

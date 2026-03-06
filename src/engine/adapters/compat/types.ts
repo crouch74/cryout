@@ -409,6 +409,7 @@ export interface RulesetDefinition {
   }>;
   scenarioFlags?: string[];
   scenarioHooks?: {
+    comradesExhaustionGraceRounds?: number;
     evidenceGainRaisesRepression?: boolean;
     evidenceGainRepressionDelta?: number;
     urbanCampaignRegions?: RegionId[];
