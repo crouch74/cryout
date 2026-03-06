@@ -1,10 +1,9 @@
 import type { Phase } from '../../engine/index.ts';
-import { useId, useMemo, useState, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { t } from '../../i18n/index.ts';
 import { getPhaseProgressSteps } from '../presentation/gameUiHelpers.ts';
 import { PrintedTrack } from '../../ui/layout/tabletop.tsx';
 import { useTransientHighlightKeys } from '../presentation/useTransientHighlights.ts';
-import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from '../../ui/primitives/index.ts';
 
 interface PhaseProgressProps {
   phase: Phase;
@@ -19,53 +18,41 @@ export function PhaseProgress({ phase, activeContent, activeHint, activeHelpCont
   const phaseSignature = useMemo(() => ({ phase }), [phase]);
   const highlightedKeys = useTransientHighlightKeys(phaseSignature, 1500);
   const isAdvancing = highlightedKeys.has('phase');
-  const [helpOpen, setHelpOpen] = useState(false);
-  const helpId = useId();
 
   return (
     <nav className={`phase-progress-nav ${isAdvancing ? 'is-advancing' : ''}`.trim()} aria-label={t('ui.game.turnProgress', 'Turn progress')}>
       <PrintedTrack
         ariaLabel={t('ui.game.turnProgress', 'Turn progress')}
-        steps={steps.map(({ step }, index) => {
+        steps={steps.map(({ step, copy, verb, urgency }, index) => {
           const isActive = index === activeIndex;
+          const title = t(`ui.phases.${step}`, step);
+          const tooltipId = `phase-help-${step.toLowerCase()}`;
+          const tooltipContent = isActive && activeHelpContent
+            ? (
+              <>
+                <strong>{title}</strong>
+                {activeHelpContent}
+                {activeHint ? <span>{activeHint}</span> : null}
+              </>
+            )
+            : (
+              <>
+                <strong>{title}</strong>
+                <span className="phase-help-copy">
+                  <span>{copy}</span>
+                  <span>{`${verb} • ${urgency}`}</span>
+                </span>
+              </>
+            );
 
           return {
             key: step,
+            tooltipId,
+            tooltipContent,
             label: (
               <span className="phase-progress-label-shell">
-                <span>{t(`ui.phases.${step}`, step)}</span>
-                {isActive && activeHelpContent ? (
-                  <PopoverRoot open={helpOpen} onOpenChange={setHelpOpen}>
-                    <span className={`phase-help-anchor ${helpOpen ? 'is-open' : ''}`.trim()}>
-                      <PopoverTrigger asChild>
-                        <button
-                          type="button"
-                          className="phase-help-trigger"
-                          aria-expanded={helpOpen}
-                          aria-controls={helpId}
-                          aria-label={t('ui.game.phaseHelp', 'Phase details')}
-                          title={t('ui.game.phaseHelp', 'Phase details')}
-                        >
-                          {t('ui.game.phaseHelpGlyph', '?')}
-                        </button>
-                      </PopoverTrigger>
-                    </span>
-                    <PopoverPortal>
-                      <PopoverContent
-                        id={helpId}
-                        role="tooltip"
-                        align="start"
-                        side="bottom"
-                        sideOffset={8}
-                        className="phase-progress-help-tooltip phase-progress-help-popover"
-                      >
-                        <strong>{t(`ui.phases.${step}`, step)}</strong>
-                        {activeHelpContent}
-                        {activeHint ? <span>{activeHint}</span> : null}
-                      </PopoverContent>
-                    </PopoverPortal>
-                  </PopoverRoot>
-                ) : null}
+                <span>{title}</span>
+                <span className="phase-help-glyph" aria-hidden="true">{t('ui.game.phaseHelpGlyph', '?')}</span>
               </span>
             ),
           };

@@ -1,5 +1,24 @@
-import { BASE_THEME, SCENARIO_THEME_OVERLAYS } from './themeRegistry.ts';
-import type { DeepPartial, ScenarioOverlayId, ThemeColors, ThemeDefinition } from './types.ts';
+import {
+  BASE_THEME,
+  DEFAULT_UI_SKIN_ID,
+  getUiSkinDefinition,
+  mapSkinToThemeColors,
+  SCENARIO_THEME_OVERLAYS,
+} from './themeRegistry.ts';
+import type {
+  DeepPartial,
+  ScenarioOverlayId,
+  ThemeColors,
+  ThemeContrastMode,
+  ThemeDefinition,
+  UiSkinId,
+} from './types.ts';
+
+interface ResolveThemeOptions {
+  skinId?: UiSkinId;
+  scenarioOverlayId?: ScenarioOverlayId | null;
+  contrastMode?: ThemeContrastMode;
+}
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -23,23 +42,59 @@ function mergeDeep<T extends object>(base: T, patch: DeepPartial<T>): T {
   return next as T;
 }
 
-function resolveColors(overlayId: ScenarioOverlayId | null): ThemeColors {
-  const overlay = overlayId ? SCENARIO_THEME_OVERLAYS[overlayId] : null;
-  if (!overlay) {
-    return BASE_THEME.colors;
+function applyContrastMode(colors: ThemeColors, contrastMode: ThemeContrastMode): ThemeColors {
+  if (contrastMode !== 'high') {
+    return colors;
   }
-  return mergeDeep<ThemeColors>(BASE_THEME.colors, overlay.overrides.colors);
+
+  return {
+    ...colors,
+    textSecondary: `color-mix(in srgb, ${colors.textPrimary} 84%, ${colors.backgroundElevated} 16%)`,
+    textMuted: `color-mix(in srgb, ${colors.textPrimary} 72%, ${colors.backgroundElevated} 28%)`,
+    borderSubtle: `color-mix(in srgb, ${colors.borderStrong} 66%, ${colors.backgroundElevated} 34%)`,
+    borderStrong: `color-mix(in srgb, ${colors.textPrimary} 48%, ${colors.backgroundElevated} 52%)`,
+    selectionHighlight: `color-mix(in srgb, ${colors.selectionHighlight} 78%, ${colors.backgroundElevated} 22%)`,
+    tokenGlow: `color-mix(in srgb, ${colors.tokenGlow} 88%, ${colors.backgroundElevated} 12%)`,
+  };
 }
 
-export function resolveTheme(overlayId: ScenarioOverlayId | null): ThemeDefinition {
-  const overlay = overlayId ? SCENARIO_THEME_OVERLAYS[overlayId] : null;
-  const colors = resolveColors(overlayId);
+function resolveColors(
+  skinId: UiSkinId,
+  scenarioOverlayId: ScenarioOverlayId | null,
+  contrastMode: ThemeContrastMode,
+): ThemeColors {
+  const skin = getUiSkinDefinition(skinId);
+  const baseSkinColors = mapSkinToThemeColors(skin);
+  const overlay = scenarioOverlayId ? SCENARIO_THEME_OVERLAYS[scenarioOverlayId] : null;
+  const merged = overlay
+    ? mergeDeep<ThemeColors>(baseSkinColors, overlay.overrides.colors)
+    : baseSkinColors;
+  return applyContrastMode(merged, contrastMode);
+}
+
+export function resolveTheme({
+  skinId = DEFAULT_UI_SKIN_ID,
+  scenarioOverlayId = null,
+  contrastMode = 'default',
+}: ResolveThemeOptions = {}): ThemeDefinition {
+  const skin = getUiSkinDefinition(skinId);
+  const overlay = scenarioOverlayId ? SCENARIO_THEME_OVERLAYS[scenarioOverlayId] : null;
+  const colors = resolveColors(skinId, scenarioOverlayId, contrastMode);
 
   return {
     ...BASE_THEME,
-    id: overlay?.id ?? BASE_THEME.id,
-    label: overlay?.label ?? BASE_THEME.label,
+    id: overlay?.id ?? skin.id,
+    label: overlay ? `${skin.label} · ${overlay.label}` : skin.label,
+    skinId: skin.id,
+    skinLabel: skin.label,
+    contrastMode,
+    overlayId: overlay?.id ?? null,
+    skin,
     colors,
+    shadows: {
+      ...BASE_THEME.shadows,
+      focus: skin.focus.ring,
+    },
   };
 }
 
@@ -48,10 +103,33 @@ export function toThemeCssVariables(theme: ThemeDefinition) {
   const neutralWhite = 'rgba(255, 255, 255, 1)';
 
   return {
+    '--skin-layer-canvas': theme.skin.layer.canvas,
+    '--skin-layer-surface': theme.skin.layer.surface,
+    '--skin-layer-elevated': theme.skin.layer.elevated,
+    '--skin-layer-overlay': theme.skin.layer.overlay,
+    '--skin-layer-scrim': theme.skin.layer.scrim,
+    '--skin-text-primary': theme.colors.textPrimary,
+    '--skin-text-muted': theme.colors.textSecondary,
+    '--skin-text-inverse': theme.colors.textInverted,
+    '--skin-border-subtle': theme.colors.borderSubtle,
+    '--skin-border-strong': theme.colors.borderStrong,
+    '--skin-focus-ring': theme.shadows.focus,
+    '--skin-focus-ring-color': `color-mix(in srgb, ${theme.skin.action.secondary} 74%, ${theme.colors.backgroundElevated} 26%)`,
+    '--skin-action-primary': theme.skin.action.primary,
+    '--skin-action-secondary': theme.skin.action.secondary,
+    '--skin-action-utility': theme.skin.action.utility,
+    '--skin-state-success': theme.colors.stateMovement,
+    '--skin-state-warning': theme.colors.stateWarning,
+    '--skin-state-danger': theme.colors.stateDanger,
+    '--skin-state-info': theme.colors.stateInfo,
+    '--skin-map-safe': theme.skin.map.safe,
+    '--skin-map-strained': theme.skin.map.strained,
+    '--skin-map-critical': theme.skin.map.critical,
+
     '--color-background': theme.colors.backgroundPrimary,
     '--color-surface': theme.colors.backgroundSecondary,
     '--color-surface-elevated': theme.colors.backgroundElevated,
-    '--color-focus-surface': theme.colors.textPrimary,
+    '--color-focus-surface': theme.skin.action.primary,
     '--color-border': theme.colors.borderSubtle,
     '--color-text-primary': theme.colors.textPrimary,
     '--color-text-muted': theme.colors.textSecondary,
@@ -59,6 +137,9 @@ export function toThemeCssVariables(theme: ThemeDefinition) {
     '--color-accent-strong': theme.colors.domainRevolution,
     '--color-danger': theme.colors.stateDanger,
     '--color-success': theme.colors.stateMovement,
+    '--color-action-primary': theme.skin.action.primary,
+    '--color-action-secondary': theme.skin.action.secondary,
+    '--color-action-utility': theme.skin.action.utility,
     '--color-hero-tone': theme.colors.heroTone,
     '--color-background-wash': theme.colors.backgroundWash,
     '--color-selection-highlight': theme.colors.selectionHighlight,
@@ -189,9 +270,9 @@ export function toThemeCssVariables(theme: ThemeDefinition) {
     '--status-war': theme.colors.stateDanger,
     '--status-pool': `color-mix(in srgb, ${theme.colors.textPrimary} 68%, ${theme.colors.backgroundSecondary} 32%)`,
     '--status-round': theme.colors.stateMovement,
-    '--map-safe': theme.colors.stateMovement,
-    '--map-strained': theme.colors.stateWarning,
-    '--map-critical': theme.colors.stateDanger,
+    '--map-safe': theme.skin.map.safe,
+    '--map-strained': theme.skin.map.strained,
+    '--map-critical': theme.skin.map.critical,
 
     '--context-surface': `color-mix(in srgb, ${theme.colors.backgroundElevated} 92%, ${neutralWhite} 8%)`,
     '--dock-surface': `color-mix(in srgb, ${theme.colors.backgroundSecondary} 92%, ${neutralWhite} 8%)`,
@@ -233,6 +314,8 @@ export function applyThemeVariables(theme: ThemeDefinition, overlayId: ScenarioO
   });
 
   root.dataset.themeId = theme.id;
+  root.dataset.uiSkin = theme.skinId;
+  root.dataset.themeContrast = theme.contrastMode;
   if (overlayId) {
     root.dataset.scenarioTheme = overlayId;
   } else {

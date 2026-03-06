@@ -16,7 +16,7 @@
   padding: 14px 16px;
   border-radius: var(--radius-md);
   border: 1px solid var(--line-strong);
-  background: rgba(8, 16, 28, 0.96);
+  background: color-mix(in srgb, var(--skin-layer-overlay) 94%, var(--skin-layer-canvas) 6%);
   box-shadow: var(--shadow-1);
   animation: toast-enter var(--motion-mid);
 }
@@ -37,15 +37,15 @@ html[dir='rtl'] .toast-stack {
 }
 
 .toast-success {
-  border-color: rgba(124, 224, 166, 0.34);
+  border-color: color-mix(in srgb, var(--skin-state-success) 34%, transparent);
 }
 
 .toast-warning {
-  border-color: rgba(243, 193, 109, 0.34);
+  border-color: color-mix(in srgb, var(--skin-state-warning) 34%, transparent);
 }
 
 .toast-error {
-  border-color: rgba(255, 77, 77, 0.45);
+  border-color: color-mix(in srgb, var(--skin-state-danger) 45%, transparent);
 }
 
 .game-resource-card.is-pulsed {
@@ -72,7 +72,7 @@ html[dir='rtl'] .toast-stack {
 
   50% {
     transform: scale(1.04);
-    box-shadow: 0 0 0 2px rgba(94, 233, 213, 0.35), 0 0 16px rgba(94, 233, 213, 0.12);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--skin-focus-ring-color) 35%, transparent), 0 0 16px color-mix(in srgb, var(--skin-focus-ring-color) 12%, transparent);
   }
 
   100% {
@@ -89,6 +89,6 @@ html[dir='rtl'] .toast-stack {
   }
 
   50% {
-    box-shadow: inset 0 0 28px rgba(255, 77, 77, 0.45), 0 0 8px rgba(255, 77, 77, 0.10);
+    box-shadow: inset 0 0 28px color-mix(in srgb, var(--skin-state-danger) 45%, transparent), 0 0 8px color-mix(in srgb, var(--skin-state-danger) 10%, transparent);
   }
 }

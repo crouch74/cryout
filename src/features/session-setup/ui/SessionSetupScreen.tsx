@@ -17,6 +17,7 @@ import {
   LocaleSwitcher,
   PaperSheet,
   TableSurface,
+  ThemeSwitcher,
   ThemePlate,
   useTabletopTheme,
 } from '../../../ui/layout/tabletop.tsx';
@@ -238,6 +239,7 @@ export function SessionSetupScreen({
                       <div className="coalition-panel-head">
                         <span className="engraved-eyebrow">{t('ui.home.launch', 'Open Table')}</span>
                         <div className="setup-utility-strip" aria-label={t('ui.home.utilities', 'Utilities')}>
+                          <ThemeSwitcher showLabel={false} compact />
                           <LocaleSwitcher showLabel={false} compact />
                         </div>
                       </div>

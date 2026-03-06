@@ -18,7 +18,12 @@ body {
     radial-gradient(120% 90% at 50% 0%, var(--color-background-wash), transparent 65%),
     radial-gradient(circle at top left, var(--scenario-glow-a), transparent 28%),
     radial-gradient(circle at 85% 16%, var(--scenario-glow-b), transparent 30%),
-    linear-gradient(150deg, color-mix(in srgb, var(--color-background) 86%, var(--legacy-color-121212) 14%) 0%, var(--color-background) 54%, color-mix(in srgb, var(--color-background) 92%, var(--legacy-color-ffffff) 8%) 100%);
+    linear-gradient(
+      150deg,
+      color-mix(in srgb, var(--skin-layer-canvas) 86%, var(--skin-text-primary) 14%) 0%,
+      var(--skin-layer-canvas) 54%,
+      color-mix(in srgb, var(--skin-layer-canvas) 92%, var(--skin-layer-elevated) 8%) 100%
+    );
   background-attachment: fixed;
 }
 
@@ -44,7 +49,7 @@ body::after {
   inset: 0;
   pointer-events: none;
   z-index: var(--z-base);
-  background: radial-gradient(130% 100% at 50% 45%, transparent 44%, rgba(12, 9, 7, 0.18) 100%);
+  background: radial-gradient(130% 100% at 50% 45%, transparent 44%, color-mix(in srgb, var(--app-scrim) 36%, transparent) 100%);
   opacity: 0.9;
 }
 

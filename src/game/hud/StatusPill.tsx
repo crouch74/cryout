@@ -23,12 +23,15 @@ export function StatusPill({
     <article
       className={`status-pill status-pill-${item.id} tone-${item.tone} ${isChanging ? 'is-changing' : ''}`.trim()}
       title={item.tooltip}
+      tabIndex={0}
+      aria-label={`${item.label}: ${item.value}. ${item.tooltip}`}
     >
       <Icon type={item.icon} size="md" title={item.label} />
       <div className="status-pill-copy">
         <span>{item.label}</span>
         <strong dir={metricDirection}>{item.value}</strong>
       </div>
+      <span role="tooltip" className="status-pill-tooltip">{item.tooltip}</span>
     </article>
   );
 }

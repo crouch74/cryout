@@ -11,7 +11,7 @@
   padding: var(--space-2);
   border-radius: var(--radius-lg);
   border: 1px solid var(--line-strong);
-  background: rgba(10, 18, 30, 0.97);
+  background: color-mix(in srgb, var(--skin-layer-overlay) 96%, var(--skin-layer-canvas) 4%);
   box-shadow: var(--shadow-0);
 }
 
@@ -40,11 +40,11 @@
 }
 
 .trace-card.status-failed {
-  border-color: rgba(255, 139, 139, 0.3);
+  border-color: color-mix(in srgb, var(--skin-state-danger) 30%, transparent);
 }
 
 .trace-card.status-executed {
-  border-color: rgba(125, 211, 199, 0.24);
+  border-color: color-mix(in srgb, var(--skin-state-info) 24%, transparent);
 }
 
 .trace-caused-by {
@@ -60,7 +60,7 @@
   display: grid;
   place-items: center;
   padding: var(--space-2);
-  background: rgba(2, 8, 16, 0.65);
+  background: color-mix(in srgb, var(--skin-layer-scrim) 65%, transparent);
   backdrop-filter: blur(10px);
 }
 
@@ -71,7 +71,7 @@
   padding: var(--space-3);
   border-radius: var(--radius-lg);
   border: 1px solid var(--line-strong);
-  background: rgba(9, 18, 30, 0.96);
+  background: color-mix(in srgb, var(--skin-layer-overlay) 95%, var(--skin-layer-canvas) 5%);
   box-shadow: var(--shadow-0);
 }
 
@@ -144,10 +144,10 @@
 .terminal-outcome-card {
   width: min(920px, 100%);
   gap: 18px;
-  border-color: rgba(212, 199, 166, 0.3);
+  border-color: color-mix(in srgb, var(--skin-border-strong) 30%, transparent);
   background:
-    linear-gradient(180deg, rgba(20, 25, 33, 0.96), rgba(10, 14, 20, 0.98)),
-    rgba(9, 18, 30, 0.96);
+    linear-gradient(180deg, color-mix(in srgb, var(--skin-layer-overlay) 88%, var(--skin-text-primary) 12%), color-mix(in srgb, var(--skin-layer-overlay) 94%, var(--skin-text-primary) 6%)),
+    color-mix(in srgb, var(--skin-layer-overlay) 95%, var(--skin-layer-canvas) 5%);
   animation: terminal-outcome-fade-in 260ms ease-out;
 }
 
@@ -180,8 +180,8 @@
 .terminal-outcome-summary {
   padding: 16px 18px;
   border-radius: 18px;
-  border: 1px solid rgba(212, 199, 166, 0.18);
-  background: rgba(248, 242, 226, 0.06);
+  border: 1px solid color-mix(in srgb, var(--skin-border-strong) 18%, transparent);
+  background: color-mix(in srgb, var(--skin-layer-elevated) 6%, transparent);
 }
 
 .terminal-outcome-final-state {
@@ -195,8 +195,8 @@
   gap: 6px;
   padding: 14px;
   border-radius: 14px;
-  border: 1px solid rgba(212, 199, 166, 0.16);
-  background: rgba(248, 242, 226, 0.04);
+  border: 1px solid color-mix(in srgb, var(--skin-border-strong) 16%, transparent);
+  background: color-mix(in srgb, var(--skin-layer-elevated) 4%, transparent);
 }
 
 .terminal-outcome-final-state span {
@@ -217,8 +217,8 @@
 .terminal-outcome-section {
   padding: 16px 18px;
   border-radius: 18px;
-  border: 1px solid rgba(212, 199, 166, 0.14);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid color-mix(in srgb, var(--skin-border-strong) 14%, transparent);
+  background: color-mix(in srgb, var(--skin-layer-elevated) 3%, transparent);
 }
 
 .terminal-outcome-list {
@@ -229,9 +229,9 @@
 .terminal-outcome-closing {
   margin: 0;
   padding: 16px 18px;
-  border-left: 3px solid rgba(212, 199, 166, 0.45);
+  border-left: 3px solid color-mix(in srgb, var(--skin-border-strong) 45%, transparent);
   color: var(--text-2);
-  background: rgba(248, 242, 226, 0.04);
+  background: color-mix(in srgb, var(--skin-layer-elevated) 4%, transparent);
 }
 
 .terminal-outcome-actions {
@@ -1084,8 +1084,8 @@
 .campaign-result-meta span {
   padding: 8px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(212, 199, 166, 0.18);
-  background: rgba(248, 242, 226, 0.06);
+  border: 1px solid color-mix(in srgb, var(--skin-border-strong) 18%, transparent);
+  background: color-mix(in srgb, var(--skin-layer-elevated) 6%, transparent);
   color: var(--text-2);
 }
 
@@ -1101,7 +1101,7 @@
 .campaign-result-section {
   padding: 16px 18px;
   border-radius: 22px;
-  border: 1px solid rgba(212, 199, 166, 0.16);
+  border: 1px solid color-mix(in srgb, var(--skin-border-strong) 16%, transparent);
   background: rgba(255, 255, 255, 0.04);
   align-content: start;
   min-width: 0;
@@ -1171,12 +1171,12 @@
   gap: 8px;
   padding: 12px 14px;
   border-radius: 16px;
-  border: 1px solid rgba(212, 199, 166, 0.18);
+  border: 1px solid color-mix(in srgb, var(--skin-border-strong) 18%, transparent);
   background:
     linear-gradient(180deg, rgba(255, 251, 244, 0.98), rgba(234, 220, 194, 0.96)),
-    var(--theme-paper);
+    var(--skin-layer-elevated);
   box-shadow: 0 16px 36px rgba(41, 29, 20, 0.22);
-  color: var(--theme-ink);
+  color: var(--skin-text-primary);
   pointer-events: none;
   transform-origin: var(--radix-tooltip-content-transform-origin);
   animation: campaign-tooltip-in 140ms var(--motion-ease-standard);
@@ -1239,8 +1239,8 @@ html[dir='rtl'] .campaign-result-equation-row {
   gap: 8px;
   padding: 12px 14px;
   border-radius: 18px;
-  border: 1px solid rgba(212, 199, 166, 0.14);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid color-mix(in srgb, var(--skin-border-strong) 14%, transparent);
+  background: color-mix(in srgb, var(--skin-layer-elevated) 3%, transparent);
 }
 
 .campaign-result-compact-stat strong {
@@ -1295,7 +1295,7 @@ html[dir='rtl'] .campaign-result-equation-row {
   justify-items: center;
   padding: 14px;
   border-radius: 18px;
-  border: 1px solid rgba(212, 199, 166, 0.18);
+  border: 1px solid color-mix(in srgb, var(--skin-border-strong) 18%, transparent);
   background:
     radial-gradient(circle at top, rgba(200, 167, 94, 0.12), transparent 45%),
     rgba(248, 242, 226, 0.05);
@@ -1331,7 +1331,7 @@ html[dir='rtl'] .campaign-result-equation-row {
   border: 1px solid rgba(83, 62, 35, 0.42);
   background:
     linear-gradient(180deg, rgba(250, 244, 230, 0.98), rgba(221, 202, 171, 0.94)),
-    var(--theme-paper);
+    var(--skin-layer-elevated);
   color: var(--legacy-color-342619);
   box-shadow:
     inset 0 1px 0 rgba(255, 251, 244, 0.84),

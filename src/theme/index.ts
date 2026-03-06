@@ -1,10 +1,17 @@
-export { BASE_THEME, SCENARIO_THEME_OVERLAYS } from './themeRegistry.ts';
+export {
+  BASE_THEME,
+  DEFAULT_UI_SKIN_ID,
+  getUiSkinDefinition,
+  mapSkinToThemeColors,
+  SCENARIO_THEME_OVERLAYS,
+  UI_SKINS,
+} from './themeRegistry.ts';
 export { applyThemeVariables, resolveTheme, toThemeCssVariables } from './themeRuntime.ts';
 export { getScenarioOverlayForRuleset, listScenarioThemeMappings } from './scenarioThemeMap.ts';
 export type {
-  BaseThemeId,
   DeepPartial,
   ScenarioOverlayId,
+  ThemeContrastMode,
   ThemeColors,
   ThemeDefinition,
   ThemeLayout,
@@ -16,4 +23,15 @@ export type {
   ThemeSpacing,
   ThemeTypography,
   ThemeZIndex,
+  UiSkinActionTokens,
+  UiSkinBorderTokens,
+  UiSkinDefinition,
+  UiSkinDomainTokens,
+  UiSkinEffectTokens,
+  UiSkinFocusTokens,
+  UiSkinId,
+  UiSkinLayerTokens,
+  UiSkinMapTokens,
+  UiSkinStateTokens,
+  UiSkinTextTokens,
 } from './types.ts';

@@ -42,6 +42,33 @@
   --color-bg-secondary: var(--color-surface);
   --color-bg-panel: #F6EFE6;
   --color-bg-elevated: var(--color-surface-elevated);
+  --color-action-primary: #3A271B;
+  --color-action-secondary: #B46A3D;
+  --color-action-utility: #E5DACC;
+
+  /* Skin semantic roles */
+  --skin-layer-canvas: var(--color-background);
+  --skin-layer-surface: var(--color-surface);
+  --skin-layer-elevated: var(--color-surface-elevated);
+  --skin-layer-overlay: var(--color-bg-panel);
+  --skin-layer-scrim: rgba(25, 18, 12, 0.58);
+  --skin-text-primary: var(--color-text-primary);
+  --skin-text-muted: var(--color-text-muted);
+  --skin-text-inverse: var(--color-text-inverted);
+  --skin-border-subtle: var(--color-border-subtle);
+  --skin-border-strong: var(--color-border-strong);
+  --skin-focus-ring: var(--shadow-focus);
+  --skin-focus-ring-color: color-mix(in srgb, var(--color-accent) 74%, var(--color-surface-elevated) 26%);
+  --skin-action-primary: var(--color-action-primary);
+  --skin-action-secondary: var(--color-action-secondary);
+  --skin-action-utility: var(--color-action-utility);
+  --skin-state-success: var(--color-state-movement);
+  --skin-state-warning: var(--color-state-warning);
+  --skin-state-danger: var(--color-state-danger);
+  --skin-state-info: var(--color-state-info);
+  --skin-map-safe: var(--color-state-movement);
+  --skin-map-strained: var(--color-state-warning);
+  --skin-map-critical: var(--color-state-danger);
 
   /* Canonical shadows */
   --shadow-level-1: 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -133,9 +160,9 @@
   --shadow-2: var(--shadow-level-2);
   --accent-primary: var(--color-accent);
   --accent-primary-strong: var(--color-accent-strong);
-  --accent-secondary: color-mix(in srgb, var(--color-accent) 28%, #2b486b 72%);
+  --accent-secondary: var(--color-state-info);
   --accent-danger: var(--color-danger);
-  --accent-warning: color-mix(in srgb, var(--color-accent) 58%, #e5b34d 42%);
+  --accent-warning: var(--color-state-warning);
   --accent-success: var(--color-success);
   --accent-red: var(--color-danger);
   --accent-blue: var(--accent-secondary);
@@ -154,13 +181,13 @@
   --theme-ink: var(--color-text-primary);
   --theme-parchment: var(--color-surface);
   --theme-paper: var(--color-surface-elevated);
-  --theme-aged-paper: color-mix(in srgb, var(--color-surface) 82%, #d7c7a8 18%);
+  --theme-aged-paper: color-mix(in srgb, var(--color-surface) 82%, var(--color-border-strong) 18%);
   --theme-oxide-red: var(--color-danger);
-  --theme-evidence-blue: #2f5d8c;
-  --theme-fossil-core: #2a2420;
-  --theme-brass: color-mix(in srgb, var(--color-accent) 52%, #9a7a3b 48%);
+  --theme-evidence-blue: var(--color-state-info);
+  --theme-fossil-core: var(--color-domain-fossil);
+  --theme-brass: var(--color-state-warning);
   --theme-planet-green: var(--color-success);
-  --theme-gaze-gold: color-mix(in srgb, var(--color-accent) 36%, #aa8338 64%);
+  --theme-gaze-gold: var(--color-state-warning);
 
   --board-sand: var(--color-surface);
   --board-ivory: var(--color-surface-elevated);
@@ -175,12 +202,12 @@
   --status-war: var(--color-danger);
   --status-pool: color-mix(in srgb, var(--color-focus-surface) 68%, var(--color-surface) 32%);
   --status-round: var(--color-success);
-  --map-safe: var(--color-success);
-  --map-strained: var(--accent-warning);
-  --map-critical: var(--color-danger);
+  --map-safe: var(--skin-map-safe);
+  --map-strained: var(--skin-map-strained);
+  --map-critical: var(--skin-map-critical);
 
-  --context-surface: color-mix(in srgb, var(--color-surface-elevated) 92%, #fff 8%);
-  --dock-surface: color-mix(in srgb, var(--color-surface) 92%, #fff 8%);
+  --context-surface: color-mix(in srgb, var(--skin-layer-elevated) 92%, var(--skin-layer-overlay) 8%);
+  --dock-surface: color-mix(in srgb, var(--skin-layer-surface) 92%, var(--skin-layer-overlay) 8%);
   --panel-rim: color-mix(in srgb, var(--color-border) 72%, transparent);
   --panel-rim-strong: color-mix(in srgb, var(--color-border) 92%, transparent);
   --tile-rim-dark: color-mix(in srgb, var(--color-border) 84%, transparent);
@@ -191,7 +218,8 @@
   --token-shadow: 0 8px 18px rgba(50, 35, 23, 0.2);
 
   --tactical-green: var(--color-success);
-  --tactical-grid: rgba(255, 255, 255, 0.018);
+  --tactical-grid: color-mix(in srgb, var(--color-border) 14%, transparent);
+  --app-scrim: var(--skin-layer-scrim);
 
   --seat-1: var(--color-state-info, #2F5D73);
   --seat-2: var(--color-domain-voice, #2F5D73);

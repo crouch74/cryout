@@ -70,7 +70,7 @@
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: rgba(255, 255, 255, 0.05);
+  background: color-mix(in srgb, var(--skin-layer-elevated) 5%, transparent);
   border: 1px solid var(--line-soft);
 }
 
@@ -94,7 +94,7 @@
 .game-kpi-chip {
   border-radius: var(--radius-md);
   border: 1px solid var(--line-soft);
-  background: rgba(255, 255, 255, 0.03);
+  background: color-mix(in srgb, var(--skin-layer-elevated) 3%, transparent);
   padding: 10px;
   display: grid;
   gap: 10px;
@@ -136,7 +136,7 @@
 .kpi-gauge-track {
   height: 4px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.06);
+  background: color-mix(in srgb, var(--skin-layer-elevated) 6%, transparent);
   overflow: hidden;
 }
 
@@ -215,7 +215,7 @@ html[dir='rtl'] .phase-progress-step:not(:last-child)::after {
   padding: 20px 24px;
   border-left: 4px solid var(--accent-primary);
   background:
-    repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 0, 0, 0.04) 3px, rgba(0, 0, 0, 0.04) 6px),
+    repeating-linear-gradient(0deg, transparent, transparent 3px, color-mix(in srgb, var(--skin-text-primary) 4%, transparent) 3px, color-mix(in srgb, var(--skin-text-primary) 4%, transparent) 6px),
     var(--tier-a-bg);
 }
 
@@ -282,7 +282,7 @@ html[dir='rtl'] .phase-progress-step:not(:last-child)::after {
 /* Active Phase Token */
 .phase-progress-step-active .phase-progress-index {
   transform: scale(1.15);
-  box-shadow: 0 0 0 4px rgba(94, 233, 213, 0.2);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--skin-focus-ring-color) 20%, transparent);
   z-index: var(--z-panel);
   animation: phase-pulse 2.4s ease-in-out infinite;
 }
@@ -296,10 +296,10 @@ html[dir='rtl'] .phase-progress-step:not(:last-child)::after {
 
   0%,
   100% {
-    box-shadow: 0 0 0 4px rgba(94, 233, 213, 0.15);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--skin-focus-ring-color) 15%, transparent);
   }
 
   50% {
-    box-shadow: 0 0 0 8px rgba(94, 233, 213, 0.08), 0 0 20px rgba(94, 233, 213, 0.12);
+    box-shadow: 0 0 0 8px color-mix(in srgb, var(--skin-focus-ring-color) 8%, transparent), 0 0 20px color-mix(in srgb, var(--skin-focus-ring-color) 12%, transparent);
   }
 }

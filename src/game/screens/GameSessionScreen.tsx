@@ -56,7 +56,7 @@ import {
   getStatusRibbonItems,
   type ContextPanelMode,
 } from '../presentation/gameUiHelpers.ts';
-import { CrisisCard, DeckBackArt, DeckStack, LocaleSwitcher, TableSurface, ThemePlate, useTabletopTheme } from '../../ui/layout/tabletop.tsx';
+import { CrisisCard, DeckBackArt, DeckStack, LocaleSwitcher, TableSurface, ThemePlate, ThemeSwitcher, useTabletopTheme } from '../../ui/layout/tabletop.tsx';
 import type { SessionViewport } from '../../features/session-setup/model/sessionTypes.ts';
 import { WorldMapBoard } from '../board/WorldMapBoard.tsx';
 
@@ -113,6 +113,8 @@ interface VisualDeltaTile {
   seq: number;
   eventIcon: IconType;
   phaseIcon: IconType;
+  phaseLabel: string;
+  sourceLabel: string;
   glyphs: VisualDeltaGlyph[];
   ariaLabel: string;
   targetKeys: string[];
@@ -164,6 +166,25 @@ function getEventSourceIcon(sourceType: EngineState['eventLog'][number]['sourceT
       return 'objective';
     default:
       return 'ledger';
+  }
+}
+
+function getEventSourceLabel(sourceType: EngineState['eventLog'][number]['sourceType']): string {
+  switch (sourceType) {
+    case 'system':
+      return t('ui.game.eventSourceSystem', 'System event');
+    case 'command':
+      return t('ui.game.eventSourceCommand', 'Command event');
+    case 'action':
+      return t('ui.game.eventSourceAction', 'Action event');
+    case 'card':
+      return t('ui.game.eventSourceCard', 'Card event');
+    case 'mandate':
+      return t('ui.game.eventSourceMandate', 'Mandate event');
+    case 'beacon':
+      return t('ui.game.eventSourceBeacon', 'Beacon event');
+    default:
+      return t('ui.game.eventSourceEvent', 'Event');
   }
 }
 
@@ -626,6 +647,8 @@ function getRecentVisualDeltaTiles(state: EngineState, content: CompiledContent)
         seq: event.seq,
         eventIcon: getEventSourceIcon(event.sourceType),
         phaseIcon: getPhaseDeltaIcon(event.phase),
+        phaseLabel: t(`ui.phases.${event.phase}`, event.phase),
+        sourceLabel: getEventSourceLabel(event.sourceType),
         glyphs,
         ariaLabel: `${presentHistoryEvent(event, content, state).title}. ${glyphs.map((glyph) => glyph.ariaLabel).join('. ')}`.trim(),
         targetKeys,
@@ -1015,15 +1038,24 @@ export function GameSessionScreen({
               aria-label={tile.ariaLabel}
               title={tile.ariaLabel}
             >
-              <div className="visual-delta-tile-head" aria-hidden="true">
-                <span className="visual-delta-phase-marker"><Icon type={tile.phaseIcon} size="xs" /></span>
-                <span className="visual-delta-emoji"><Icon type={tile.eventIcon} size="xs" /></span>
+              <div className="visual-delta-tile-head">
+                <span className="visual-delta-icon-anchor" tabIndex={0} aria-label={t('ui.game.phaseValue', 'Phase: {{value}}', { value: tile.phaseLabel })}>
+                  <span className="visual-delta-phase-marker" aria-hidden="true"><Icon type={tile.phaseIcon} size="xs" /></span>
+                  <span className="visual-delta-icon-label">{tile.phaseLabel}</span>
+                  <span role="tooltip" className="visual-delta-icon-tooltip">{tile.phaseLabel}</span>
+                </span>
+                <span className="visual-delta-icon-anchor" tabIndex={0} aria-label={t('ui.game.eventSourceValue', 'Source: {{value}}', { value: tile.sourceLabel })}>
+                  <span className="visual-delta-emoji" aria-hidden="true"><Icon type={tile.eventIcon} size="xs" /></span>
+                  <span className="visual-delta-icon-label">{tile.sourceLabel}</span>
+                  <span role="tooltip" className="visual-delta-icon-tooltip">{tile.sourceLabel}</span>
+                </span>
               </div>
-              <div className="visual-delta-glyph-row" aria-hidden="true">
+              <div className="visual-delta-glyph-row">
                 {tile.glyphs.map((glyph) => (
-                  <span key={glyph.id} className={`visual-delta-glyph tone-${glyph.tone}`.trim()}>
-                    <Icon type={glyph.icon} size="sm" title={glyph.ariaLabel} />
+                  <span key={glyph.id} className={`visual-delta-glyph tone-${glyph.tone}`.trim()} tabIndex={0} aria-label={glyph.ariaLabel}>
+                    <Icon type={glyph.icon} size="sm" title={glyph.ariaLabel} ariaLabel={glyph.ariaLabel} />
                     <strong dir="ltr">{glyph.value}</strong>
+                    <span role="tooltip" className="visual-delta-icon-tooltip">{glyph.ariaLabel}</span>
                   </span>
                 ))}
               </div>
@@ -1510,7 +1542,8 @@ export function GameSessionScreen({
             suspendHighlights={highlightSuspended}
             utilities={(
               <div className="status-ribbon-utilities-group">
-                <LocaleSwitcher showLabel={false} />
+                <ThemeSwitcher showLabel={false} compact />
+                <LocaleSwitcher showLabel={false} compact />
                 <ThemePlate
                   label={(
                     <Icon
@@ -1535,9 +1568,10 @@ export function GameSessionScreen({
                 ) : null}
                 <button
                   type="button"
-                  className="ledger-toggle"
+                  className="ledger-toggle ledger-toggle-utility"
                   onClick={() => { setContextMode('ledger'); setContextOpen(true); }}
                   aria-label={t('ui.game.ledger', 'Ledger')}
+                  title={t('ui.game.ledger', 'Ledger')}
                 >
                   <Icon type="ledger" size="lg" />
                   <span>{t('ui.game.ledger', 'Ledger')}</span>

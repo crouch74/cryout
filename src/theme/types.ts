@@ -1,4 +1,9 @@
-export type BaseThemeId = 'revolutionary-ink-paper';
+export type UiSkinId =
+  | 'documentary-ink'
+  | 'nocturnal-dossier'
+  | 'civic-signal';
+
+export type ThemeContrastMode = 'default' | 'high';
 
 export type ScenarioOverlayId =
   | 'burnt-earth-resistance'
@@ -7,7 +12,84 @@ export type ScenarioOverlayId =
   | 'desert-horizon'
   | 'night-map-escalation';
 
-export type ThemeId = BaseThemeId | ScenarioOverlayId;
+export type ThemeId = UiSkinId | ScenarioOverlayId;
+
+export interface UiSkinLayerTokens {
+  canvas: string;
+  surface: string;
+  elevated: string;
+  overlay: string;
+  scrim: string;
+}
+
+export interface UiSkinTextTokens {
+  primary: string;
+  muted: string;
+  inverse: string;
+}
+
+export interface UiSkinBorderTokens {
+  subtle: string;
+  strong: string;
+  danger: string;
+}
+
+export interface UiSkinFocusTokens {
+  ring: string;
+}
+
+export interface UiSkinActionTokens {
+  primary: string;
+  secondary: string;
+  utility: string;
+}
+
+export interface UiSkinStateTokens {
+  success: string;
+  warning: string;
+  danger: string;
+  info: string;
+  neutral: string;
+}
+
+export interface UiSkinMapTokens {
+  safe: string;
+  strained: string;
+  critical: string;
+}
+
+export interface UiSkinDomainTokens {
+  warMachine: string;
+  climate: string;
+  fossil: string;
+  justice: string;
+  voice: string;
+  hunger: string;
+  patriarchy: string;
+  revolution: string;
+}
+
+export interface UiSkinEffectTokens {
+  heroTone: string;
+  backgroundWash: string;
+  selectionHighlight: string;
+  tokenGlow: string;
+  surfaceTint: string;
+}
+
+export interface UiSkinDefinition {
+  id: UiSkinId;
+  label: string;
+  layer: UiSkinLayerTokens;
+  text: UiSkinTextTokens;
+  border: UiSkinBorderTokens;
+  focus: UiSkinFocusTokens;
+  action: UiSkinActionTokens;
+  state: UiSkinStateTokens;
+  map: UiSkinMapTokens;
+  domain: UiSkinDomainTokens;
+  effects: UiSkinEffectTokens;
+}
 
 export interface ThemeColors {
   backgroundPrimary: string;
@@ -112,6 +194,11 @@ export interface ThemeLayout {
 export interface ThemeDefinition {
   id: ThemeId;
   label: string;
+  skinId: UiSkinId;
+  skinLabel: string;
+  contrastMode: ThemeContrastMode;
+  overlayId: ScenarioOverlayId | null;
+  skin: UiSkinDefinition;
   colors: ThemeColors;
   shadows: ThemeShadows;
   radius: ThemeRadius;

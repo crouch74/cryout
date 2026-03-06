@@ -8,14 +8,17 @@
   overflow: hidden;
   border: 1px solid var(--panel-rim-strong);
   background:
-    radial-gradient(circle at 14% 12%, rgba(255, 249, 238, 0.3), transparent 18%),
-    radial-gradient(circle at 78% 16%, rgba(139, 106, 61, 0.1), transparent 20%),
-    linear-gradient(180deg, rgba(255, 248, 236, 0.74), rgba(216, 198, 167, 0.58)),
+    radial-gradient(circle at 14% 12%, color-mix(in srgb, var(--skin-layer-elevated) 30%, transparent), transparent 18%),
+    radial-gradient(circle at 78% 16%, color-mix(in srgb, var(--skin-action-secondary) 10%, transparent), transparent 20%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--skin-layer-elevated) 74%, var(--skin-layer-surface) 26%),
+      color-mix(in srgb, var(--skin-layer-surface) 58%, var(--skin-layer-overlay) 42%)
+    ),
     var(--board-ivory);
   box-shadow:
-    var(--panel-shadow),
-    inset 0 0 0 1px rgba(255, 248, 233, 0.45),
-    inset 0 0 24px rgba(57, 40, 22, 0.08);
+    var(--shadow-level-2),
+    inset 0 0 18px color-mix(in srgb, var(--skin-text-primary) 6%, transparent);
 }
 
 .game-screen-compressed .board-map-shell::before,
@@ -28,29 +31,29 @@
 
 .game-screen-compressed .board-map-shell::before {
   background:
-    radial-gradient(circle at 50% 10%, rgba(255, 249, 236, 0.24), transparent 26%),
-    linear-gradient(120deg, transparent 0 26%, rgba(92, 72, 48, 0.04) 26% 27%, transparent 27% 100%);
+    radial-gradient(circle at 50% 10%, color-mix(in srgb, var(--skin-layer-elevated) 24%, transparent), transparent 26%),
+    linear-gradient(120deg, transparent 0 26%, color-mix(in srgb, var(--skin-text-primary) 4%, transparent) 26% 27%, transparent 27% 100%);
   z-index: var(--z-base);
   mix-blend-mode: multiply;
 }
 
 .game-screen-compressed .board-map-shell::after {
-  inset: 4px;
-  border-radius: 20px;
-  border: 1px solid rgba(255, 246, 226, 0.36);
-  background: radial-gradient(circle at center, transparent 62%, rgba(52, 37, 20, 0.06) 100%);
+  inset: 0;
+  border-radius: inherit;
+  border: 0;
+  background: radial-gradient(circle at center, transparent 62%, color-mix(in srgb, var(--skin-text-primary) 6%, transparent) 100%);
   transition: box-shadow var(--motion-mid), background var(--motion-mid);
   z-index: var(--z-base);
 }
 
 .game-screen-compressed .board-map-shell[data-war-critical='true']::after {
-  box-shadow: inset 0 0 0 1px rgba(140, 47, 43, 0.16), inset 0 0 36px rgba(140, 47, 43, 0.08);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--skin-map-critical) 16%, transparent), inset 0 0 36px color-mix(in srgb, var(--skin-map-critical) 8%, transparent);
 }
 
 .game-screen-compressed .board-map-shell[data-gaze-elevated='true']::before {
   background:
-    radial-gradient(circle at 48% 42%, rgba(154, 122, 59, 0.18), transparent 30%),
-    linear-gradient(120deg, transparent 0 26%, rgba(92, 72, 48, 0.04) 26% 27%, transparent 27% 100%);
+    radial-gradient(circle at 48% 42%, color-mix(in srgb, var(--skin-map-strained) 18%, transparent), transparent 30%),
+    linear-gradient(120deg, transparent 0 26%, color-mix(in srgb, var(--skin-text-primary) 4%, transparent) 26% 27%, transparent 27% 100%);
 }
 
 .game-screen-compressed .board-map-canvas {
@@ -85,8 +88,8 @@
 }
 
 .game-screen-compressed .board-world-map-svg [id] {
-  fill: rgba(112, 97, 78, 0.2);
-  stroke: rgba(58, 42, 24, 0.38);
+  fill: color-mix(in srgb, var(--skin-text-muted) 20%, transparent);
+  stroke: color-mix(in srgb, var(--skin-text-primary) 38%, transparent);
   stroke-width: 1px;
   transition: fill 140ms ease, filter 140ms ease, stroke 140ms ease;
 }
@@ -100,26 +103,26 @@
 .game-screen-compressed .board-world-map-svg .map-region-fill-active,
 .game-screen-compressed .board-world-map-svg .map-region-fill-active path {
   fill: color-mix(in srgb, var(--territory-accent) 45%, transparent);
-  stroke: rgba(255, 245, 222, 0.64);
+  stroke: color-mix(in srgb, var(--skin-layer-elevated) 64%, transparent);
   filter: drop-shadow(0 0 8px color-mix(in srgb, var(--territory-accent) 30%, transparent));
 }
 
 .game-screen-compressed .board-world-map-svg .map-region-fill-hover,
 .game-screen-compressed .board-world-map-svg .map-region-fill-hover path {
   fill: color-mix(in srgb, var(--territory-accent) 35%, transparent);
-  stroke: rgba(255, 245, 222, 0.54);
+  stroke: color-mix(in srgb, var(--skin-layer-elevated) 54%, transparent);
   filter: drop-shadow(0 0 9px color-mix(in srgb, var(--territory-accent) 25%, transparent));
 }
 
 .game-screen-compressed .board-world-map-svg text,
 .game-screen-compressed .board-world-map-svg tspan {
-  fill: rgba(52, 37, 21, 0.86);
+  fill: color-mix(in srgb, var(--skin-text-primary) 86%, transparent);
   font-weight: 700;
   paint-order: stroke fill;
-  stroke: rgba(246, 236, 220, 0.72);
+  stroke: color-mix(in srgb, var(--skin-layer-elevated) 72%, transparent);
   stroke-width: 1px;
   letter-spacing: 0.02em;
-  filter: drop-shadow(0 1px 0 rgba(255, 247, 232, 0.45));
+  filter: drop-shadow(0 1px 0 color-mix(in srgb, var(--skin-layer-elevated) 45%, transparent));
 }
 
 .game-screen-compressed .board-region-sidecard {
@@ -132,13 +135,17 @@
   gap: 10px;
   padding: 14px 16px;
   border-radius: 16px;
-  border: 1px solid rgba(73, 58, 40, 0.22);
+  border: 1px solid color-mix(in srgb, var(--skin-text-primary) 22%, transparent);
   background:
-    linear-gradient(180deg, rgba(255, 249, 238, 0.97), rgba(224, 208, 181, 0.92)),
-    var(--theme-parchment);
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--skin-layer-elevated) 97%, var(--skin-layer-surface) 3%),
+      color-mix(in srgb, var(--skin-layer-surface) 92%, var(--skin-layer-overlay) 8%)
+    ),
+    var(--skin-layer-surface);
   box-shadow:
-    0 16px 28px rgba(73, 58, 40, 0.18),
-    inset 0 1px 0 rgba(255, 247, 232, 0.76);
+    0 16px 28px color-mix(in srgb, var(--skin-text-primary) 18%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--skin-layer-elevated) 76%, transparent);
   backdrop-filter: blur(3px);
 }
 
@@ -146,7 +153,7 @@
   font-family: var(--font-display);
   font-size: 1.08rem;
   line-height: 1.1;
-  color: var(--theme-ink);
+  color: var(--skin-text-primary);
 }
 
 .game-screen-compressed .board-region-sidecard p {
@@ -171,9 +178,9 @@
   min-height: 28px;
   padding: 5px 9px;
   border-radius: 10px;
-  border: 1px solid rgba(73, 58, 40, 0.14);
-  background: rgba(73, 58, 40, 0.06);
-  color: var(--theme-ink);
+  border: 1px solid color-mix(in srgb, var(--skin-text-primary) 14%, transparent);
+  background: color-mix(in srgb, var(--skin-layer-overlay) 62%, transparent);
+  color: var(--skin-text-primary);
   font-family: var(--font-data);
   font-size: 0.75rem;
   font-weight: 700;
@@ -198,7 +205,7 @@
   color: inherit;
   cursor: pointer;
   transition: filter var(--motion-fast), transform var(--motion-fast);
-  filter: drop-shadow(0 7px 12px rgba(52, 37, 24, 0.18));
+  filter: drop-shadow(0 7px 12px color-mix(in srgb, var(--skin-text-primary) 18%, transparent));
 }
 
 .game-screen-compressed .board-region-cluster.is-changing {
@@ -208,7 +215,7 @@
 .game-screen-compressed .board-region-cluster:hover,
 .game-screen-compressed .board-region-cluster:focus-visible {
   transform: translate(-50%, -50%) scale(1.02);
-  filter: drop-shadow(0 10px 16px rgba(52, 37, 24, 0.22));
+  filter: drop-shadow(0 10px 16px color-mix(in srgb, var(--skin-text-primary) 22%, transparent));
 }
 
 .game-screen-compressed .board-region-cluster:focus-visible {
@@ -222,9 +229,9 @@
   min-width: max-content;
   padding: 2px 6px;
   border-radius: 999px;
-  background: rgba(255, 249, 238, 0.92);
-  border: 1px solid rgba(73, 58, 40, 0.12);
-  color: var(--theme-ink);
+  background: color-mix(in srgb, var(--skin-layer-elevated) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--skin-text-primary) 12%, transparent);
+  color: var(--skin-text-primary);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -244,7 +251,7 @@
   transform-origin: center;
   pointer-events: none;
   transition: transform var(--motion-mid), filter var(--motion-mid);
-  filter: drop-shadow(0 3px 7px color-mix(in srgb, var(--theme-ink) 16%, transparent));
+  filter: drop-shadow(0 3px 7px color-mix(in srgb, var(--skin-text-primary) 16%, transparent));
 }
 
 .game-screen-compressed .board-region-token-group {
@@ -257,18 +264,18 @@
 
 .game-screen-compressed .board-region-token {
   --token-glyph-scale: 1;
-  --token-material-base: color-mix(in srgb, var(--theme-paper) 58%, var(--theme-ink) 42%);
-  --token-material-edge: color-mix(in srgb, var(--theme-ink) 38%, var(--theme-paper) 62%);
+  --token-material-base: color-mix(in srgb, var(--skin-layer-elevated) 58%, var(--skin-text-primary) 42%);
+  --token-material-edge: color-mix(in srgb, var(--skin-text-primary) 38%, var(--skin-layer-elevated) 62%);
   --token-material-rim: color-mix(in srgb, var(--token-material-edge) 72%, black 28%);
   --token-material-core: color-mix(in srgb, var(--token-material-base) 58%, black 42%);
-  --token-material-ink: color-mix(in srgb, var(--theme-ink) 91%, var(--theme-paper) 9%);
+  --token-material-ink: color-mix(in srgb, var(--skin-text-primary) 91%, var(--skin-layer-elevated) 9%);
   position: absolute;
   z-index: var(--z-panel);
   display: grid;
   place-items: center;
   color: var(--token-material-ink);
   background:
-    radial-gradient(circle at 28% 20%, rgba(255, 252, 243, 0.38), rgba(255, 252, 243, 0) 42%),
+    radial-gradient(circle at 28% 20%, color-mix(in srgb, var(--skin-layer-elevated) 38%, transparent), color-mix(in srgb, var(--skin-layer-elevated) 0%, transparent) 42%),
     radial-gradient(circle at 50% 64%, color-mix(in srgb, var(--token-material-core) 88%, black 12%), color-mix(in srgb, var(--token-material-base) 64%, black 36%) 58%, color-mix(in srgb, var(--token-material-base) 30%, white 70%) 100%),
     linear-gradient(180deg, color-mix(in srgb, var(--token-material-base) 72%, white 28%), var(--token-material-base) 46%, color-mix(in srgb, var(--token-material-core) 76%, black 24%));
   border: 1px solid var(--token-material-rim);
@@ -292,7 +299,7 @@
 .game-screen-compressed .board-region-token::before {
   inset: 1px;
   border: 1px solid color-mix(in srgb, var(--token-material-rim) 44%, transparent);
-  background: linear-gradient(180deg, rgba(255, 251, 241, 0.24), rgba(255, 251, 241, 0) 50%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--skin-layer-elevated) 24%, transparent), color-mix(in srgb, var(--skin-layer-elevated) 0%, transparent) 50%);
 }
 
 .game-screen-compressed .board-region-token::after {
@@ -318,30 +325,30 @@
 
 .game-screen-compressed .board-region-token-extraction {
   --token-glyph-scale: 0.96;
-  --token-material-base: color-mix(in srgb, var(--color-domain-fossil) 56%, var(--theme-paper) 44%);
-  --token-material-edge: color-mix(in srgb, var(--color-domain-fossil) 72%, var(--theme-ink) 28%);
-  --token-material-ink: color-mix(in srgb, var(--color-domain-fossil) 90%, var(--theme-ink) 10%);
+  --token-material-base: color-mix(in srgb, var(--color-domain-fossil) 56%, var(--skin-layer-elevated) 44%);
+  --token-material-edge: color-mix(in srgb, var(--color-domain-fossil) 72%, var(--skin-text-primary) 28%);
+  --token-material-ink: color-mix(in srgb, var(--color-domain-fossil) 90%, var(--skin-text-primary) 10%);
 }
 
 .game-screen-compressed .board-region-token-defense {
   --token-glyph-scale: 0.94;
-  --token-material-base: color-mix(in srgb, var(--color-state-info) 48%, var(--theme-paper) 52%);
-  --token-material-edge: color-mix(in srgb, var(--color-state-info) 70%, var(--theme-ink) 30%);
-  --token-material-ink: color-mix(in srgb, var(--color-state-info) 90%, var(--theme-ink) 10%);
+  --token-material-base: color-mix(in srgb, var(--color-state-info) 48%, var(--skin-layer-elevated) 52%);
+  --token-material-edge: color-mix(in srgb, var(--color-state-info) 70%, var(--skin-text-primary) 30%);
+  --token-material-ink: color-mix(in srgb, var(--color-state-info) 90%, var(--skin-text-primary) 10%);
 }
 
 .game-screen-compressed .board-region-token-comrades {
   --token-glyph-scale: 0.92;
-  --token-material-base: color-mix(in srgb, var(--color-state-danger) 52%, var(--theme-paper) 48%);
-  --token-material-edge: color-mix(in srgb, var(--color-state-danger) 76%, var(--theme-ink) 24%);
-  --token-material-ink: color-mix(in srgb, var(--color-state-danger) 92%, var(--theme-ink) 8%);
+  --token-material-base: color-mix(in srgb, var(--color-state-danger) 52%, var(--skin-layer-elevated) 48%);
+  --token-material-edge: color-mix(in srgb, var(--color-state-danger) 76%, var(--skin-text-primary) 24%);
+  --token-material-ink: color-mix(in srgb, var(--color-state-danger) 92%, var(--skin-text-primary) 8%);
 }
 
 .game-screen-compressed .board-region-cluster.is-changing .board-region-label {
-  background: rgba(255, 249, 238, 0.98);
+  background: color-mix(in srgb, var(--skin-layer-elevated) 98%, transparent);
   box-shadow:
-    0 0 0 1px rgba(255, 247, 232, 0.76),
-    0 8px 16px rgba(52, 37, 24, 0.12);
+    0 0 0 1px color-mix(in srgb, var(--skin-layer-elevated) 76%, transparent),
+    0 8px 16px color-mix(in srgb, var(--skin-text-primary) 12%, transparent);
 }
 
 .game-screen-compressed .board-region-cluster.is-changing .board-region-token-container {
@@ -357,7 +364,7 @@
   filter:
     drop-shadow(0 0 0 color-mix(in srgb, var(--color-bg-elevated) 90%, transparent))
     drop-shadow(0 0 5px color-mix(in srgb, var(--region-tone) 24%, transparent))
-    drop-shadow(0 2px 5px color-mix(in srgb, var(--theme-ink) 20%, transparent));
+    drop-shadow(0 2px 5px color-mix(in srgb, var(--skin-text-primary) 20%, transparent));
 }
 
 .game-screen-compressed .board-region-overflow-badge {
@@ -370,13 +377,13 @@
   justify-content: center;
   padding: 0 6px;
   border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--theme-ink) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--skin-text-primary) 16%, transparent);
   background: color-mix(in srgb, var(--color-bg-elevated) 94%, transparent);
-  color: var(--theme-ink);
+  color: var(--skin-text-primary);
   font-family: var(--font-data);
   font-size: var(--type-0);
   font-weight: 800;
-  box-shadow: 0 2px 6px color-mix(in srgb, var(--theme-ink) 16%, transparent);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--skin-text-primary) 16%, transparent);
   transition: transform var(--motion-fast), box-shadow var(--motion-fast);
 }
 
@@ -412,7 +419,7 @@
 
 .game-screen-compressed .board-region-debug-radius {
   border-radius: 999px;
-  border: 1px solid rgba(38, 77, 132, 0.1);
+  border: 1px solid color-mix(in srgb, var(--skin-map-safe) 10%, transparent);
   transform: translate(-50%, -50%);
 }
 
@@ -420,21 +427,21 @@
   width: 8px;
   height: 8px;
   border-radius: 999px;
-  background: rgba(161, 46, 42, 0.88);
+  background: color-mix(in srgb, var(--skin-map-critical) 88%, transparent);
   transform: translate(-50%, -50%);
 }
 
 .game-screen-compressed .board-region-debug-crosshair {
   width: 24px;
   height: 24px;
-  border-left: 1px solid rgba(38, 77, 132, 0.4);
-  border-top: 1px solid rgba(38, 77, 132, 0.4);
+  border-left: 1px solid color-mix(in srgb, var(--skin-map-safe) 40%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--skin-map-safe) 40%, transparent);
   transform: translate(-50%, -50%);
 }
 
 .game-screen-compressed .board-region-debug-vector {
   height: 2px;
-  background: rgba(161, 46, 42, 0.65);
+  background: color-mix(in srgb, var(--skin-map-critical) 65%, transparent);
   transform-origin: left center;
 }
 
@@ -445,9 +452,9 @@
   border-radius: 14px;
   border: 1px solid var(--panel-rim);
   background:
-    linear-gradient(180deg, rgba(255, 249, 238, 0.97), rgba(224, 208, 181, 0.92)),
-    var(--theme-parchment);
-  box-shadow: var(--panel-shadow), inset 0 1px 0 rgba(255, 247, 232, 0.76);
+    linear-gradient(180deg, color-mix(in srgb, var(--skin-layer-elevated) 97%, transparent), color-mix(in srgb, var(--skin-layer-surface) 92%, var(--skin-layer-overlay) 8%)),
+    var(--skin-layer-surface);
+  box-shadow: var(--shadow-level-1);
 }
 
 .game-screen-compressed .region-hover-row {
@@ -463,9 +470,9 @@
   min-height: 28px;
   padding: 5px 9px;
   border-radius: 10px;
-  border: 1px solid rgba(73, 58, 40, 0.14);
-  background: rgba(73, 58, 40, 0.06);
-  color: var(--theme-ink);
+  border: 1px solid color-mix(in srgb, var(--skin-text-primary) 14%, transparent);
+  background: color-mix(in srgb, var(--skin-text-primary) 6%, transparent);
+  color: var(--skin-text-primary);
   font-family: var(--font-data);
   font-size: 0.75rem;
   font-weight: 700;
@@ -475,29 +482,29 @@
 
   0%,
   100% {
-    filter: drop-shadow(0 6px 10px rgba(52, 37, 24, 0.18));
+    filter: drop-shadow(0 6px 10px color-mix(in srgb, var(--skin-text-primary) 18%, transparent));
   }
 
   50% {
-    filter: drop-shadow(0 10px 16px rgba(139, 30, 30, 0.24));
+    filter: drop-shadow(0 10px 16px color-mix(in srgb, var(--skin-map-critical) 24%, transparent));
   }
 }
 
 @keyframes region-cluster-update {
   0% {
     transform: translate(-50%, -50%) scale(0.96);
-    filter: drop-shadow(0 7px 12px rgba(52, 37, 24, 0.18));
+    filter: drop-shadow(0 7px 12px color-mix(in srgb, var(--skin-text-primary) 18%, transparent));
   }
 
   45% {
     transform: translate(-50%, -50%) scale(1.05);
     filter:
-      drop-shadow(0 0 0 rgba(52, 37, 24, 0)) drop-shadow(0 10px 18px color-mix(in srgb, var(--region-tone) 20%, transparent));
+      drop-shadow(0 0 0 color-mix(in srgb, var(--skin-text-primary) 0%, transparent)) drop-shadow(0 10px 18px color-mix(in srgb, var(--region-tone) 20%, transparent));
   }
 
   100% {
     transform: translate(-50%, -50%) scale(1);
-    filter: drop-shadow(0 7px 12px rgba(52, 37, 24, 0.18));
+    filter: drop-shadow(0 7px 12px color-mix(in srgb, var(--skin-text-primary) 18%, transparent));
   }
 }
 

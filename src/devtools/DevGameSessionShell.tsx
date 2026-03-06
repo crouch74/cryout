@@ -46,6 +46,7 @@ export default function DevGameSessionShell({
   authorizedOwnerId,
 }: DevGameSessionShellProps) {
   const [showDevPanel, setShowDevPanel] = useState(false);
+  const [showDevMenu, setShowDevMenu] = useState(false);
   const [showDebugSnapshot, setShowDebugSnapshot] = useState(false);
   const [autoPlayRounds, setAutoPlayRounds] = useState('1');
   const [autoPlaySpeed, setAutoPlaySpeed] = useState<AutoPlaySpeedLevel>(3);
@@ -164,9 +165,14 @@ export default function DevGameSessionShell({
     setShowDevPanel((current) => !current);
   };
 
+  const handleToggleDevMenu = () => {
+    setShowDevMenu((current) => !current);
+  };
+
   const handleToggleSnapshot = () => {
     setShowDevPanel(true);
     setShowDebugSnapshot((current) => !current);
+    setShowDevMenu(false);
   };
 
   const handleQuickAutoplay = () => {
@@ -176,6 +182,23 @@ export default function DevGameSessionShell({
     }
     setShowDevPanel(true);
     handleAutoPlayStart();
+    setShowDevMenu(false);
+  };
+
+  const openDevSection = (sectionTitleId: string) => {
+    setShowDevPanel(true);
+    setShowDevMenu(false);
+    window.setTimeout(() => {
+      const sectionTitle = document.getElementById(sectionTitleId);
+      if (!sectionTitle) {
+        return;
+      }
+      sectionTitle.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (sectionTitle instanceof HTMLElement) {
+        sectionTitle.tabIndex = -1;
+        sectionTitle.focus({ preventScroll: true });
+      }
+    }, 20);
   };
 
   return (
@@ -192,20 +215,21 @@ export default function DevGameSessionShell({
         autoAdvanceTransientUi={autoPlayRunning}
       />
 
-      <div className={`dev-tools-fab ${showDevPanel ? 'is-panel-open' : ''}`.trim()}>
+      <div className={`dev-tools-fab dev-tools-fab-edge ${showDevMenu ? 'is-menu-open' : ''}`.trim()}>
         <button
           type="button"
-          className={`dev-panel-toggle ${showDevPanel ? 'is-active' : ''}`.trim()}
-          onClick={handleToggleDevPanel}
-          aria-expanded={showDevPanel}
-          aria-controls="debug-panel-title"
+          className={`dev-panel-toggle dev-panel-toggle-edge ${showDevPanel ? 'is-active' : ''}`.trim()}
+          onClick={handleToggleDevMenu}
+          aria-expanded={showDevMenu}
+          aria-controls="dev-tools-menu"
         >
           <span className="dev-panel-emoji" aria-hidden="true">🛠</span>
           <span className="dev-panel-label">
-            {showDevPanel ? t('ui.debug.hidePanel', 'Hide Dev Panel') : t('ui.debug.showPanel', 'Dev Panel')}
+            {showDevMenu ? t('ui.debug.closePanel', 'Close Panel') : t('ui.debug.showPanel', 'Dev Panel')}
           </span>
         </button>
-        <div className="dev-tools-fab-actions" role="menu" aria-label={t('ui.debug.devPanel', 'Development panel')}>
+        <div id="dev-tools-menu" className="dev-tools-fab-actions dev-tools-fab-actions-edge" role="menu" aria-label={t('ui.debug.devPanel', 'Development panel')}>
+          <span className="dev-tools-fab-menu-title">{t('ui.debug.title', 'Debug')}</span>
           <button
             type="button"
             className={`dev-tools-fab-action ${showDevPanel ? 'is-active' : ''}`.trim()}
@@ -229,6 +253,30 @@ export default function DevGameSessionShell({
             onClick={handleQuickAutoplay}
           >
             {autoPlayRunning ? t('ui.debug.stopAutoplay', 'Stop') : t('ui.debug.startAutoplay', 'Start Autoplay')}
+          </button>
+          <button type="button" className="dev-tools-fab-action" role="menuitem" onClick={() => openDevSection('debug-autoplay-title')}>
+            {t('ui.debug.autoplayTitle', 'Run rounds automatically')}
+          </button>
+          <button type="button" className="dev-tools-fab-action" role="menuitem" onClick={() => openDevSection('debug-snapshot-title')}>
+            {t('ui.debug.snapshotTitle', 'Engine debug snapshot')}
+          </button>
+          <button type="button" className="dev-tools-fab-action" role="menuitem" onClick={() => openDevSection('debug-replay-title')}>
+            Replay Inspector
+          </button>
+          <button type="button" className="dev-tools-fab-action" role="menuitem" onClick={() => openDevSection('debug-conformance-title')}>
+            Scenario Dashboard
+          </button>
+          <button type="button" className="dev-tools-fab-action" role="menuitem" onClick={() => openDevSection('debug-legality-title')}>
+            Action Legality
+          </button>
+          <button type="button" className="dev-tools-fab-action" role="menuitem" onClick={() => openDevSection('debug-causality-title')}>
+            Track Event History
+          </button>
+          <button type="button" className="dev-tools-fab-action" role="menuitem" onClick={() => openDevSection('debug-lint-title')}>
+            Narrative Audit
+          </button>
+          <button type="button" className="dev-tools-fab-action" role="menuitem" onClick={() => openDevSection('debug-probability-title')}>
+            Outcome Sandbox
           </button>
         </div>
       </div>

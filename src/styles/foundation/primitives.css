@@ -113,7 +113,7 @@
   padding: 10px 14px;
   border-radius: 999px;
   border: 1px solid var(--line-soft);
-  background: rgba(255, 255, 255, 0.05);
+  background: color-mix(in srgb, var(--skin-layer-elevated) 92%, var(--skin-layer-surface) 8%);
   color: var(--text-1);
 }
 
@@ -145,7 +145,7 @@
 
 .button-primary,
 .primary-button {
-  background: var(--color-state-movement, var(--accent-success));
+  background: var(--color-action-primary, var(--accent-primary));
   color: var(--color-text-inverted, var(--surface-2));
   font-family: var(--font-display);
   text-transform: uppercase;
@@ -217,7 +217,7 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid rgba(142, 197, 255, 0.92);
+  outline: 2px solid var(--skin-focus-ring-color, color-mix(in srgb, var(--skin-action-secondary) 74%, var(--skin-layer-elevated) 26%));
   outline-offset: 3px;
 }
 
@@ -227,7 +227,7 @@ textarea:focus-visible {
   gap: 8px;
   padding: 6px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
+  background: color-mix(in srgb, var(--skin-layer-surface) 82%, var(--skin-layer-elevated) 18%);
   border: 1px solid var(--line-soft);
 }
 
@@ -241,7 +241,7 @@ textarea:focus-visible {
 }
 
 .segmented button.active {
-  background: rgba(255, 255, 255, 0.1);
+  background: color-mix(in srgb, var(--skin-layer-elevated) 86%, var(--skin-layer-surface) 14%);
   color: var(--text-1);
 }
 
@@ -256,7 +256,7 @@ textarea:focus-visible {
   padding: 8px 12px;
   border-radius: 999px;
   border: 1px solid var(--line-soft);
-  background: rgba(255, 255, 255, 0.04);
+  background: color-mix(in srgb, var(--skin-layer-surface) 90%, var(--skin-layer-elevated) 10%);
   color: var(--text-2);
   font-family: var(--font-data);
   font-size: var(--type-0);
@@ -298,7 +298,7 @@ html[dir='rtl'] .modal-vote-row {
   display: inline-flex;
   padding: 8px 12px;
   border-radius: 999px;
-  background: rgba(142, 197, 255, 0.14);
+  background: color-mix(in srgb, var(--skin-state-info) 18%, transparent);
   color: var(--accent-secondary);
   font-weight: 800;
 }
@@ -332,7 +332,7 @@ textarea {
   width: 100%;
   border-radius: var(--radius-sm);
   border: 1px solid var(--line-strong);
-  background: rgba(7, 15, 26, 0.9);
+  background: color-mix(in srgb, var(--skin-layer-elevated) 92%, var(--skin-layer-surface) 8%);
   color: var(--text-1);
   padding: 12px 14px;
 }

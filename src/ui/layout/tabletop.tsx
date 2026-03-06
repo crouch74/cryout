@@ -6,6 +6,7 @@ import {
 } from 'react';
 import { useThemeSettings } from '../../app/providers/ThemeProvider.tsx';
 import { formatNumber, t, useAppLocale } from '../../i18n/index.ts';
+import { UI_SKINS, type UiSkinId } from '../../theme/index.ts';
 import { GameIcon } from '../icon/GameIcon.tsx';
 import type { GameIconName } from '../icon/iconTypes.ts';
 import {
@@ -249,6 +250,102 @@ export function LocaleSwitcher({ showLabel = true, compact = false }: { showLabe
           </button>
         </DropdownMenuTrigger>
         {renderLocaleMenu()}
+      </DropdownMenuRoot>
+    </div>
+  );
+}
+
+export function ThemeSwitcher({ showLabel = true, compact = false }: { showLabel?: boolean; compact?: boolean }) {
+  const { activeSkinId, setActiveSkinId } = useTabletopTheme();
+  const themeOptions = Object.values(UI_SKINS);
+  const activeOption = themeOptions.find((option) => option.id === activeSkinId) ?? themeOptions[0];
+
+  const themeLabel = t('ui.theme.label', 'Theme');
+  const getOptionLabel = (skinId: UiSkinId, fallback: string) => t(`ui.theme.${skinId}`, fallback);
+
+  const renderThemeLabel = (skinId: UiSkinId, label: string) => (
+    <span className="theme-option-label">
+      <span className="theme-option-swatches" aria-hidden="true">
+        <span
+          className="theme-option-swatch"
+          style={{ ['--theme-swatch-color' as string]: UI_SKINS[skinId].action.primary } as Record<string, string>}
+        />
+        <span
+          className="theme-option-swatch"
+          style={{ ['--theme-swatch-color' as string]: UI_SKINS[skinId].action.secondary } as Record<string, string>}
+        />
+      </span>
+      <span>{label}</span>
+    </span>
+  );
+
+  const renderThemeMenu = () => (
+    <DropdownMenuPortal>
+      <DropdownMenuContent
+        className="locale-dropdown-menu theme-dropdown-menu"
+        align="end"
+        side="bottom"
+        sideOffset={8}
+      >
+        {themeOptions.map((option) => (
+          <DropdownMenuItem
+            key={option.id}
+            className="locale-dropdown-item theme-dropdown-item"
+            data-active={option.id === activeSkinId ? 'true' : 'false'}
+            onSelect={() => {
+              setActiveSkinId(option.id);
+            }}
+          >
+            {renderThemeLabel(option.id, getOptionLabel(option.id, option.label))}
+            {option.id === activeSkinId ? <GameIcon name="check" size="xs" ariaLabel={themeLabel} /> : null}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenuPortal>
+  );
+
+  if (compact) {
+    return (
+      <div className="theme-switcher locale-switcher is-compact is-icon-trigger">
+        <DropdownMenuRoot>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="locale-icon-trigger theme-icon-trigger"
+              aria-label={themeLabel}
+              title={getOptionLabel(activeOption.id, activeOption.label)}
+            >
+              <GameIcon name="contrast" size="sm" ariaLabel={themeLabel} />
+              <span
+                className="theme-trigger-swatch"
+                style={{ ['--theme-swatch-color' as string]: UI_SKINS[activeOption.id].action.secondary } as Record<string, string>}
+                aria-hidden="true"
+              />
+              <GameIcon name="chevronDown" size="xs" ariaLabel={themeLabel} />
+            </button>
+          </DropdownMenuTrigger>
+          {renderThemeMenu()}
+        </DropdownMenuRoot>
+      </div>
+    );
+  }
+
+  return (
+    <div className="theme-switcher locale-switcher">
+      {showLabel ? <span className="engraved-eyebrow">{themeLabel}</span> : null}
+      <DropdownMenuRoot>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className="locale-selector-trigger theme-selector-trigger"
+            aria-label={themeLabel}
+            title={getOptionLabel(activeOption.id, activeOption.label)}
+          >
+            {renderThemeLabel(activeOption.id, getOptionLabel(activeOption.id, activeOption.label))}
+            <GameIcon name="chevronDown" size="xs" ariaLabel={themeLabel} />
+          </button>
+        </DropdownMenuTrigger>
+        {renderThemeMenu()}
       </DropdownMenuRoot>
     </div>
   );
