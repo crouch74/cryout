@@ -470,14 +470,70 @@
   --deck-accent: color-mix(in srgb, var(--skin-state-danger) 76%, var(--skin-state-warning) 24%);
 }
 
+.deck-reveal-card-system .deck-reveal-back-art::before {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--deck-accent) 16%, transparent) 0 2px,
+      transparent 2px 12px
+    ),
+    linear-gradient(0deg, color-mix(in srgb, var(--deck-ink) 7%, transparent), color-mix(in srgb, var(--deck-base) 16%, transparent));
+  opacity: 0.5;
+}
+
+.deck-reveal-card-system .deck-reveal-back-art::after {
+  background-image:
+    linear-gradient(90deg, color-mix(in srgb, var(--deck-ink) 10%, transparent) 1px, transparent 1px),
+    linear-gradient(color-mix(in srgb, var(--deck-ink) 10%, transparent) 1px, transparent 1px);
+  background-size: 12px 12px, 12px 12px;
+  opacity: 0.4;
+}
+
 .deck-reveal-card-resistance .deck-reveal-back-art {
   --deck-base: color-mix(in srgb, var(--skin-layer-surface) 72%, var(--skin-map-safe) 28%);
   --deck-accent: color-mix(in srgb, var(--skin-state-success) 46%, var(--skin-action-secondary) 54%);
 }
 
+.deck-reveal-card-resistance .deck-reveal-back-art::before {
+  background:
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--deck-accent) 22%, transparent) 0 18%, transparent 19% 100%),
+    repeating-radial-gradient(
+      circle at 50% 50%,
+      color-mix(in srgb, var(--deck-accent) 18%, transparent) 0 2px,
+      transparent 2px 10px
+    );
+  opacity: 0.42;
+}
+
+.deck-reveal-card-resistance .deck-reveal-back-art::after {
+  background:
+    radial-gradient(circle at center, transparent 0, transparent 16px, color-mix(in srgb, var(--deck-accent) 24%, transparent) 17px, transparent 18px),
+    repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--deck-ink) 9%, transparent) 0 8deg, transparent 8deg 16deg);
+  opacity: 0.34;
+}
+
 .deck-reveal-card-crisis .deck-reveal-back-art {
   --deck-base: color-mix(in srgb, var(--skin-layer-surface) 66%, var(--skin-map-critical) 34%);
   --deck-accent: color-mix(in srgb, var(--skin-state-warning) 62%, var(--skin-text-inverse) 38%);
+}
+
+.deck-reveal-card-crisis .deck-reveal-back-art::before {
+  background:
+    repeating-linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--deck-accent) 24%, transparent) 0 7px,
+      transparent 7px 14px
+    ),
+    linear-gradient(0deg, color-mix(in srgb, var(--deck-ink) 8%, transparent), color-mix(in srgb, var(--deck-base) 18%, transparent));
+  opacity: 0.52;
+}
+
+.deck-reveal-card-crisis .deck-reveal-back-art::after {
+  background:
+    linear-gradient(128deg, transparent 0 44%, color-mix(in srgb, var(--deck-accent) 28%, transparent) 45%, transparent 47%),
+    linear-gradient(52deg, transparent 0 38%, color-mix(in srgb, var(--deck-accent) 20%, transparent) 39%, transparent 42%),
+    linear-gradient(180deg, color-mix(in srgb, var(--deck-ink) 6%, transparent), color-mix(in srgb, var(--deck-base) 22%, transparent));
+  opacity: 0.46;
 }
 
 .deck-reveal-back-art .deck-back-emblem {
@@ -701,6 +757,19 @@ html[dir='rtl'] .deck-reveal-deck-label {
 
 .board-player-strip {
   grid-column: 1 / 2;
+}
+
+.coalition-file-shell {
+  --file-rim: color-mix(in srgb, var(--faction-accent, var(--skin-action-secondary)) 60%, var(--panel-rim) 40%);
+  display: grid;
+  gap: 0;
+}
+
+.coalition-file-shell .board-player-strip {
+  margin-bottom: -1px;
+  position: relative;
+  z-index: 2;
+  border-radius: 0;
 }
 
 .phase-brief-grid {
@@ -1790,6 +1859,76 @@ html[dir='rtl'] .deck-reveal-deck-label {
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--skin-layer-elevated) 58%, transparent);
 }
 
+.coalition-file-shell .player-strip {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  gap: 0;
+  border-radius: 0;
+}
+
+.coalition-file-shell .player-strip-seats {
+  gap: 0;
+  align-items: flex-end;
+  padding: 0;
+  margin-bottom: -1px;
+  position: relative;
+  z-index: 4;
+}
+
+.coalition-file-shell .player-seat-chip {
+  border-radius: 10px 10px 0 0;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  transform: translateY(0);
+  margin-bottom: -1px;
+  z-index: 1;
+}
+
+.coalition-file-shell .player-seat-chip + .player-seat-chip {
+  margin-inline-start: 0;
+}
+
+.coalition-file-shell .player-seat-chip .seat-chip-frame {
+  border-radius: 8px 8px 0 0;
+  border: var(--border-width-thin) solid var(--seat-accent, var(--file-rim));
+  border-bottom: 0;
+  box-shadow: none;
+  background: color-mix(in srgb, var(--seat-accent, var(--skin-layer-elevated)) 34%, var(--skin-layer-elevated) 66%);
+}
+
+.coalition-file-shell .player-seat-chip.is-active {
+  background: transparent;
+  box-shadow:
+    0 -5px 12px color-mix(in srgb, var(--faction-accent, var(--seat-accent, var(--file-rim))) 22%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--skin-text-inverse) 55%, transparent);
+  margin-bottom: -1px;
+  transform: translateY(-2px);
+  z-index: 6;
+}
+
+.coalition-file-shell .player-seat-chip.is-active .seat-chip-frame {
+  border-color: color-mix(in srgb, var(--faction-accent, var(--seat-accent, var(--file-rim))) 80%, var(--panel-rim) 20%);
+  box-shadow: none;
+  background: color-mix(in srgb, var(--faction-accent, var(--seat-accent, var(--skin-layer-elevated))) 40%, var(--skin-layer-elevated) 60%);
+}
+
+.coalition-file-shell .player-strip-focus {
+  border: var(--border-width-thin) solid var(--file-rim);
+  border-radius: 0;
+  border-bottom: 0;
+  padding: 10px 14px 12px;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--faction-accent, var(--skin-layer-elevated)) 20%, var(--skin-layer-elevated) 80%),
+      color-mix(in srgb, var(--faction-accent, var(--skin-layer-surface)) 12%, var(--skin-layer-surface) 88%)
+    );
+  box-shadow: none;
+}
+
 .player-strip-focus {
   gap: var(--space-2);
 }
@@ -2129,6 +2268,20 @@ html[dir='rtl'] .deck-reveal-deck-label {
   box-shadow:
     inset 0 0 0 1px color-mix(in srgb, var(--faction-accent, var(--skin-action-secondary)) 22%, transparent),
     var(--shadow-level-1);
+}
+
+.coalition-file-shell .action-dock {
+  margin-top: 0;
+  border: var(--border-width-thin) solid var(--file-rim);
+  border-top: var(--border-width-thin) solid var(--file-rim);
+  border-radius: 0 0 var(--radius-16) var(--radius-16);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--faction-accent, var(--skin-layer-elevated)) 12%, var(--skin-layer-elevated) 88%),
+      color-mix(in srgb, var(--faction-accent, var(--skin-layer-surface)) 8%, var(--skin-layer-surface) 92%)
+    );
+  box-shadow: none;
 }
 
 .action-dock-grid {

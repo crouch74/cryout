@@ -1500,7 +1500,7 @@ export function GameSessionScreen({
           />
 
           {state.phase === 'COALITION' ? (
-            <>
+            <section className="coalition-file-shell">
               <section className="board-player-strip">
                 <PlayerStrip
                   summaries={playerSummaries}
@@ -1553,7 +1553,7 @@ export function GameSessionScreen({
                   </>
                 )}
               />
-            </>
+            </section>
           ) : null}
 
           <StatusRibbon
