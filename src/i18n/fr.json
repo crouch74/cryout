@@ -1098,7 +1098,8 @@
       "nocturnal-dossier": "Dossier nocturne",
       "civic-signal": "Signal civique",
       "olive-tree": "Olivier",
-      "guerrilla-camouflage": "Camouflage guérilla"
+      "guerrilla-camouflage": "Camouflage guérilla",
+      "papyrus-insurgency": "Insurrection de Papyrus"
     }
   },
   "content": {
@@ -1122,6 +1123,11 @@
         "name": "1954 — ALGERIAN WAR OF INDEPENDENCE",
         "description": "\"Liberation is necessary. Its cost is permanent.\"",
         "introduction": "Algerian movements confront a colonial system of extraction, militarism, detention, and settler veto. The struggle runs from Algiers to Kabylia, the Saharan south, the Tunisian frontier, and the metropole itself."
+      },
+      "egypt_1919_revolution": {
+        "name": "1919 — ÉGYPTE SE SOULÈVE",
+        "description": "\"Pain, Nation, et les Rues.\"",
+        "introduction": "Le soulèvement de 1919 est une lutte de coalition de masse. Étudiants, cheminots, et cercles d'action des femmes."
       }
     },
     "domains": {

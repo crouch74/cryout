@@ -100,6 +100,17 @@ const SKIN_STYLE_TOKENS: Record<UiSkinId, UiSkinStyleTokens> = {
       glow: '0 0 20px rgba(180, 136, 60, 0.24)',
     },
   },
+  'papyrus-insurgency': {
+    ...BASE_STYLE_TOKENS,
+    borderWidth: { hairline: '1px', thin: '1.2px', regular: '1.8px', strong: '2.5px' },
+    motion: { ...BASE_STYLE_TOKENS.motion, slow: '400ms', deliberate: '550ms' },
+    opacity: { faint: '0.09', soft: '0.18', medium: '0.3', strong: '0.48', intense: '0.68' },
+    shadow: {
+      raised: '0 8px 20px rgba(45, 34, 22, 0.24)',
+      floating: '0 15px 32px rgba(38, 28, 18, 0.32)',
+      glow: '0 0 22px rgba(144, 46, 36, 0.22)',
+    },
+  },
 };
 
 export const DEFAULT_UI_SKIN_ID: UiSkinId = 'documentary-ink';
@@ -400,6 +411,65 @@ export const UI_SKINS: Record<UiSkinId, UiSkinDefinition> = {
     },
     style: SKIN_STYLE_TOKENS['guerrilla-camouflage'],
   },
+  'papyrus-insurgency': {
+    id: 'papyrus-insurgency',
+    label: 'Papyrus Insurgency',
+    layer: {
+      canvas: '#DFCDB8',
+      surface: '#EADBC9',
+      elevated: '#F4E7D8',
+      overlay: '#E3D3C1',
+      scrim: 'rgba(32, 24, 16, 0.62)',
+    },
+    text: {
+      primary: '#2D1F16',
+      muted: '#614E3F',
+      inverse: '#EADBC9',
+    },
+    border: {
+      subtle: '#C8B29C',
+      strong: '#9A836E',
+      danger: '#902E24',
+    },
+    focus: {
+      ring: '0 0 0 3px rgba(144, 46, 36, 0.36)',
+    },
+    action: {
+      primary: '#902E24',
+      secondary: '#5A6F4A',
+      utility: '#D4C2AF',
+    },
+    state: {
+      success: '#4A6F54',
+      warning: '#B27632',
+      danger: '#902E24',
+      info: '#2F5D73',
+      neutral: '#6A5D4F',
+    },
+    map: {
+      safe: '#4A6F54',
+      strained: '#AE7A32',
+      critical: '#902E24',
+    },
+    domain: {
+      warMachine: '#723838',
+      climate: '#4A6F54',
+      fossil: '#5D493E',
+      justice: '#6A5D4F',
+      voice: '#2F5D73',
+      hunger: '#9A7032',
+      patriarchy: '#6B3F5A',
+      revolution: '#902E24',
+    },
+    effects: {
+      heroTone: 'radial-gradient(120% 90% at 14% 8%, rgba(144, 46, 36, 0.22), transparent 58%), linear-gradient(140deg, rgba(46, 31, 22, 0.9), rgba(97, 78, 63, 0.78))',
+      backgroundWash: 'rgba(46, 31, 22, 0.22)',
+      selectionHighlight: 'rgba(144, 46, 36, 0.28)',
+      tokenGlow: 'rgba(144, 46, 36, 0.3)',
+      surfaceTint: 'rgba(144, 46, 36, 0.08)',
+    },
+    style: SKIN_STYLE_TOKENS['papyrus-insurgency'],
+  },
 };
 
 export function getUiSkinDefinition(skinId: UiSkinId): UiSkinDefinition {
@@ -587,6 +657,21 @@ export const SCENARIO_THEME_OVERLAYS: Record<ScenarioOverlayId, ThemeOverlayDefi
         selectionHighlight: 'rgba(208, 145, 56, 0.34)',
         tokenGlow: 'rgba(208, 145, 56, 0.36)',
         surfaceTint: 'rgba(27, 46, 74, 0.1)',
+      },
+    },
+  },
+  'papyrus-insurgency': {
+    id: 'papyrus-insurgency',
+    label: 'Papyrus Insurgency',
+    overrides: {
+      colors: {
+        stateDanger: '#902E24',
+        domainRevolution: '#902E24',
+        heroTone: 'radial-gradient(120% 90% at 14% 8%, rgba(144, 46, 36, 0.22), transparent 58%), linear-gradient(140deg, rgba(46, 31, 22, 0.9), rgba(97, 78, 63, 0.78))',
+        backgroundWash: 'rgba(46, 31, 22, 0.22)',
+        selectionHighlight: 'rgba(144, 46, 36, 0.28)',
+        tokenGlow: 'rgba(144, 46, 36, 0.3)',
+        surfaceTint: 'rgba(144, 46, 36, 0.08)',
       },
     },
   },

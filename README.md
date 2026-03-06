@@ -10,8 +10,9 @@ This repo now ships with four major rulebooks/scenarios:
 - **2011 — TAHRIR SQUARE**: 6 Egypt-specific regions (Cairo, Alexandria, Nile Delta, Upper Egypt, Suez, Sinai), featuring **Revolutionary Wave** and **Unfinished Justice** domains, and the **The Square** / **Martyrdom** mechanics.
 - **2022 — WOMAN, LIFE, FREEDOM**: 6 Iran-specific regions (Tehran, Kurdistan, Isfahan, Mashhad, Khuzestan, Balochistan), featuring **Patriarchal Grip** domain and **Hijab Enforcement** / **Gender Dynamics** mechanics.
 - **1954 — ALGERIAN WAR OF INDEPENDENCE**: 6 Algeria-focused regions (Algiers, Kabylie Mountains, Oran, Sahara South, Tunisian Border, French Metropole Influence), featuring **Repression Cycle** and anti-colonial pressure mechanics.
+- **1919 — EGYPT RISES**: 6 historical regions (Cairo, Alexandria, Delta Rail Corridor, Canal Zone, Upper Egypt, Rural Villages), featuring **Railway Sabotage** and **Funerary Mobilization** mechanics.
 
-- **Total Scope**: 24 regions, 10 domains, 17 custom factions.
+- **Total Scope**: 30 regions, 10 domains, 21 custom factions.
 - **2 resources**: Comrades and Evidence.
 - **2 victory modes**: Liberation and Symbolic.
 - **1 central threat system**: Extraction Tokens (expanded pool for specialized scenarios).

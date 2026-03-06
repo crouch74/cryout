@@ -3,7 +3,8 @@ export type UiSkinId =
   | 'nocturnal-dossier'
   | 'civic-signal'
   | 'olive-tree'
-  | 'guerrilla-camouflage';
+  | 'guerrilla-camouflage'
+  | 'papyrus-insurgency';
 
 export type ThemeContrastMode = 'default' | 'high';
 
@@ -12,7 +13,8 @@ export type ScenarioOverlayId =
   | 'rainforest-sovereignty'
   | 'dossier-of-the-disappeared'
   | 'desert-horizon'
-  | 'night-map-escalation';
+  | 'night-map-escalation'
+  | 'papyrus-insurgency';
 
 export type ThemeId = UiSkinId | ScenarioOverlayId;
 

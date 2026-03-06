@@ -1108,7 +1108,8 @@
       "nocturnal-dossier": "Nocturnal Dossier",
       "civic-signal": "Civic Signal",
       "olive-tree": "Olive Tree",
-      "guerrilla-camouflage": "Guerrilla Camouflage"
+      "guerrilla-camouflage": "Guerrilla Camouflage",
+      "papyrus-insurgency": "Papyrus Insurgency"
     }
   },
   "content": {
@@ -1132,6 +1133,11 @@
         "name": "1954 — ALGERIAN WAR OF INDEPENDENCE",
         "description": "\"Liberation is necessary. Its cost is permanent.\"",
         "introduction": "Algerian movements confront a colonial system of extraction, militarism, detention, and settler veto. The struggle runs from Algiers to Kabylia, the Saharan south, the Tunisian frontier, and the metropole itself."
+      },
+      "egypt_1919_revolution": {
+        "name": "1919 — EGYPT RISES",
+        "description": "\"Bread, Nation, and the Streets.\"",
+        "introduction": "The 1919 uprising is a mass coalition struggle. Students, railway workers, and women’s Action Circles must hold Cairo and the provinces while British occupation attempts to suppress popular mobilization through detention and martial law."
       }
     },
     "domains": {
@@ -1173,7 +1179,7 @@
       },
       "UnfinishedJustice": {
         "name": "Unfinished Justice",
-        "description": "The demand for structural accountability."
+        "description": "The collective memory of those fallen and the demand for structural accountability."
       }
     },
     "fronts": {
@@ -1440,6 +1446,38 @@
       }
     },
     "factions": {
+      "student_committees": {
+        "name": "Student Committees",
+        "shortName": "Students",
+        "passive": "Investigate adds +1 Evidence in Cairo and campaigns for Public Testimony gain +1.",
+        "weakness": "Mass arrests in Cairo cost 1 extra Comrade when War Machine is 6 or higher.",
+        "mandateTitle": "Campus Sovereignty",
+        "mandateDescription": "End with Public Testimony at 6 or more and Cairo at 2 or fewer Extraction Tokens."
+      },
+      "railway_workers": {
+        "name": "Railway Workers",
+        "shortName": "Railway",
+        "passive": "Campaigns for Strike Capacity gain +1 and actions in Delta Rail Corridor cost 1 fewer Comrade.",
+        "weakness": "Railway lockouts set 1 less Defense in the Corridor.",
+        "mandateTitle": "Halt the Extraction",
+        "mandateDescription": "End with Strike Capacity at 5 or more and Delta Rail Corridor at 1 or fewer Extraction Tokens."
+      },
+      "womens_action_circles": {
+        "name": "Women’s Action Circles",
+        "shortName": "Women",
+        "passive": "+1 to all National Uprising campaigns and Organizing in Cairo/Alexandria adds +1 Comrade.",
+        "weakness": "Repression of public demonstrations reduces National Uprising by 1.",
+        "mandateTitle": "Public Defiance",
+        "mandateDescription": "End with National Uprising at 7 or more and Alexandria at 2 or fewer Extraction Tokens."
+      },
+      "provincial_organizers": {
+        "name": "Provincial Organizers",
+        "shortName": "Provinces",
+        "passive": "Organize adds +1 Comrade in Upper Egypt/Rural Villages and outreach is free.",
+        "weakness": "Military provincial reprisals remove 2 Comrades instead of 1.",
+        "mandateTitle": "Village Sovereignty",
+        "mandateDescription": "End with Mass Representation at 5 or more and Rural Villages at 1 or fewer Extraction Tokens."
+      },
       "congo_basin_collective": {
         "name": "Congo Basin Collective",
         "shortName": "Congo Collective",

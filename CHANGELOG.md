@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.11.0] - To Be Released
+### Added
+- 🇪🇬 **Scenario Expansion: 1919 — EGYPT RISES** — added the full historical uprising scenario, featuring:
+  - Six historical fronts: Cairo, Alexandria, Delta Rail Corridor, Canal Zone, Upper Egypt, Rural Villages.
+  - New Factions: Student Committees, Railway Workers, Women’s Action Circles, Provincial Organizers.
+  - Six historical Beacons representing the timeline of the March 1919 uprising.
+  - Specialized mechanics: **Railway Sabotage** (escalation reduction) and **Funerary Mobilization** (martyr-driven surge).
+
+- 📜 **New Theme: Papyrus Insurgency** — a high-contrast, premium historical theme inspired by early 20th-century movements.
+  - Full semantic token coverage in `themeRegistry.ts`.
+  - Localized labels in English, French, and Arabic.
+
 ## [Unreleased] — GA Hybrid Evolutionary Optimizer
 
 ### Added

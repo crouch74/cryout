@@ -37,7 +37,10 @@ export type RegionId =
   | 'Oran'
   | 'SaharaSouth'
   | 'TunisianBorder'
-  | 'FrenchMetropoleInfluence';
+  | 'FrenchMetropoleInfluence'
+  | 'DeltaRailCorridor'
+  | 'CanalZone'
+  | 'RuralVillages';
 
 export type FactionId =
   | 'congo_basin_collective'
@@ -56,7 +59,11 @@ export type FactionId =
   | 'fln_urban_cells'
   | 'kabyle_maquis'
   | 'rural_organizing_committees'
-  | 'border_solidarity_networks';
+  | 'border_solidarity_networks'
+  | 'student_committees'
+  | 'railway_workers'
+  | 'womens_action_circles'
+  | 'provincial_organizers';
 
 export type DeckId = 'system' | 'resistance' | 'crisis';
 export type RevealDeckId = DeckId | 'beacon';
