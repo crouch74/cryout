@@ -3,9 +3,10 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { cpus } from 'node:os';
 import { listRulesets } from '../../engine/index.ts';
-import { runScenarioOptimizer } from './engine.ts';
+import { runAllScenariosParallelDiagnostics, runScenarioOptimizer } from './engine.ts';
 import type {
   OptimizerConfig,
+  OptimizerExecutionMode,
   OptimizerMode,
   OptimizerRuntimeProfile,
   OptimizerSignificanceMode,
@@ -23,6 +24,7 @@ interface CliArgs {
   seed?: number;
   parallelWorkers?: number;
   outDir?: string;
+  executionMode?: OptimizerExecutionMode;
   mode?: OptimizerMode;
   runtime?: OptimizerRuntimeProfile;
   significance?: OptimizerSignificanceMode;
@@ -31,6 +33,7 @@ interface CliArgs {
 
 interface InteractiveConfigAnswers {
   scenarioId: string;
+  executionMode: OptimizerExecutionMode;
   runtime: OptimizerRuntimeProfile;
   mode: OptimizerMode;
   significance: OptimizerSignificanceMode;
@@ -50,6 +53,7 @@ interface InquirerPrompt {
 }
 
 const DEFAULT_OUT_DIR = resolve(process.cwd(), 'simulation_output/optimizer');
+const ALL_SCENARIOS_SELECTION = '__all_scenarios_parallel__';
 
 const RUNTIME_DEFAULTS: Record<OptimizerRuntimeProfile, Pick<OptimizerConfig, 'baselineRuns' | 'candidateRuns' | 'candidates'>> = {
   fast: {
@@ -86,6 +90,11 @@ const MODE_DESCRIPTIONS: Record<OptimizerMode, string> = {
   liberation: 'Optimize only Liberation mode metrics and acceptance decisions.',
   symbolic: 'Optimize only Symbolic mode metrics and acceptance decisions.',
   both: 'Optimize across both modes in the same experiment definitions.',
+};
+
+const EXECUTION_MODE_DESCRIPTIONS: Record<OptimizerExecutionMode, string> = {
+  single_scenario: 'Optimize one scenario using iterative candidate search.',
+  all_scenarios_parallel: 'Run baseline diagnostics across all scenarios in parallel to separate structural vs scenario-specific issues.',
 };
 
 function buildManual() {
@@ -163,6 +172,14 @@ ${scenarioOptions}
     Implementation: Resolved to absolute path; default ${DEFAULT_OUT_DIR}.
     Impact: Determines where iteration summaries, patch history, and final report are written.
 
+  --optimizer-mode <single_scenario|all_scenarios_parallel>
+    Name: Optimizer Execution Mode
+    Functionality: Selects single-scenario optimization or all-scenarios parallel diagnostics.
+    Implementation:
+      single_scenario: ${EXECUTION_MODE_DESCRIPTIONS.single_scenario}
+      all_scenarios_parallel: ${EXECUTION_MODE_DESCRIPTIONS.all_scenarios_parallel}
+    Impact: all_scenarios_parallel skips candidate patch search and produces cross-scenario issue classification.
+
   --mode <liberation|symbolic|both>
     Name: Victory Mode Scope
     Functionality: Chooses which victory mode(s) are optimized.
@@ -211,6 +228,7 @@ Derived/Fixed Inputs (Not CLI Flags):
 
 Interactive Mode:
   If --scenario is omitted and TTY is available, the CLI prompts for scenario and all major inputs.
+  The scenario selector includes "All scenarios (parallel diagnostics)".
   Any explicit CLI flag overrides prompted values.
 
 Examples:
@@ -242,6 +260,14 @@ function parseMode(raw: string): OptimizerMode {
     return value;
   }
   throw new Error(`Unsupported --mode value "${raw}". Use liberation, symbolic, or both.`);
+}
+
+function parseExecutionMode(raw: string): OptimizerExecutionMode {
+  const value = raw.toLowerCase();
+  if (value === 'single_scenario' || value === 'all_scenarios_parallel') {
+    return value;
+  }
+  throw new Error(`Unsupported --optimizer-mode value "${raw}". Use single_scenario or all_scenarios_parallel.`);
 }
 
 function parseRuntime(raw: string): OptimizerRuntimeProfile {
@@ -342,6 +368,10 @@ export function parseArgs(argv: string[]): CliArgs {
       args.outDir = resolve(readValue());
       continue;
     }
+    if (arg === '--optimizer-mode') {
+      args.executionMode = parseExecutionMode(readValue());
+      continue;
+    }
     if (arg === '--mode') {
       args.mode = parseMode(readValue());
       continue;
@@ -398,12 +428,24 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
     const inquirerModule = await import('inquirer');
     const prompt = (inquirerModule.default as { prompt: InquirerPrompt }).prompt;
 
-    const firstPass = await prompt<Pick<InteractiveConfigAnswers, 'scenarioId' | 'runtime' | 'mode' | 'significance' | 'strategy'>>([
+    const firstPass = await prompt<{
+      scenarioSelection: string;
+      runtime: OptimizerRuntimeProfile;
+      mode: OptimizerMode;
+      significance: OptimizerSignificanceMode;
+      strategy: OptimizerStrategyMode;
+    }>([
       {
         type: 'list',
-        name: 'scenarioId',
+        name: 'scenarioSelection',
         message: 'Select scenario to optimize:',
-        choices: scenarioIds,
+        choices: [
+          { name: 'All scenarios (parallel diagnostics)', value: ALL_SCENARIOS_SELECTION },
+          ...scenarioIds.map((scenarioId) => ({ name: scenarioId, value: scenarioId })),
+        ],
+        default: prefill.executionMode === 'all_scenarios_parallel'
+          ? ALL_SCENARIOS_SELECTION
+          : prefill.scenarioId,
       },
       {
         type: 'list',
@@ -454,7 +496,7 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
 
     const runtimeDefaults = RUNTIME_DEFAULTS[firstPass.runtime];
 
-    const secondPass = await prompt<Omit<InteractiveConfigAnswers, 'scenarioId' | 'runtime' | 'mode' | 'significance'>>([
+    const secondPass = await prompt<Pick<InteractiveConfigAnswers, 'iterations' | 'baselineRuns' | 'candidateRuns' | 'candidates' | 'patience' | 'seed' | 'parallelWorkers' | 'outDir'>>([
       {
         type: 'input',
         name: 'iterations',
@@ -513,13 +555,28 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
       },
     ]);
 
+    const executionMode = firstPass.scenarioSelection === ALL_SCENARIOS_SELECTION
+      ? 'all_scenarios_parallel'
+      : 'single_scenario';
+    const scenarioId = executionMode === 'all_scenarios_parallel'
+      ? 'all_scenarios'
+      : firstPass.scenarioSelection;
+
     return {
-      ...firstPass,
+      scenarioId,
+      executionMode,
+      runtime: firstPass.runtime,
+      mode: firstPass.mode,
+      significance: firstPass.significance,
+      strategy: firstPass.strategy,
       ...secondPass,
     };
   };
 
-  const interactiveAnswers = parsed.scenarioId ? null : await promptInteractiveConfig(parsed);
+  const executionMode = parsed.executionMode ?? 'single_scenario';
+  const interactiveAnswers = parsed.scenarioId || executionMode === 'all_scenarios_parallel'
+    ? null
+    : await promptInteractiveConfig(parsed);
 
   // CLI flags remain authoritative when provided; interactive answers fill missing primary inputs.
   const args: CliArgs = {
@@ -531,7 +588,12 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
   const runtimeDefaults = RUNTIME_DEFAULTS[runtime];
   const mode = args.mode ?? 'liberation';
   const strategy = args.strategy ?? 'full_optimizer';
-  const scenarioId = args.scenarioId ? validateScenarioId(args.scenarioId) : validateScenarioId(interactiveAnswers?.scenarioId ?? '');
+  const executionModeResolved = args.executionMode ?? 'single_scenario';
+  const scenarioId = executionModeResolved === 'all_scenarios_parallel'
+    ? (args.scenarioId ?? interactiveAnswers?.scenarioId ?? 'all_scenarios')
+    : args.scenarioId
+      ? validateScenarioId(args.scenarioId)
+      : validateScenarioId(interactiveAnswers?.scenarioId ?? '');
 
   return {
     scenarioId,
@@ -543,6 +605,7 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
     seed: args.seed ?? 42,
     parallelWorkers: args.parallelWorkers ?? defaultParallelWorkers(),
     outDir: args.outDir ?? DEFAULT_OUT_DIR,
+    executionMode: executionModeResolved,
     runtime,
     significance: args.significance ?? 'balanced',
     strategy,
@@ -564,6 +627,7 @@ export async function runCli(argv: string[]) {
   console.log('🧠 Optimizer configuration resolved');
   console.log(JSON.stringify({
     scenarioId: config.scenarioId,
+    executionMode: config.executionMode,
     iterations: config.iterations,
     baselineRuns: config.baselineRuns,
     candidateRuns: config.candidateRuns,
@@ -577,6 +641,17 @@ export async function runCli(argv: string[]) {
     strategy: config.strategy,
     outDir: config.outDir,
   }, null, 2));
+
+  if (config.executionMode === 'all_scenarios_parallel') {
+    const report = await runAllScenariosParallelDiagnostics(config);
+    console.log(JSON.stringify({
+      outputDir: report.outputDir,
+      scenariosEvaluated: report.scenarios.length,
+      structuralIssueCount: report.structuralIssues.length,
+      scenarioSpecificIssueCount: report.scenarioSpecificIssues.length,
+    }, null, 2));
+    return;
+  }
 
   const report = await runScenarioOptimizer(config);
   console.log(JSON.stringify({

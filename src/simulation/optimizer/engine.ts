@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import { getRulesetDefinition } from '../../engine/index.ts';
+import { getRulesetDefinition, listRulesets } from '../../engine/index.ts';
 import type { ScenarioPatch } from '../experiments/patchDsl.ts';
 import { runExperiment } from '../experiments/runner.ts';
 import type { ExperimentArmSummary, ExperimentDefinition, MetricComparison } from '../experiments/types.ts';
@@ -33,6 +33,10 @@ import type {
   OptimizerSignificanceMode,
   OptimizerSignificanceThresholds,
   OptimizerStopReason,
+  CrossScenarioDiagnosticsReport,
+  CrossScenarioDiagnosticScenarioResult,
+  CrossScenarioIssue,
+  CrossScenarioScenarioIssue,
 } from './types.ts';
 
 function roundTo(value: number, digits = 6) {
@@ -517,6 +521,248 @@ function renderFinalReportMarkdown(report: OptimizerFinalReport) {
 ${JSON.stringify(report.recommendedPatch, null, 2)}
 \`\`\`
 `;
+}
+
+const ISSUE_DESCRIPTION_MAP: Record<string, string> = {
+  success_rate_low: 'Success rate is below target range.',
+  success_rate_high: 'Success rate is above target range.',
+  public_victory_rate_low: 'Public victory rate is below target range.',
+  public_victory_rate_high: 'Public victory rate is above target range.',
+  mandate_fail_given_public_high: 'Mandate failures among public victories exceed target range.',
+  mandate_fail_given_public_low: 'Mandate failure risk among public victories is below target range.',
+  average_turns_low: 'Average turns are below target range, indicating compressed pacing.',
+  average_turns_high: 'Average turns are above target range, indicating extended pacing.',
+  turn_one_public_victory_high: 'Turn-one public victories are elevated and indicate structural gating risk.',
+  victory_before_allowed_round: 'Victory predicate triggers before the configured allowed round.',
+  early_termination_high: 'Early terminations are elevated (games ending before round 3).',
+  extraction_breach_pressure: 'Extraction breach defeats are elevated.',
+  comrades_exhausted_pressure: 'Comrades exhaustion defeats are elevated.',
+  sudden_death_pressure: 'Sudden death defeats are elevated.',
+};
+
+function describeIssueCode(code: string) {
+  if (code.startsWith('impossible_mandate:')) {
+    const mandateId = code.slice('impossible_mandate:'.length);
+    return `Mandate "${mandateId}" appears impossible under current scenario conditions.`;
+  }
+  if (code.startsWith('severe_mandate_failure:')) {
+    const mandateId = code.slice('severe_mandate_failure:'.length);
+    return `Mandate "${mandateId}" has a severe observed failure rate in public victories.`;
+  }
+  return ISSUE_DESCRIPTION_MAP[code] ?? code;
+}
+
+function collectIssueCodes(
+  metrics: ExperimentArmSummary,
+  score: OptimizerScoreBreakdown,
+  analysis: OptimizerAnalysis,
+) {
+  const codes = new Set<string>();
+
+  if (analysis.outOfRange.successRate) {
+    codes.add(metrics.successRate < score.targets.successRate.min ? 'success_rate_low' : 'success_rate_high');
+  }
+  if (analysis.outOfRange.publicVictoryRate) {
+    codes.add(metrics.publicVictoryRate < score.targets.publicVictoryRate.min ? 'public_victory_rate_low' : 'public_victory_rate_high');
+  }
+  if (analysis.outOfRange.mandateFailRateGivenPublic) {
+    codes.add(
+      metrics.mandateFailRateGivenPublic > score.targets.mandateFailRateGivenPublic.max
+        ? 'mandate_fail_given_public_high'
+        : 'mandate_fail_given_public_low',
+    );
+  }
+  if (analysis.outOfRange.averageTurns) {
+    codes.add(metrics.turns.average < score.targets.averageTurns.min ? 'average_turns_low' : 'average_turns_high');
+  }
+
+  if (analysis.structural.turnOnePublicVictoryRate > 0.05) {
+    codes.add('turn_one_public_victory_high');
+  }
+  if (analysis.structural.victoryBeforeAllowedRoundRate > 0) {
+    codes.add('victory_before_allowed_round');
+  }
+  if (analysis.structural.earlyTerminationRate > 0.05) {
+    codes.add('early_termination_high');
+  }
+
+  if (analysis.defeatPressure.extractionBreachRate >= 0.35) {
+    codes.add('extraction_breach_pressure');
+  }
+  if (analysis.defeatPressure.comradesExhaustedRate >= 0.2) {
+    codes.add('comrades_exhausted_pressure');
+  }
+  if (analysis.defeatPressure.suddenDeathRate >= 0.12) {
+    codes.add('sudden_death_pressure');
+  }
+
+  for (const mandateId of analysis.structural.impossibleMandates) {
+    codes.add(`impossible_mandate:${mandateId}`);
+  }
+  const topMandate = analysis.topMandateFailures[0];
+  if (topMandate && topMandate.failureRate >= 0.55) {
+    codes.add(`severe_mandate_failure:${topMandate.mandateId}`);
+  }
+
+  return Array.from(codes).sort((left, right) => left.localeCompare(right));
+}
+
+function renderCrossScenarioReportMarkdown(report: CrossScenarioDiagnosticsReport) {
+  const structuralLines = report.structuralIssues.length > 0
+    ? report.structuralIssues.map((issue) => `- \`${issue.code}\` (${issue.scenarios.length} scenarios): ${issue.description}`).join('\n')
+    : '- None detected.';
+  const scenarioSpecificLines = report.scenarioSpecificIssues.length > 0
+    ? report.scenarioSpecificIssues
+      .map((entry) => `- ${entry.scenarioId}: ${entry.codes.map((code) => `\`${code}\``).join(', ')}`)
+      .join('\n')
+    : '- None detected.';
+
+  return `# Cross-Scenario Parallel Diagnostics
+
+- Generated At: ${report.generatedAt}
+- Scenarios Evaluated: ${report.scenarios.length}
+- Baseline Runs Per Scenario: ${report.baselineRunsPerScenario}
+- Victory Modes: ${report.victoryModes.join(', ')}
+
+## Shared Structural Issues
+${structuralLines}
+
+## Scenario-Specific Issues
+${scenarioSpecificLines}
+`;
+}
+
+export async function runAllScenariosParallelDiagnostics(config: OptimizerConfig): Promise<CrossScenarioDiagnosticsReport> {
+  const runStamp = buildRunStamp();
+  const outputDir = join(config.outDir, 'all_scenarios_parallel', `${runStamp}_${config.seed}`);
+  await ensureDir(outputDir);
+
+  const rulesets = listRulesets().sort((left, right) => left.id.localeCompare(right.id));
+  if (rulesets.length === 0) {
+    throw new Error('No scenarios available for all-scenarios diagnostics.');
+  }
+
+  await writeJson(join(outputDir, 'optimizer_config.json'), {
+    ...config,
+    generatedAt: new Date().toISOString(),
+    scenarioCount: rulesets.length,
+  });
+
+  const scenarioConcurrency = Math.max(1, Math.min(config.parallelWorkers, rulesets.length));
+  const workersPerScenarioExperiment = Math.max(1, Math.floor(config.parallelWorkers / scenarioConcurrency));
+  console.log(`🧠 Cross-scenario diagnostics start scenarios=${rulesets.length} concurrency=${scenarioConcurrency}`);
+  console.log(`🧠 Worker budget per scenario experiment=${workersPerScenarioExperiment}`);
+
+  const scenarioResults = await mapWithConcurrency(
+    rulesets,
+    scenarioConcurrency,
+    async (ruleset): Promise<CrossScenarioDiagnosticScenarioResult | null> => {
+      const scenarioDir = join(outputDir, 'scenarios', ruleset.id);
+      await ensureDir(scenarioDir);
+      const experimentId = `optimizer_${ruleset.id}_diagnostic_baseline`;
+      try {
+        console.log(`📊 Running baseline diagnostics scenario=${ruleset.id}`);
+        const result = await runExperiment(
+          createExperimentDefinition({
+            id: experimentId,
+            title: `Cross-scenario diagnostic baseline ${ruleset.id}`,
+            scenarioId: ruleset.id,
+            patch: { note: '📊 Cross-scenario baseline control patch (no-op)' },
+            runsPerArm: config.baselineRuns,
+            seed: mixSeed(config.seed, stableHash(`cross-scenario:${ruleset.id}`)),
+            confidence: getSignificanceThresholds(config.significance).confidence,
+            primary: 'successRate',
+            victoryModes: config.victoryModes,
+            playerCounts: config.playerCounts,
+          }),
+          {
+            outDir: join(scenarioDir, 'baseline'),
+            recordTrajectories: false,
+            parallelWorkers: workersPerScenarioExperiment,
+            logMode: 'aggregated',
+          },
+        );
+        const metrics = result.armA;
+        const score = scoreArmSummary(metrics);
+        const analysis = analyzeBaselineMetrics(metrics, score);
+        const issueCodes = collectIssueCodes(metrics, score, analysis);
+        const summary: CrossScenarioDiagnosticScenarioResult = {
+          scenarioId: ruleset.id,
+          scenarioName: ruleset.name,
+          experimentId,
+          metrics,
+          score,
+          analysis,
+          issueCodes,
+        };
+        await writeJson(join(scenarioDir, 'diagnostic_summary.json'), summary);
+        return summary;
+      } catch (error) {
+        const err = error as Error;
+        console.log(`⚠️ Cross-scenario diagnostics skipped scenario=${ruleset.id} reason=${err.message}`);
+        await writeJson(join(scenarioDir, 'diagnostic_error.json'), {
+          scenarioId: ruleset.id,
+          scenarioName: ruleset.name,
+          error: err.message,
+        });
+        return null;
+      }
+    },
+  );
+
+  const scenarios = scenarioResults.filter((entry): entry is CrossScenarioDiagnosticScenarioResult => entry !== null);
+  if (scenarios.length === 0) {
+    throw new Error('Cross-scenario diagnostics failed for every scenario.');
+  }
+
+  const codeToScenarios = new Map<string, Set<string>>();
+  for (const scenario of scenarios) {
+    for (const code of scenario.issueCodes) {
+      if (!codeToScenarios.has(code)) {
+        codeToScenarios.set(code, new Set());
+      }
+      codeToScenarios.get(code)?.add(scenario.scenarioId);
+    }
+  }
+
+  const structuralIssues: CrossScenarioIssue[] = Array.from(codeToScenarios.entries())
+    .filter(([, scenarioSet]) => scenarioSet.size >= 2)
+    .map(([code, scenarioSet]) => ({
+      code,
+      description: describeIssueCode(code),
+      scenarios: Array.from(scenarioSet).sort((left, right) => left.localeCompare(right)),
+    }))
+    .sort((left, right) => left.code.localeCompare(right.code));
+
+  const scenarioSpecificIssues: CrossScenarioScenarioIssue[] = scenarios
+    .map((scenario) => ({
+      scenarioId: scenario.scenarioId,
+      scenarioName: scenario.scenarioName,
+      codes: scenario.issueCodes.filter((code) => (codeToScenarios.get(code)?.size ?? 0) === 1),
+    }))
+    .filter((entry) => entry.codes.length > 0)
+    .sort((left, right) => left.scenarioId.localeCompare(right.scenarioId));
+
+  const report: CrossScenarioDiagnosticsReport = {
+    generatedAt: new Date().toISOString(),
+    outputDir,
+    victoryModes: config.victoryModes,
+    playerCounts: config.playerCounts,
+    baselineRunsPerScenario: config.baselineRuns,
+    scenarios,
+    structuralIssues,
+    scenarioSpecificIssues,
+  };
+
+  await writeJson(join(outputDir, 'cross_scenario_diagnostics.json'), report);
+  await writeJson(join(outputDir, 'scenario_results.json'), scenarios);
+  await writeJson(join(outputDir, 'structural_issues.json'), structuralIssues);
+  await writeJson(join(outputDir, 'scenario_specific_issues.json'), scenarioSpecificIssues);
+  await writeMarkdown(join(outputDir, 'final_report.md'), renderCrossScenarioReportMarkdown(report));
+
+  console.log('🏆 Cross-scenario diagnostics complete');
+  console.log(`🏆 Structural issues=${structuralIssues.length} scenario-specific buckets=${scenarioSpecificIssues.length}`);
+  return report;
 }
 
 export async function runScenarioOptimizer(config: OptimizerConfig): Promise<OptimizerFinalReport> {

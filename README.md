@@ -278,6 +278,7 @@ Interactive mode prompts for the main optimizer controls (runtime, strategy, mod
 Common options:
 
 - `--scenario <id>`
+- `--optimizer-mode single_scenario|all_scenarios_parallel`
 - `--iterations <n>`
 - `--baseline-runs <n>`
 - `--candidate-runs <n>`
@@ -292,6 +293,7 @@ Common options:
 - `--strategy numeric_balancing|victory_gating_exploration|trajectory_discovery|full_optimizer`
 
 `--parallel-workers` controls both optimizer-level candidate experiment concurrency and per-experiment simulation worker batching.
+`--optimizer-mode all_scenarios_parallel` runs baseline diagnostics for every shipped scenario concurrently and writes shared structural issues plus scenario-specific issue lists.
 
 Outputs are written to:
 

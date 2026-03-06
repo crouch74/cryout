@@ -6,6 +6,7 @@ import type { VictoryMode } from '../experiments/types.ts';
 export type OptimizerRuntimeProfile = 'fast' | 'balanced' | 'thorough';
 export type OptimizerSignificanceMode = 'strict' | 'balanced' | 'lenient';
 export type OptimizerMode = 'liberation' | 'symbolic' | 'both';
+export type OptimizerExecutionMode = 'single_scenario' | 'all_scenarios_parallel';
 export type OptimizerStrategyMode =
   | 'numeric_balancing'
   | 'victory_gating_exploration'
@@ -32,6 +33,7 @@ export interface OptimizerConfig {
   seed: number;
   parallelWorkers: number;
   outDir: string;
+  executionMode: OptimizerExecutionMode;
   runtime: OptimizerRuntimeProfile;
   significance: OptimizerSignificanceMode;
   mode: OptimizerMode;
@@ -164,6 +166,39 @@ export interface OptimizerFinalReport {
   recommendedPatch: ScenarioPatch;
   finalMetrics: OptimizerFinalMetrics;
   history: OptimizerIterationResult[];
+}
+
+export interface CrossScenarioIssue {
+  code: string;
+  description: string;
+  scenarios: string[];
+}
+
+export interface CrossScenarioScenarioIssue {
+  scenarioId: string;
+  scenarioName: string;
+  codes: string[];
+}
+
+export interface CrossScenarioDiagnosticScenarioResult {
+  scenarioId: string;
+  scenarioName: string;
+  experimentId: string;
+  metrics: ExperimentArmSummary;
+  score: OptimizerScoreBreakdown;
+  analysis: OptimizerAnalysis;
+  issueCodes: string[];
+}
+
+export interface CrossScenarioDiagnosticsReport {
+  generatedAt: string;
+  outputDir: string;
+  victoryModes: VictoryMode[];
+  playerCounts: number[];
+  baselineRunsPerScenario: number;
+  scenarios: CrossScenarioDiagnosticScenarioResult[];
+  structuralIssues: CrossScenarioIssue[];
+  scenarioSpecificIssues: CrossScenarioScenarioIssue[];
 }
 
 export interface OptimizerSignificanceThresholds {

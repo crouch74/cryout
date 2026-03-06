@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { runScenarioOptimizer } from '../../src/simulation/optimizer/engine.ts';
+import { runAllScenariosParallelDiagnostics, runScenarioOptimizer } from '../../src/simulation/optimizer/engine.ts';
 import type { ScenarioPatch } from '../../src/simulation/experiments/patchDsl.ts';
 
 test('scenario optimizer writes iteration artifacts and final recommendation', async () => {
@@ -19,6 +19,7 @@ test('scenario optimizer writes iteration artifacts and final recommendation', a
     seed: 2026,
     parallelWorkers: 1,
     outDir: outputRoot,
+    executionMode: 'single_scenario',
     runtime: 'balanced',
     significance: 'balanced',
     mode: 'liberation',
@@ -55,4 +56,34 @@ test('scenario optimizer writes iteration artifacts and final recommendation', a
     await readFile(join(report.outputDir, 'final_metrics.json'), 'utf8'),
   ) as { score: { score: number } };
   assert.equal(typeof finalMetrics.score.score, 'number');
+});
+
+test('all-scenarios parallel diagnostics writes structural and scenario-specific artifacts', async () => {
+  const outputRoot = await mkdtemp(join(tmpdir(), 'stones-optimizer-all-'));
+
+  const report = await runAllScenariosParallelDiagnostics({
+    scenarioId: 'all_scenarios',
+    iterations: 1,
+    baselineRuns: 1,
+    candidateRuns: 1,
+    candidates: 1,
+    patience: 1,
+    seed: 2026,
+    parallelWorkers: 2,
+    outDir: outputRoot,
+    executionMode: 'all_scenarios_parallel',
+    runtime: 'fast',
+    significance: 'balanced',
+    mode: 'liberation',
+    strategy: 'full_optimizer',
+    victoryModes: ['liberation'],
+    playerCounts: [2, 3, 4],
+    useBalanceSearchSeeding: false,
+  });
+
+  assert.equal(report.scenarios.length >= 1, true);
+  await stat(join(report.outputDir, 'cross_scenario_diagnostics.json'));
+  await stat(join(report.outputDir, 'structural_issues.json'));
+  await stat(join(report.outputDir, 'scenario_specific_issues.json'));
+  await stat(join(report.outputDir, 'final_report.md'));
 });

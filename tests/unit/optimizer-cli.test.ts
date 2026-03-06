@@ -13,6 +13,7 @@ test('optimizer CLI parser reads all explicit flags', () => {
     '--seed', '777',
     '--parallel-workers', '6',
     '--out', 'simulation_output/custom_optimizer',
+    '--optimizer-mode', 'all_scenarios_parallel',
     '--mode', 'both',
     '--runtime', 'thorough',
     '--significance', 'strict',
@@ -27,6 +28,7 @@ test('optimizer CLI parser reads all explicit flags', () => {
   assert.equal(parsed.patience, 4);
   assert.equal(parsed.seed, 777);
   assert.equal(parsed.parallelWorkers, 6);
+  assert.equal(parsed.executionMode, 'all_scenarios_parallel');
   assert.equal(parsed.mode, 'both');
   assert.equal(parsed.runtime, 'thorough');
   assert.equal(parsed.significance, 'strict');
@@ -39,6 +41,7 @@ test('optimizer config applies balanced defaults when optional flags are omitted
   ]);
 
   assert.equal(config.runtime, 'balanced');
+  assert.equal(config.executionMode, 'single_scenario');
   assert.equal(config.baselineRuns, 10000);
   assert.equal(config.candidateRuns, 5000);
   assert.equal(config.candidates, 15);
@@ -69,6 +72,15 @@ test('optimizer CLI parser accepts --help and -h', () => {
   assert.equal(short.help, true);
 });
 
+test('optimizer config builds all_scenarios_parallel mode without requiring a concrete scenario id', async () => {
+  const config = await buildConfig([
+    '--optimizer-mode', 'all_scenarios_parallel',
+  ]);
+
+  assert.equal(config.executionMode, 'all_scenarios_parallel');
+  assert.equal(config.scenarioId.length > 0, true);
+});
+
 test('optimizer help manual documents all primary input flags and impacts', () => {
   const manual = renderHelpManual();
 
@@ -81,6 +93,7 @@ test('optimizer help manual documents all primary input flags and impacts', () =
   assert.match(manual, /--seed <n>/);
   assert.match(manual, /--parallel-workers <n>/);
   assert.match(manual, /--out <path>/);
+  assert.match(manual, /--optimizer-mode <single_scenario\|all_scenarios_parallel>/);
   assert.match(manual, /--mode <liberation\|symbolic\|both>/);
   assert.match(manual, /liberation:\s+Optimize only Liberation mode metrics/i);
   assert.match(manual, /symbolic:\s+Optimize only Symbolic mode metrics/i);
