@@ -664,6 +664,15 @@ export function GameSessionScreen({
     .filter((player) => ownedSeats.includes(player.seat))
     .map((player) => getPlayerStripSummary(player, content, state));
   const actionItems = getActionDockItems(state, content, focusedPlayer.seat);
+  const actionBarEnabled = state.phase === 'COALITION';
+  const phaseLockedMessage = t('ui.game.phaseLocked', 'Phase locked');
+  const gatedActionItems = actionBarEnabled
+    ? actionItems
+    : actionItems.map((item) => ({
+      ...item,
+      disabled: true,
+      disabledReason: phaseLockedMessage,
+    }));
   const phasePresentation = getPhasePresentation(state.phase);
   const preparedMovePreview = buildIntentPreview(draft, draftAction, state, content, focusedPlayer.seat);
   const campaignResults = useMemo(() => getCampaignResultEvents(state), [state]);
@@ -714,6 +723,16 @@ export function GameSessionScreen({
   };
 
   const openActionPanel = (actionId: ActionId) => {
+    if (!actionBarEnabled) {
+      onToast({
+        tone: 'warning',
+        title: t('ui.game.actions', 'Moves'),
+        message: phaseLockedMessage,
+        dismissAfterMs: 2000,
+      });
+      return;
+    }
+
     const quick = getActionQuickQueue(state, content, focusedPlayer.seat, actionId);
     if (quick.quickQueue) {
       queueIntent(quick.draft);
@@ -1499,62 +1518,61 @@ export function GameSessionScreen({
             activeHelpContent={phaseHelpContent}
           />
 
-          {state.phase === 'COALITION' ? (
-            <section className="coalition-file-shell">
-              <section className="board-player-strip">
-                <PlayerStrip
-                  summaries={playerSummaries}
-                  focusedSeat={focusedPlayer.seat}
-                  onSelectSeat={(seat) => onViewStateChange({ focusedSeat: seat })}
-                  accentColor={focusedFactionAccent}
-                  seatAccentBySeat={playerSeatAccents}
-                />
-              </section>
-
-              <ActionDock
-                items={actionItems}
-                onAction={openActionPanel}
+          <section className={`coalition-file-shell ${actionBarEnabled ? '' : 'is-phase-locked'}`.trim()}>
+            <section className="board-player-strip">
+              <PlayerStrip
+                summaries={playerSummaries}
+                focusedSeat={focusedPlayer.seat}
+                onSelectSeat={(seat) => onViewStateChange({ focusedSeat: seat })}
                 accentColor={focusedFactionAccent}
-                controls={(
-                  <>
-                    <div className="dock-queue-summary">
-                      <strong>{localizeFactionField(faction.id, 'shortName', faction.shortName)}</strong>
-                      <span>{formatNumber(getPlayerBodyTotal(state, focusedPlayer.seat))} {t('ui.game.comrades', 'Comrades')}</span>
-                      <span>{formatNumber(focusedPlayer.evidence)} {t('ui.game.evidence', 'Evidence')}</span>
-                      <span>{t('ui.game.queuedCount', '{{count}} queued', { count: focusedPlayer.queuedIntents.length })}</span>
-                    </div>
-                    <div className="dock-queue-list" aria-label={t('ui.game.preparedMovesLabel', 'Prepared moves')}>
-                      {focusedPlayer.queuedIntents.length === 0 ? (
-                        <span className="dock-empty">{t('ui.game.noPreparedMoves', 'No prepared moves yet.')}</span>
-                      ) : (
-                        focusedPlayer.queuedIntents.map((intent) => (
-                          <button
-                            key={`${intent.actionId}-${intent.slot}`}
-                            type="button"
-                            className="dock-queue-chip"
-                            onClick={() => void onCommand({ type: 'RemoveQueuedIntent', seat: focusedPlayer.seat, slot: intent.slot })}
-                            title={t('ui.game.remove', 'Remove')}
-                          >
-                            <span>{intent.slot + 1}</span>
-                            <strong>{localizeActionField(intent.actionId, 'name', content.actions[intent.actionId].name)}</strong>
-                          </button>
-                        ))
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      className={`action-dock-submit ${focusedPlayer.ready ? 'is-active' : ''}`.trim()}
-                      disabled={focusedPlayer.actionsRemaining > 0}
-                      onClick={() => handleSetReady(!focusedPlayer.ready)}
-                    >
-                      <Icon type="objective" size="md" className="action-dock-submit-icon" />
-                      <span>{focusedPlayer.ready ? t('ui.game.seatReady', 'Seat Ready') : t('ui.game.markSeatReady', 'Mark Seat Ready')}</span>
-                    </button>
-                  </>
-                )}
+                seatAccentBySeat={playerSeatAccents}
               />
             </section>
-          ) : null}
+
+            <ActionDock
+              items={gatedActionItems}
+              onAction={openActionPanel}
+              accentColor={focusedFactionAccent}
+              controls={(
+                <>
+                  <div className="dock-queue-summary">
+                    <strong>{localizeFactionField(faction.id, 'shortName', faction.shortName)}</strong>
+                    <span>{formatNumber(getPlayerBodyTotal(state, focusedPlayer.seat))} {t('ui.game.comrades', 'Comrades')}</span>
+                    <span>{formatNumber(focusedPlayer.evidence)} {t('ui.game.evidence', 'Evidence')}</span>
+                    <span>{t('ui.game.queuedCount', '{{count}} queued', { count: focusedPlayer.queuedIntents.length })}</span>
+                  </div>
+                  <div className="dock-queue-list" aria-label={t('ui.game.preparedMovesLabel', 'Prepared moves')}>
+                    {focusedPlayer.queuedIntents.length === 0 ? (
+                      <span className="dock-empty">{t('ui.game.noPreparedMoves', 'No prepared moves yet.')}</span>
+                    ) : (
+                      focusedPlayer.queuedIntents.map((intent) => (
+                        <button
+                          key={`${intent.actionId}-${intent.slot}`}
+                          type="button"
+                          className="dock-queue-chip"
+                          disabled={!actionBarEnabled}
+                          onClick={() => void onCommand({ type: 'RemoveQueuedIntent', seat: focusedPlayer.seat, slot: intent.slot })}
+                          title={actionBarEnabled ? t('ui.game.remove', 'Remove') : phaseLockedMessage}
+                        >
+                          <span>{intent.slot + 1}</span>
+                          <strong>{localizeActionField(intent.actionId, 'name', content.actions[intent.actionId].name)}</strong>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    className={`action-dock-submit ${focusedPlayer.ready ? 'is-active' : ''}`.trim()}
+                    disabled={!actionBarEnabled || focusedPlayer.actionsRemaining > 0}
+                    onClick={() => handleSetReady(!focusedPlayer.ready)}
+                  >
+                    <Icon type="objective" size="md" className="action-dock-submit-icon" />
+                    <span>{focusedPlayer.ready ? t('ui.game.seatReady', 'Seat Ready') : t('ui.game.markSeatReady', 'Mark Seat Ready')}</span>
+                  </button>
+                </>
+              )}
+            />
+          </section>
 
           <StatusRibbon
             items={statusItems}

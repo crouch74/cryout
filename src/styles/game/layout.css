@@ -2284,6 +2284,15 @@ html[dir='rtl'] .deck-reveal-deck-label {
   box-shadow: none;
 }
 
+.coalition-file-shell.is-phase-locked .action-dock {
+  opacity: 0.74;
+}
+
+.coalition-file-shell.is-phase-locked .action-dock-grid,
+.coalition-file-shell.is-phase-locked .action-dock-controls {
+  pointer-events: none;
+}
+
 .action-dock-grid {
   gap: var(--space-1);
 }

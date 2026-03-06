@@ -5821,6 +5821,14 @@ html[lang^='ar'] .game-screen .minutes-toast {
   color: color-mix(in srgb, var(--color-text-primary) 94%, var(--skin-text-primary) 6%);
 }
 
+/* Keep the coalition file seam intact: this must override generic action-dock cosmetic borders. */
+.game-screen .coalition-file-shell .action-dock {
+  border: var(--border-width-thin) solid var(--file-rim) !important;
+  border-top: var(--border-width-thin) solid var(--file-rim) !important;
+  border-radius: 0 0 var(--radius-16) var(--radius-16) !important;
+  box-shadow: none !important;
+}
+
 .shell-table .shell-list-item .ui-icon,
 .shell-table .shell-title-row .ui-icon {
   color: color-mix(in srgb, var(--color-text-muted) 58%, var(--color-text-primary) 42%);
