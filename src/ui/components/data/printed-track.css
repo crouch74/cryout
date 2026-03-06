@@ -1,0 +1,4 @@
+.printed-track {
+  display: grid;
+  gap: var(--space-1);
+}

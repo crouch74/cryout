@@ -1,0 +1,50 @@
+.seat-card {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3-5);
+  border-radius: var(--radius-md);
+  border: var(--border-width-hairline) solid color-mix(in srgb, var(--seat-card-accent, var(--color-border)) 56%, transparent);
+  background: color-mix(in srgb, var(--color-surface-elevated) 95%, var(--color-surface-tint) 5%);
+  box-shadow: none;
+}
+
+.seat-card[data-status='claimed'],
+.seat-card[data-status='active'] {
+  border-color: color-mix(in srgb, var(--seat-card-accent, var(--color-accent)) 42%, var(--color-border) 58%);
+}
+
+.seat-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.seat-card-header-copy {
+  display: grid;
+  gap: var(--space-0);
+}
+
+.seat-card-badge {
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--color-focus-surface);
+  color: var(--color-text-inverted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.seat-card-subtitle {
+  color: color-mix(in srgb, var(--color-text-muted) 80%, var(--color-text-primary) 20%);
+}
+
+.seat-card-body {
+  color: var(--color-text-primary);
+}
+
+.seat-card-action,
+.seat-card-footer {
+  display: grid;
+  gap: var(--space-1);
+}

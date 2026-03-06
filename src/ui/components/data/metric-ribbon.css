@@ -1,0 +1,26 @@
+.metric-ribbon {
+  display: grid;
+  gap: var(--space-1-5);
+  grid-template-columns: repeat(var(--metric-ribbon-columns, 3), minmax(0, 1fr));
+}
+
+.metric-ribbon-item {
+  display: grid;
+  gap: var(--space-0);
+  padding: var(--space-2);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--color-border) 72%, transparent);
+  border-radius: var(--radius-16);
+  background: color-mix(in srgb, var(--legacy-color-fff) 76%, var(--color-surface-tint) 24%);
+}
+
+.metric-ribbon-item span {
+  color: color-mix(in srgb, var(--color-text-muted) 80%, var(--color-text-primary) 20%);
+}
+
+.metric-ribbon-item strong {
+  color: var(--color-text-primary);
+}
+
+.metric-ribbon-item[data-tone='critical'] {
+  border-color: color-mix(in srgb, var(--color-danger) 40%, var(--color-border) 60%);
+}

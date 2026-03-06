@@ -1,5 +1,4 @@
 import { LazyMotion, domAnimation, m } from 'framer-motion';
-import type { CSSProperties } from 'react';
 import { buildBalancedSeatOwners, listRulesets, type FactionId, type VictoryMode } from '../../../engine/index.ts';
 import {
   formatNumber,
@@ -22,6 +21,7 @@ import {
   useTabletopTheme,
 } from '../../../ui/layout/tabletop.tsx';
 import { getFactionAccent } from '../../../theme/factionAccents.ts';
+import { SeatCard } from '../../../ui/components/seats/SeatCard.tsx';
 import {
   DropdownMenuContent,
   DropdownMenuItem,
@@ -335,12 +335,16 @@ export function SessionSetupScreen({
                       <div className="seat-placard-grid seat-assembly-grid">
                         {factionGroups.map((group) => {
                           const seatAccent = getSeatAccent(group.factionIds);
-                          const seatStyle = { ['--seat-accent' as string]: seatAccent } as CSSProperties;
                           return (
-                            <article key={group.ownerId} className="seat-placard seat-assembly-card" style={seatStyle}>
-                              <span className="seat-assembly-seat">{t('ui.home.playerSeatGroup', 'Player {{seat}}', { seat: group.ownerId + 1 })}</span>
+                            <SeatCard
+                              key={group.ownerId}
+                              className="seat-placard seat-assembly-card"
+                              accentColor={seatAccent}
+                              status="active"
+                              title={<span className="seat-assembly-seat">{t('ui.home.playerSeatGroup', 'Player {{seat}}', { seat: group.ownerId + 1 })}</span>}
+                            >
                               <strong className="seat-assembly-faction">{group.factionIds.map((factionId) => getFactionLabel(factionId)).join(' · ')}</strong>
-                            </article>
+                            </SeatCard>
                           );
                         })}
                       </div>

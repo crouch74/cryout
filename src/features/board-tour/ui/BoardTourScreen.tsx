@@ -4,8 +4,11 @@ import { GameSessionScreen } from '../../../game/screens/GameSessionScreen.tsx';
 import type { SessionViewport } from '../../session-setup/model/sessionTypes.ts';
 import { t, useAppLocale } from '../../../i18n/index.ts';
 import { Icon } from '../../../ui/icon/Icon.tsx';
-import { GameIcon } from '../../../ui/icon/GameIcon.tsx';
-import { EngravedHeader, PaperSheet, TableSurface, ThemePlate } from '../../../ui/layout/tabletop.tsx';
+import { PaperSheet } from '../../../ui/layout/PaperSheet.tsx';
+import { IconPlateButton } from '../../../ui/components/actions/IconPlateButton.tsx';
+import { ShellScreenLayout } from '../../../ui/components/shell/ShellScreenLayout.tsx';
+import { ShellSectionCard } from '../../../ui/components/shell/ShellSectionCard.tsx';
+import './board-tour-screen.css';
 
 interface BoardTourScreenProps {
   onBackHome: () => void;
@@ -99,106 +102,93 @@ export function BoardTourScreen({ onBackHome, onOpenOffline }: BoardTourScreenPr
   const nextChevronClass = `shell-chevron ${dir === 'rtl' ? 'is-left' : 'is-right'}`;
 
   return (
-    <TableSurface className="guide-table board-tour-table shell-table shell-depth-surface">
-      <PaperSheet tone="board" className="shell-board shell-surface shell-surface-focus">
-        <EngravedHeader
-          eyebrow={t('ui.guide.boardTour', 'Board Tour')}
-          title={t('ui.guide.boardTourTitle', 'Read the table before it breaks')}
-          detail={t('ui.guide.boardTourDetail', 'Each panel explains what a board component means, how to use it, and what danger signals to monitor.')}
-          actions={
-            <div className="header-action-plates shell-actions">
-              <ThemePlate
-                size="sm"
-                variant="utility"
-                label={(
-                  <span className="plate-label-with-icon">
-                    <GameIcon name="home" size="xs" ariaLabel={t('ui.guide.backHome', 'Back Home')} />
-                    <span>{t('ui.guide.backHome', 'Back Home')}</span>
-                  </span>
-                )}
-                onClick={onBackHome}
-              />
-              <ThemePlate
-                size="sm"
-                variant="primary"
-                label={(
-                  <span className="plate-label-with-icon">
-                    <GameIcon name="launchCampaign" size="xs" ariaLabel={t('ui.guide.openTable', 'Open Table')} />
-                    <span>{t('ui.guide.openTable', 'Open Table')}</span>
-                  </span>
-                )}
-                onClick={onOpenOffline}
-              />
-            </div>
-          }
-        />
+    <ShellScreenLayout
+      tableClassName="guide-table board-tour-table"
+      eyebrow={t('ui.guide.boardTour', 'Board Tour')}
+      title={t('ui.guide.boardTourTitle', 'Read the table before it breaks')}
+      detail={t('ui.guide.boardTourDetail', 'Each panel explains what a board component means, how to use it, and what danger signals to monitor.')}
+      actions={(
+        <div className="header-action-plates shell-actions">
+          <IconPlateButton
+            icon="home"
+            size="sm"
+            variant="utility"
+            label={t('ui.guide.backHome', 'Back Home')}
+            ariaLabel={t('ui.guide.backHome', 'Back Home')}
+            onClick={onBackHome}
+          />
+          <IconPlateButton
+            icon="launchCampaign"
+            size="sm"
+            variant="primary"
+            label={t('ui.guide.openTable', 'Open Table')}
+            ariaLabel={t('ui.guide.openTable', 'Open Table')}
+            onClick={onOpenOffline}
+          />
+        </div>
+      )}
+    >
+      <div className="board-tour-stage">
+        <ShellSectionCard icon="objective" title={t('ui.guide.boardTourSequence', 'Guided Sequence')} className="board-tour-sequence-card">
+          <div className="board-tour-sequence-head">
+            <span />
+            <strong className="shell-progress-chip">{progress}</strong>
+          </div>
+          <h2>{stepTitle}</h2>
+          <p>
+            <strong className="shell-copy-label"><Icon type="scrollText" size="xs" ariaLabel={t('ui.guide.whatItIs', 'What it is')} />{t('ui.guide.whatItIs', 'What it is')}:</strong> {stepWhat}
+          </p>
+          <p>
+            <strong className="shell-copy-label"><Icon type="settings" size="xs" ariaLabel={t('ui.guide.howToUseIt', 'How to use it')} />{t('ui.guide.howToUseIt', 'How to use it')}:</strong> {stepHow}
+          </p>
+          <p>
+            <strong className="shell-copy-label"><Icon type="crisis" size="xs" ariaLabel={t('ui.guide.whatToWatchFor', 'What to watch for')} />{t('ui.guide.whatToWatchFor', 'What to watch for')}:</strong> {stepWatch}
+          </p>
 
-        <div className="board-tour-stage">
-          <PaperSheet tone="tray" className="board-tour-sequence-card shell-card shell-surface-note">
-            <div className="board-tour-sequence-head">
-              <span className="engraved-eyebrow shell-title-row"><Icon type="objective" size="xs" ariaLabel={t('ui.guide.boardTourSequence', 'Guided Sequence')} />{t('ui.guide.boardTourSequence', 'Guided Sequence')}</span>
-              <strong className="shell-progress-chip">{progress}</strong>
-            </div>
-            <h2>{stepTitle}</h2>
-            <p>
-              <strong className="shell-copy-label"><Icon type="scrollText" size="xs" ariaLabel={t('ui.guide.whatItIs', 'What it is')} />{t('ui.guide.whatItIs', 'What it is')}:</strong> {stepWhat}
-            </p>
-            <p>
-              <strong className="shell-copy-label"><Icon type="settings" size="xs" ariaLabel={t('ui.guide.howToUseIt', 'How to use it')} />{t('ui.guide.howToUseIt', 'How to use it')}:</strong> {stepHow}
-            </p>
-            <p>
-              <strong className="shell-copy-label"><Icon type="crisis" size="xs" ariaLabel={t('ui.guide.whatToWatchFor', 'What to watch for')} />{t('ui.guide.whatToWatchFor', 'What to watch for')}:</strong> {stepWatch}
-            </p>
+          <div className="board-tour-sequence-actions">
+            <IconPlateButton
+              icon="chevronDown"
+              size="sm"
+              variant="quiet"
+              iconClassName={previousChevronClass}
+              label={t('ui.guide.previousStep', 'Previous')}
+              ariaLabel={t('ui.guide.previousStep', 'Previous')}
+              onClick={() => setStepIndex((current) => Math.max(0, current - 1))}
+            />
+            <IconPlateButton
+              icon="chevronDown"
+              size="sm"
+              variant="primary"
+              iconClassName={nextChevronClass}
+              label={t('ui.guide.nextStep', 'Next')}
+              ariaLabel={t('ui.guide.nextStep', 'Next')}
+              onClick={() => setStepIndex((current) => Math.min(BOARD_TOUR_STEPS.length - 1, current + 1))}
+            />
+          </div>
+        </ShellSectionCard>
+        <PaperSheet tone="tray" className="board-tour-map-card shell-card shell-surface-note">
+          <div className="board-tour-live-session">
+            <GameSessionScreen
+              state={TOUR_PREVIEW_STATE}
+              content={BOARD_CONTENT}
+              viewState={viewState}
+              onViewStateChange={(patch) => setViewState((current) => ({ ...current, ...patch }))}
+              onCommand={() => undefined}
+              onToast={() => undefined}
+              onBack={() => undefined}
+              authorizedOwnerId={null}
+              autoAdvanceTransientUi
+            />
 
-            <div className="board-tour-sequence-actions">
-              <ThemePlate
-                size="sm"
-                label={(
-                  <span className="plate-label-with-icon">
-                    <GameIcon name="chevronDown" size="xs" className={previousChevronClass} ariaLabel={t('ui.guide.previousStep', 'Previous')} />
-                    <span>{t('ui.guide.previousStep', 'Previous')}</span>
-                  </span>
-                )}
-                variant="quiet"
-                onClick={() => setStepIndex((current) => Math.max(0, current - 1))}
-              />
-              <ThemePlate
-                size="sm"
-                label={(
-                  <span className="plate-label-with-icon">
-                    <span>{t('ui.guide.nextStep', 'Next')}</span>
-                    <GameIcon name="chevronDown" size="xs" className={nextChevronClass} ariaLabel={t('ui.guide.nextStep', 'Next')} />
-                  </span>
-                )}
-                variant="primary"
-                onClick={() => setStepIndex((current) => Math.min(BOARD_TOUR_STEPS.length - 1, current + 1))}
-              />
-            </div>
-          </PaperSheet>
-          <PaperSheet tone="tray" className="board-tour-map-card shell-card shell-surface-note">
-            <div className="board-tour-live-session">
-              <GameSessionScreen
-                state={TOUR_PREVIEW_STATE}
-                content={BOARD_CONTENT}
-                viewState={viewState}
-                onViewStateChange={(patch) => setViewState((current) => ({ ...current, ...patch }))}
-                onCommand={() => undefined}
-                onToast={() => undefined}
-                onBack={() => undefined}
-                authorizedOwnerId={null}
-                autoAdvanceTransientUi
-              />
-
-              <div className={`board-tour-overlay board-tour-overlay-step-${step.id}`.trim()} style={overlayStyle} aria-hidden="true">
-                <div className="board-tour-pointer" />
-                <div className="board-tour-bubble">
-                  <span>{stepTitle}</span>
-                </div>
+            <div className={`board-tour-overlay board-tour-overlay-step-${step.id}`.trim()} style={overlayStyle} aria-hidden="true">
+              <div className="board-tour-pointer" />
+              <div className="board-tour-bubble">
+                <span>{stepTitle}</span>
               </div>
             </div>
-          </PaperSheet>
-        </div>
-      </PaperSheet>
-    </TableSurface>
+          </div>
+        </PaperSheet>
+      </div>
+    </ShellScreenLayout>
   );
 }

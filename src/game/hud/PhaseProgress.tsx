@@ -2,7 +2,7 @@ import type { Phase } from '../../engine/index.ts';
 import { useMemo, type ReactNode } from 'react';
 import { t } from '../../i18n/index.ts';
 import { getPhaseProgressSteps } from '../presentation/gameUiHelpers.ts';
-import { PrintedTrack } from '../../ui/layout/tabletop.tsx';
+import { PrintedTrack } from '../../ui/components/data/PrintedTrack.tsx';
 import { useTransientHighlightKeys } from '../presentation/useTransientHighlights.ts';
 
 interface PhaseProgressProps {

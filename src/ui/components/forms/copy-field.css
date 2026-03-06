@@ -1,0 +1,31 @@
+.copy-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: 14px 54px 14px 16px;
+  border: var(--border-width-hairline) solid color-mix(in srgb, var(--color-border) 56%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-surface-elevated) 94%, var(--color-surface-tint) 6%);
+  font-family: var(--font-data);
+  color: var(--color-text-primary);
+  font-size: var(--type-1);
+  word-break: break-all;
+}
+
+.copy-field-value {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.copy-field-action {
+  position: absolute;
+  inset-inline-end: var(--space-1-5);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.copy-field-action:hover,
+.copy-field-action:focus-visible {
+  transform: translateY(-50%);
+}

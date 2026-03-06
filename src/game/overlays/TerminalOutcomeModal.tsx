@@ -2,7 +2,9 @@ import type { CompiledContent, EngineState } from '../../engine/index.ts';
 import { formatNumber, localizeRulesetField, t } from '../../i18n/index.ts';
 import { presentTerminalOutcome } from '../presentation/historyPresentation.ts';
 import { Icon } from '../../ui/icon/Icon.tsx';
-import { PaperSheet } from '../../ui/layout/tabletop.tsx';
+import { ModalFrame } from '../../ui/components/overlay/ModalFrame.tsx';
+import { MetricRibbon } from '../../ui/components/data/MetricRibbon.tsx';
+import { UiButton } from '../../ui/components/actions/UiButton.tsx';
 
 interface TerminalOutcomeModalProps {
   open?: boolean;
@@ -34,88 +36,71 @@ export function TerminalOutcomeModal({
       count: state.terminalOutcome.failedMandateIds?.length ?? 0,
     })
     : t('ui.terminal.finalMandatesHeld', 'held');
+  const finalStateItems = [
+    { label: t('ui.game.globalGaze', 'Global Gaze'), value: formatNumber(state.globalGaze) },
+    { label: t('ui.game.northernWarMachine', 'War Machine'), value: formatNumber(state.northernWarMachine) },
+    { label: t('ui.game.extractionTokens', 'Extraction Tokens'), value: formatNumber(totalExtraction) },
+    ...(state.secretMandatesEnabled ? [{ label: t('ui.game.secretMandate', 'Secret Mandates'), value: mandateSummary }] : []),
+  ];
 
   return (
-    <div
-      className={`modal-shell terminal-outcome-shell terminal-outcome-${state.phase === 'WIN' ? 'victory' : 'defeat'}`.trim()}
-      role="presentation"
+    <ModalFrame
+      open={open}
+      size="lg"
+      variant="game"
+      title={outcome.title}
+      description={localizeRulesetField(content.ruleset.id, 'name', content.ruleset.name)}
+      shellClassName={`terminal-outcome-shell terminal-outcome-${state.phase === 'WIN' ? 'victory' : 'defeat'}`.trim()}
+      className="terminal-outcome-card"
     >
-      <PaperSheet
-        tone="folio"
-        className="modal-card terminal-outcome-card"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="terminal-outcome-title"
-      >
-        <header className="terminal-outcome-header">
-          <span className="engraved-eyebrow">{outcome.eyebrow}</span>
-          <h2 id="terminal-outcome-title">{outcome.title}</h2>
-          <p className="terminal-outcome-ruleset">
-            {localizeRulesetField(content.ruleset.id, 'name', content.ruleset.name)}
-          </p>
-        </header>
+      <div className="terminal-outcome-header">
+        <span className="engraved-eyebrow">{outcome.eyebrow}</span>
+        <p className="terminal-outcome-ruleset">
+          {localizeRulesetField(content.ruleset.id, 'name', content.ruleset.name)}
+        </p>
+      </div>
 
-        <section className="terminal-outcome-summary">
-          <strong>{outcome.reasonLabel}</strong>
-          <p>{outcome.summary}</p>
+      <section className="terminal-outcome-summary">
+        <strong>{outcome.reasonLabel}</strong>
+        <p>{outcome.summary}</p>
+      </section>
+
+      <section aria-label={t('ui.terminal.finalState', 'Final state')}>
+        <MetricRibbon className="terminal-outcome-final-state" columns={state.secretMandatesEnabled ? 4 : 3} items={finalStateItems} />
+      </section>
+
+      <div className="terminal-outcome-grid">
+        <section className="terminal-outcome-section">
+          <span className="engraved-eyebrow">{t('ui.terminal.contextHeading', 'Context')}</span>
+          <div className="terminal-outcome-list">
+            {outcome.contextLines.map((line) => (
+              <p key={line}>{line}</p>
+            ))}
+          </div>
         </section>
 
-        <section className="terminal-outcome-final-state" aria-label={t('ui.terminal.finalState', 'Final state')}>
-          <article>
-            <span>{t('ui.game.globalGaze', 'Global Gaze')}</span>
-            <strong>{formatNumber(state.globalGaze)}</strong>
-          </article>
-          <article>
-            <span>{t('ui.game.northernWarMachine', 'War Machine')}</span>
-            <strong>{formatNumber(state.northernWarMachine)}</strong>
-          </article>
-          <article>
-            <span>{t('ui.game.extractionTokens', 'Extraction Tokens')}</span>
-            <strong>{formatNumber(totalExtraction)}</strong>
-          </article>
-          {state.secretMandatesEnabled ? (
-            <article>
-              <span>{t('ui.game.secretMandate', 'Secret Mandates')}</span>
-              <strong>{mandateSummary}</strong>
-            </article>
-          ) : null}
+        <section className="terminal-outcome-section">
+          <span className="engraved-eyebrow">{t('ui.terminal.feedbackHeading', 'Feedback')}</span>
+          <div className="terminal-outcome-list">
+            {outcome.feedbackLines.map((line) => (
+              <p key={line}>{line}</p>
+            ))}
+          </div>
         </section>
+      </div>
 
-        <div className="terminal-outcome-grid">
-          <section className="terminal-outcome-section">
-            <span className="engraved-eyebrow">{t('ui.terminal.contextHeading', 'Context')}</span>
-            <div className="terminal-outcome-list">
-              {outcome.contextLines.map((line) => (
-                <p key={line}>{line}</p>
-              ))}
-            </div>
-          </section>
+      <blockquote className="terminal-outcome-closing">
+        {outcome.closingNote}
+      </blockquote>
 
-          <section className="terminal-outcome-section">
-            <span className="engraved-eyebrow">{t('ui.terminal.feedbackHeading', 'Feedback')}</span>
-            <div className="terminal-outcome-list">
-              {outcome.feedbackLines.map((line) => (
-                <p key={line}>{line}</p>
-              ))}
-            </div>
-          </section>
-        </div>
-
-        <blockquote className="terminal-outcome-closing">
-          {outcome.closingNote}
-        </blockquote>
-
-        <div className="terminal-outcome-actions">
-          <button type="button" className="primary-button" onClick={onReviewLedger}>
-            <Icon type="ledger" size="md" />
-            <span>{t('ui.terminal.reviewLedger', 'Review Ledger')}</span>
-          </button>
-          <button type="button" className="secondary-button" onClick={onBack}>
-            <Icon type="home" size="md" />
-            <span>{t('ui.terminal.backHome', 'Back Home')}</span>
-          </button>
-        </div>
-      </PaperSheet>
-    </div>
+      <div className="terminal-outcome-actions">
+        <UiButton variant="primary" onClick={onReviewLedger} icon={<Icon type="ledger" size="md" />}>
+          {t('ui.terminal.reviewLedger', 'Review Ledger')}
+        </UiButton>
+        <UiButton variant="secondary" onClick={onBack} icon={<Icon type="home" size="md" />}>
+          {t('ui.terminal.backHome', 'Back Home')}
+        </UiButton>
+      </div>
+    </ModalFrame>
   );
 }

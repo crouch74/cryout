@@ -128,176 +128,6 @@ body {
   opacity: 0.8;
 }
 
-/* Shared shell primitives start */
-.shell-depth-surface {
-  position: relative;
-}
-
-.shell-depth-surface::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(120% 60% at 50% 0%, var(--color-background-wash), transparent 70%);
-  opacity: 0.55;
-}
-
-.shell-table .table-surface-paper {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--color-background) 90%, var(--color-surface) 10%), color-mix(in srgb, var(--color-background) 95%, var(--color-surface-elevated) 5%));
-}
-
-.shell-surface {
-  border-color: color-mix(in srgb, var(--color-border) 44%, transparent);
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--color-surface-elevated) 74%, transparent 26%), color-mix(in srgb, var(--color-surface-elevated) 22%, transparent 78%)),
-    color-mix(in srgb, var(--color-surface-elevated) 90%, var(--color-surface-tint) 10%);
-}
-
-.shell-surface-focus {
-  border-color: color-mix(in srgb, var(--color-border) 56%, transparent);
-  box-shadow: var(--shadow-level-2);
-}
-
-.shell-surface-note {
-  border-color: color-mix(in srgb, var(--color-border) 44%, transparent);
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--color-surface-elevated) 66%, transparent 34%), color-mix(in srgb, var(--color-surface-elevated) 12%, transparent 88%)),
-    color-mix(in srgb, var(--color-surface) 90%, var(--color-surface-tint) 10%);
-}
-
-.shell-table .shell-board {
-  display: grid;
-  gap: var(--space-3);
-  padding: var(--space-3);
-  border-radius: var(--radius-lg);
-  border-width: 0.8px;
-}
-
-.shell-table .shell-card {
-  display: grid;
-  gap: var(--space-2);
-  padding: var(--space-2);
-  border-radius: var(--radius-md);
-  border-width: 0.8px;
-  box-shadow: none;
-}
-
-.shell-table .shell-board::before,
-.shell-table .shell-card::before {
-  display: none;
-}
-
-.shell-actions {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-  justify-content: flex-end;
-  align-items: center;
-}
-
-.shell-actions .locale-switcher,
-.shell-actions .tabletop-controls {
-  margin: 0;
-}
-
-.shell-table .shell-actions .locale-icon-trigger,
-.shell-table .shell-actions .engraved-plate {
-  min-height: var(--size-control-height);
-  border-radius: var(--radius-sm);
-  border-width: 0.8px;
-  border-color: color-mix(in srgb, var(--color-border) 56%, transparent);
-  box-shadow: none;
-}
-
-.shell-table .shell-actions .engraved-plate::before {
-  display: none;
-}
-
-.shell-table .shell-actions .locale-icon-trigger {
-  min-width: 40px;
-  padding: 4px 8px;
-  background: color-mix(in srgb, var(--color-background) 26%, transparent);
-  color: var(--text-1);
-}
-
-.shell-table .shell-actions .locale-icon-trigger:hover,
-.shell-table .shell-actions .locale-icon-trigger:active {
-  transform: none;
-  background: color-mix(in srgb, var(--color-background) 34%, transparent);
-}
-
-.shell-title-row {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-}
-
-.shell-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: var(--space-1);
-}
-
-.shell-list-item {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-1);
-}
-
-.shell-list-item .ui-icon {
-  margin-top: 2px;
-}
-
-.shell-progress-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 64px;
-  padding: 5px 10px;
-  border-radius: var(--radius-sm);
-  border: var(--border-width-hairline) solid color-mix(in srgb, var(--color-border) 44%, transparent);
-  background: color-mix(in srgb, var(--color-surface-elevated) 94%, var(--color-surface-tint) 6%);
-  font-family: var(--font-data);
-  font-size: var(--type-0);
-}
-
-.shell-copy-label {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-0-5);
-}
-
-.shell-chevron {
-  transition: transform var(--motion-fast);
-}
-
-.shell-chevron.is-left {
-  transform: rotate(90deg);
-}
-
-.shell-chevron.is-right {
-  transform: rotate(-90deg);
-}
-
-.shell-inline-field {
-  position: relative;
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  border: var(--border-width-hairline) solid color-mix(in srgb, var(--color-border) 44%, transparent);
-  border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--color-surface-elevated) 92%, var(--color-surface-tint) 8%);
-}
-
-.shell-icon-button {
-  border-radius: var(--radius-sm);
-  border: var(--border-width-hairline) solid color-mix(in srgb, var(--color-border) 56%, transparent);
-  box-shadow: none;
-}
-/* Shared shell primitives end */
 
 .paper-sheet,
 .shell-panel,
@@ -773,12 +603,6 @@ textarea:focus-visible {
   padding: var(--button-padding-y) var(--button-padding-x);
   font-size: var(--type-2);
   font-weight: 800;
-}
-
-.plate-label-with-icon {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
 }
 
 .wax-seal-lock {
@@ -1784,7 +1608,6 @@ html[dir='rtl'] .printed-track-step:not(:last-child)::after {
 }
 
 .notes-pad-body,
-.minutes-toast-copy,
 .chairs-docket-copy {
   display: grid;
   gap: var(--space-1);
@@ -1962,40 +1785,6 @@ html[dir='rtl'] .printed-track-step:not(:last-child)::after {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-}
-
-.minutes-toast-stack {
-  position: fixed;
-  top: var(--space-4);
-  right: var(--space-4);
-  z-index: var(--z-toast);
-  display: grid;
-  gap: var(--space-2);
-  width: min(var(--size-drawer), calc(100vw - 32px));
-}
-
-.minutes-toast {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-2);
-  align-items: flex-start;
-  padding: 14px 16px;
-  border-radius: var(--radius-18);
-  border: var(--border-width-thin) solid var(--line-ink);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--skin-text-inverse) 90%, transparent), color-mix(in srgb, var(--skin-text-inverse) 22%, transparent)), var(--paper-elevated);
-  box-shadow: var(--shadow-paper), var(--shadow-inset);
-}
-
-.toast-dismiss-button {
-  min-width: var(--size-control-height);
-  width: var(--size-control-height);
-  min-height: var(--size-control-height);
-  height: var(--size-control-height);
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
 }
 
 .evidence-drawer,
@@ -5381,9 +5170,7 @@ body,
 .modal-card,
 .paper-modal-card,
 .campaign-result-modal,
-.campaign-result-panel,
-.minutes-toast,
-.toast {
+.campaign-result-panel {
   border: var(--border-width-thin) solid var(--cosmetic-border) !important;
   border-radius: var(--cosmetic-radius-card) !important;
   box-shadow: none !important;
@@ -5447,7 +5234,6 @@ body,
 .debug-panel select,
 .debug-panel input,
 .debug-panel textarea,
-.toast-dismiss-button,
 .drawer-close-button {
   border-radius: var(--cosmetic-radius-control) !important;
   box-shadow: none !important;
@@ -5715,110 +5501,8 @@ html[dir='rtl'] .dev-tools-fab-actions.dev-tools-fab-actions-edge {
 html[lang^='ar'] .game-screen .panel-heading,
 html[lang^='ar'] .game-screen .status-pill,
 html[lang^='ar'] .game-screen .context-panel,
-html[lang^='ar'] .game-screen .toast,
-html[lang^='ar'] .game-screen .minutes-toast {
+html[lang^='ar'] .game-screen .toast {
   letter-spacing: 0 !important;
-}
-
-/* Re-assert shared non-home shell primitives after legacy tabletop overrides. */
-.shell-table.table-surface,
-.shell-table .table-surface-paper {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--color-background) 90%, var(--color-surface) 10%), color-mix(in srgb, var(--color-background) 95%, var(--color-surface-elevated) 5%)) !important;
-}
-
-.header-action-plates.shell-actions {
-  display: inline-flex !important;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-  justify-content: flex-end;
-  align-items: center;
-}
-
-.shell-table .shell-surface {
-  border-color: color-mix(in srgb, var(--color-border) 44%, transparent) !important;
-  background: color-mix(in srgb, var(--color-surface-elevated) 96%, var(--color-surface-tint) 4%) !important;
-}
-
-.shell-table .shell-surface-focus {
-  border-color: color-mix(in srgb, var(--color-border) 56%, transparent) !important;
-  box-shadow: var(--shadow-level-2) !important;
-}
-
-.shell-table .shell-surface-note {
-  border-color: color-mix(in srgb, var(--color-border) 44%, transparent) !important;
-  background: color-mix(in srgb, var(--color-surface) 95%, var(--color-surface-tint) 5%) !important;
-}
-
-.shell-table .shell-board {
-  padding: var(--space-3) !important;
-  border-radius: var(--radius-lg) !important;
-}
-
-.shell-table .shell-card {
-  padding: var(--space-2) !important;
-  border-radius: var(--radius-md) !important;
-  background: color-mix(in srgb, var(--color-surface-elevated) 96%, var(--color-surface-tint) 4%) !important;
-  box-shadow: var(--shadow-level-1) !important;
-}
-
-.shell-table .paper-sheet,
-.shell-table .paper-sheet-board,
-.shell-table .paper-sheet-tray,
-.shell-table .paper-sheet-note {
-  background-image: none !important;
-  box-shadow: var(--shadow-level-1) !important;
-}
-
-.shell-table .engraved-plate,
-.shell-table .locale-icon-trigger,
-.shell-table .locale-selector-trigger {
-  background: color-mix(in srgb, var(--color-surface) 96%, var(--color-surface-tint) 4%) !important;
-  border: var(--border-width-hairline) solid color-mix(in srgb, var(--color-border) 56%, transparent) !important;
-  box-shadow: none !important;
-  transform: none !important;
-  min-height: 36px;
-  color: var(--color-text-primary) !important;
-  font-weight: 600;
-}
-
-.shell-table .engraved-plate:hover,
-.shell-table .engraved-plate:active,
-.shell-table .locale-icon-trigger:hover,
-.shell-table .locale-icon-trigger:active,
-.shell-table .locale-selector-trigger:hover,
-.shell-table .locale-selector-trigger:active {
-  background: color-mix(in srgb, var(--color-surface) 92%, var(--color-surface-tint) 8%) !important;
-  box-shadow: none !important;
-  transform: none !important;
-}
-
-.shell-table .engraved-plate-primary {
-  background: var(--color-focus-surface) !important;
-  color: var(--color-text-inverted) !important;
-  border-color: color-mix(in srgb, var(--color-focus-surface) 82%, var(--color-surface-elevated) 18%) !important;
-}
-
-.shell-table .engraved-plate-primary:hover,
-.shell-table .engraved-plate-primary:active {
-  background: color-mix(in srgb, var(--color-focus-surface) 92%, var(--color-background) 8%) !important;
-}
-
-.shell-table .engraved-header h1 {
-  color: color-mix(in srgb, var(--color-text-primary) 94%, var(--skin-text-primary) 6%);
-}
-
-.shell-table .engraved-header p,
-.shell-table .shell-card p,
-.shell-table .shell-card li,
-.shell-table .shell-card span {
-  color: color-mix(in srgb, var(--color-text-muted) 78%, var(--color-text-primary) 22%);
-}
-
-.shell-table .shell-card strong,
-.shell-table .shell-card h2,
-.shell-table .shell-card h3 {
-  color: color-mix(in srgb, var(--color-text-primary) 94%, var(--skin-text-primary) 6%);
 }
 
 /* Keep the coalition file seam intact: this must override generic action-dock cosmetic borders. */
@@ -5827,31 +5511,4 @@ html[lang^='ar'] .game-screen .minutes-toast {
   border-top: var(--border-width-thin) solid var(--file-rim) !important;
   border-radius: 0 0 var(--radius-16) var(--radius-16) !important;
   box-shadow: none !important;
-}
-
-.shell-table .shell-list-item .ui-icon,
-.shell-table .shell-title-row .ui-icon {
-  color: color-mix(in srgb, var(--color-text-muted) 58%, var(--color-text-primary) 42%);
-}
-
-.guide-sheet-modal-shell.modal-shell {
-  align-items: flex-start;
-  padding: var(--space-3);
-  background: color-mix(in srgb, var(--color-focus-surface) 34%, transparent);
-}
-
-.guide-sheet-modal-card.modal-card {
-  width: min(1520px, 96vw);
-  max-height: calc(100vh - (var(--space-3) * 2));
-  overflow: auto;
-  padding: var(--space-2);
-  border: var(--border-width-hairline) solid color-mix(in srgb, var(--color-border) 56%, transparent);
-  border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--color-surface-elevated) 96%, var(--color-surface-tint) 4%);
-  box-shadow: var(--shadow-level-2);
-}
-
-.guide-modal-content {
-  display: grid;
-  min-height: min-content;
 }

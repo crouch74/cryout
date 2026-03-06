@@ -1,0 +1,91 @@
+.ui-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  border: 0;
+  border-radius: var(--radius-md);
+  padding: var(--button-padding-y) var(--button-padding-x);
+  font-weight: var(--font-weight-bold);
+  transition:
+    transform var(--motion-duration-med) var(--motion-ease-standard),
+    background-color var(--motion-duration-med) var(--motion-ease-standard),
+    border-color var(--motion-duration-med) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-med) var(--motion-ease-standard);
+}
+
+.ui-button-icon-wrap,
+.plate-label-with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.ui-button-icon-only {
+  padding-inline: 0;
+}
+
+.ui-button-sm {
+  min-height: 36px;
+  padding: var(--button-padding-y) var(--button-padding-x);
+  font-size: var(--type-1);
+}
+
+.ui-button-md {
+  min-height: 44px;
+  padding: var(--button-padding-y) var(--button-padding-x);
+}
+
+.ui-button-lg {
+  min-height: 54px;
+  padding: var(--button-padding-y) var(--button-padding-x);
+  font-size: var(--type-2);
+  font-weight: 800;
+}
+
+.ui-button-primary {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--skin-action-secondary) 12%, transparent), transparent 44%),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-action-primary, var(--accent-primary)) 90%, var(--skin-layer-elevated) 10%), color-mix(in srgb, var(--color-action-primary, var(--accent-primary)) 78%, var(--skin-layer-scrim) 22%));
+  color: var(--color-text-inverted, var(--surface-2));
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  box-shadow: var(--shadow-raised), inset 0 1px 0 color-mix(in srgb, var(--skin-text-inverse) 22%, transparent);
+}
+
+.ui-button-danger {
+  background: var(--color-state-danger, var(--accent-danger));
+  color: var(--color-text-inverted, var(--surface-2));
+  box-shadow: var(--shadow-level-1);
+}
+
+.ui-button-secondary,
+.ui-button-quiet,
+.ui-button-utility {
+  background:
+    var(--texture-paper-noise),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-bg-panel, var(--surface-3)) 92%, var(--skin-layer-elevated) 8%), color-mix(in srgb, var(--color-bg-panel, var(--surface-3)) 84%, var(--skin-layer-surface) 16%));
+  color: var(--color-text-primary, var(--text-1));
+  border: var(--border-width-thin) solid var(--color-border-subtle, var(--line-soft));
+}
+
+.ui-button-quiet {
+  background: transparent;
+}
+
+.ui-button:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-floating);
+}
+
+.ui-button:active {
+  transform: translateY(1px);
+}
+
+.ui-button:disabled {
+  cursor: not-allowed;
+  color: var(--text-disabled);
+  opacity: 0.65;
+  transform: none;
+}

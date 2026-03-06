@@ -1,0 +1,123 @@
+.shell-depth-surface {
+  position: relative;
+}
+
+.shell-depth-surface::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(120% 60% at 50% 0%, var(--color-background-wash), transparent 70%);
+  opacity: 0.55;
+}
+
+.shell-table.table-surface,
+.shell-table .table-surface-paper {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-background) 90%, var(--color-surface) 10%), color-mix(in srgb, var(--color-background) 95%, var(--color-surface-elevated) 5%));
+}
+
+.shell-table .shell-surface {
+  border-color: color-mix(in srgb, var(--color-border) 44%, transparent);
+  background: color-mix(in srgb, var(--color-surface-elevated) 96%, var(--color-surface-tint) 4%);
+}
+
+.shell-table .shell-surface-focus {
+  border-color: color-mix(in srgb, var(--color-border) 56%, transparent);
+  box-shadow: var(--shadow-level-2);
+}
+
+.shell-table .shell-surface-note {
+  border-color: color-mix(in srgb, var(--color-border) 44%, transparent);
+  background: color-mix(in srgb, var(--color-surface) 95%, var(--color-surface-tint) 5%);
+}
+
+.shell-table .shell-board {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  border-width: 0.8px;
+}
+
+.shell-table .shell-card {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  border-width: 0.8px;
+  box-shadow: var(--shadow-level-1);
+}
+
+.shell-table .shell-board::before,
+.shell-table .shell-card::before {
+  display: none;
+}
+
+.header-action-plates.shell-actions,
+.shell-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.shell-table .engraved-plate,
+.shell-table .locale-icon-trigger,
+.shell-table .locale-selector-trigger,
+.shell-table .shell-icon-button {
+  background: color-mix(in srgb, var(--color-surface) 96%, var(--color-surface-tint) 4%);
+  border: var(--border-width-hairline) solid color-mix(in srgb, var(--color-border) 56%, transparent);
+  box-shadow: none;
+  transform: none;
+  min-height: 36px;
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.shell-table .engraved-plate:hover,
+.shell-table .engraved-plate:active,
+.shell-table .locale-icon-trigger:hover,
+.shell-table .locale-icon-trigger:active,
+.shell-table .locale-selector-trigger:hover,
+.shell-table .locale-selector-trigger:active,
+.shell-table .shell-icon-button:hover,
+.shell-table .shell-icon-button:active {
+  background: color-mix(in srgb, var(--color-surface) 92%, var(--color-surface-tint) 8%);
+  box-shadow: none;
+  transform: none;
+}
+
+.shell-table .engraved-plate-primary {
+  background: var(--color-focus-surface);
+  color: var(--color-text-inverted);
+  border-color: color-mix(in srgb, var(--color-focus-surface) 82%, var(--color-surface-elevated) 18%);
+}
+
+.shell-table .engraved-plate-primary:hover,
+.shell-table .engraved-plate-primary:active {
+  background: color-mix(in srgb, var(--color-focus-surface) 92%, var(--color-background) 8%);
+}
+
+.shell-table .engraved-header h1 {
+  color: color-mix(in srgb, var(--color-text-primary) 94%, var(--skin-text-primary) 6%);
+}
+
+.shell-table .engraved-header p,
+.shell-table .shell-card p,
+.shell-table .shell-card li,
+.shell-table .shell-card span {
+  color: color-mix(in srgb, var(--color-text-muted) 78%, var(--color-text-primary) 22%);
+}
+
+.shell-table .shell-card strong,
+.shell-table .shell-card h2,
+.shell-table .shell-card h3 {
+  color: color-mix(in srgb, var(--color-text-primary) 94%, var(--skin-text-primary) 6%);
+}
+
+.shell-screen-layout-modal {
+  display: grid;
+  gap: var(--space-3);
+}

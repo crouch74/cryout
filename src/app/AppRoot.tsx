@@ -16,6 +16,7 @@ import { LOCALE_STORAGE_KEY, t, useAppLocale } from '../i18n/index.ts';
 import { LoadingScreen } from './shell/LoadingScreen.tsx';
 import { AppLayout } from './shell/AppLayout.tsx';
 import { ToastStack, type ToastDraft, type ToastMessage } from '../ui/feedback/ToastStack.tsx';
+import { ModalFrame } from '../ui/components/overlay/ModalFrame.tsx';
 import { GameSessionScreen } from '../game/screens/GameSessionScreen.tsx';
 import { GuidelinesScreen } from '../features/rules-brief/ui/RulesBriefScreen.tsx';
 import { SessionSetupScreen } from '../features/session-setup/ui/SessionSetupScreen.tsx';
@@ -793,26 +794,24 @@ export default function AppRoot({ runtime }: { runtime: AppRuntimeOptions }) {
             onOpenBoardTour={() => goToPage('board-tour')}
             mode={runtime.defaultPage === 'offline' ? 'offline' : 'home'}
           />
-          <div
-            className="modal-shell guide-sheet-modal-shell"
-            role="presentation"
-            onClick={() => goToPage(runtime.defaultPage)}
+          <ModalFrame
+            open
+            hideHeader
+            size="xl"
+            variant="guide"
+            title={t('ui.guide.rulesBrief', 'Rules Brief')}
+            dismissEnabled
+            onRequestClose={() => goToPage(runtime.defaultPage)}
+            shellClassName="guide-sheet-modal-shell"
+            className="guide-sheet-modal-card"
           >
-            <div
-              className="modal-card guide-sheet-modal-card"
-              role="dialog"
-              aria-modal="true"
-              aria-label={t('ui.guide.rulesBrief', 'Rules Brief')}
-              onClick={(event) => event.stopPropagation()}
-            >
-              <GuidelinesScreen
-                rulesetId={activeRulesetId}
-                presentation="modal"
-                onBackHome={() => goToPage(runtime.defaultPage)}
-                onOpenOffline={() => goToPage('offline')}
-              />
-            </div>
-          </div>
+            <GuidelinesScreen
+              rulesetId={activeRulesetId}
+              presentation="modal"
+              onBackHome={() => goToPage(runtime.defaultPage)}
+              onOpenOffline={() => goToPage('offline')}
+            />
+          </ModalFrame>
         </>
       ) : route.page === 'player-guide' ? (
         <>
@@ -828,25 +827,23 @@ export default function AppRoot({ runtime }: { runtime: AppRuntimeOptions }) {
             onOpenBoardTour={() => goToPage('board-tour')}
             mode={runtime.defaultPage === 'offline' ? 'offline' : 'home'}
           />
-          <div
-            className="modal-shell guide-sheet-modal-shell"
-            role="presentation"
-            onClick={() => goToPage(runtime.defaultPage)}
+          <ModalFrame
+            open
+            hideHeader
+            size="xl"
+            variant="guide"
+            title={t('ui.guide.playerGuide', 'Player Guide')}
+            dismissEnabled
+            onRequestClose={() => goToPage(runtime.defaultPage)}
+            shellClassName="guide-sheet-modal-shell"
+            className="guide-sheet-modal-card"
           >
-            <div
-              className="modal-card guide-sheet-modal-card"
-              role="dialog"
-              aria-modal="true"
-              aria-label={t('ui.guide.playerGuide', 'Player Guide')}
-              onClick={(event) => event.stopPropagation()}
-            >
-              <PlayerGuideScreen
-                rulesetId={activeRulesetId}
-                presentation="modal"
-                onBackHome={() => goToPage(runtime.defaultPage)}
-              />
-            </div>
-          </div>
+            <PlayerGuideScreen
+              rulesetId={activeRulesetId}
+              presentation="modal"
+              onBackHome={() => goToPage(runtime.defaultPage)}
+            />
+          </ModalFrame>
         </>
       ) : route.page === 'board-tour' ? (
         <BoardTourScreen

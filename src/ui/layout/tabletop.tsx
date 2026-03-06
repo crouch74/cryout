@@ -9,6 +9,11 @@ import { formatNumber, t, useAppLocale } from '../../i18n/index.ts';
 import { UI_SKINS, type UiSkinId } from '../../theme/index.ts';
 import { GameIcon } from '../icon/GameIcon.tsx';
 import type { GameIconName } from '../icon/iconTypes.ts';
+import { PrintedTrack, PhaseMarker } from '../components/data/PrintedTrack.tsx';
+import { EngravedHeader } from './EngravedHeader.tsx';
+import { PaperSheet } from './PaperSheet.tsx';
+import { TableSurface } from './TableSurface.tsx';
+import { ThemePlate } from './ThemePlate.tsx';
 import {
   DropdownMenuContent,
   DropdownMenuItem,
@@ -21,98 +26,10 @@ import {
   TabsTrigger,
 } from '../primitives/index.ts';
 
+export { PrintedTrack, PhaseMarker, EngravedHeader, PaperSheet, TableSurface, ThemePlate };
+
 export function useTabletopTheme() {
   return useThemeSettings();
-}
-
-export function TableSurface({
-  children,
-  className = '',
-  ...props
-}: HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div className={`table-surface ${className}`.trim()} {...props}>
-      <div className="table-surface-paper">{children}</div>
-    </div>
-  );
-}
-
-export function PaperSheet({
-  children,
-  className = '',
-  tone = 'plain',
-  ...props
-}: HTMLAttributes<HTMLElement> & { tone?: 'plain' | 'folio' | 'board' | 'note' | 'mat' | 'tray' | 'docket' | 'slip' | 'booklet' }) {
-  return (
-    <section className={`paper-sheet paper-sheet-${tone} ${className}`.trim()} {...props}>
-      {children}
-    </section>
-  );
-}
-
-export function EngravedHeader({
-  title,
-  eyebrow,
-  detail,
-  actions,
-}: {
-  title: ReactNode;
-  eyebrow?: ReactNode;
-  detail?: ReactNode;
-  actions?: ReactNode;
-}) {
-  return (
-    <header className="engraved-header">
-      <div className="engraved-header-copy">
-        {eyebrow ? <span className="engraved-eyebrow">{eyebrow}</span> : null}
-        <h1>{title}</h1>
-        {detail ? <p>{detail}</p> : null}
-      </div>
-      {actions ? <div className="engraved-header-actions">{actions}</div> : null}
-    </header>
-  );
-}
-
-export function ThemePlate({
-  label,
-  active,
-  disabled,
-  variant = 'default',
-  size = 'md',
-  className = '',
-  ariaLabel,
-  onClick,
-}: {
-  label: ReactNode;
-  active?: boolean;
-  disabled?: boolean;
-  variant?: 'primary' | 'danger' | 'ghost' | 'neutral' | 'default' | 'quiet' | 'utility';
-  size?: 'sm' | 'md' | 'lg';
-  className?: string;
-  ariaLabel?: string;
-  onClick: () => void;
-}) {
-  const variantName = ({
-    default: 'neutral',
-    quiet: 'ghost',
-    utility: 'ghost',
-    primary: 'primary',
-    danger: 'danger',
-    ghost: 'ghost',
-    neutral: 'neutral',
-  } as const)[variant];
-
-  return (
-    <button
-      type="button"
-      className={`engraved-plate engraved-plate-${variantName} engraved-plate-${size} ${active ? 'is-active' : ''} ${className}`.trim()}
-      disabled={disabled}
-      aria-label={ariaLabel}
-      onClick={onClick}
-    >
-      {label}
-    </button>
-  );
 }
 
 export function TabletopControls({ compact = false }: { compact?: boolean }) {
@@ -560,62 +477,6 @@ export function TokenStack({
       <WoodenToken label={label} count={count} shape={shape} icon={icon} />
     </div>
   );
-}
-
-export function PrintedTrack({
-  title,
-  ariaLabel,
-  steps,
-  activeIndex,
-  activeContent,
-}: {
-  title?: string;
-  ariaLabel: string;
-  steps: Array<{
-    key: string;
-    label: ReactNode;
-    tooltipId?: string;
-    tooltipContent?: ReactNode;
-  }>;
-  activeIndex: number;
-  activeContent?: ReactNode;
-}) {
-  return (
-    <div className="printed-track" aria-label={ariaLabel}>
-      {title ? <span className="engraved-eyebrow">{title}</span> : null}
-      <ol className="printed-track-list">
-        {steps.map((step, index) => (
-          <li
-            key={step.key}
-            className={`printed-track-step ${index === activeIndex ? 'is-active' : index < activeIndex ? 'is-complete' : ''} ${step.tooltipContent ? 'has-tooltip' : ''}`.trim()}
-          >
-            <div className="printed-track-step-main">
-              <div
-                className={`printed-track-step-title ${step.tooltipContent ? 'has-tooltip' : ''}`.trim()}
-                tabIndex={step.tooltipContent ? 0 : undefined}
-                aria-describedby={step.tooltipContent ? step.tooltipId : undefined}
-              >
-                <PhaseMarker active={index === activeIndex} label={formatNumber(index + 1)} />
-                <div className="printed-track-step-label-row">
-                  <span className="printed-track-step-label">{step.label}</span>
-                </div>
-                {step.tooltipContent ? (
-                  <span id={step.tooltipId} role="tooltip" className="phase-progress-help-tooltip">
-                    {step.tooltipContent}
-                  </span>
-                ) : null}
-              </div>
-              {index === activeIndex && activeContent ? <div className="printed-track-step-controls">{activeContent}</div> : null}
-            </div>
-          </li>
-        ))}
-      </ol>
-    </div>
-  );
-}
-
-export function PhaseMarker({ label, active }: { label: string; active?: boolean }) {
-  return <span className={`phase-marker-token ${active ? 'is-active' : ''}`}>{label}</span>;
 }
 
 export function ActionCard({

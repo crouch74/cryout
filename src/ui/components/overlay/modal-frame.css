@@ -1,0 +1,46 @@
+.modal-frame-sheet {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.guide-sheet-modal-shell.modal-shell {
+  align-items: flex-start;
+  padding: var(--space-3);
+  background: color-mix(in srgb, var(--color-focus-surface) 34%, transparent);
+}
+
+.modal-frame-sheet[data-size='md'] {
+  width: min(820px, 100%);
+}
+
+.modal-frame-sheet[data-size='lg'] {
+  width: min(920px, 100%);
+}
+
+.modal-frame-sheet[data-size='xl'] {
+  width: min(1520px, 96vw);
+  max-height: calc(100vh - (var(--space-3) * 2));
+  overflow: auto;
+}
+
+.modal-frame-sheet[data-variant='guide'] {
+  background: color-mix(in srgb, var(--color-surface-elevated) 96%, var(--color-surface-tint) 4%);
+  box-shadow: var(--shadow-level-2);
+}
+
+.guide-sheet-modal-card.modal-card {
+  width: min(1520px, 96vw);
+  max-height: calc(100vh - (var(--space-3) * 2));
+  overflow: auto;
+  padding: var(--space-2);
+  border: var(--border-width-hairline) solid color-mix(in srgb, var(--color-border) 56%, transparent);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--color-surface-elevated) 96%, var(--color-surface-tint) 4%);
+  box-shadow: var(--shadow-level-2);
+}
+
+.modal-frame-header,
+.modal-frame-actions {
+  display: grid;
+  gap: var(--space-1-5);
+}

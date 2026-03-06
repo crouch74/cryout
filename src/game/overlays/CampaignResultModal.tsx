@@ -3,7 +3,7 @@ import type { CampaignResolvedEventPayload, CompiledContent } from '../../engine
 import { presentCampaignResult } from '../presentation/campaignResultPresentation.ts';
 import { DiceResolutionAnimation } from './DiceResolutionAnimation.tsx';
 import { Modal } from '../../ui/modal/Modal.tsx';
-import { PaperSheet } from '../../ui/layout/tabletop.tsx';
+import { PaperSheet } from '../../ui/layout/PaperSheet.tsx';
 import {
   TooltipContent,
   TooltipPortal,

@@ -1,0 +1,38 @@
+.room-lobby-board,
+.room-lobby-summary,
+.room-lobby-owners,
+.room-lobby-actions {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.room-lobby-grid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.1fr);
+}
+
+.room-lobby-link-row {
+  display: block;
+}
+
+.room-lobby-note,
+.room-owner-status {
+  color: color-mix(in srgb, var(--color-text-muted) 82%, var(--color-text-primary) 18%);
+}
+
+.room-owner-grid {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.room-owner-card p {
+  color: var(--color-text-primary);
+}
+
+@media (max-width: 980px) {
+  .room-lobby-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, useTransition } from 'react';
 import type { CompiledContent, EngineState, QueuedIntent } from '../../engine/index.ts';
 import { formatNumber, localizeActionField, localizeCardField, localizeDomainField, localizeRegionField, t } from '../../i18n/index.ts';
 import { getTerminalStateLabel, presentHistoryEvent } from '../../game/presentation/historyPresentation.ts';
-import { PaperSheet } from '../../ui/layout/tabletop.tsx';
+import { PaperSheet } from '../../ui/layout/PaperSheet.tsx';
 import {
   buildConformanceChecks,
   buildReplayTimeline,
