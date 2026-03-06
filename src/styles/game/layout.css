@@ -1,4 +1,8 @@
 .game-screen.game-screen-compressed {
+  --game-shell-gutter-inline: clamp(12px, 2vw, 20px);
+  --game-shell-gutter-block-start: 10px;
+  --game-shell-gutter-block-end: 8px;
+  --game-shell-section-gap: 12px;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   min-height: calc(100vh - 48px);
@@ -22,7 +26,10 @@
 }
 
 .game-header-shell {
-  padding: 10px 20px 8px;
+  padding:
+    var(--game-shell-gutter-block-start)
+    var(--game-shell-gutter-inline)
+    var(--game-shell-gutter-block-end);
   border-bottom: 1px solid var(--panel-rim);
   position: sticky;
   top: 0;
@@ -58,6 +65,7 @@
   min-width: 0;
   overflow-x: auto;
   flex-wrap: nowrap;
+  padding-inline: 4px;
 }
 
 .status-pill {
@@ -198,8 +206,8 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) auto;
-  gap: 16px 18px;
-  padding: 8px 20px 6px;
+  gap: var(--game-shell-section-gap);
+  padding: 8px var(--game-shell-gutter-inline) 10px;
   overflow: visible;
 }
 
@@ -1512,7 +1520,10 @@ html[dir='rtl'] .deck-reveal-deck-label {
 
 .status-ribbon-track {
   gap: 10px;
-  padding: 2px 0;
+  padding-block: 2px;
+  padding-inline-start: 8px;
+  padding-inline-end: 4px;
+  scroll-padding-inline-start: 8px;
 }
 
 .status-pill {
@@ -2248,10 +2259,13 @@ html[dir='rtl'] .deck-reveal-deck-label {
 }
 
 .phase-progress-nav .printed-track-list {
-  gap: 8px;
+  gap: 10px;
+  padding-block: 2px;
+  padding-inline: 6px;
   border: 0;
   border-radius: 0;
   background: transparent;
+  overflow: visible;
 }
 
 .phase-progress-nav .printed-track-step {
@@ -2265,6 +2279,7 @@ html[dir='rtl'] .deck-reveal-deck-label {
     ),
     var(--skin-layer-surface) !important;
   overflow: visible;
+  background-clip: padding-box;
 }
 
 .phase-progress-nav .printed-track-step::after {

@@ -18,6 +18,7 @@ import {
 } from '../analysis.ts';
 
 export type AutoPlaySpeedLevel = 1 | 2 | 3 | 4 | 5;
+export type DebugSectionId = 'autoplay' | 'snapshot' | 'replay' | 'conformance' | 'legality' | 'causality' | 'lint' | 'probability';
 
 interface DebugOverlayProps {
   state: EngineState;
@@ -28,6 +29,7 @@ interface DebugOverlayProps {
   autoPlaySpeed: AutoPlaySpeedLevel;
   autoPlayRunning: boolean;
   autoPlayStatus: string | null;
+  focusedSection?: DebugSectionId | null;
   onToggleDebugSnapshot: () => void;
   onAutoPlayRoundsChange: (value: string) => void;
   onAutoPlaySpeedChange: (value: AutoPlaySpeedLevel) => void;
@@ -70,6 +72,7 @@ export function DebugOverlay({
   autoPlaySpeed,
   autoPlayRunning,
   autoPlayStatus,
+  focusedSection = null,
   onToggleDebugSnapshot,
   onAutoPlayRoundsChange,
   onAutoPlaySpeedChange,
@@ -150,6 +153,7 @@ export function DebugOverlay({
   }
 
   const terminalStateLabel = getTerminalStateLabel(state, content);
+  const isSectionVisible = (section: DebugSectionId) => focusedSection === null || focusedSection === section;
 
   return (
     <aside className="debug-ledger" aria-label={t('ui.debug.devPanel', 'Development panel')}>
@@ -164,7 +168,8 @@ export function DebugOverlay({
           </button>
         </div>
 
-        <section className="debug-panel-section" aria-labelledby="debug-autoplay-title">
+        {isSectionVisible('autoplay') ? (
+          <section className="debug-panel-section" aria-labelledby="debug-autoplay-title">
           <div className="debug-panel-section-header">
             <div>
               <span className="engraved-eyebrow">{t('ui.debug.autoplayEyebrow', 'Autoplay')}</span>
@@ -214,9 +219,11 @@ export function DebugOverlay({
           <p className="debug-panel-status">
             {autoPlayStatus ?? t('ui.debug.autoplayIdle', 'Ready to run scripted rounds through the normal game flow.')}
           </p>
-        </section>
+          </section>
+        ) : null}
 
-        <section className="debug-panel-section" aria-labelledby="debug-snapshot-title">
+        {isSectionVisible('snapshot') ? (
+          <section className="debug-panel-section" aria-labelledby="debug-snapshot-title">
           <div className="debug-panel-section-header">
             <div>
               <span className="engraved-eyebrow">{t('ui.debug.snapshot', 'Snapshot')}</span>
@@ -246,19 +253,21 @@ export function DebugOverlay({
               {roomId ? <div className="ledger-row"><span>{t('ui.debug.room', 'Room')}</span><strong>{roomId}</strong></div> : null}
             </div>
           ) : null}
-        </section>
+          </section>
+        ) : null}
 
-        <section className="debug-panel-section" aria-labelledby="debug-replay-title">
+        {isSectionVisible('replay') ? (
+          <section className="debug-panel-section" aria-labelledby="debug-replay-title">
           <div className="debug-panel-section-header">
             <div>
-              <span className="engraved-eyebrow">Replay</span>
-              <h5 id="debug-replay-title">Time-travel inspector</h5>
+              <span className="engraved-eyebrow">{t('ui.debug.replayEyebrow', 'Replay')}</span>
+              <h5 id="debug-replay-title">{t('ui.debug.replayTitle', 'Time-travel inspector')}</h5>
             </div>
-            <span className="debug-chip">{replayTimeline.length} states</span>
+            <span className="debug-chip">{t('ui.debug.replayStates', '{{count}} states', { count: replayTimeline.length })}</span>
           </div>
 
           <label className="debug-panel-field">
-            <span>Command step</span>
+            <span>{t('ui.debug.commandStep', 'Command step')}</span>
             <input
               type="range"
               min="0"
@@ -285,15 +294,15 @@ export function DebugOverlay({
           {selectedReplay && replaySummary ? (
             <>
               <div className="ledger-list">
-                <div className="ledger-row"><span>Round</span><strong>{formatNumber(replaySummary.round)}</strong></div>
-                <div className="ledger-row"><span>Phase</span><strong>{replaySummary.phase}</strong></div>
-                <div className="ledger-row"><span>Global Gaze</span><strong>{formatNumber(replaySummary.globalGaze)}</strong></div>
-                <div className="ledger-row"><span>War Machine</span><strong>{formatNumber(replaySummary.warMachine)}</strong></div>
-                <div className="ledger-row"><span>Extraction Pool</span><strong>{formatNumber(replaySummary.extractionPool)}</strong></div>
+                <div className="ledger-row"><span>{t('ui.debug.round', 'Round')}</span><strong>{formatNumber(replaySummary.round)}</strong></div>
+                <div className="ledger-row"><span>{t('ui.debug.phase', 'Phase')}</span><strong>{replaySummary.phase}</strong></div>
+                <div className="ledger-row"><span>{t('ui.debug.gaze', 'Global Gaze')}</span><strong>{formatNumber(replaySummary.globalGaze)}</strong></div>
+                <div className="ledger-row"><span>{t('ui.debug.warMachine', 'War Machine')}</span><strong>{formatNumber(replaySummary.warMachine)}</strong></div>
+                <div className="ledger-row"><span>{t('ui.debug.extractionPool', 'Extraction Pool')}</span><strong>{formatNumber(replaySummary.extractionPool)}</strong></div>
               </div>
 
               <div className="debug-subsection">
-                <span className="engraved-eyebrow">State Diff</span>
+                <span className="engraved-eyebrow">{t('ui.debug.stateDiff', 'State Diff')}</span>
                 {selectedReplay.changes.length > 0 ? (
                   <div className="debug-data-list">
                     {selectedReplay.changes.map((change) => (
@@ -304,37 +313,44 @@ export function DebugOverlay({
                     ))}
                   </div>
                 ) : (
-                  <p className="debug-panel-status">No tracked state deltas at this step.</p>
+                  <p className="debug-panel-status">{t('ui.debug.noStateDeltas', 'No tracked state deltas at this step.')}</p>
                 )}
               </div>
 
               <div className="debug-subsection">
-                <span className="engraved-eyebrow">Emitted Events</span>
+                <span className="engraved-eyebrow">{t('ui.debug.emittedEvents', 'Emitted Events')}</span>
                 {selectedReplay.events.length > 0 ? (
                   <div className="debug-scroll-list">
                     {selectedReplay.events.map((event) => (
                       <article key={`${event.seq}:${event.sourceId}`} className="debug-event-card">
                         <div className="debug-event-header">
                           <strong>{event.emoji} {event.sourceType}:{event.sourceId}</strong>
-                          <span>R{event.round} {event.phase}</span>
+                          <span>
+                            {t('ui.debug.roundShort', 'R{{round}} {{phase}}', {
+                              round: event.round,
+                              phase: t(`ui.phases.${event.phase}`, event.phase),
+                            })}
+                          </span>
                         </div>
                         <p>{event.message}</p>
                       </article>
                     ))}
                   </div>
                 ) : (
-                  <p className="debug-panel-status">No new events were emitted for this command.</p>
+                  <p className="debug-panel-status">{t('ui.debug.noEmittedEvents', 'No new events were emitted for this command.')}</p>
                 )}
               </div>
             </>
           ) : null}
-        </section>
+          </section>
+        ) : null}
 
-        <section className="debug-panel-section" aria-labelledby="debug-conformance-title">
+        {isSectionVisible('conformance') ? (
+          <section className="debug-panel-section" aria-labelledby="debug-conformance-title">
           <div className="debug-panel-section-header">
             <div>
-              <span className="engraved-eyebrow">Conformance</span>
-              <h5 id="debug-conformance-title">Scenario dashboard</h5>
+              <span className="engraved-eyebrow">{t('ui.debug.conformanceEyebrow', 'Conformance')}</span>
+              <h5 id="debug-conformance-title">{t('ui.debug.conformanceTitle', 'Scenario dashboard')}</h5>
             </div>
           </div>
 
@@ -343,28 +359,32 @@ export function DebugOverlay({
               <article key={check.id} className="debug-event-card">
                 <div className="debug-event-header">
                   <strong>{check.label}</strong>
-                  <span className={`debug-chip ${getCheckTone(check.status)}`.trim()}>{check.status}</span>
+                  <span className={`debug-chip ${getCheckTone(check.status)}`.trim()}>
+                    {t(`ui.debug.checkStatus.${check.status}`, check.status)}
+                  </span>
                 </div>
                 <p>{check.detail}</p>
               </article>
             ))}
           </div>
-        </section>
+          </section>
+        ) : null}
 
-        <section className="debug-panel-section" aria-labelledby="debug-legality-title">
+        {isSectionVisible('legality') ? (
+          <section className="debug-panel-section" aria-labelledby="debug-legality-title">
           <div className="debug-panel-section-header">
             <div>
-              <span className="engraved-eyebrow">Legality</span>
-              <h5 id="debug-legality-title">Action legality explorer</h5>
+              <span className="engraved-eyebrow">{t('ui.debug.legalityEyebrow', 'Legality')}</span>
+              <h5 id="debug-legality-title">{t('ui.debug.legalityTitle', 'Action legality explorer')}</h5>
             </div>
             <span className={`debug-chip ${legalityReport.legal ? 'debug-chip-pass' : 'debug-chip-fail'}`.trim()}>
-              {legalityReport.legal ? 'legal' : 'blocked'}
+              {legalityReport.legal ? t('ui.debug.legal', 'legal') : t('ui.debug.blocked', 'blocked')}
             </span>
           </div>
 
           <div className="debug-panel-form">
             <label className="debug-panel-field">
-              <span>Seat</span>
+              <span>{t('ui.debug.seat', 'Seat')}</span>
               <select
                 value={String(legalitySeat)}
                 onChange={(event) => {
@@ -376,14 +396,14 @@ export function DebugOverlay({
               >
                 {state.players.map((player) => (
                   <option key={player.seat} value={player.seat}>
-                    Seat {player.seat + 1}
+                    {t('ui.debug.seatOption', 'Seat {{seat}}', { seat: player.seat + 1 })}
                   </option>
                 ))}
               </select>
             </label>
 
             <label className="debug-panel-field">
-              <span>Action</span>
+              <span>{t('ui.debug.action', 'Action')}</span>
               <select
                 value={legalityDraft.actionId}
                 onChange={(event) => {
@@ -401,7 +421,7 @@ export function DebugOverlay({
 
             {currentAction.needsRegion ? (
               <label className="debug-panel-field">
-                <span>Region</span>
+                <span>{t('ui.debug.region', 'Region')}</span>
                 <select
                   value={legalityDraft.regionId ?? ''}
                   onChange={(event) => setLegalityDraft((current) => ({ ...current, regionId: event.target.value as typeof current.regionId }))}
@@ -417,7 +437,7 @@ export function DebugOverlay({
 
             {currentAction.needsDomain ? (
               <label className="debug-panel-field">
-                <span>Domain</span>
+                <span>{t('ui.debug.domain', 'Domain')}</span>
                 <select
                   value={legalityDraft.domainId ?? ''}
                   onChange={(event) => setLegalityDraft((current) => ({ ...current, domainId: event.target.value as typeof current.domainId }))}
@@ -433,14 +453,14 @@ export function DebugOverlay({
 
             {currentAction.needsTargetSeat ? (
               <label className="debug-panel-field">
-                <span>Target seat</span>
+                <span>{t('ui.debug.targetSeat', 'Target seat')}</span>
                 <select
                   value={String(legalityDraft.targetSeat ?? '')}
                   onChange={(event) => setLegalityDraft((current) => ({ ...current, targetSeat: Number(event.target.value) }))}
                 >
                   {state.players.filter((player) => player.seat !== legalitySeat).map((player) => (
                     <option key={player.seat} value={player.seat}>
-                      Seat {player.seat + 1}
+                      {t('ui.debug.seatOption', 'Seat {{seat}}', { seat: player.seat + 1 })}
                     </option>
                   ))}
                 </select>
@@ -449,7 +469,7 @@ export function DebugOverlay({
 
             {currentAction.needsComrades ? (
               <label className="debug-panel-field">
-                <span>Committed Comrades</span>
+                <span>{t('ui.debug.committedComrades', 'Committed Comrades')}</span>
                 <input
                   type="number"
                   min="1"
@@ -462,7 +482,7 @@ export function DebugOverlay({
 
             {currentAction.needsEvidence ? (
               <label className="debug-panel-field">
-                <span>Committed Evidence</span>
+                <span>{t('ui.debug.committedEvidence', 'Committed Evidence')}</span>
                 <input
                   type="number"
                   min="0"
@@ -475,12 +495,12 @@ export function DebugOverlay({
 
             {currentAction.needsCard || currentAction.id === 'launch_campaign' ? (
               <label className="debug-panel-field">
-                <span>Card</span>
+                <span>{t('ui.debug.card', 'Card')}</span>
                 <select
                   value={legalityDraft.cardId ?? ''}
                   onChange={(event) => setLegalityDraft((current) => ({ ...current, cardId: event.target.value || undefined }))}
                 >
-                  <option value="">No card</option>
+                  <option value="">{t('ui.debug.noCard', 'No card')}</option>
                   {filteredCards.map((cardId) => {
                     const card = content.cards[cardId];
                     return (
@@ -497,7 +517,7 @@ export function DebugOverlay({
           <p className="debug-panel-status">{legalityReport.reason}</p>
 
           <div className="debug-subsection">
-            <span className="engraved-eyebrow">Costs & Effects</span>
+            <span className="engraved-eyebrow">{t('ui.debug.costsEffects', 'Costs & Effects')}</span>
             {legalityReport.costs.length > 0 ? (
               <div className="debug-data-list">
                 {legalityReport.costs.map((cost) => (
@@ -508,12 +528,12 @@ export function DebugOverlay({
                 ))}
               </div>
             ) : (
-              <p className="debug-panel-status">No explicit spend or payload effect captured for this action.</p>
+              <p className="debug-panel-status">{t('ui.debug.noCostsEffects', 'No explicit spend or payload effect captured for this action.')}</p>
             )}
           </div>
 
           <div className="debug-subsection">
-            <span className="engraved-eyebrow">Modifiers</span>
+            <span className="engraved-eyebrow">{t('ui.debug.modifiers', 'Modifiers')}</span>
             {legalityReport.modifiers.length > 0 ? (
               <div className="debug-data-list">
                 {legalityReport.modifiers.map((modifier) => (
@@ -524,29 +544,34 @@ export function DebugOverlay({
                 ))}
               </div>
             ) : (
-              <p className="debug-panel-status">No dynamic modifiers apply to the current draft.</p>
+              <p className="debug-panel-status">{t('ui.debug.noModifiers', 'No dynamic modifiers apply to the current draft.')}</p>
             )}
             {legalityReport.projectedCampaignTotal !== undefined && legalityReport.projectedCampaignTarget !== undefined ? (
               <p className="debug-panel-status">
-                Projected Launch Campaign line: 7 + modifiers = {legalityReport.projectedCampaignTotal} against {legalityReport.projectedCampaignTarget}+.
+                {t('ui.debug.projectedCampaignLine', 'Projected Launch Campaign line: 7 + modifiers = {{total}} against {{target}}+.', {
+                  total: legalityReport.projectedCampaignTotal,
+                  target: legalityReport.projectedCampaignTarget,
+                })}
               </p>
             ) : null}
             {legalityReport.notes.map((note) => (
               <p key={note} className="debug-panel-status">{note}</p>
             ))}
           </div>
-        </section>
+          </section>
+        ) : null}
 
-        <section className="debug-panel-section" aria-labelledby="debug-causality-title">
+        {isSectionVisible('causality') ? (
+          <section className="debug-panel-section" aria-labelledby="debug-causality-title">
           <div className="debug-panel-section-header">
             <div>
-              <span className="engraved-eyebrow">Causality</span>
-              <h5 id="debug-causality-title">Track event history</h5>
+              <span className="engraved-eyebrow">{t('ui.debug.causalityEyebrow', 'Causality')}</span>
+              <h5 id="debug-causality-title">{t('ui.debug.causalityTitle', 'Track event history')}</h5>
             </div>
           </div>
 
           <label className="debug-panel-field">
-            <span>Track</span>
+            <span>{t('ui.debug.track', 'Track')}</span>
             <select value={selectedTrackId} onChange={(event) => setSelectedTrackId(event.target.value)}>
               {trackOptions.map((option) => (
                 <option key={option.id} value={option.id}>
@@ -562,7 +587,12 @@ export function DebugOverlay({
                 <article key={`${entry.eventSeq}:${entry.sourceLabel}`} className="debug-event-card">
                   <div className="debug-event-header">
                     <strong>{entry.emoji} {entry.sourceLabel}</strong>
-                    <span>R{entry.round} {entry.phase}</span>
+                    <span>
+                      {t('ui.debug.roundShort', 'R{{round}} {{phase}}', {
+                        round: entry.round,
+                        phase: t(`ui.phases.${entry.phase}`, entry.phase),
+                      })}
+                    </span>
                   </div>
                   <p>{entry.before} → {entry.after}</p>
                   <p className="debug-panel-status">{entry.message}</p>
@@ -570,18 +600,22 @@ export function DebugOverlay({
               ))}
             </div>
           ) : (
-            <p className="debug-panel-status">No deltas for this track in the current log.</p>
+            <p className="debug-panel-status">{t('ui.debug.noTrackDeltas', 'No deltas for this track in the current log.')}</p>
           )}
-        </section>
+          </section>
+        ) : null}
 
-        <section className="debug-panel-section" aria-labelledby="debug-lint-title">
+        {isSectionVisible('lint') ? (
+          <section className="debug-panel-section" aria-labelledby="debug-lint-title">
           <div className="debug-panel-section-header">
             <div>
-              <span className="engraved-eyebrow">Narrative Lint</span>
-              <h5 id="debug-lint-title">Framing and terminology audit</h5>
+              <span className="engraved-eyebrow">{t('ui.debug.lintEyebrow', 'Narrative Lint')}</span>
+              <h5 id="debug-lint-title">{t('ui.debug.lintTitle', 'Framing and terminology audit')}</h5>
             </div>
             <span className={`debug-chip ${narrativeFindings.length === 0 ? 'debug-chip-pass' : 'debug-chip-warn'}`.trim()}>
-              {narrativeFindings.length === 0 ? 'clean' : `${narrativeFindings.length} findings`}
+              {narrativeFindings.length === 0
+                ? t('ui.debug.clean', 'clean')
+                : t('ui.debug.findingsCount', '{{count}} findings', { count: narrativeFindings.length })}
             </span>
           </div>
 
@@ -592,7 +626,7 @@ export function DebugOverlay({
                   <div className="debug-event-header">
                     <strong>{finding.area}</strong>
                     <span className={`debug-chip ${finding.severity === 'error' ? 'debug-chip-fail' : 'debug-chip-warn'}`.trim()}>
-                      {finding.severity}
+                      {t(`ui.debug.findingSeverity.${finding.severity}`, finding.severity)}
                     </span>
                   </div>
                   <p>{finding.detail}</p>
@@ -601,21 +635,23 @@ export function DebugOverlay({
               ))}
             </div>
           ) : (
-            <p className="debug-panel-status">No banned framing or canonical terminology drift found in the current ruleset copy.</p>
+            <p className="debug-panel-status">{t('ui.debug.noLintFindings', 'No banned framing or canonical terminology drift found in the current ruleset copy.')}</p>
           )}
-        </section>
+          </section>
+        ) : null}
 
-        <section className="debug-panel-section" aria-labelledby="debug-probability-title">
+        {isSectionVisible('probability') ? (
+          <section className="debug-panel-section" aria-labelledby="debug-probability-title">
           <div className="debug-panel-section-header">
             <div>
-              <span className="engraved-eyebrow">Probability</span>
-              <h5 id="debug-probability-title">Deck and outcome sandbox</h5>
+              <span className="engraved-eyebrow">{t('ui.debug.probabilityEyebrow', 'Probability')}</span>
+              <h5 id="debug-probability-title">{t('ui.debug.probabilityTitle', 'Deck and outcome sandbox')}</h5>
             </div>
           </div>
 
           <div className="debug-panel-form">
             <label className="debug-panel-field">
-              <span>Simulations</span>
+              <span>{t('ui.debug.simulations', 'Simulations')}</span>
               <input
                 type="number"
                 min="1"
@@ -626,7 +662,7 @@ export function DebugOverlay({
             </label>
 
             <div className="debug-panel-field">
-              <span>Run sandbox</span>
+              <span>{t('ui.debug.runSandbox', 'Run sandbox')}</span>
               <button
                 type="button"
                 className="mini-plate"
@@ -640,7 +676,7 @@ export function DebugOverlay({
                   });
                 }}
               >
-                {isSimulationPending ? 'Running...' : 'Simulate'}
+                {isSimulationPending ? t('ui.debug.runningEllipsis', 'Running...') : t('ui.debug.simulate', 'Simulate')}
               </button>
             </div>
           </div>
@@ -648,14 +684,14 @@ export function DebugOverlay({
           {simulationReport ? (
             <>
               <div className="ledger-list">
-                <div className="ledger-row"><span>Runs</span><strong>{formatNumber(simulationReport.simulations)}</strong></div>
-                <div className="ledger-row"><span>Win rate</span><strong>{simulationReport.winRate}%</strong></div>
-                <div className="ledger-row"><span>Average terminal round</span><strong>{simulationReport.averageTerminalRound}</strong></div>
-                <div className="ledger-row"><span>Wins / Losses</span><strong>{simulationReport.wins} / {simulationReport.losses}</strong></div>
+                <div className="ledger-row"><span>{t('ui.debug.runs', 'Runs')}</span><strong>{formatNumber(simulationReport.simulations)}</strong></div>
+                <div className="ledger-row"><span>{t('ui.debug.winRate', 'Win rate')}</span><strong>{simulationReport.winRate}%</strong></div>
+                <div className="ledger-row"><span>{t('ui.debug.averageTerminalRound', 'Average terminal round')}</span><strong>{simulationReport.averageTerminalRound}</strong></div>
+                <div className="ledger-row"><span>{t('ui.debug.winsLosses', 'Wins / Losses')}</span><strong>{simulationReport.wins} / {simulationReport.losses}</strong></div>
               </div>
 
               <div className="debug-subsection">
-                <span className="engraved-eyebrow">Top Outcomes</span>
+                <span className="engraved-eyebrow">{t('ui.debug.topOutcomes', 'Top Outcomes')}</span>
                 <div className="debug-data-list">
                   {simulationReport.topOutcomes.map((outcome) => (
                     <div key={outcome.label} className="debug-data-card">
@@ -667,7 +703,7 @@ export function DebugOverlay({
               </div>
 
               <div className="debug-subsection">
-                <span className="engraved-eyebrow">Extraction Hotspots</span>
+                <span className="engraved-eyebrow">{t('ui.debug.extractionHotspots', 'Extraction Hotspots')}</span>
                 <div className="debug-data-list">
                   {simulationReport.extractionHotspots.map((region) => (
                     <div key={region.regionId} className="debug-data-card">
@@ -679,7 +715,7 @@ export function DebugOverlay({
               </div>
 
               <div className="debug-subsection">
-                <span className="engraved-eyebrow">Final Track Averages</span>
+                <span className="engraved-eyebrow">{t('ui.debug.finalTrackAverages', 'Final Track Averages')}</span>
                 <div className="debug-data-list">
                   {simulationReport.trackAverages.map((track) => (
                     <div key={track.id} className="debug-data-card">
@@ -691,9 +727,12 @@ export function DebugOverlay({
               </div>
             </>
           ) : (
-            <p className="debug-panel-status">Run a seeded Monte Carlo pass from the opening command to profile defeat causes, extraction pressure, and track drift.</p>
+            <p className="debug-panel-status">
+              {t('ui.debug.monteCarloPrompt', 'Run a seeded Monte Carlo pass from the opening command to profile defeat causes, extraction pressure, and track drift.')}
+            </p>
           )}
-        </section>
+          </section>
+        ) : null}
       </PaperSheet>
     </aside>
   );

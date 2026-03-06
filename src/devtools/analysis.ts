@@ -22,6 +22,7 @@ import {
   localizeDomainField,
   localizeFactionField,
   localizeRegionField,
+  t,
 } from '../i18n/index.ts';
 import { selectAutoPlayDecision } from './autoPlaySelector.ts';
 
@@ -126,8 +127,8 @@ function getFaction(content: CompiledContent, state: EngineState, seat: number):
 
 function getRulesetTrackOptions(content: CompiledContent): TrackOption[] {
   return [
-    { id: 'global_gaze', label: 'Global Gaze' },
-    { id: 'war_machine', label: 'War Machine' },
+    { id: 'global_gaze', label: t('ui.debug.gaze', 'Global Gaze') },
+    { id: 'war_machine', label: t('ui.debug.warMachine', 'War Machine') },
     ...content.ruleset.domains.map((domain) => ({
       id: `domain:${domain.id}`,
       label: localizeDomainField(domain.id, 'name', domain.name),
@@ -146,31 +147,39 @@ function countSeatComrades(state: EngineState, seat: number) {
 function buildCommandLabel(command: EngineCommand, content: CompiledContent) {
   switch (command.type) {
     case 'StartGame':
-      return `Start ${content.ruleset.name}`;
+      return t('ui.debug.commandStart', 'Start {{ruleset}}', { ruleset: content.ruleset.name });
     case 'QueueIntent': {
       const action = content.actions[command.action.actionId];
       const actionLabel = localizeActionField(action.id, 'name', action.name);
       const regionLabel = command.action.regionId
         ? ` • ${localizeRegionField(command.action.regionId, 'name', content.regions[command.action.regionId]?.name ?? command.action.regionId)}`
         : '';
-      return `Queue S${command.seat + 1} ${actionLabel}${regionLabel}`;
+      return t('ui.debug.commandQueue', 'Queue S{{seat}} {{action}}{{region}}', {
+        seat: command.seat + 1,
+        action: actionLabel,
+        region: regionLabel,
+      });
     }
     case 'SetReady':
-      return `Seat ${command.seat + 1} ${command.ready ? 'ready' : 'not ready'}`;
+      return t(
+        command.ready ? 'ui.debug.commandSeatReady' : 'ui.debug.commandSeatNotReady',
+        command.ready ? 'Seat {{seat}} ready' : 'Seat {{seat}} not ready',
+        { seat: command.seat + 1 },
+      );
     case 'RemoveQueuedIntent':
-      return `Remove queued move S${command.seat + 1}`;
+      return t('ui.debug.commandRemoveQueued', 'Remove queued move S{{seat}}', { seat: command.seat + 1 });
     case 'ReorderQueuedIntent':
-      return `Reorder queued moves S${command.seat + 1}`;
+      return t('ui.debug.commandReorderQueued', 'Reorder queued moves S{{seat}}', { seat: command.seat + 1 });
     case 'ResolveSystemPhase':
-      return 'Resolve System';
+      return t('ui.debug.commandResolveSystem', 'Resolve System');
     case 'CommitCoalitionIntent':
-      return 'Resolve Coalition';
+      return t('ui.debug.commandResolveCoalition', 'Resolve Coalition');
     case 'ResolveResolutionPhase':
-      return 'Advance Resolution';
+      return t('ui.debug.commandAdvanceResolution', 'Advance Resolution');
     case 'SaveSnapshot':
-      return 'Save snapshot';
+      return t('ui.debug.commandSaveSnapshot', 'Save snapshot');
     case 'LoadSnapshot':
-      return 'Load snapshot';
+      return t('ui.debug.commandLoadSnapshot', 'Load snapshot');
   }
 }
 
@@ -178,19 +187,19 @@ function buildReplaySummary(previous: EngineState, next: EngineState, content: C
   const entries: ReplaySummaryEntry[] = [];
 
   if (previous.phase !== next.phase) {
-    entries.push({ label: 'Phase', before: previous.phase, after: next.phase });
+    entries.push({ label: t('ui.debug.phase', 'Phase'), before: previous.phase, after: next.phase });
   }
   if (previous.round !== next.round) {
-    entries.push({ label: 'Round', before: String(previous.round), after: String(next.round) });
+    entries.push({ label: t('ui.debug.round', 'Round'), before: String(previous.round), after: String(next.round) });
   }
   if (previous.globalGaze !== next.globalGaze) {
-    entries.push({ label: 'Global Gaze', before: String(previous.globalGaze), after: String(next.globalGaze) });
+    entries.push({ label: t('ui.debug.gaze', 'Global Gaze'), before: String(previous.globalGaze), after: String(next.globalGaze) });
   }
   if (previous.northernWarMachine !== next.northernWarMachine) {
-    entries.push({ label: 'War Machine', before: String(previous.northernWarMachine), after: String(next.northernWarMachine) });
+    entries.push({ label: t('ui.debug.warMachine', 'War Machine'), before: String(previous.northernWarMachine), after: String(next.northernWarMachine) });
   }
   if (previous.extractionPool !== next.extractionPool) {
-    entries.push({ label: 'Extraction Pool', before: String(previous.extractionPool), after: String(next.extractionPool) });
+    entries.push({ label: t('ui.debug.extractionPool', 'Extraction Pool'), before: String(previous.extractionPool), after: String(next.extractionPool) });
   }
 
   for (const region of content.ruleset.regions) {
@@ -198,7 +207,9 @@ function buildReplaySummary(previous: EngineState, next: EngineState, content: C
     const nextExtraction = next.regions[region.id]?.extractionTokens ?? 0;
     if (previousExtraction !== nextExtraction) {
       entries.push({
-        label: `${localizeRegionField(region.id, 'name', region.name)} Extraction`,
+        label: t('ui.debug.regionExtraction', '{{region}} Extraction', {
+          region: localizeRegionField(region.id, 'name', region.name),
+        }),
         before: String(previousExtraction),
         after: String(nextExtraction),
       });
@@ -211,7 +222,9 @@ function buildReplaySummary(previous: EngineState, next: EngineState, content: C
     if (previousComrades !== nextComrades) {
       const faction = content.factions[player.factionId];
       entries.push({
-        label: `${localizeFactionField(faction.id, 'shortName', faction.shortName)} Comrades`,
+        label: t('ui.debug.factionComrades', '{{faction}} Comrades', {
+          faction: localizeFactionField(faction.id, 'shortName', faction.shortName),
+        }),
         before: String(previousComrades),
         after: String(nextComrades),
       });
@@ -340,28 +353,35 @@ function inspectCampaignLegality(
     modifiers.push({ label, value });
   };
 
-  pushModifier('Committed Comrades', Math.floor(committedComrades / 2));
-  pushModifier('Committed Evidence', committedEvidence);
-  pushModifier('Global Gaze', Math.floor(state.globalGaze / 5));
-  pushModifier('War Machine pressure', -Math.floor(state.northernWarMachine / 4));
+  pushModifier(t('ui.debug.committedComrades', 'Committed Comrades'), Math.floor(committedComrades / 2));
+  pushModifier(t('ui.debug.committedEvidence', 'Committed Evidence'), committedEvidence);
+  pushModifier(t('ui.debug.gaze', 'Global Gaze'), Math.floor(state.globalGaze / 5));
+  pushModifier(t('ui.debug.modifierWarMachinePressure', 'War Machine pressure'), -Math.floor(state.northernWarMachine / 4));
   if (action.regionId && faction && action.regionId === faction.homeRegion) {
-    pushModifier('Home region', faction.campaignBonus);
+    pushModifier(t('ui.debug.modifierHomeRegion', 'Home region'), faction.campaignBonus);
   }
   if (action.domainId && faction?.campaignDomainBonus === action.domainId) {
-    pushModifier('Faction domain', 1);
+    pushModifier(t('ui.debug.modifierFactionDomain', 'Faction domain'), 1);
   }
   if (support.bonus !== 0) {
-    pushModifier(support.label ? `Support card: ${support.label}` : 'Support card', support.bonus);
+    pushModifier(
+      support.label
+        ? t('ui.debug.modifierSupportCardLabel', 'Support card: {{card}}', { card: support.label })
+        : t('ui.debug.modifierSupportCard', 'Support card'),
+      support.bonus,
+    );
   }
-  pushModifier('System pressure', pressure.campaignModifierDelta);
+  pushModifier(t('ui.debug.modifierSystemPressure', 'System pressure'), pressure.campaignModifierDelta);
 
   return {
     modifiers,
     projectedCampaignTotal: 7 + totalModifier,
     projectedCampaignTarget: BASE_CAMPAIGN_TARGET + pressure.campaignTargetDelta,
     notes: pressure.campaignTargetDelta !== 0
-      ? [`System escalations changed the target to ${BASE_CAMPAIGN_TARGET + pressure.campaignTargetDelta}+.`]
-      : ['Where the Stones Cry Out Launch Campaign target remains 8+.'],
+      ? [t('ui.debug.noteSystemEscalationTarget', 'System escalations changed the target to {{target}}+.', {
+        target: BASE_CAMPAIGN_TARGET + pressure.campaignTargetDelta,
+      })]
+      : [t('ui.debug.noteCampaignTargetCanonical', 'Where the Stones Cry Out Launch Campaign target remains 8+.')],
   };
 }
 
@@ -377,48 +397,48 @@ export function inspectActionLegality(
 
   switch (action.actionId) {
     case 'build_solidarity':
-      costs.push({ label: 'Comrades spent', amount: 3, type: 'cost' });
-      costs.push({ label: 'Domain progress on success', amount: 1, type: 'effect' });
+      costs.push({ label: t('ui.debug.costComradesSpent', 'Comrades spent'), amount: 3, type: 'cost' });
+      costs.push({ label: t('ui.debug.effectDomainProgress', 'Domain progress on success'), amount: 1, type: 'effect' });
       break;
     case 'smuggle_evidence': {
       const faction = getFaction(content, state, seat);
-      costs.push({ label: 'Comrades spent', amount: 1, type: 'cost' });
+      costs.push({ label: t('ui.debug.costComradesSpent', 'Comrades spent'), amount: 1, type: 'cost' });
       costs.push({
-        label: 'Evidence transferred',
+        label: t('ui.debug.effectEvidenceTransferred', 'Evidence transferred'),
         amount: faction?.id === 'amazon_guardians' ? 1 : Math.min(2, state.players[seat]?.evidence ?? 0),
         type: 'effect',
       });
       break;
     }
     case 'international_outreach':
-      costs.push({ label: 'Evidence spent', amount: getOutreachCost(state, content, seat), type: 'cost' });
-      costs.push({ label: 'Global Gaze gained', amount: 1, type: 'effect' });
+      costs.push({ label: t('ui.debug.costEvidenceSpent', 'Evidence spent'), amount: getOutreachCost(state, content, seat), type: 'cost' });
+      costs.push({ label: t('ui.debug.effectGazeGained', 'Global Gaze gained'), amount: 1, type: 'effect' });
       break;
     case 'defend':
-      costs.push({ label: 'Committed Comrades spent', amount: action.comradesCommitted ?? 0, type: 'cost' });
-      notes.push('Defense is set to the larger of current defense or the computed defense total.');
+      costs.push({ label: t('ui.debug.costCommittedComradesSpent', 'Committed Comrades spent'), amount: action.comradesCommitted ?? 0, type: 'cost' });
+      notes.push(t('ui.debug.noteDefenseSetMax', 'Defense is set to the larger of current defense or the computed defense total.'));
       break;
     case 'go_viral':
-      costs.push({ label: 'Evidence spent', amount: 1, type: 'cost' });
-      costs.push({ label: 'Global Gaze gained', amount: 1, type: 'effect' });
+      costs.push({ label: t('ui.debug.costEvidenceSpent', 'Evidence spent'), amount: 1, type: 'cost' });
+      costs.push({ label: t('ui.debug.effectGazeGained', 'Global Gaze gained'), amount: 1, type: 'effect' });
       break;
     case 'burn_veil':
-      costs.push({ label: 'Comrades spent', amount: 1, type: 'cost' });
-      costs.push({ label: 'Global Gaze gained', amount: 2, type: 'effect' });
+      costs.push({ label: t('ui.debug.costComradesSpent', 'Comrades spent'), amount: 1, type: 'cost' });
+      costs.push({ label: t('ui.debug.effectGazeGained', 'Global Gaze gained'), amount: 2, type: 'effect' });
       break;
     case 'schoolgirl_network':
-      costs.push({ label: 'Evidence gained', amount: 1, type: 'effect' });
+      costs.push({ label: t('ui.debug.effectEvidenceGained', 'Evidence gained'), amount: 1, type: 'effect' });
       break;
     case 'compose_chant':
-      costs.push({ label: 'Evidence spent', amount: 1, type: 'cost' });
+      costs.push({ label: t('ui.debug.costEvidenceSpent', 'Evidence spent'), amount: 1, type: 'cost' });
       break;
     case 'coordinate_digital':
-      costs.push({ label: 'Evidence spent', amount: 1, type: 'cost' });
-      notes.push('Opens a replanning window if the action resolves.');
+      costs.push({ label: t('ui.debug.costEvidenceSpent', 'Evidence spent'), amount: 1, type: 'cost' });
+      notes.push(t('ui.debug.noteReplanningWindow', 'Opens a replanning window if the action resolves.'));
       break;
     case 'launch_campaign':
-      costs.push({ label: 'Committed Comrades spent', amount: action.comradesCommitted ?? 0, type: 'cost' });
-      costs.push({ label: 'Committed Evidence spent', amount: action.evidenceCommitted ?? 0, type: 'cost' });
+      costs.push({ label: t('ui.debug.costCommittedComradesSpent', 'Committed Comrades spent'), amount: action.comradesCommitted ?? 0, type: 'cost' });
+      costs.push({ label: t('ui.debug.costCommittedEvidenceSpent', 'Committed Evidence spent'), amount: action.evidenceCommitted ?? 0, type: 'cost' });
       break;
     default:
       break;
@@ -430,12 +450,14 @@ export function inspectActionLegality(
 
   if (action.cardId) {
     const card = content.cards[action.cardId];
-    notes.push(`Card selected: ${localizeCardField(action.cardId, 'name', card?.name ?? action.cardId)}.`);
+    notes.push(t('ui.debug.noteCardSelected', 'Card selected: {{card}}.', {
+      card: localizeCardField(action.cardId, 'name', card?.name ?? action.cardId),
+    }));
   }
 
   return {
     legal: !disabled.disabled,
-    reason: disabled.reason ?? 'Legal',
+    reason: disabled.reason ?? t('ui.debug.legal', 'Legal'),
     costs,
     modifiers: campaign?.modifiers ?? [],
     notes: [...notes, ...(campaign?.notes ?? [])],
@@ -505,17 +527,17 @@ function pushNarrativeFinding(
 export function lintNarrativeContent(content: CompiledContent): NarrativeLintFinding[] {
   const findings: NarrativeLintFinding[] = [];
   const forbiddenPatterns: Array<{ pattern: RegExp; detail: string }> = [
-    { pattern: /\bhero(?:ic)?\b/i, detail: 'Avoid single-hero framing; movements should remain central.' },
-    { pattern: /\bsave(?:r|s|d)?\b/i, detail: 'Avoid savior framing.' },
-    { pattern: /\bciviliz/i, detail: 'Avoid colonial framing and civilizing language.' },
-    { pattern: /\bthird world\b/i, detail: 'Avoid dated and colonial descriptors.' },
-    { pattern: /\bprimitive\b/i, detail: 'Avoid demeaning colonial descriptors.' },
-    { pattern: /\btribal\b/i, detail: 'Avoid flattening communities into colonial categories.' },
-    { pattern: /\bwestern intervention\b/i, detail: 'Do not frame external intervention as the solution.' },
+    { pattern: /\bhero(?:ic)?\b/i, detail: t('ui.debug.lintAvoidHero', 'Avoid single-hero framing; movements should remain central.') },
+    { pattern: /\bsave(?:r|s|d)?\b/i, detail: t('ui.debug.lintAvoidSavior', 'Avoid savior framing.') },
+    { pattern: /\bciviliz/i, detail: t('ui.debug.lintAvoidColonial', 'Avoid colonial framing and civilizing language.') },
+    { pattern: /\bthird world\b/i, detail: t('ui.debug.lintAvoidThirdWorld', 'Avoid dated and colonial descriptors.') },
+    { pattern: /\bprimitive\b/i, detail: t('ui.debug.lintAvoidPrimitive', 'Avoid demeaning colonial descriptors.') },
+    { pattern: /\btribal\b/i, detail: t('ui.debug.lintAvoidTribal', 'Avoid flattening communities into colonial categories.') },
+    { pattern: /\bwestern intervention\b/i, detail: t('ui.debug.lintAvoidIntervention', 'Do not frame external intervention as the solution.') },
   ];
 
   const canonicalPatterns: Array<{ pattern: RegExp; detail: string }> = [
-    { pattern: /\bNorthern War Machine\b/, detail: 'Prefer the canonical track name War Machine in dev-facing copy.' },
+    { pattern: /\bNorthern War Machine\b/, detail: t('ui.debug.lintUseWarMachine', 'Prefer the canonical track name War Machine in dev-facing copy.') },
   ];
 
   const scan = (area: string, excerpt: string) => {
@@ -564,10 +586,10 @@ export function buildConformanceChecks(state: EngineState, content: CompiledCont
   const scenarioErrors = scenario ? assertScenarioConformance(scenario) : [{ message: `Scenario module ${state.rulesetId} is not registered.` }];
   checks.push({
     id: 'scenario-shape',
-    label: 'Scenario module conformance',
+    label: t('ui.debug.checkScenarioConformanceLabel', 'Scenario module conformance'),
     status: scenarioErrors.length === 0 ? 'pass' : 'fail',
     detail: scenarioErrors.length === 0
-      ? 'Scenario hooks, metadata version, and phase definitions are present.'
+      ? t('ui.debug.checkScenarioConformancePass', 'Scenario hooks, metadata version, and phase definitions are present.')
       : scenarioErrors.map((entry) => entry.message).join(' '),
   });
 
@@ -580,41 +602,41 @@ export function buildConformanceChecks(state: EngineState, content: CompiledCont
   );
   checks.push({
     id: 'launch-campaign-shape',
-    label: 'Launch Campaign remains the canonical pressure valve',
+    label: t('ui.debug.checkLaunchCampaignLabel', 'Launch Campaign remains the canonical pressure valve'),
     status: launchCampaignConfigured ? 'pass' : 'fail',
     detail: launchCampaignConfigured
-      ? 'Launch Campaign still requires a region, domain, and committed Comrades. Where the Stones Cry Out target is wired as 8+ in the compat runtime.'
-      : 'Launch Campaign is missing or no longer carries the expected setup requirements.',
+      ? t('ui.debug.checkLaunchCampaignPass', 'Launch Campaign still requires a region, domain, and committed Comrades. Where the Stones Cry Out target is wired as 8+ in the compat runtime.')
+      : t('ui.debug.checkLaunchCampaignFail', 'Launch Campaign is missing or no longer carries the expected setup requirements.'),
   });
 
   const breachedRegions = Object.values(state.regions).filter((region) => region.extractionTokens >= EXTRACTION_DEFEAT_THRESHOLD);
   checks.push({
     id: 'extraction-threshold',
-    label: 'Regions breach at 6 Extraction Tokens',
+    label: t('ui.debug.checkExtractionLabel', 'Regions breach at 6 Extraction Tokens'),
     status: breachedRegions.length === 0 || state.phase === 'LOSS' ? 'pass' : 'fail',
     detail: breachedRegions.length === 0
-      ? 'No region is currently at the defeat threshold.'
-      : `Breached regions: ${breachedRegions.map((region) => region.id).join(', ')}.`,
+      ? t('ui.debug.checkExtractionPass', 'No region is currently at the defeat threshold.')
+      : t('ui.debug.checkExtractionFail', 'Breached regions: {{regions}}.', { regions: breachedRegions.map((region) => region.id).join(', ') }),
   });
 
   const exhaustedSeats = state.players.filter((player) => countSeatComrades(state, player.seat) === 0);
   checks.push({
     id: 'comrades-exhausted',
-    label: '0 Comrades produces defeat pressure',
+    label: t('ui.debug.checkComradesLabel', '0 Comrades produces defeat pressure'),
     status: exhaustedSeats.length === 0 || state.terminalOutcome?.cause === 'comrades_exhausted' || state.phase === 'LOSS' ? 'pass' : 'fail',
     detail: exhaustedSeats.length === 0
-      ? 'Every seat still has Comrades on the board.'
-      : `Seats at 0 Comrades: ${exhaustedSeats.map((player) => player.seat + 1).join(', ')}.`,
+      ? t('ui.debug.checkComradesPass', 'Every seat still has Comrades on the board.')
+      : t('ui.debug.checkComradesFail', 'Seats at 0 Comrades: {{seats}}.', { seats: exhaustedSeats.map((player) => player.seat + 1).join(', ') }),
   });
 
   const trackReactivity = state.eventLog.some((event) => event.deltas.some((delta) => delta.label === 'globalGaze' || delta.label === 'northernWarMachine'));
   checks.push({
     id: 'global-tracks-reactive',
-    label: 'Global tracks respond to play',
+    label: t('ui.debug.checkTracksLabel', 'Global tracks respond to play'),
     status: trackReactivity ? 'pass' : 'warn',
     detail: trackReactivity
-      ? 'This session has already changed Global Gaze or War Machine through events.'
-      : 'No Global Gaze or War Machine deltas are present yet in the current event log.',
+      ? t('ui.debug.checkTracksPass', 'This session has already changed Global Gaze or War Machine through events.')
+      : t('ui.debug.checkTracksWarn', 'No Global Gaze or War Machine deltas are present yet in the current event log.'),
   });
 
   const mandatesPresent = state.secretMandatesEnabled
@@ -622,11 +644,11 @@ export function buildConformanceChecks(state: EngineState, content: CompiledCont
     : true;
   checks.push({
     id: 'mandates-have-stakes',
-    label: 'Secret Mandates carry mechanical stakes',
+    label: t('ui.debug.checkMandatesLabel', 'Secret Mandates carry mechanical stakes'),
     status: mandatesPresent ? 'pass' : 'fail',
     detail: state.secretMandatesEnabled
-      ? 'Each active faction still carries a Secret Mandate definition.'
-      : 'Secret Mandates are disabled for this local table; room play still requires mandate checks.',
+      ? t('ui.debug.checkMandatesPass', 'Each active faction still carries a Secret Mandate definition.')
+      : t('ui.debug.checkMandatesLocal', 'Secret Mandates are disabled for this local table; room play still requires mandate checks.'),
   });
 
   return checks;
@@ -738,7 +760,10 @@ export function runProbabilitySandbox(state: EngineState, simulations: number): 
     losses,
     winRate: Number(((wins / safeSimulationCount) * 100).toFixed(1)),
     topOutcomes: Array.from(outcomeCounts.entries())
-      .map(([label, count]) => ({ label, count }))
+      .map(([label, count]) => ({
+        label: t(`ui.debug.outcome.${label}`, label),
+        count,
+      }))
       .sort((left, right) => right.count - left.count)
       .slice(0, 5),
     extractionHotspots: content.ruleset.regions
@@ -749,8 +774,8 @@ export function runProbabilitySandbox(state: EngineState, simulations: number): 
       .sort((left, right) => right.averagePeakExtraction - left.averagePeakExtraction)
       .slice(0, 6),
     trackAverages: [
-      { id: 'global_gaze', label: 'Global Gaze', averageFinalValue: Number(((trackTotals.get('global_gaze') ?? 0) / safeSimulationCount).toFixed(2)) },
-      { id: 'war_machine', label: 'War Machine', averageFinalValue: Number(((trackTotals.get('war_machine') ?? 0) / safeSimulationCount).toFixed(2)) },
+      { id: 'global_gaze', label: t('ui.debug.gaze', 'Global Gaze'), averageFinalValue: Number(((trackTotals.get('global_gaze') ?? 0) / safeSimulationCount).toFixed(2)) },
+      { id: 'war_machine', label: t('ui.debug.warMachine', 'War Machine'), averageFinalValue: Number(((trackTotals.get('war_machine') ?? 0) / safeSimulationCount).toFixed(2)) },
       ...content.ruleset.domains.map((domain) => ({
         id: domain.id,
         label: localizeDomainField(domain.id, 'name', domain.name),

@@ -6,7 +6,7 @@ import {
 } from '../engine/index.ts';
 import { t } from '../i18n/index.ts';
 import { GameSessionScreen } from '../game/screens/GameSessionScreen.tsx';
-import { DebugOverlay, type AutoPlaySpeedLevel } from './panels/DebugPanel.tsx';
+import { DebugOverlay, type AutoPlaySpeedLevel, type DebugSectionId } from './panels/DebugPanel.tsx';
 import type { SessionViewport } from '../features/session-setup/model/sessionTypes.ts';
 import { getAutoPlayLogMessage, getAutoPlaySelectionPreview, selectAutoPlayDecision } from './autoPlaySelector.ts';
 
@@ -53,6 +53,7 @@ export default function DevGameSessionShell({
   const [autoPlayTargetRound, setAutoPlayTargetRound] = useState<number | null>(null);
   const [autoPlayRunning, setAutoPlayRunning] = useState(false);
   const [autoPlayStatus, setAutoPlayStatus] = useState<string | null>(null);
+  const [focusedDebugSection, setFocusedDebugSection] = useState<DebugSectionId | null>(null);
 
   useEffect(() => {
     if (surface !== 'local' && autoPlayRunning) {
@@ -162,7 +163,9 @@ export default function DevGameSessionShell({
     : autoPlayStatus;
 
   const handleToggleDevPanel = () => {
+    setFocusedDebugSection(null);
     setShowDevPanel((current) => !current);
+    setShowDevMenu(false);
   };
 
   const handleToggleDevMenu = () => {
@@ -170,6 +173,7 @@ export default function DevGameSessionShell({
   };
 
   const handleToggleSnapshot = () => {
+    setFocusedDebugSection('snapshot');
     setShowDevPanel(true);
     setShowDebugSnapshot((current) => !current);
     setShowDevMenu(false);
@@ -180,25 +184,16 @@ export default function DevGameSessionShell({
       handleAutoPlayStop();
       return;
     }
+    setFocusedDebugSection('autoplay');
     setShowDevPanel(true);
     handleAutoPlayStart();
     setShowDevMenu(false);
   };
 
-  const openDevSection = (sectionTitleId: string) => {
+  const openDevSection = (sectionId: DebugSectionId) => {
+    setFocusedDebugSection(sectionId);
     setShowDevPanel(true);
     setShowDevMenu(false);
-    window.setTimeout(() => {
-      const sectionTitle = document.getElementById(sectionTitleId);
-      if (!sectionTitle) {
-        return;
-      }
-      sectionTitle.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      if (sectionTitle instanceof HTMLElement) {
-        sectionTitle.tabIndex = -1;
-        sectionTitle.focus({ preventScroll: true });
-      }
-    }, 20);
   };
 
   return (
@@ -254,29 +249,29 @@ export default function DevGameSessionShell({
           >
             {autoPlayRunning ? t('ui.debug.stopAutoplay', 'Stop') : t('ui.debug.startAutoplay', 'Start Autoplay')}
           </button>
-          <button type="button" className="dev-tools-fab-action" role="menuitem" onClick={() => openDevSection('debug-autoplay-title')}>
+          <button type="button" className="dev-tools-fab-action" role="menuitem" onClick={() => openDevSection('autoplay')}>
             {t('ui.debug.autoplayTitle', 'Run rounds automatically')}
           </button>
-          <button type="button" className="dev-tools-fab-action" role="menuitem" onClick={() => openDevSection('debug-snapshot-title')}>
+          <button type="button" className="dev-tools-fab-action" role="menuitem" onClick={() => openDevSection('snapshot')}>
             {t('ui.debug.snapshotTitle', 'Engine debug snapshot')}
           </button>
-          <button type="button" className="dev-tools-fab-action" role="menuitem" onClick={() => openDevSection('debug-replay-title')}>
-            Replay Inspector
+          <button type="button" className="dev-tools-fab-action" role="menuitem" onClick={() => openDevSection('replay')}>
+            {t('ui.debug.menuReplayInspector', 'Replay Inspector')}
           </button>
-          <button type="button" className="dev-tools-fab-action" role="menuitem" onClick={() => openDevSection('debug-conformance-title')}>
-            Scenario Dashboard
+          <button type="button" className="dev-tools-fab-action" role="menuitem" onClick={() => openDevSection('conformance')}>
+            {t('ui.debug.menuScenarioDashboard', 'Scenario Dashboard')}
           </button>
-          <button type="button" className="dev-tools-fab-action" role="menuitem" onClick={() => openDevSection('debug-legality-title')}>
-            Action Legality
+          <button type="button" className="dev-tools-fab-action" role="menuitem" onClick={() => openDevSection('legality')}>
+            {t('ui.debug.menuActionLegality', 'Action Legality')}
           </button>
-          <button type="button" className="dev-tools-fab-action" role="menuitem" onClick={() => openDevSection('debug-causality-title')}>
-            Track Event History
+          <button type="button" className="dev-tools-fab-action" role="menuitem" onClick={() => openDevSection('causality')}>
+            {t('ui.debug.menuTrackEventHistory', 'Track Event History')}
           </button>
-          <button type="button" className="dev-tools-fab-action" role="menuitem" onClick={() => openDevSection('debug-lint-title')}>
-            Narrative Audit
+          <button type="button" className="dev-tools-fab-action" role="menuitem" onClick={() => openDevSection('lint')}>
+            {t('ui.debug.menuNarrativeAudit', 'Narrative Audit')}
           </button>
-          <button type="button" className="dev-tools-fab-action" role="menuitem" onClick={() => openDevSection('debug-probability-title')}>
-            Outcome Sandbox
+          <button type="button" className="dev-tools-fab-action" role="menuitem" onClick={() => openDevSection('probability')}>
+            {t('ui.debug.menuOutcomeSandbox', 'Outcome Sandbox')}
           </button>
         </div>
       </div>
@@ -291,12 +286,16 @@ export default function DevGameSessionShell({
           autoPlaySpeed={autoPlaySpeed}
           autoPlayRunning={autoPlayRunning}
           autoPlayStatus={autoPlayStatusText}
+          focusedSection={focusedDebugSection}
           onToggleDebugSnapshot={() => setShowDebugSnapshot((current) => !current)}
           onAutoPlayRoundsChange={setAutoPlayRounds}
           onAutoPlaySpeedChange={setAutoPlaySpeed}
           onAutoPlayStart={handleAutoPlayStart}
           onAutoPlayStop={handleAutoPlayStop}
-          onClose={() => setShowDevPanel(false)}
+          onClose={() => {
+            setShowDevPanel(false);
+            setFocusedDebugSection(null);
+          }}
         />
       ) : null}
     </>
