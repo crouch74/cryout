@@ -416,6 +416,7 @@ test('system escalation cards enter the active tray and target authored vulnerab
   const state = initializeGame(startCommand);
   state.decks.crisis.drawPile = [];
   state.decks.system.drawPile = ['sys_emergency_powers'];
+  state.globalGaze = 20; // Force gaze_threshold trigger
 
   const next = dispatchCommand(state, { type: 'ResolveSystemPhase' }, content);
   const cardEvent = next.eventLog.findLast((event) => event.sourceId === 'sys_emergency_powers');

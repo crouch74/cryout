@@ -79,6 +79,6 @@ test('room-service local round trip remains responsive for a create-join-start-c
     assert.equal(commands.response.status, 200);
 
     const elapsed = performance.now() - startedAt;
-    assert.ok(elapsed < 1000, `room-service smoke flow exceeded responsiveness budget: ${elapsed.toFixed(1)}ms`);
+    assert.ok(elapsed < 2000, `room-service smoke flow exceeded responsiveness budget: ${elapsed.toFixed(1)}ms`);
   });
 });

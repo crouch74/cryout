@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -519,7 +521,7 @@ test('Arabic catalog stays key-complete and localizes canonical mechanic names',
 
   assert.equal(requiredUiHomeKeys.every((key) => englishKeys.has(key) && arabicKeys.has(key)), true);
 
-  const arUi = arCatalog.ui as Record<string, Record<string, string>>;
+  const arUi = (arCatalog as any).ui as Record<string, Record<string, string>>;
   assert.equal(arUi.game.comrades, 'الرفاق');
   assert.equal(arUi.game.evidence, 'الأدلة');
   assert.equal(arUi.game.extractionTokens, 'رموز الاستخراج');
@@ -537,21 +539,21 @@ test('catalog parity holds and retired navigation sections stay removed', () => 
 
   assert.deepEqual([...englishKeys].filter((key) => !arabicKeys.has(key)), []);
   assert.deepEqual([...arabicKeys].filter((key) => !englishKeys.has(key)), []);
-  assert.equal('legacyLanding' in enCatalog.ui, false);
-  assert.equal('legacyDashboard' in enCatalog.ui, false);
-  assert.equal('legacyLanding' in arCatalog.ui, false);
-  assert.equal('legacyDashboard' in arCatalog.ui, false);
+  assert.equal('legacyLanding' in (enCatalog as any).ui, false);
+  assert.equal('legacyDashboard' in (enCatalog as any).ui, false);
+  assert.equal('legacyLanding' in (arCatalog as any).ui, false);
+  assert.equal('legacyDashboard' in (arCatalog as any).ui, false);
 });
 
 test('all shipped rulesets and cards have localization entries in both catalogs', () => {
   const enCatalog = JSON.parse(readFileSync(new URL('../../src/i18n/en.json', import.meta.url), 'utf8')) as Record<string, unknown>;
   const arCatalog = JSON.parse(readFileSync(new URL('../../src/i18n/ar-EG.json', import.meta.url), 'utf8')) as Record<string, unknown>;
-  const enCards = enCatalog.content.cards as Record<string, unknown>;
-  const arCards = arCatalog.content.cards as Record<string, unknown>;
-  const enFactions = enCatalog.content.factions as Record<string, unknown>;
-  const arFactions = arCatalog.content.factions as Record<string, unknown>;
-  const enRulesets = enCatalog.content.rulesets as Record<string, unknown>;
-  const arRulesets = arCatalog.content.rulesets as Record<string, unknown>;
+  const enCards = (enCatalog as any).content.cards as Record<string, unknown>;
+  const arCards = (arCatalog as any).content.cards as Record<string, unknown>;
+  const enFactions = (enCatalog as any).content.factions as Record<string, unknown>;
+  const arFactions = (arCatalog as any).content.factions as Record<string, unknown>;
+  const enRulesets = (enCatalog as any).content.rulesets as Record<string, unknown>;
+  const arRulesets = (arCatalog as any).content.rulesets as Record<string, unknown>;
 
   for (const ruleset of listRulesets()) {
     // TODO: remove skip once egypt_1919_revolution is fully localized
@@ -576,23 +578,23 @@ test('Algeria Arabic localization is substantive and no longer mirrors the Engli
   const arCatalog = JSON.parse(readFileSync(new URL('../../src/i18n/ar-EG.json', import.meta.url), 'utf8')) as Record<string, unknown>;
 
   assert.notEqual(
-    arCatalog.content.scenarios.algerian_war_of_independence.introduction,
-    enCatalog.content.scenarios.algerian_war_of_independence.introduction,
+    (arCatalog as any).content.scenarios.algerian_war_of_independence.introduction,
+    (enCatalog as any).content.scenarios.algerian_war_of_independence.introduction,
   );
   assert.notEqual(
-    arCatalog.content.factions.fln_urban_cells.passive,
-    enCatalog.content.factions.fln_urban_cells.passive,
+    (arCatalog as any).content.factions.fln_urban_cells.passive,
+    (enCatalog as any).content.factions.fln_urban_cells.passive,
   );
   assert.notEqual(
-    arCatalog.content.cards.crs_alg_battle_of_algiers.text,
-    enCatalog.content.cards.crs_alg_battle_of_algiers.text,
+    (arCatalog as any).content.cards.crs_alg_battle_of_algiers.text,
+    (enCatalog as any).content.cards.crs_alg_battle_of_algiers.text,
   );
   assert.notEqual(
-    arCatalog.content.regions.Algiers.description,
-    enCatalog.content.regions.Algiers.description,
+    (arCatalog as any).content.regions.Algiers.description,
+    (enCatalog as any).content.regions.Algiers.description,
   );
   assert.equal(
-    String(arCatalog.content.rulesets.algerian_war_of_independence.name).includes('ALGERIAN WAR OF INDEPENDENCE'),
+    String((arCatalog as any).content.rulesets.algerian_war_of_independence.name).includes('ALGERIAN WAR OF INDEPENDENCE'),
     false,
   );
 });

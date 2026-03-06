@@ -540,15 +540,6 @@ export const compatRuleset: RulesetDefinition = {
           type: 'publicVictory',
         },
       },
-      {
-        id: 'mandates',
-        label: 'Secret Mandates',
-        weight: 40,
-        type: 'binaryCondition',
-        source: {
-          type: 'mandates',
-        },
-      },
     ],
     mandatesAsScore: {
       enabled: true,

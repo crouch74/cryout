@@ -376,7 +376,7 @@ export const UI_SKINS: Record<UiSkinId, UiSkinDefinition> = {
       ring: '0 0 0 3px rgba(176, 137, 72, 0.34)',
     },
     action: {
-      primary: '#6B7A3D',
+      primary: '#A0B758',
       secondary: '#B4873C',
       utility: '#324334',
     },

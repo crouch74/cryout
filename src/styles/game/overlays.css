@@ -64,6 +64,31 @@
   backdrop-filter: blur(10px);
 }
 
+/* Keep Radix dialog content and overlay in the same centered fixed layer. */
+#stones-modal-root {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-toast);
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+#stones-modal-root > .modal-shell,
+#stones-modal-root > .modal-card {
+  grid-area: 1 / 1;
+}
+
+#stones-modal-root > .modal-shell {
+  pointer-events: auto;
+}
+
+#stones-modal-root > .modal-card {
+  pointer-events: auto;
+  max-height: calc(100vh - (var(--space-2) * 2));
+  overflow: auto;
+}
+
 .modal-card {
   position: relative;
   z-index: var(--z-toast);

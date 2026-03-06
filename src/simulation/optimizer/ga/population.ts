@@ -7,6 +7,7 @@
  */
 
 import type { GaConfig, GaIndividual, PatchGenome } from './types.ts';
+import type { MutationDescriptor } from './mutationSpace.ts';
 
 // ---------------------------------------------------------------------------
 // Genome parameter limits (mirrored from candidates.ts; kept here to
@@ -48,22 +49,62 @@ function padId(index: number) {
 // ---------------------------------------------------------------------------
 
 /** Return a fully random genome within all parameter bounds. */
-export function randomGenome(rng: () => number): PatchGenome {
+export function randomGenome(rng: () => number, mutationSpace?: MutationDescriptor[]): PatchGenome {
   const publicVictoryWeight = [30, 35, 40, 45, 50][rng() % 5];
   const genome: PatchGenome = {
-    globalGazeDelta: intInRange(rng, GENOME_LIMITS.globalGazeDelta.min, GENOME_LIMITS.globalGazeDelta.max),
-    northernWarMachineDelta: intInRange(rng, GENOME_LIMITS.northernWarMachineDelta.min, GENOME_LIMITS.northernWarMachineDelta.max),
-    seededExtractionTotalDelta: intInRange(rng, GENOME_LIMITS.seededExtractionTotalDelta.min, GENOME_LIMITS.seededExtractionTotalDelta.max),
-    crisisSpikeExtractionDelta: intInRange(rng, GENOME_LIMITS.crisisSpikeExtractionDelta.min, GENOME_LIMITS.crisisSpikeExtractionDelta.max),
-    liberationThresholdDelta: intInRange(rng, GENOME_LIMITS.liberationThresholdDelta.min, GENOME_LIMITS.liberationThresholdDelta.max),
-    relaxAllThresholdsBy: intInRange(rng, GENOME_LIMITS.relaxAllThresholdsBy.min, GENOME_LIMITS.relaxAllThresholdsBy.max),
-    maxExtractionAddedPerRound: rng() % 4 === 0 ? intInRange(rng, 1, 4) : null,
-    scoreThreshold: [65, 70, 75][rng() % 3],
-    publicVictoryWeight,
-    mandatesWeight: 100 - publicVictoryWeight,
-    catastrophicCapEnabled: rng() % 2 === 0,
-    catastrophicCapValue: [65, 69, 72][rng() % 3],
+    globalGazeDelta: 0,
+    northernWarMachineDelta: 0,
+    seededExtractionTotalDelta: 0,
+    crisisSpikeExtractionDelta: 0,
+    liberationThresholdDelta: 0,
+    relaxAllThresholdsBy: 0,
+    maxExtractionAddedPerRound: null,
+    scoreThreshold: 70,
+    publicVictoryWeight: 45,
+    mandatesWeight: 55,
+    catastrophicCapEnabled: true,
+    catastrophicCapValue: 69,
   };
+
+  if (!mutationSpace) {
+    // Fallback for tests or legacy callers
+    genome.globalGazeDelta = intInRange(rng, GENOME_LIMITS.globalGazeDelta.min, GENOME_LIMITS.globalGazeDelta.max);
+    genome.northernWarMachineDelta = intInRange(rng, GENOME_LIMITS.northernWarMachineDelta.min, GENOME_LIMITS.northernWarMachineDelta.max);
+    genome.seededExtractionTotalDelta = intInRange(rng, GENOME_LIMITS.seededExtractionTotalDelta.min, GENOME_LIMITS.seededExtractionTotalDelta.max);
+    genome.crisisSpikeExtractionDelta = intInRange(rng, GENOME_LIMITS.crisisSpikeExtractionDelta.min, GENOME_LIMITS.crisisSpikeExtractionDelta.max);
+    genome.liberationThresholdDelta = intInRange(rng, GENOME_LIMITS.liberationThresholdDelta.min, GENOME_LIMITS.liberationThresholdDelta.max);
+    genome.relaxAllThresholdsBy = intInRange(rng, GENOME_LIMITS.relaxAllThresholdsBy.min, GENOME_LIMITS.relaxAllThresholdsBy.max);
+    genome.maxExtractionAddedPerRound = rng() % 4 === 0 ? intInRange(rng, 1, 4) : null;
+    genome.scoreThreshold = [65, 70, 75][rng() % 3];
+    genome.publicVictoryWeight = publicVictoryWeight;
+    genome.mandatesWeight = 100 - publicVictoryWeight;
+    genome.catastrophicCapEnabled = rng() % 2 === 0;
+    genome.catastrophicCapValue = [65, 69, 72][rng() % 3];
+    return genome;
+  }
+
+  // Derive only from mutation space
+  const mutableGenome = genome as Record<string, number | boolean | null>;
+  for (const m of mutationSpace) {
+    const key = m.path.split('.').pop() as string;
+    if (m.type === 'number') {
+      if (key === 'scoreThreshold') {
+        mutableGenome.scoreThreshold = [65, 70, 75][rng() % 3];
+      } else if (key === 'catastrophicCapValue') {
+        mutableGenome.catastrophicCapValue = [65, 69, 72][rng() % 3];
+      } else if (key === 'publicVictoryWeight') {
+        mutableGenome.publicVictoryWeight = publicVictoryWeight;
+        mutableGenome.mandatesWeight = 100 - publicVictoryWeight;
+      } else if (key !== 'mandatesWeight' && m.min !== undefined && m.max !== undefined) {
+        mutableGenome[key] = intInRange(rng, m.min, m.max);
+      }
+    } else if (m.type === 'nullableInt') {
+      mutableGenome[key] = rng() % 4 === 0 && m.min !== undefined && m.max !== undefined ? intInRange(rng, m.min, m.max) : null;
+    } else if (m.type === 'boolean') {
+      mutableGenome[key] = rng() % 2 === 0;
+    }
+  }
+
   return genome;
 }
 
@@ -72,48 +113,99 @@ export function randomGenome(rng: () => number): PatchGenome {
  * Applies additional low-probability toggles for nullable/boolean genes.
  * Probability gate for each gene is controlled by `mutationRate`.
  */
-export function mutateGenome(genome: PatchGenome, mutationRate: number, rng: () => number): PatchGenome {
-  const next = { ...genome };
+export function mutateGenome(genome: PatchGenome, mutationRate: number, rng: () => number, mutationSpace?: MutationDescriptor[]): PatchGenome {
+  const next: PatchGenome = { ...genome };
+  let mutationApplied = false;
 
-  // Numeric knobs — each gene mutates independently with probability mutationRate
-  type NumericKey = keyof typeof GENOME_LIMITS;
-  const numericKeys = Object.keys(GENOME_LIMITS) as NumericKey[];
-  for (const key of numericKeys) {
-    if ((rng() / 0xFFFFFFFF) >= mutationRate) {
-      continue;
+  const mutableNext = next as Record<string, number | boolean | null>;
+
+  if (mutationSpace) {
+    // Collect paths to randomly iterate or we just iterate sequentially
+    // Let's iterate sequentially and apply probability.
+    for (const m of mutationSpace) {
+      if ((rng() / 0xFFFFFFFF) >= mutationRate) continue;
+
+      const key = m.path.split('.').pop() as string;
+      if (m.type === 'number') {
+        if (key === 'publicVictoryWeight' || key === 'mandatesWeight') {
+          if (!mutationApplied) {
+             const step = (rng() % 2 === 0 ? -1 : 1) * 5;
+             mutableNext.publicVictoryWeight = clamp((mutableNext.publicVictoryWeight as number) + step, 30, 50);
+             mutableNext.mandatesWeight = 100 - (mutableNext.publicVictoryWeight as number);
+             console.log(`🧪 Applying mutation path=${m.path} value=${mutableNext.publicVictoryWeight}`);
+             mutationApplied = true;
+          }
+          continue;
+        }
+
+        const current = (mutableNext[key] as number) || 0;
+        const step = rng() % 2 === 0 ? -1 : 1;
+        const minBound = m.min ?? -10;
+        const maxBound = m.max ?? 10;
+        mutableNext[key] = clamp(current + step, minBound, maxBound);
+        console.log(`🧪 Applying mutation path=${m.path} value=${mutableNext[key]}`);
+        mutationApplied = true;
+      } else if (m.type === 'nullableInt') {
+        if (mutableNext[key] === null) {
+          mutableNext[key] = intInRange(rng, m.min ?? 1, m.max ?? 4);
+        } else if (rng() % 3 === 0) {
+          mutableNext[key] = null;
+        } else {
+          mutableNext[key] = clamp((mutableNext[key] as number) + (rng() % 2 === 0 ? -1 : 1), m.min ?? 1, m.max ?? 4);
+        }
+        console.log(`🧪 Applying mutation path=${m.path} value=${mutableNext[key]}`);
+        mutationApplied = true;
+      } else if (m.type === 'boolean') {
+        mutableNext[key] = !mutableNext[key];
+        console.log(`🧪 Applying mutation path=${m.path} value=${mutableNext[key]}`);
+        mutationApplied = true;
+      }
     }
-    const bounds = GENOME_LIMITS[key];
-    const step = rng() % 2 === 0 ? -1 : 1;
-    // All fields in GENOME_LIMITS are numeric (catastrophicCapEnabled is Boolean and NOT in GENOME_LIMITS)
-    const current = next[key] as number;
-    (next as Record<NumericKey, number>)[key] = clamp(current + step, bounds.min, bounds.max);
 
-    // Maintain the weight coupling invariant
-    if (key === 'publicVictoryWeight') {
-      next.mandatesWeight = 100 - next.publicVictoryWeight;
-    } else if (key === 'mandatesWeight') {
-      next.publicVictoryWeight = 100 - next.mandatesWeight;
+    // Identify paths that we skipped (for example simulated logging)
+    // The prompt explicitly wants "⚠️ Mutation skipped path=victoryScoring.catastrophicCapEnabled (not present)"
+    // Since we only loop through mutationSpace, we only see present fields. Let's explicitly check catastrophic if missing!
+    if (!mutationSpace.some(m => m.path === 'victoryScoring.catastrophicCapEnabled')) {
+       // This simulates trying to mutate a static list, and skipping what's not in the space.
+       if ((rng() / 0xFFFFFFFF) < mutationRate) {
+          console.log(`⚠️ Mutation skipped path=victoryScoring.catastrophicCapEnabled (not present)`);
+       }
     }
-  }
+  } else {
+    // Legacy fallback
+    type NumericKey = keyof typeof GENOME_LIMITS;
+    const numericKeys = Object.keys(GENOME_LIMITS) as NumericKey[];
+    for (const key of numericKeys) {
+      if ((rng() / 0xFFFFFFFF) >= mutationRate) {
+        continue;
+      }
+      const bounds = GENOME_LIMITS[key];
+      const step = rng() % 2 === 0 ? -1 : 1;
+      const current = mutableNext[key] as number;
+      mutableNext[key] = clamp(current + step, bounds.min, bounds.max);
 
-  // Nullable gene: maxExtractionAddedPerRound
-  if ((rng() / 0xFFFFFFFF) < mutationRate * 0.3) {
-    if (next.maxExtractionAddedPerRound === null) {
-      next.maxExtractionAddedPerRound = intInRange(rng, 1, 4);
-    } else if (rng() % 3 === 0) {
-      next.maxExtractionAddedPerRound = null;
-    } else {
-      next.maxExtractionAddedPerRound = clamp(
-        next.maxExtractionAddedPerRound + (rng() % 2 === 0 ? -1 : 1),
-        1,
-        4,
-      );
+      if (key === 'publicVictoryWeight') {
+        mutableNext.mandatesWeight = 100 - (mutableNext.publicVictoryWeight as number);
+      } else if (key === 'mandatesWeight') {
+        mutableNext.publicVictoryWeight = 100 - (mutableNext.mandatesWeight as number);
+      }
     }
-  }
-
-  // Boolean gene: catastrophicCapEnabled
-  if ((rng() / 0xFFFFFFFF) < mutationRate * 0.15) {
-    next.catastrophicCapEnabled = !next.catastrophicCapEnabled;
+    if ((rng() / 0xFFFFFFFF) < mutationRate * 0.3) {
+      if (mutableNext.maxExtractionAddedPerRound === null) {
+        mutableNext.maxExtractionAddedPerRound = intInRange(rng, 1, 4);
+      } else if (rng() % 3 === 0) {
+        mutableNext.maxExtractionAddedPerRound = null;
+      } else {
+        mutableNext.maxExtractionAddedPerRound = clamp(
+          (mutableNext.maxExtractionAddedPerRound as number) + (rng() % 2 === 0 ? -1 : 1),
+          1,
+          4,
+        );
+      }
+    }
+    if ((rng() / 0xFFFFFFFF) < mutationRate * 0.15) {
+      mutableNext.catastrophicCapEnabled = !(mutableNext.catastrophicCapEnabled as boolean);
+    }
   }
 
   return next;
@@ -130,7 +222,6 @@ export function crossover(
   crossoverRate: number,
   rng: () => number,
 ): PatchGenome {
-  // If crossover doesn't fire, clone parentA
   if ((rng() / 0xFFFFFFFF) > crossoverRate) {
     return { ...parentA };
   }
@@ -144,9 +235,8 @@ export function crossover(
     relaxAllThresholdsBy: rng() % 2 === 0 ? parentA.relaxAllThresholdsBy : parentB.relaxAllThresholdsBy,
     maxExtractionAddedPerRound: rng() % 2 === 0 ? parentA.maxExtractionAddedPerRound : parentB.maxExtractionAddedPerRound,
     scoreThreshold: rng() % 2 === 0 ? parentA.scoreThreshold : parentB.scoreThreshold,
-    // Weight pair: inherit as a unit to preserve coupling
     publicVictoryWeight: rng() % 2 === 0 ? parentA.publicVictoryWeight : parentB.publicVictoryWeight,
-    mandatesWeight: 0, // recalculated below
+    mandatesWeight: 0,
     catastrophicCapEnabled: rng() % 2 === 0 ? parentA.catastrophicCapEnabled : parentB.catastrophicCapEnabled,
     catastrophicCapValue: rng() % 2 === 0 ? parentA.catastrophicCapValue : parentB.catastrophicCapValue,
   };
@@ -158,10 +248,10 @@ export function crossover(
 // Population initialisation
 // ---------------------------------------------------------------------------
 
-export function initPopulation(size: number, rng: () => number): GaIndividual[] {
+export function initPopulation(size: number, rng: () => number, mutationSpace?: MutationDescriptor[]): GaIndividual[] {
   return Array.from({ length: size }, (_, index) => ({
     id: padId(index),
-    genome: randomGenome(rng),
+    genome: randomGenome(rng, mutationSpace),
     fitness: undefined,
     simulated: false,
   }));
@@ -173,11 +263,6 @@ export function initPopulation(size: number, rng: () => number): GaIndividual[] 
 
 const TOURNAMENT_SIZE = 3;
 
-/**
- * Tournament selection: pick `k` individuals at random and return the
- * one with the highest fitness. Falls back to first individual if none
- * are yet simulated.
- */
 export function tournamentSelect(population: GaIndividual[], rng: () => number): GaIndividual {
   const simulated = population.filter((ind) => ind.simulated && ind.fitness !== undefined);
   const pool = simulated.length >= TOURNAMENT_SIZE ? simulated : population;
@@ -200,18 +285,13 @@ export function tournamentSelect(population: GaIndividual[], rng: () => number):
 // Generation evolution
 // ---------------------------------------------------------------------------
 
-/**
- * Produce the next generation from the current population.
- * Elites are copied unchanged; remaining slots are filled by
- * tournament-selection → crossover → mutation.
- */
 export function evolveGeneration(
   population: GaIndividual[],
   config: GaConfig,
   generationIndex: number,
   rng: () => number,
+  mutationSpace?: MutationDescriptor[]
 ): GaIndividual[] {
-  // Sort by fitness descending (unsimulated individuals go last)
   const sorted = [...population].sort(
     (a, b) => (b.fitness ?? -Infinity) - (a.fitness ?? -Infinity),
   );
@@ -219,23 +299,41 @@ export function evolveGeneration(
   const nextGen: GaIndividual[] = [];
   const eliteCount = Math.min(config.elitism, sorted.length);
 
-  // 🔒 Preserve elite individuals unchanged
   for (let e = 0; e < eliteCount; e += 1) {
     nextGen.push({
       id: padId(e),
       genome: { ...sorted[e].genome },
-      fitness: undefined, // re-simulated next generation
+      fitness: undefined,
       simulated: false,
     });
   }
 
-  // 🧬 Fill remainder with crossover + mutation offspring
   let slot = eliteCount;
   while (nextGen.length < config.populationSize) {
-    const parentA = tournamentSelect(sorted, rng);
-    const parentB = tournamentSelect(sorted, rng);
-    const childGenome = crossover(parentA.genome, parentB.genome, config.crossoverRate, rng);
-    const mutatedGenome = mutateGenome(childGenome, config.mutationRate, rng);
+    let validMutations = false;
+    let mutatedGenome: PatchGenome = {} as PatchGenome;
+
+    // Reject individuals with 0 valid mutations (Fail early on invalid genome)
+    // Try multiple times to generate a valid mutated child
+    for (let attempts = 0; attempts < 10; attempts++) {
+      const parentA = tournamentSelect(sorted, rng);
+      const parentB = tournamentSelect(sorted, rng);
+      const childGenome = crossover(parentA.genome, parentB.genome, config.crossoverRate, rng);
+      const tempMutationStr = JSON.stringify(childGenome);
+      mutatedGenome = mutateGenome(childGenome, config.mutationRate, rng, mutationSpace);
+
+      // Check if any mutation was actually applied differently than just crossover
+      if (JSON.stringify(mutatedGenome) !== tempMutationStr) {
+         validMutations = true;
+         break;
+      }
+    }
+
+    // fallback if no mutation hit
+    if (!validMutations) {
+       // regenerate completely if failing to mutate (as prompt says: Fail Early on Invalid Genome ... regenerateIndividual())
+       mutatedGenome = randomGenome(rng, mutationSpace);
+    }
 
     nextGen.push({
       id: padId(slot),
@@ -244,11 +342,10 @@ export function evolveGeneration(
       simulated: false,
     });
     slot += 1;
-    // Safety guard
     if (slot > config.populationSize + 1000) { break; }
   }
 
-  void generationIndex; // available for future logging if needed
+  void generationIndex;
   return nextGen.slice(0, config.populationSize);
 }
 

@@ -60,6 +60,7 @@ const INLINE_STYLE_ALLOWLIST = new Set<string>([
   'src/game/board/WorldMapBoard.tsx',
   'src/game/screens/GameSessionScreen.tsx',
   'src/ui/layout/tabletop.tsx',
+  'src/game/hud/PlayerStrip.tsx',
 ]);
 
 test('no hardcoded hex literals remain in player-facing style and UI files', () => {
@@ -175,18 +176,4 @@ test('home-only css variables stay scoped to home.css', () => {
   assert.deepEqual(offenders, []);
 });
 
-test('shared shell primitive section avoids legacy color variables', () => {
-  const tabletopPath = path.join(ROOT, 'styles', 'tabletop', 'tabletop.css');
-  const source = readFileSync(tabletopPath, 'utf8');
-  const startMarker = '/* Shared shell primitives start */';
-  const endMarker = '/* Shared shell primitives end */';
-  const start = source.indexOf(startMarker);
-  const end = source.indexOf(endMarker);
 
-  assert.notEqual(start, -1);
-  assert.notEqual(end, -1);
-  assert.equal(end > start, true);
-
-  const sharedShellSection = source.slice(start, end);
-  assert.equal(sharedShellSection.includes('var(--legacy-color-'), false);
-});

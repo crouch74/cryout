@@ -35,8 +35,6 @@ export function ModalFrame({
   hideHeader = false,
   className = '',
   shellClassName = '',
-  role = 'dialog',
-  'aria-modal': ariaModal = true,
 }: ModalFrameProps) {
   const titleId = useId();
   const descriptionId = useId();
@@ -54,8 +52,6 @@ export function ModalFrame({
       className={className}
       a11yTitle={typeof title === 'string' ? title : 'Dialog'}
       a11yDescription={typeof description === 'string' ? description : undefined}
-      role={role}
-      aria-modal={ariaModal}
     >
       <PaperSheet
         tone="folio"

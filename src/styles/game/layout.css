@@ -29,19 +29,15 @@
 
 .game-header-shell {
   padding:
-    var(--game-shell-gutter-block-start)
-    var(--game-shell-gutter-inline)
-    var(--game-shell-gutter-block-end);
+    var(--game-shell-gutter-block-start) var(--game-shell-gutter-inline) var(--game-shell-gutter-block-end);
   border-bottom: var(--border-width-thin) solid var(--panel-rim);
   position: sticky;
   top: 0;
   z-index: var(--z-modal);
   background:
-    linear-gradient(
-      180deg,
+    linear-gradient(180deg,
       color-mix(in srgb, var(--skin-layer-elevated) 96%, var(--skin-layer-surface) 4%),
-      color-mix(in srgb, var(--skin-layer-surface) 94%, var(--skin-layer-overlay) 6%)
-    ),
+      color-mix(in srgb, var(--skin-layer-surface) 94%, var(--skin-layer-overlay) 6%)),
     color-mix(in srgb, var(--board-sand) 92%, var(--skin-layer-elevated) 8%);
   backdrop-filter: blur(8px);
   box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--skin-layer-elevated) 54%, transparent);
@@ -80,11 +76,9 @@
   padding: 10px 12px 11px;
   border-radius: var(--radius-12);
   background:
-    linear-gradient(
-      180deg,
+    linear-gradient(180deg,
       color-mix(in srgb, var(--skin-layer-elevated) 98%, var(--skin-layer-surface) 2%),
-      color-mix(in srgb, var(--skin-layer-surface) 90%, var(--skin-layer-overlay) 10%)
-    ),
+      color-mix(in srgb, var(--skin-layer-surface) 90%, var(--skin-layer-overlay) 10%)),
     var(--skin-layer-surface);
   border: var(--border-width-thin) solid var(--tile-rim-dark);
   box-shadow: var(--tile-shadow), var(--tile-emboss);
@@ -291,8 +285,7 @@
 
 .board-deck-stack-shell.is-selected .deck-stack-cards {
   filter:
-    drop-shadow(0 24px 34px color-mix(in srgb, var(--skin-layer-scrim) 46%, transparent))
-    drop-shadow(0 0 0 color-mix(in srgb, var(--ui-accent-warm) 22%, transparent));
+    drop-shadow(0 24px 34px color-mix(in srgb, var(--skin-layer-scrim) 46%, transparent)) drop-shadow(0 0 0 color-mix(in srgb, var(--ui-accent-warm) 22%, transparent));
 }
 
 .beacon-objective-strip {
@@ -472,11 +465,9 @@
 
 .deck-reveal-card-system .deck-reveal-back-art::before {
   background:
-    repeating-linear-gradient(
-      90deg,
+    repeating-linear-gradient(90deg,
       color-mix(in srgb, var(--deck-accent) 16%, transparent) 0 2px,
-      transparent 2px 12px
-    ),
+      transparent 2px 12px),
     linear-gradient(0deg, color-mix(in srgb, var(--deck-ink) 7%, transparent), color-mix(in srgb, var(--deck-base) 16%, transparent));
   opacity: 0.5;
 }
@@ -497,11 +488,9 @@
 .deck-reveal-card-resistance .deck-reveal-back-art::before {
   background:
     radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--deck-accent) 22%, transparent) 0 18%, transparent 19% 100%),
-    repeating-radial-gradient(
-      circle at 50% 50%,
+    repeating-radial-gradient(circle at 50% 50%,
       color-mix(in srgb, var(--deck-accent) 18%, transparent) 0 2px,
-      transparent 2px 10px
-    );
+      transparent 2px 10px);
   opacity: 0.42;
 }
 
@@ -519,11 +508,9 @@
 
 .deck-reveal-card-crisis .deck-reveal-back-art::before {
   background:
-    repeating-linear-gradient(
-      135deg,
+    repeating-linear-gradient(135deg,
       color-mix(in srgb, var(--deck-accent) 24%, transparent) 0 7px,
-      transparent 7px 14px
-    ),
+      transparent 7px 14px),
     linear-gradient(0deg, color-mix(in srgb, var(--deck-ink) 8%, transparent), color-mix(in srgb, var(--deck-base) 18%, transparent));
   opacity: 0.52;
 }
@@ -1138,11 +1125,9 @@ html[dir='rtl'] .deck-reveal-deck-label {
 .dock-control-button.is-primary,
 .context-primary {
   border-color: color-mix(in srgb, var(--faction-accent, var(--accent-primary-strong)) 68%, var(--tile-rim-dark) 32%);
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--faction-accent, var(--accent-primary-strong)) 24%, var(--ui-surface-paper) 76%),
-    color-mix(in srgb, var(--faction-accent, var(--accent-primary-strong)) 40%, var(--ui-surface-paper) 60%)
-  );
+  background: linear-gradient(180deg,
+      color-mix(in srgb, var(--faction-accent, var(--accent-primary-strong)) 24%, var(--ui-surface-paper) 76%),
+      color-mix(in srgb, var(--faction-accent, var(--accent-primary-strong)) 40%, var(--ui-surface-paper) 60%));
   color: color-mix(in srgb, var(--faction-accent, var(--skin-text-primary)) 62%, var(--skin-text-primary) 38%);
 }
 
@@ -1685,11 +1670,9 @@ html[dir='rtl'] .deck-reveal-deck-label {
   border-radius: var(--radius-10);
   border: var(--border-width-thin) solid color-mix(in srgb, var(--skin-text-primary) 16%, transparent);
   background:
-    linear-gradient(
-      180deg,
+    linear-gradient(180deg,
       color-mix(in srgb, var(--skin-layer-elevated) 97%, transparent),
-      color-mix(in srgb, var(--skin-layer-surface) 92%, var(--skin-layer-overlay) 8%)
-    ),
+      color-mix(in srgb, var(--skin-layer-surface) 92%, var(--skin-layer-overlay) 8%)),
     var(--skin-layer-surface);
   box-shadow: 0 10px 18px color-mix(in srgb, var(--skin-text-primary) 14%, transparent);
   color: var(--text-2);
@@ -1790,11 +1773,9 @@ html[dir='rtl'] .deck-reveal-deck-label {
   border-radius: var(--radius-10);
   border: var(--border-width-thin) solid color-mix(in srgb, var(--seat-accent, var(--tile-rim-dark)) 58%, var(--tile-rim-dark) 42%);
   background:
-    linear-gradient(
-      180deg,
+    linear-gradient(180deg,
       color-mix(in srgb, var(--skin-text-inverse) 96%, transparent),
-      color-mix(in srgb, var(--seat-accent, var(--ui-surface-paper-strong)) 14%, var(--ui-surface-paper-strong) 86%)
-    ),
+      color-mix(in srgb, var(--seat-accent, var(--ui-surface-paper-strong)) 14%, var(--ui-surface-paper-strong) 86%)),
     var(--skin-layer-surface);
   box-shadow: var(--tile-shadow), var(--tile-emboss);
   font-weight: 700;
@@ -1840,11 +1821,9 @@ html[dir='rtl'] .deck-reveal-deck-label {
 .player-seat-chip.is-active {
   border-color: color-mix(in srgb, var(--seat-accent, var(--faction-accent, var(--accent-gold))) 74%, var(--tile-rim-dark) 26%);
   background:
-    linear-gradient(
-      180deg,
+    linear-gradient(180deg,
       color-mix(in srgb, var(--skin-text-inverse) 98%, transparent),
-      color-mix(in srgb, var(--seat-accent, var(--ui-accent-warm)) 24%, var(--ui-surface-paper) 76%)
-    ),
+      color-mix(in srgb, var(--seat-accent, var(--ui-accent-warm)) 24%, var(--ui-surface-paper) 76%)),
     var(--skin-layer-surface);
   box-shadow:
     0 0 0 1px color-mix(in srgb, var(--skin-text-inverse) 80%, transparent),
@@ -1887,7 +1866,7 @@ html[dir='rtl'] .deck-reveal-deck-label {
   z-index: 1;
 }
 
-.coalition-file-shell .player-seat-chip + .player-seat-chip {
+.coalition-file-shell .player-seat-chip+.player-seat-chip {
   margin-inline-start: 0;
 }
 
@@ -1921,11 +1900,9 @@ html[dir='rtl'] .deck-reveal-deck-label {
   border-bottom: 0;
   padding: 10px 14px 12px;
   background:
-    linear-gradient(
-      180deg,
+    linear-gradient(180deg,
       color-mix(in srgb, var(--faction-accent, var(--skin-layer-elevated)) 20%, var(--skin-layer-elevated) 80%),
-      color-mix(in srgb, var(--faction-accent, var(--skin-layer-surface)) 12%, var(--skin-layer-surface) 88%)
-    );
+      color-mix(in srgb, var(--faction-accent, var(--skin-layer-surface)) 12%, var(--skin-layer-surface) 88%));
   box-shadow: none;
 }
 
@@ -1956,11 +1933,9 @@ html[dir='rtl'] .deck-reveal-deck-label {
   border-radius: var(--radius-10);
   border: var(--border-width-thin) solid color-mix(in srgb, var(--faction-accent, var(--skin-text-primary)) 28%, transparent);
   background:
-    linear-gradient(
-      180deg,
+    linear-gradient(180deg,
       color-mix(in srgb, var(--faction-accent, var(--skin-layer-elevated)) 16%, var(--skin-layer-elevated) 84%),
-      color-mix(in srgb, var(--faction-accent, var(--skin-layer-surface)) 12%, var(--skin-layer-surface) 88%)
-    ),
+      color-mix(in srgb, var(--faction-accent, var(--skin-layer-surface)) 12%, var(--skin-layer-surface) 88%)),
     color-mix(in srgb, var(--skin-text-inverse) 88%, transparent);
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--skin-text-inverse) 75%, transparent);
   font-family: var(--font-data);
@@ -2276,11 +2251,9 @@ html[dir='rtl'] .deck-reveal-deck-label {
   border-top: var(--border-width-thin) solid var(--file-rim);
   border-radius: 0 0 var(--radius-16) var(--radius-16);
   background:
-    linear-gradient(
-      180deg,
+    linear-gradient(180deg,
       color-mix(in srgb, var(--faction-accent, var(--skin-layer-elevated)) 12%, var(--skin-layer-elevated) 88%),
-      color-mix(in srgb, var(--faction-accent, var(--skin-layer-surface)) 8%, var(--skin-layer-surface) 92%)
-    );
+      color-mix(in srgb, var(--faction-accent, var(--skin-layer-surface)) 8%, var(--skin-layer-surface) 92%));
   box-shadow: none;
 }
 
@@ -2332,11 +2305,9 @@ html[dir='rtl'] .deck-reveal-deck-label {
 .dock-control-button.is-active {
   border-color: color-mix(in srgb, var(--faction-accent, var(--skin-action-secondary)) 58%, var(--tile-rim-dark));
   background:
-    linear-gradient(
-      180deg,
+    linear-gradient(180deg,
       color-mix(in srgb, var(--skin-text-inverse) 98%, transparent),
-      color-mix(in srgb, var(--faction-accent, var(--ui-accent-warm)) 30%, var(--ui-surface-paper) 70%)
-    ),
+      color-mix(in srgb, var(--faction-accent, var(--ui-accent-warm)) 30%, var(--ui-surface-paper) 70%)),
     color-mix(in srgb, var(--faction-accent, var(--ui-accent-warm)) 36%, var(--ui-surface-paper) 64%);
 }
 
@@ -2465,11 +2436,9 @@ html[dir='rtl'] .deck-reveal-deck-label {
 .context-primary {
   border-color: color-mix(in srgb, var(--faction-accent, var(--skin-action-secondary)) 58%, var(--tile-rim-dark));
   background:
-    linear-gradient(
-      180deg,
+    linear-gradient(180deg,
       color-mix(in srgb, var(--skin-text-inverse) 96%, transparent),
-      color-mix(in srgb, var(--faction-accent, var(--ui-accent-warm)) 28%, var(--ui-surface-paper) 72%)
-    ),
+      color-mix(in srgb, var(--faction-accent, var(--ui-accent-warm)) 28%, var(--ui-surface-paper) 72%)),
     color-mix(in srgb, var(--faction-accent, var(--ui-accent-warm)) 34%, var(--ui-surface-paper) 66%);
 }
 
@@ -2506,11 +2475,9 @@ html[dir='rtl'] .deck-reveal-deck-label {
   border: var(--border-width-thin) solid var(--tile-rim-dark) !important;
   border-radius: var(--radius-12) !important;
   background:
-    linear-gradient(
-      180deg,
+    linear-gradient(180deg,
       color-mix(in srgb, var(--skin-layer-elevated) 96%, transparent),
-      color-mix(in srgb, var(--skin-layer-surface) 88%, var(--skin-layer-overlay) 12%)
-    ),
+      color-mix(in srgb, var(--skin-layer-surface) 88%, var(--skin-layer-overlay) 12%)),
     var(--skin-layer-surface) !important;
   overflow: visible;
   background-clip: padding-box;
@@ -2653,11 +2620,9 @@ html[dir='rtl'] .phase-progress-nav .dock-control-button.is-play-button .ui-icon
   border-radius: var(--radius-12);
   border: var(--border-width-thin) solid color-mix(in srgb, var(--skin-text-primary) 16%, transparent);
   background:
-    linear-gradient(
-      180deg,
+    linear-gradient(180deg,
       color-mix(in srgb, var(--skin-layer-elevated) 97%, transparent),
-      color-mix(in srgb, var(--skin-layer-surface) 92%, var(--skin-layer-overlay) 8%)
-    ),
+      color-mix(in srgb, var(--skin-layer-surface) 92%, var(--skin-layer-overlay) 8%)),
     var(--skin-layer-surface);
   box-shadow: 0 12px 22px color-mix(in srgb, var(--skin-text-primary) 14%, transparent);
   color: var(--skin-text-primary);
@@ -2753,11 +2718,9 @@ html[dir='rtl'] .phase-progress-nav .dock-control-button.is-play-button .ui-icon
   border-radius: var(--radius-14);
   border: var(--border-width-thin) solid color-mix(in srgb, var(--skin-border-strong) 72%, transparent);
   background:
-    linear-gradient(
-      180deg,
+    linear-gradient(180deg,
       color-mix(in srgb, var(--skin-layer-elevated) 98%, transparent),
-      color-mix(in srgb, var(--skin-layer-surface) 90%, var(--skin-layer-overlay) 10%)
-    ),
+      color-mix(in srgb, var(--skin-layer-surface) 90%, var(--skin-layer-overlay) 10%)),
     var(--skin-layer-surface);
   box-shadow: var(--panel-shadow), inset 0 1px 0 color-mix(in srgb, var(--skin-layer-elevated) 74%, transparent);
   color: var(--skin-text-primary);

@@ -3,7 +3,6 @@ import {
   useId,
   useRef,
   useState,
-  type AriaRole,
   type ReactNode,
   type RefObject,
 } from 'react';
@@ -31,8 +30,6 @@ interface ModalProps {
   shellClassName?: string;
   a11yTitle?: string;
   a11yDescription?: string;
-  role?: AriaRole;
-  'aria-modal'?: boolean | 'true' | 'false';
 }
 
 export function Modal({
@@ -47,8 +44,6 @@ export function Modal({
   shellClassName = '',
   a11yTitle,
   a11yDescription,
-  role = 'dialog',
-  'aria-modal': ariaModal = true,
 }: ModalProps) {
   const generatedTitleId = useId();
   const generatedDescriptionId = useId();
@@ -142,8 +137,6 @@ export function Modal({
               <m.div
                 className={`modal-card ${className}`.trim()}
                 tabIndex={-1}
-                role={role}
-                aria-modal={ariaModal}
                 initial={canAnimate ? { opacity: 0, y: 10, scale: 0.98 } : false}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={canAnimate ? { opacity: 0, y: 10, scale: 0.98 } : undefined}
