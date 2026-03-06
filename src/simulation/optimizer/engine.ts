@@ -922,39 +922,38 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
     console.log('🔁 Maximum iterations reached');
   }
 
-  let finalMetrics: OptimizerFinalMetrics;
-    const finalExperimentId = `optimizer_${config.scenarioId}_final_confirmation`;
-    console.log('📊 Running final baseline confirmation');
-    const result = await runExperiment(
-      createExperimentDefinition({
-        id: finalExperimentId,
-        title: 'Optimizer final confirmation',
-        scenarioId: config.scenarioId,
-        patch: { note: '📊 Final confirmation control patch (no-op)' },
-        runsPerArm: config.baselineRuns,
-        seed: mixSeed(config.seed, stableHash('final-confirmation')),
-        confidence: getSignificanceThresholds(config.significance).confidence,
-        primary: 'successRate',
-        victoryModes: config.victoryModes,
-        playerCounts: config.playerCounts,
-      }),
-      {
-        outDir: join(outputDir, 'final_confirmation'),
-        recordTrajectories: false,
-        parallelWorkers: config.parallelWorkers,
-        logMode: 'aggregated',
-        baselinePatch: accumulatedPatch,
-      },
-    );
-    completedExperiments += 1;
-    console.log(`🔁 Overall run progress ${completedExperiments}/${estimatedTotalExperiments} (${formatProgressPercent(completedExperiments, estimatedTotalExperiments)}%) after final confirmation`);
-    finalMetrics = {
+  const finalExperimentId = `optimizer_${config.scenarioId}_final_confirmation`;
+  console.log('📊 Running final baseline confirmation');
+  const result = await runExperiment(
+    createExperimentDefinition({
+      id: finalExperimentId,
+      title: 'Optimizer final confirmation',
       scenarioId: config.scenarioId,
-      baselineScenarioId: config.scenarioId,
-      experimentId: finalExperimentId,
-      metrics: result.armA,
-      score: scoreArmSummary(result.armA),
-    };
+      patch: { note: '📊 Final confirmation control patch (no-op)' },
+      runsPerArm: config.baselineRuns,
+      seed: mixSeed(config.seed, stableHash('final-confirmation')),
+      confidence: getSignificanceThresholds(config.significance).confidence,
+      primary: 'successRate',
+      victoryModes: config.victoryModes,
+      playerCounts: config.playerCounts,
+    }),
+    {
+      outDir: join(outputDir, 'final_confirmation'),
+      recordTrajectories: false,
+      parallelWorkers: config.parallelWorkers,
+      logMode: 'aggregated',
+      baselinePatch: accumulatedPatch,
+    },
+  );
+  completedExperiments += 1;
+  console.log(`🔁 Overall run progress ${completedExperiments}/${estimatedTotalExperiments} (${formatProgressPercent(completedExperiments, estimatedTotalExperiments)}%) after final confirmation`);
+  const finalMetrics: OptimizerFinalMetrics = {
+    scenarioId: config.scenarioId,
+    baselineScenarioId: config.scenarioId,
+    experimentId: finalExperimentId,
+    metrics: result.armA,
+    score: scoreArmSummary(result.armA),
+  };
 
   const report: OptimizerFinalReport = {
     scenarioId: config.scenarioId,

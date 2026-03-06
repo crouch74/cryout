@@ -6,6 +6,15 @@ export async function forceEnglishLocale(page: Page) {
   });
 }
 
+export async function useStableUiPreferences(page: Page) {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.addInitScript(() => {
+    window.localStorage.setItem('stones-tabletop-motion', 'reduced');
+    window.localStorage.setItem('stones-tabletop-contrast', 'default');
+    window.localStorage.setItem('stones.ui.skin', 'civic-signal');
+  });
+}
+
 export async function dismissStartupOverlays(page: Page) {
   const beginButton = page.getByRole('button', { name: 'Begin the Struggle' });
   if (await beginButton.isVisible({ timeout: 5_000 }).catch(() => false)) {

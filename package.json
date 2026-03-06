@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "prepare": "node scripts/install-git-hooks.mjs",
     "dev": "vite",
     "dev:ui": "vite",
     "dev:rooms": "node room-service/server.ts",
@@ -23,10 +24,15 @@
     "test": "node --test tests/unit/*.test.ts tests/integration/*.test.ts",
     "test:engine": "node --test tests/unit/engine.test.ts tests/unit/replay.test.ts tests/integration/scenario-framework.test.ts",
     "test:ui": "node --test tests/unit/ui.test.ts tests/unit/ui-token-guards.test.ts tests/unit/world-map-anchor.test.ts tests/unit/world-map-token-layout.test.ts tests/unit/world-map-viewport.test.ts tests/unit/scenario-map-assets.test.ts tests/integration/permalinks.test.ts tests/unit/runtime.test.ts",
+    "test:contracts": "node --test tests/integration/room-service-contract.test.ts",
+    "test:perf": "node --test tests/integration/performance-smoke.test.ts",
     "test:rooms": "node --test tests/integration/e2e.test.ts",
     "test:e2e": "playwright test",
+    "test:e2e:a11y": "playwright test tests/e2e/accessibility.spec.ts",
+    "test:e2e:visual": "playwright test tests/e2e/visual-regression.spec.ts",
     "test:e2e:headed": "playwright test --headed",
-    "test:e2e:debug": "playwright test --debug"
+    "test:e2e:debug": "playwright test --debug",
+    "verify:prepush": "npm run lint && npm run test && npm run test:rooms && npm run test:e2e && npm run build"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",

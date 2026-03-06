@@ -108,7 +108,7 @@ export function BoardTourScreen({ onBackHome, onOpenOffline }: BoardTourScreenPr
               <span className="engraved-eyebrow shell-title-row"><Icon type="objective" size="xs" ariaLabel={t('ui.guide.boardTourSequence', 'Guided Sequence')} />{t('ui.guide.boardTourSequence', 'Guided Sequence')}</span>
               <strong className="shell-progress-chip">{progress}</strong>
             </div>
-            <h3>{stepTitle}</h3>
+            <h2>{stepTitle}</h2>
             <p>
               <strong className="shell-copy-label"><Icon type="scrollText" size="xs" ariaLabel={t('ui.guide.whatItIs', 'What it is')} />{t('ui.guide.whatItIs', 'What it is')}:</strong> {stepWhat}
             </p>

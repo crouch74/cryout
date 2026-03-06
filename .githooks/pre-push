@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -eu
+
+repo_root=$(git rev-parse --show-toplevel)
+
+echo "🪝 pre-push: running quality gate"
+echo "🧪 lint + tests + build"
+
+cd "$repo_root"
+npm run verify:prepush

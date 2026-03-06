@@ -11,21 +11,21 @@ test.describe('board tour flow', () => {
 
     await expect(page.getByText('Guided Sequence')).toBeVisible();
     await expect(page.getByText('1 / 11')).toBeVisible();
-    await expect(page.getByRole('heading', { level: 3, name: 'Board Map and Regions' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: 'Board Map and Regions' })).toBeVisible();
 
     await page.getByRole('button', { name: 'Previous' }).click();
     await expect(page.getByText('1 / 11')).toBeVisible();
 
     await page.getByRole('button', { name: 'Next' }).click();
     await expect(page.getByText('2 / 11')).toBeVisible();
-    await expect(page.getByRole('heading', { level: 3, name: 'Extraction Tokens' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: 'Extraction Tokens' })).toBeVisible();
 
     for (let step = 0; step < 20; step += 1) {
       await page.getByRole('button', { name: 'Next' }).click();
     }
 
     await expect(page.getByText('11 / 11')).toBeVisible();
-    await expect(page.getByRole('heading', { level: 3, name: 'Terminal Warning Patterns' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: 'Terminal Warning Patterns' })).toBeVisible();
 
     await page.getByRole('button', { name: /Open Table/i }).first().click();
     await expect(page).toHaveURL(/\/offline$/);

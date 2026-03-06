@@ -82,6 +82,35 @@ Rooms are intentionally ephemeral and disappear when the room-service process st
 npm test
 ```
 
+Targeted quality checks:
+
+- `npm run test:contracts` validates the room-service HTTP contract.
+- `npm run test:perf` runs smoke budgets for scenario boot and room-service round trips.
+- `npm run test:e2e:a11y` checks shell and table accessibility smoke coverage.
+- `npm run test:e2e:visual` verifies committed Playwright screenshot baselines.
+
+### Pre-push Quality Hook
+
+Install the repo-managed git hooks once:
+
+```bash
+npm run prepare
+```
+
+The `pre-push` hook then runs:
+
+- `npm run lint`
+- `npm test`
+- `npm run test:rooms`
+- `npm run test:e2e`
+- `npm run build`
+
+If Playwright browsers are not installed yet, run:
+
+```bash
+npx playwright install chromium
+```
+
 ### Browser E2E Suite (Playwright)
 
 ```bash
