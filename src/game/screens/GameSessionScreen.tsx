@@ -1468,6 +1468,48 @@ export function GameSessionScreen({
     };
   }, [activeCampaignResult, autoAdvanceTransientUi, campaignDismissEnabled, motionMode]);
 
+  useEffect(() => {
+    const handleEscapeDismiss = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') {
+        return;
+      }
+
+      // Secret mandate overlay already owns Escape behavior and timing.
+      if (startupMandateOpen || mandateModalOpen) {
+        return;
+      }
+
+      if (introOpen) {
+        event.preventDefault();
+        setIntroDismissed(true);
+        return;
+      }
+
+      if (activeCardReveal) {
+        event.preventDefault();
+        startRevealDismiss(true);
+        return;
+      }
+
+      if (contextOpen || selectedRegionId !== null) {
+        event.preventDefault();
+        closeOpenDrawers();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscapeDismiss);
+    return () => {
+      window.removeEventListener('keydown', handleEscapeDismiss);
+    };
+  }, [
+    activeCardReveal,
+    contextOpen,
+    introOpen,
+    mandateModalOpen,
+    selectedRegionId,
+    startupMandateOpen,
+  ]);
+
   return (
     <TableSurface className={`game-screen game-screen-compressed ${activeCardReveal ? 'is-reveal-active' : ''}`.trim()}>
       <main

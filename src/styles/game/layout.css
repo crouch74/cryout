@@ -57,6 +57,7 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 16px;
   align-items: center;
+  padding: 4px 6px 6px;
 }
 
 .status-ribbon-track {
@@ -1405,7 +1406,8 @@ html[dir='rtl'] .deck-reveal-deck-label {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding-inline-end: 8px;
+  padding-block: 2px;
+  padding-inline: 6px 8px;
 }
 
 .status-ribbon-utilities-group .locale-switcher {
@@ -1516,11 +1518,12 @@ html[dir='rtl'] .deck-reveal-deck-label {
 
 .status-ribbon {
   gap: 10px;
+  padding: 4px 6px 6px;
 }
 
 .status-ribbon-track {
   gap: 10px;
-  padding-block: 2px;
+  padding-block: 4px 3px;
   padding-inline-start: 8px;
   padding-inline-end: 4px;
   scroll-padding-inline-start: 8px;
