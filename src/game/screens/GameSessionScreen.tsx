@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import {
   toCompatStructuredEvent,
   getAvailableDomains,
@@ -59,6 +59,7 @@ import {
 import { CrisisCard, DeckBackArt, DeckStack, LocaleSwitcher, TableSurface, ThemePlate, ThemeSwitcher, useTabletopTheme } from '../../ui/layout/tabletop.tsx';
 import type { SessionViewport } from '../../features/session-setup/model/sessionTypes.ts';
 import { WorldMapBoard } from '../board/WorldMapBoard.tsx';
+import { getFactionAccent } from '../../theme/factionAccents.ts';
 
 interface GameSessionScreenProps {
   state: EngineState;
@@ -676,6 +677,7 @@ export function GameSessionScreen({
   const focusedSeat = ownedSeats.includes(viewState.focusedSeat) ? viewState.focusedSeat : defaultFocusedSeat;
   const focusedPlayer = state.players[focusedSeat] ?? state.players[0];
   const faction = getSeatFaction(state, content, focusedPlayer.seat);
+  const focusedFactionAccent = getFactionAccent(faction?.id);
   const REGION_IDS = useMemo(() => getAvailableRegions(content), [content]);
   const DOMAIN_IDS = useMemo(() => getAvailableDomains(content), [content]);
 
@@ -687,6 +689,7 @@ export function GameSessionScreen({
   const [activeCardReveal, setActiveCardReveal] = useState<CardRevealQueueItem | null>(null);
   const [cardRevealStage, setCardRevealStage] = useState<CardRevealStage>('lift');
   const [activeCardRevealOrigin, setActiveCardRevealOrigin] = useState<CardRevealOrigin | null>(null);
+  const [showRevealImpactSummary, setShowRevealImpactSummary] = useState(false);
   const [activeCampaignResult, setActiveCampaignResult] = useState<CampaignResolvedEventPayload | null>(null);
   const [campaignDismissEnabled, setCampaignDismissEnabled] = useState(false);
   const [introDismissed, setIntroDismissed] = useState(false);
@@ -703,6 +706,7 @@ export function GameSessionScreen({
   const revealCleanupTimerRef = useRef<number | null>(null);
   const autoAdvanceTimerRef = useRef<number | null>(null);
   const revealActionButtonRef = useRef<HTMLButtonElement | null>(null);
+  const revealBodyRef = useRef<HTMLParagraphElement | null>(null);
   const deckButtonRefs = useRef<Record<VisibleDeckId, HTMLButtonElement | null>>({
     system: null,
     resistance: null,
@@ -1143,6 +1147,44 @@ export function GameSessionScreen({
   const activeRevealHeadline = activeRevealCopy
     ? activeRevealCopy.impactedRegions[0] ?? activeRevealCopy.impactedFactions[0] ?? activeRevealCopy.title
     : '';
+  const activeRevealImpactLines = activeCardReveal
+    ? getRevealSummaryChips(content, activeCardReveal.deckId, activeCardReveal.cardId)
+    : [];
+
+  useEffect(() => {
+    if (!activeCardReveal || !activeRevealCopy?.body || activeRevealImpactLines.length === 0) {
+      setShowRevealImpactSummary(false);
+      return;
+    }
+
+    const paragraph = revealBodyRef.current;
+    if (!paragraph) {
+      setShowRevealImpactSummary(false);
+      return;
+    }
+
+    const compute = () => {
+      const style = window.getComputedStyle(paragraph);
+      const fontSize = Number.parseFloat(style.fontSize) || 16;
+      let lineHeight = Number.parseFloat(style.lineHeight);
+      if (!Number.isFinite(lineHeight)) {
+        lineHeight = fontSize * 1.4;
+      }
+      const renderedHeight = paragraph.getBoundingClientRect().height;
+      const renderedLines = lineHeight > 0 ? Math.round(renderedHeight / lineHeight) : 0;
+      setShowRevealImpactSummary(renderedLines > 2);
+    };
+
+    compute();
+    const observer = new ResizeObserver(compute);
+    observer.observe(paragraph);
+    window.addEventListener('resize', compute);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', compute);
+    };
+  }, [activeCardReveal, activeRevealCopy?.body, activeRevealImpactLines.length]);
   const activeBeaconObjectives = state.activeBeaconIds.map((beaconId) => ({
     id: beaconId,
     title: localizeBeaconField(beaconId, 'title', content.beacons[beaconId]?.title ?? beaconId),
@@ -1249,12 +1291,12 @@ export function GameSessionScreen({
     setContextOpen(true);
   };
 
-  const closeOpenDrawers = () => {
+  const closeOpenDrawers = useCallback(() => {
     setContextOpen(false);
     if (selectedRegionId !== null) {
       onViewStateChange({ regionId: null });
     }
-  };
+  }, [onViewStateChange, selectedRegionId]);
 
   const handleEmptySpacePointerDown = (event: ReactPointerEvent<HTMLElement>) => {
     if (activeCardReveal) {
@@ -1280,6 +1322,22 @@ export function GameSessionScreen({
     }
     void onCommand({ type: 'SetReady', seat: focusedPlayer.seat, ready });
   };
+
+  useEffect(() => {
+    if (!autoAdvanceTransientUi) {
+      return;
+    }
+
+    if (introOpen) {
+      console.log('📖 [Autoplay] Intro panel dismissed to keep autoplay flow visible.');
+      setIntroDismissed(true);
+    }
+
+    if (contextOpen || selectedRegionId !== null) {
+      console.log('🧭 [Autoplay] Closing open board panels while autoplay is running.');
+      closeOpenDrawers();
+    }
+  }, [autoAdvanceTransientUi, closeOpenDrawers, contextOpen, introOpen, selectedRegionId]);
 
   useEffect(() => () => {
     if (revealTimerRef.current !== null) {
@@ -1531,12 +1589,14 @@ export function GameSessionScreen({
                   summaries={playerSummaries}
                   focusedSeat={focusedPlayer.seat}
                   onSelectSeat={(seat) => onViewStateChange({ focusedSeat: seat })}
+                  accentColor={focusedFactionAccent}
                 />
               </section>
 
               <ActionDock
                 items={actionItems}
                 onAction={openActionPanel}
+                accentColor={focusedFactionAccent}
                 controls={(
                   <>
                     <div className="dock-queue-summary">
@@ -1729,14 +1789,15 @@ export function GameSessionScreen({
                       <span className="deck-reveal-illustration-title">{activeRevealCopy?.title ?? getPrintedDeckTitle(activeCardReveal.deckId)}</span>
                     </div>
                     <div className="deck-reveal-body-copy">
-                      <p>{activeRevealCopy?.body}</p>
+                      <p ref={revealBodyRef}>{activeRevealCopy?.body}</p>
+                      {showRevealImpactSummary && activeRevealImpactLines.length > 0 ? (
+                        <p className="deck-reveal-impact-copy">
+                          <strong>{t('ui.game.effectSummary', 'Effect summary')}:</strong>{' '}
+                          {activeRevealImpactLines.join(' · ')}
+                        </p>
+                      ) : null}
                     </div>
                     <div className="deck-reveal-footer">
-                      <div className="deck-reveal-chip-row" aria-label={t('ui.game.effectSummary', 'Effect summary')}>
-                        {getRevealSummaryChips(content, activeCardReveal.deckId, activeCardReveal.cardId).map((chip) => (
-                          <span key={chip} className="deck-reveal-chip">{chip}</span>
-                        ))}
-                      </div>
                       <button
                         ref={revealActionButtonRef}
                         type="button"

@@ -182,11 +182,11 @@ export default function DevGameSessionShell({
   const handleQuickAutoplay = () => {
     if (autoPlayRunning) {
       handleAutoPlayStop();
+      setShowDevMenu(false);
       return;
     }
     setFocusedDebugSection('autoplay');
     setShowDevPanel(true);
-    handleAutoPlayStart();
     setShowDevMenu(false);
   };
 
@@ -247,7 +247,7 @@ export default function DevGameSessionShell({
             role="menuitem"
             onClick={handleQuickAutoplay}
           >
-            {autoPlayRunning ? t('ui.debug.stopAutoplay', 'Stop') : t('ui.debug.startAutoplay', 'Start Autoplay')}
+            {autoPlayRunning ? t('ui.debug.stopAutoplay', 'Stop') : t('ui.debug.autoplayTitle', 'Run rounds automatically')}
           </button>
           <button type="button" className="dev-tools-fab-action" role="menuitem" onClick={() => openDevSection('autoplay')}>
             {t('ui.debug.autoplayTitle', 'Run rounds automatically')}

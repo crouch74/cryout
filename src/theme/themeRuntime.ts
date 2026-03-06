@@ -250,6 +250,13 @@ export function toThemeCssVariables(theme: ThemeDefinition) {
     '--z-modal': String(theme.zIndex.modal),
     '--z-overlay': String(theme.zIndex.overlay),
     '--z-toast': String(theme.zIndex.toast),
+    '--z-map-canvas': `calc(${theme.zIndex.panel} + 1)`,
+    '--z-map-svg': `calc(${theme.zIndex.panel} + 3)`,
+    '--z-map-interaction': `calc(${theme.zIndex.panel} + 4)`,
+    '--z-map-token-stack-base': String(theme.zIndex.panel),
+    '--z-toast-popover': `calc(${theme.zIndex.toast} + 1)`,
+    '--z-toast-dialog': `calc(${theme.zIndex.toast} + 2)`,
+    '--z-toast-critical': `calc(${theme.zIndex.toast} + 10)`,
 
     '--icon-size-xs': `${theme.layout.iconXs}px`,
     '--icon-size-sm': `${theme.layout.iconSm}px`,

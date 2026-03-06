@@ -68,7 +68,7 @@
   height: 100%;
   min-height: min(var(--size-card-width), 40vh);
   overflow: hidden;
-  z-index: calc(var(--z-panel) + 1);
+  z-index: var(--z-map-canvas);
 }
 
 .game-screen-compressed .board-world-map {
@@ -76,7 +76,7 @@
   inset: 0;
   overflow: hidden;
   pointer-events: auto;
-  z-index: calc(var(--z-panel) + 3);
+  z-index: var(--z-map-svg);
 }
 
 .game-screen-compressed .board-world-map>svg,
@@ -86,7 +86,7 @@
   left: var(--map-canvas-left);
   width: var(--map-canvas-width);
   height: var(--map-canvas-height);
-  z-index: calc(var(--z-panel) + 3);
+  z-index: var(--z-map-svg);
 }
 
 .game-screen-compressed .board-world-map-svg {
@@ -202,7 +202,7 @@
 }
 
 .game-screen-compressed .board-region-clusters {
-  z-index: calc(var(--z-panel) + 4);
+  z-index: var(--z-map-interaction);
 }
 
 .game-screen-compressed .board-region-cluster {
@@ -295,7 +295,7 @@
   transition: transform var(--motion-fast), opacity var(--motion-fast);
   animation: board-token-enter var(--duration-normal) var(--motion-ease-standard) both;
   animation-delay: calc(var(--token-index, 0) * 18ms);
-  z-index: calc(var(--z-panel) + var(--token-stack-order, 0));
+  z-index: calc(var(--z-map-token-stack-base) + var(--token-stack-order, 0));
 }
 
 .game-screen-compressed .board-region-token::before,

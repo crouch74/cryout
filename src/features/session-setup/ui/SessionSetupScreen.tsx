@@ -21,6 +21,7 @@ import {
   ThemePlate,
   useTabletopTheme,
 } from '../../../ui/layout/tabletop.tsx';
+import { getFactionAccent } from '../../../theme/factionAccents.ts';
 import {
   DropdownMenuContent,
   DropdownMenuItem,
@@ -95,10 +96,7 @@ export function SessionSetupScreen({
       if (!faction) {
         continue;
       }
-      const accent = currentRuleset.board.regions[faction.homeRegion]?.accent;
-      if (accent) {
-        return accent;
-      }
+      return getFactionAccent(faction.id);
     }
     return 'var(--color-accent)';
   };

@@ -1,20 +1,26 @@
 import { Icon } from '../../ui/icon/Icon.tsx';
 import type { PlayerStripSummary } from '../presentation/gameUiHelpers.ts';
 import { formatNumber, t } from '../../i18n/index.ts';
+import type { CSSProperties } from 'react';
 
 export function PlayerStrip({
   summaries,
   focusedSeat,
   onSelectSeat,
+  accentColor,
 }: {
   summaries: PlayerStripSummary[];
   focusedSeat: number;
   onSelectSeat: (seat: number) => void;
+  accentColor?: string;
 }) {
   const active = summaries.find((summary) => summary.seat === focusedSeat) ?? summaries[0];
+  const style = accentColor
+    ? ({ ['--faction-accent' as string]: accentColor } as CSSProperties)
+    : undefined;
 
   return (
-    <section className="player-strip" aria-label={t('ui.game.focusedPlayerStrip', 'Focused player strip')}>
+    <section className="player-strip" aria-label={t('ui.game.focusedPlayerStrip', 'Focused player strip')} style={style}>
       <div className="player-strip-seats">
         {summaries.map((summary) => (
           <button

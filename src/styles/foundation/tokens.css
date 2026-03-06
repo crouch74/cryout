@@ -163,6 +163,13 @@
   --z-modal: 30;
   --z-overlay: 40;
   --z-toast: 50;
+  --z-map-canvas: calc(var(--z-panel) + 1);
+  --z-map-svg: calc(var(--z-panel) + 3);
+  --z-map-interaction: calc(var(--z-panel) + 4);
+  --z-map-token-stack-base: var(--z-panel);
+  --z-toast-popover: calc(var(--z-toast) + 1);
+  --z-toast-dialog: calc(var(--z-toast) + 2);
+  --z-toast-critical: calc(var(--z-toast) + 10);
 
   --icon-size-xs: 14px;
   --icon-size-sm: 16px;
@@ -269,6 +276,24 @@
   --panel-rim: color-mix(in srgb, var(--color-border) 72%, transparent);
   --panel-rim-strong: color-mix(in srgb, var(--color-border) 92%, transparent);
   --tile-rim-dark: color-mix(in srgb, var(--color-border) 84%, transparent);
+  --ui-copy-primary: color-mix(in srgb, var(--skin-text-primary) 96%, var(--skin-layer-scrim) 4%);
+  --ui-copy-secondary: color-mix(in srgb, var(--skin-text-primary) 70%, var(--skin-text-muted) 30%);
+  --ui-copy-tertiary: color-mix(in srgb, var(--ui-copy-primary) 62%, var(--skin-layer-elevated) 38%);
+  --ui-copy-on-dark: color-mix(in srgb, var(--skin-text-inverse) 94%, var(--skin-layer-elevated) 6%);
+  --ui-surface-paper: color-mix(in srgb, var(--skin-layer-elevated) 82%, var(--skin-layer-surface) 18%);
+  --ui-surface-paper-strong: color-mix(in srgb, var(--skin-layer-elevated) 70%, var(--skin-layer-overlay) 30%);
+  --ui-surface-panel: color-mix(in srgb, var(--skin-layer-overlay) 92%, var(--skin-layer-canvas) 8%);
+  --ui-surface-panel-soft: color-mix(in srgb, var(--skin-layer-overlay) 84%, var(--skin-layer-canvas) 16%);
+  --ui-surface-contrast: color-mix(in srgb, var(--skin-layer-scrim) 82%, var(--skin-layer-overlay) 18%);
+  --ui-border-soft: color-mix(in srgb, var(--skin-border-strong) 20%, transparent);
+  --ui-border-mid: color-mix(in srgb, var(--skin-border-strong) 36%, transparent);
+  --ui-border-strong: color-mix(in srgb, var(--skin-border-strong) 56%, transparent);
+  --ui-accent-warm: color-mix(in srgb, var(--skin-state-warning) 64%, var(--skin-action-secondary) 36%);
+  --ui-accent-warm-soft: color-mix(in srgb, var(--ui-accent-warm) 28%, transparent);
+  --ui-accent-danger-soft: color-mix(in srgb, var(--skin-state-danger) 24%, transparent);
+  --ui-accent-ink: color-mix(in srgb, var(--skin-text-primary) 66%, var(--skin-layer-scrim) 34%);
+  --ui-line-rule: color-mix(in srgb, var(--ui-accent-ink) 22%, transparent);
+  --ui-shadow-deep: 0 24px 54px color-mix(in srgb, var(--skin-layer-scrim) 24%, transparent);
   --panel-shadow: var(--shadow-level-2);
   --tile-shadow: var(--shadow-level-1);
   --tile-shadow-pressed: 0 6px 14px rgba(49, 33, 18, 0.14);
