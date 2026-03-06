@@ -10,7 +10,7 @@ import {
 
 const baseStartCommand: StartGameCommand = {
   type: 'StartGame',
-  rulesetId: 'base_design',
+  rulesetId: 'stones_cry_out',
   mode: 'LIBERATION',
   humanPlayerCount: 4,
   seatFactionIds: ['congo_basin_collective', 'levant_sumud', 'mekong_echo_network', 'amazon_guardians'],

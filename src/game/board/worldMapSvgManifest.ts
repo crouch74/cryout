@@ -5,7 +5,7 @@ import {
   baseWorldBoard,
   getBaseWorldRegionAnchorPathIds,
   getBaseWorldRegionInteractionPathIds,
-} from '../../scenarios/base_design/boards/baseWorldBoard.ts';
+} from '../../scenarios/stones_cry_out/boards/baseWorldBoard.ts';
 import { tahrirBoard } from '../../scenarios/tahrir_square/boards/tahrirBoard.ts';
 import { womanLifeFreedomBoard } from '../../scenarios/woman_life_freedom/boards/womanLifeFreedomBoard.ts';
 

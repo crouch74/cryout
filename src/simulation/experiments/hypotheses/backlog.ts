@@ -29,9 +29,9 @@ export const EXPERIMENT_BACKLOG: ExperimentDefinition[] = [
    */
 
   experiment({
-    id: 'base_design_new_baseline_validation',
+    id: 'stones_cry_out_new_baseline_validation',
     title: 'Validate new pressure-balanced baseline behaviour.',
-    scenarioId: 'base_design',
+    scenarioId: 'stones_cry_out',
     victoryModes: ['liberation'],
     patch: {},
     expectedEffects: {
@@ -47,9 +47,9 @@ export const EXPERIMENT_BACKLOG: ExperimentDefinition[] = [
    */
 
   experiment({
-    id: 'base_design_mandates_relaxed_1',
+    id: 'stones_cry_out_mandates_relaxed_1',
     title: 'Relax all mandate thresholds by +1.',
-    scenarioId: 'base_design',
+    scenarioId: 'stones_cry_out',
     victoryModes: ['liberation'],
     patch: {
       mandates: {
@@ -66,9 +66,9 @@ export const EXPERIMENT_BACKLOG: ExperimentDefinition[] = [
   }),
 
   experiment({
-    id: 'base_design_mandates_relaxed_2',
+    id: 'stones_cry_out_mandates_relaxed_2',
     title: 'Relax mandates by +2 thresholds.',
-    scenarioId: 'base_design',
+    scenarioId: 'stones_cry_out',
     victoryModes: ['liberation'],
     patch: {
       mandates: {
@@ -90,9 +90,9 @@ export const EXPERIMENT_BACKLOG: ExperimentDefinition[] = [
    */
 
   experiment({
-    id: 'base_design_allow_one_failed_mandate',
+    id: 'stones_cry_out_allow_one_failed_mandate',
     title: 'Allow one failed mandate without converting victory to defeat.',
-    scenarioId: 'base_design',
+    scenarioId: 'stones_cry_out',
     victoryModes: ['liberation'],
     patch: {
       mandates: {
@@ -118,9 +118,9 @@ export const EXPERIMENT_BACKLOG: ExperimentDefinition[] = [
    */
 
   experiment({
-    id: 'base_design_balanced_candidate',
+    id: 'stones_cry_out_balanced_candidate',
     title: 'Relax mandates slightly while preserving pressure-balanced system.',
-    scenarioId: 'base_design',
+    scenarioId: 'stones_cry_out',
     victoryModes: ['liberation'],
     patch: {
       mandates: {

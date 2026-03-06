@@ -5,7 +5,7 @@ import type { StartGameCommand } from '../../src/engine/index.ts';
 
 export const roomStartCommand: StartGameCommand = {
   type: 'StartGame',
-  rulesetId: 'base_design',
+  rulesetId: 'stones_cry_out',
   mode: 'LIBERATION',
   humanPlayerCount: 2,
   seatFactionIds: ['congo_basin_collective', 'levant_sumud', 'mekong_echo_network', 'amazon_guardians'],

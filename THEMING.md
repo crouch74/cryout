@@ -43,7 +43,7 @@ Core required color vars:
 ## Naming Rules
 
 - Theme IDs are lowercase kebab-case.
-- Scenario IDs remain engine-authored IDs (for example `base_design`).
+- Scenario IDs remain engine-authored IDs (for example `stones_cry_out`).
 - Theme token names use semantic purpose, not hue names:
   - Good: `accent`, `backgroundWash`
   - Avoid: `red500`, `greenDark2`
@@ -68,7 +68,7 @@ Current mapping policy (`Contextual Split`):
 
 | Ruleset ID | Overlay Theme ID |
 | --- | --- |
-| `base_design` | `burnt-earth-resistance` |
+| `stones_cry_out` | `burnt-earth-resistance` |
 | `tahrir_square` | `night-map-escalation` |
 | `woman_life_freedom` | `dossier-of-the-disappeared` |
 | `algerian_war_of_independence` | `desert-horizon` |

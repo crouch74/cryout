@@ -157,7 +157,7 @@ Run deterministic scientific-method A/B tests where:
 Single experiment:
 
 ```bash
-npm run experiment -- --id base_design_trim_setup_pressure --runs 100000 --seed 42
+npm run experiment -- --id stones_cry_out_trim_setup_pressure --runs 100000 --seed 42
 ```
 
 Run whole hypothesis backlog:
@@ -194,7 +194,7 @@ Backlog run output:
 Trajectory analysis command:
 
 ```bash
-npm run trajectories -- --experiment base_design_reference_state
+npm run trajectories -- --experiment stones_cry_out_reference_state
 ```
 
 Analysis output:
@@ -211,9 +211,9 @@ Example:
 ```ts
 export const EXPERIMENT_BACKLOG: ExperimentDefinition[] = [
   {
-    id: 'base_design_trim_setup_pressure',
+    id: 'stones_cry_out_trim_setup_pressure',
     title: 'Where the Stones Cry Out: trim opening pressure to test early survivability and pacing.',
-    scenarioId: 'base_design',
+    scenarioId: 'stones_cry_out',
     victoryModes: ['liberation', 'symbolic'],
     runsPerArm: 50000,
     playerCounts: [2, 3, 4],

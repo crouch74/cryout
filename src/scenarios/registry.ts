@@ -1,7 +1,7 @@
 import { createCompatCommandBridge } from '../engine/adapters/compat/legacy/adapter.ts';
 import type { ScenarioMetadata, ScenarioModule } from './types.ts';
 import algerianWarOfIndependenceScenario from './algerian_war_of_independence/index.ts';
-import baseDesignScenario from './base_design/index.ts';
+import stonesCryOutScenario from './stones_cry_out/index.ts';
 import tahrirSquareScenario from './tahrir_square/index.ts';
 import womanLifeFreedomScenario from './woman_life_freedom/index.ts';
 
@@ -16,7 +16,7 @@ function withCompatBridge(scenario: ScenarioModule): ScenarioModule {
 }
 
 const SCENARIO_MAP = new Map<string, ScenarioModule>([
-  [baseDesignScenario.metadata.id, withCompatBridge(baseDesignScenario)],
+  [stonesCryOutScenario.metadata.id, withCompatBridge(stonesCryOutScenario)],
   [tahrirSquareScenario.metadata.id, withCompatBridge(tahrirSquareScenario)],
   [womanLifeFreedomScenario.metadata.id, withCompatBridge(womanLifeFreedomScenario)],
   [algerianWarOfIndependenceScenario.metadata.id, withCompatBridge(algerianWarOfIndependenceScenario)],

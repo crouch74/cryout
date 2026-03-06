@@ -127,7 +127,7 @@ test('levant anchor coverage removes missing Palestine geometry before pin calcu
 });
 
 test('real world map asset produces bounded interior anchors for every active region', () => {
-  const svgMarkup = readFileSync(new URL('../../public/assets/scenarios/base_design/world-map-board.svg', import.meta.url), 'utf8');
+  const svgMarkup = readFileSync(new URL('../../public/assets/scenarios/stones_cry_out/world-map-board.svg', import.meta.url), 'utf8');
   const regionCoverage = Object.fromEntries(
     BASE_WORLD_REGION_IDS.map((regionId) => [regionId, getBoardRegionAnchorPathIds(regionId)]),
   ) as Record<RegionId, string[]>;
@@ -143,7 +143,7 @@ test('real world map asset produces bounded interior anchors for every active re
 });
 
 test('real world map anchors stay in the same neighborhood as the authored marker fallbacks', () => {
-  const svgMarkup = readFileSync(new URL('../../public/assets/scenarios/base_design/world-map-board.svg', import.meta.url), 'utf8');
+  const svgMarkup = readFileSync(new URL('../../public/assets/scenarios/stones_cry_out/world-map-board.svg', import.meta.url), 'utf8');
   const regionCoverage = Object.fromEntries(
     BASE_WORLD_REGION_IDS.map((regionId) => [regionId, getBoardRegionAnchorPathIds(regionId)]),
   ) as Record<RegionId, string[]>;
@@ -161,7 +161,7 @@ test('real world map anchors stay in the same neighborhood as the authored marke
 });
 
 test('real world map anchor outputs stay stable for the shipped SVG asset', () => {
-  const svgMarkup = readFileSync(new URL('../../public/assets/scenarios/base_design/world-map-board.svg', import.meta.url), 'utf8');
+  const svgMarkup = readFileSync(new URL('../../public/assets/scenarios/stones_cry_out/world-map-board.svg', import.meta.url), 'utf8');
   const regionCoverage = Object.fromEntries(
     BASE_WORLD_REGION_IDS.map((regionId) => [regionId, getBoardRegionAnchorPathIds(regionId)]),
   ) as Record<RegionId, string[]>;

@@ -10,7 +10,7 @@ test('scenario optimizer writes iteration artifacts and final recommendation', a
   const outputRoot = await mkdtemp(join(tmpdir(), 'stones-optimizer-'));
 
   const report = await runScenarioOptimizer({
-    scenarioId: 'base_design',
+    scenarioId: 'stones_cry_out',
     iterations: 1,
     baselineRuns: 2,
     candidateRuns: 2,
@@ -29,7 +29,7 @@ test('scenario optimizer writes iteration artifacts and final recommendation', a
     useBalanceSearchSeeding: false,
   });
 
-  assert.equal(report.scenarioId, 'base_design');
+  assert.equal(report.scenarioId, 'stones_cry_out');
   assert.equal(report.history.length >= 1, true);
 
   await stat(join(report.outputDir, 'optimizer_config.json'));

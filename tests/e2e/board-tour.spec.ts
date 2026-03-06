@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { forceEnglishLocale } from './helpers.ts';
+import { forceEnglishLocale, forceLocale } from './helpers.ts';
 
 test.describe('board tour flow', () => {
   test.beforeEach(async ({ page }) => {
@@ -30,5 +30,16 @@ test.describe('board tour flow', () => {
     await page.getByRole('button', { name: /Open Table/i }).first().click();
     await expect(page).toHaveURL(/\/offline$/);
     await expect(page.getByRole('button', { name: 'Start Session' })).toBeVisible();
+  });
+
+  test('rtl locale flips previous and next chevrons', async ({ page }) => {
+    await forceLocale(page, 'ar');
+    await page.goto('/board-tour');
+
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+    const navButtons = page.locator('.board-tour-sequence-actions button');
+    await expect(navButtons).toHaveCount(2);
+    await expect(navButtons.nth(0).locator('.shell-chevron')).toHaveClass(/is-right/);
+    await expect(navButtons.nth(1).locator('.shell-chevron')).toHaveClass(/is-left/);
   });
 });

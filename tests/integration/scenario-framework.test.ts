@@ -28,7 +28,7 @@ const registry = {
 test('scenario registry exposes only shipped scenarios', () => {
   const ids = listScenarioMetadata().map((scenario) => scenario.id).sort();
 
-  assert.deepEqual(ids, ['algerian_war_of_independence', 'base_design', 'tahrir_square', 'woman_life_freedom']);
+  assert.deepEqual(ids, ['algerian_war_of_independence', 'stones_cry_out', 'tahrir_square', 'woman_life_freedom']);
 });
 
 test('testing scenarios stay outside the shipped registry', () => {
@@ -46,7 +46,7 @@ test('all scenario modules conform to the required framework contract', () => {
 
 test('compat-backed shipped scenarios create deterministic projected core states', () => {
   const summaries = Object.fromEntries(
-    ['base_design', 'tahrir_square', 'woman_life_freedom', 'algerian_war_of_independence'].map((scenarioId) => {
+    ['stones_cry_out', 'tahrir_square', 'woman_life_freedom', 'algerian_war_of_independence'].map((scenarioId) => {
       const scenario = getScenarioModule(scenarioId);
       assert.ok(scenario);
       const state = createGameState(scenario, { seed: 4242, mode: 'LIBERATION' });
@@ -64,7 +64,7 @@ test('compat-backed shipped scenarios create deterministic projected core states
   );
 
   assert.deepEqual(summaries, {
-    base_design: {
+    stones_cry_out: {
       phase: 'system',
       players: 4,
       zones: 6,
@@ -96,7 +96,7 @@ test('compat-backed shipped scenarios create deterministic projected core states
 });
 
 test('compat-backed scenarios can dispatch through the command bridge', () => {
-  const scenario = getScenarioModule('base_design');
+  const scenario = getScenarioModule('stones_cry_out');
   assert.ok(scenario);
   const state = createGameState(scenario, { seed: 1234, mode: 'LIBERATION' });
 

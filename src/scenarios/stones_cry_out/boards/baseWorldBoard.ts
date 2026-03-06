@@ -121,7 +121,7 @@ export const BASE_WORLD_REGION_SVG_COVERAGE: Record<Extract<RegionId, 'Congo' | 
 };
 
 export const baseWorldBoard: ScenarioBoardDefinition = {
-  assetPath: '/assets/scenarios/base_design/world-map-board.svg',
+  assetPath: '/assets/scenarios/stones_cry_out/world-map-board.svg',
   sourceViewBox: '30.767 241.591 784.077 458.627',
   viewport: WORLD_MAP_VIEWPORT,
   svgIdConvention: 'ISO 3166-1 alpha-2 country IDs, with some multi-part countries stored as <g> wrappers.',

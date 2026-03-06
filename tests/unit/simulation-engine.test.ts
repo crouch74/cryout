@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { runSimulationBatch } from '../../src/simulation/autoplayEngine.ts';
 
 const EXPECTED_SCENARIOS = [
-  'base_design',
+  'stones_cry_out',
   'tahrir_square',
   'woman_life_freedom',
   'algerian_war_of_independence',

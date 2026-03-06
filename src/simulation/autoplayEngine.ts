@@ -46,7 +46,7 @@ import type {
 const REQUIRED_CORE_VERSION = '0.10.1-scenario-framework.1';
 
 const DEFAULT_SCENARIOS = [
-  'base_design',
+  'stones_cry_out',
   'tahrir_square',
   'woman_life_freedom',
   'algerian_war_of_independence',

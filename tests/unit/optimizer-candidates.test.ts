@@ -32,7 +32,7 @@ test('candidate generator builds deterministic candidate count with dedup', asyn
   };
 
   const candidates = await generateCandidatePatches({
-    scenarioId: 'base_design',
+    scenarioId: 'stones_cry_out',
     iteration: 1,
     seed: 42,
     targetCount: 10,
@@ -108,7 +108,7 @@ test('patch normalization prunes zero deltas and empty branches', () => {
 
 test('victory gating exploration mode emits victory gate strategies', async () => {
   const candidates = await generateCandidatePatches({
-    scenarioId: 'base_design',
+    scenarioId: 'stones_cry_out',
     iteration: 2,
     seed: 42,
     targetCount: 10,

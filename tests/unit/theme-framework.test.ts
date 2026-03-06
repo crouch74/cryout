@@ -166,7 +166,7 @@ test('theme framework exposes three UI skins with required role groups and scena
 });
 
 test('scenario mapping resolves overlays and unknown rulesets fall back to skin-only theme', () => {
-  assert.equal(getScenarioOverlayForRuleset('base_design'), 'burnt-earth-resistance');
+  assert.equal(getScenarioOverlayForRuleset('stones_cry_out'), 'burnt-earth-resistance');
   assert.equal(getScenarioOverlayForRuleset('tahrir_square'), 'night-map-escalation');
   assert.equal(getScenarioOverlayForRuleset('woman_life_freedom'), 'dossier-of-the-disappeared');
   assert.equal(getScenarioOverlayForRuleset('algerian_war_of_independence'), 'desert-horizon');
@@ -174,7 +174,7 @@ test('scenario mapping resolves overlays and unknown rulesets fall back to skin-
 
   const overlayTheme = resolveTheme({
     skinId: DEFAULT_UI_SKIN_ID,
-    scenarioOverlayId: getScenarioOverlayForRuleset('base_design'),
+    scenarioOverlayId: getScenarioOverlayForRuleset('stones_cry_out'),
   });
   assert.equal(overlayTheme.id, 'burnt-earth-resistance');
   assert.equal(overlayTheme.skinId, DEFAULT_UI_SKIN_ID);
@@ -189,7 +189,7 @@ test('scenario mapping resolves overlays and unknown rulesets fall back to skin-
   assert.equal(fallbackTheme.colors.stateDanger, BASE_THEME.colors.stateDanger);
 
   const mapping = listScenarioThemeMappings();
-  assert.equal(mapping.some((entry) => entry.rulesetId === 'base_design' && entry.overlayId === 'burnt-earth-resistance'), true);
+  assert.equal(mapping.some((entry) => entry.rulesetId === 'stones_cry_out' && entry.overlayId === 'burnt-earth-resistance'), true);
 });
 
 test('resolved themes export canonical and skin CSS variables for runtime application', () => {

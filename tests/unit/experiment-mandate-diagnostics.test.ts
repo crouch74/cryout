@@ -12,7 +12,7 @@ function makeRecord(input: {
 }): SimulationRecord {
   return {
     simulationId: input.simulationId,
-    scenario: 'base_design',
+    scenario: 'stones_cry_out',
     victoryMode: 'liberation',
     playerCount: 4,
     strategies: ['balanced', 'balanced', 'balanced', 'balanced'],

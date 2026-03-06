@@ -233,7 +233,7 @@ Interactive Mode:
 
 Examples:
   npm run optimize -- --scenario tahrir_square --mode liberation --runtime balanced --strategy full_optimizer
-  npm run optimize -- --scenario base_design --iterations 15 --baseline-runs 20000 --candidate-runs 8000 --candidates 20
+  npm run optimize -- --scenario stones_cry_out --iterations 15 --baseline-runs 20000 --candidate-runs 8000 --candidates 20
   npm run optimize -- --scenario woman_life_freedom --mode both --significance strict --parallel-workers 8 --seed 2026
 `;
 }

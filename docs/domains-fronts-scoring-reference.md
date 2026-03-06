@@ -7,7 +7,7 @@ This document describes the currently shipped scenarios and runtime rules in thi
 - Core version: `0.10.1-scenario-framework.1`
 - Scenario metadata version: `0.10.1`
 - Scenarios covered:
-  - `base_design`
+  - `stones_cry_out`
   - `tahrir_square`
   - `woman_life_freedom`
   - `algerian_war_of_independence`
@@ -132,7 +132,7 @@ Each scenario uses a subset (or renaming) of this catalogue.
 
 ## Scenario Reference
 
-### Base: `Where the Stones Cry Out` (`base_design`)
+### Base: `Where the Stones Cry Out` (`stones_cry_out`)
 
 #### Domains (7)
 
@@ -395,11 +395,11 @@ Each scenario uses a subset (or renaming) of this catalogue.
 
 - `src/engine/adapters/compat/runtime.ts`
 - `src/engine/adapters/compat/types.ts`
-- `src/scenarios/base_design/content.ts`
+- `src/scenarios/stones_cry_out/content.ts`
 - `src/scenarios/tahrir_square/content.ts`
 - `src/scenarios/woman_life_freedom/content.ts`
 - `src/scenarios/algerian_war_of_independence/content.ts`
-- `src/scenarios/base_design/boards/baseWorldBoard.ts`
+- `src/scenarios/stones_cry_out/boards/baseWorldBoard.ts`
 - `src/scenarios/tahrir_square/boards/tahrirBoard.ts`
 - `src/scenarios/woman_life_freedom/boards/womanLifeFreedomBoard.ts`
 - `src/scenarios/algerian_war_of_independence/boards/algeriaBoard.ts`

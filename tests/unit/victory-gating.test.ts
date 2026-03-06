@@ -5,7 +5,7 @@ import { applyScenarioPatch } from '../../src/simulation/experiments/applyScenar
 
 const startCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
   type: 'StartGame',
-  rulesetId: 'base_design',
+  rulesetId: 'stones_cry_out',
   mode: 'LIBERATION',
   humanPlayerCount: 4,
   seatFactionIds: ['congo_basin_collective', 'levant_sumud', 'mekong_echo_network', 'amazon_guardians'],
@@ -17,7 +17,7 @@ const startCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
 test('round gate blocks turn-1 public victory checks until minimum round', () => {
   const mounted = applyScenarioPatch({
     experimentId: 'unit_victory_gate_round',
-    scenarioId: 'base_design',
+    scenarioId: 'stones_cry_out',
     patch: {
       victoryGate: {
         minRoundBeforeVictory: 3,
@@ -50,7 +50,7 @@ test('round gate blocks turn-1 public victory checks until minimum round', () =>
 test('action gate only evaluates victory when the required action resolves', () => {
   const mounted = applyScenarioPatch({
     experimentId: 'unit_victory_gate_action',
-    scenarioId: 'base_design',
+    scenarioId: 'stones_cry_out',
     patch: {
       victoryGate: {
         requiredAction: {
@@ -89,7 +89,7 @@ test('action gate only evaluates victory when the required action resolves', () 
 test('progress gate requires minimum extraction removal before victory can trigger', () => {
   const mounted = applyScenarioPatch({
     experimentId: 'unit_victory_gate_progress',
-    scenarioId: 'base_design',
+    scenarioId: 'stones_cry_out',
     patch: {
       victoryGate: {
         requiredProgress: {

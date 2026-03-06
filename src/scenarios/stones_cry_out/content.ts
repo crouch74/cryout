@@ -389,7 +389,7 @@ const actions: ActionDefinition[] = [
 ];
 
 export const compatRuleset: RulesetDefinition = {
-  id: 'base_design',
+  id: 'stones_cry_out',
   name: 'Where the Stones Cry Out',
   description: 'A six-region cooperative struggle against extraction, war, hunger, and erasure.',
   introduction:

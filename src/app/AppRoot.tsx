@@ -74,7 +74,8 @@ interface RoomActiveSessionHandle {
 type SessionHandle = LocalSessionHandle | RoomLobbySessionHandle | RoomActiveSessionHandle;
 
 const AUTOSAVE_KEY = 'stones-cutover-autosave';
-const DEFAULT_RULESET_ID = listRulesets()[0]?.id ?? 'base_design';
+const AVAILABLE_RULESETS = listRulesets();
+const DEFAULT_RULESET_ID = AVAILABLE_RULESETS[0]?.id ?? '';
 const ROOM_HEALTH_TIMEOUT_MS = 1_500;
 
 const DEFAULT_SETUP_DRAFT: SessionSetupDraft = {
@@ -102,7 +103,10 @@ function clampHumanPlayerCount(humanPlayerCount: number, factionCount: number): 
 }
 
 function deriveScenarioSeats(rulesetId: string) {
-  const ruleset = listRulesets().find((entry) => entry.id === rulesetId) ?? listRulesets()[0];
+  const ruleset = AVAILABLE_RULESETS.find((entry) => entry.id === rulesetId) ?? AVAILABLE_RULESETS[0];
+  if (!ruleset) {
+    throw new Error('No scenarios are registered.');
+  }
   const factionIds = ruleset.factions.map((faction) => faction.id);
   const humanPlayerCount = clampHumanPlayerCount(factionIds.length, factionIds.length);
   return {

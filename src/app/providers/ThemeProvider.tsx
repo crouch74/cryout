@@ -36,7 +36,7 @@ interface ThemeContextValue {
 const CONTRAST_KEY = 'stones-tabletop-contrast';
 const MOTION_KEY = 'stones-tabletop-motion';
 const SKIN_KEY = 'stones.ui.skin';
-const DEFAULT_RULESET_ID = 'base_design';
+const DEFAULT_RULESET_ID = '';
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 

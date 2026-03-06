@@ -1,5 +1,6 @@
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
+import { listRulesets } from '../../engine/index.ts';
 import { runBalanceSearch } from './SearchEngine.ts';
 
 interface BalanceSearchCliArgs {
@@ -18,8 +19,12 @@ function toPositiveInteger(value: string, label: string) {
 }
 
 function parseArgs(argv: string[]): BalanceSearchCliArgs {
+  const firstScenarioId = listRulesets()[0]?.id;
+  if (!firstScenarioId) {
+    throw new Error('No scenarios are registered.');
+  }
   const result: BalanceSearchCliArgs = {
-    scenarioId: 'base_design',
+    scenarioId: firstScenarioId,
     iterations: 200,
     runsPerCandidate: 25000,
     seed: 42,

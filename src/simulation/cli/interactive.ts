@@ -88,7 +88,7 @@ async function runExperimentBacklogFlow() {
 }
 
 async function runSingleExperimentFlow() {
-  const scenarioChoices = ['base_design', 'algerian_war_of_independence', 'tahrir_square', 'woman_life_freedom'];
+  const scenarioChoices = ['stones_cry_out', 'algerian_war_of_independence', 'tahrir_square', 'woman_life_freedom'];
   const { scenarioId } = await inquirer.prompt<{ scenarioId: string }>([
     {
       type: 'list',
@@ -238,8 +238,8 @@ async function runBalanceSearchFlow() {
       type: 'list',
       name: 'scenarioId',
       message: 'Balance Search Scenario',
-      choices: ['base_design', 'algerian_war_of_independence', 'tahrir_square', 'woman_life_freedom'],
-      default: 'base_design',
+      choices: ['stones_cry_out', 'algerian_war_of_independence', 'tahrir_square', 'woman_life_freedom'],
+      default: 'stones_cry_out',
     },
     {
       type: 'input',

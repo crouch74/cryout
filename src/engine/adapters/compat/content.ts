@@ -17,7 +17,7 @@ export function getRulesetDefinition(rulesetId: string): RulesetDefinition | und
   return getRulesetById(rulesetId);
 }
 
-export function compileContent(rulesetId: string = CONTENT_PACKS[0]?.id ?? 'base_design'): CompiledContent {
+export function compileContent(rulesetId: string): CompiledContent {
   const ruleset = getRulesetDefinition(rulesetId);
 
   if (!ruleset) {

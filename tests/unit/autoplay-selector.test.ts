@@ -15,7 +15,7 @@ import {
 
 const baseStartCommand: StartGameCommand = {
   type: 'StartGame',
-  rulesetId: 'base_design',
+  rulesetId: 'stones_cry_out',
   mode: 'LIBERATION',
   humanPlayerCount: 4,
   seatFactionIds: ['congo_basin_collective', 'levant_sumud', 'mekong_echo_network', 'amazon_guardians'],
@@ -148,7 +148,7 @@ test('keeps defend low priority unless the board is under heavy pressure', () =>
   assert.equal(selection?.command.action.actionId, 'investigate');
 });
 
-test('scenario-specific actions are enumerated in shipped non-base scenarios', () => {
+test('scenario-specific actions are enumerated in shipped scenarios', () => {
   const { state, content } = makeCoalitionState(tahrirStartCommand);
 
   state.players[0].actionsRemaining = 1;

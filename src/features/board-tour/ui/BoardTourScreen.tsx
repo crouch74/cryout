@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import { compileContent, initializeGame } from '../../../engine/index.ts';
 import { GameSessionScreen } from '../../../game/screens/GameSessionScreen.tsx';
 import type { SessionViewport } from '../../session-setup/model/sessionTypes.ts';
-import { t } from '../../../i18n/index.ts';
+import { t, useAppLocale } from '../../../i18n/index.ts';
 import { Icon } from '../../../ui/icon/Icon.tsx';
 import { GameIcon } from '../../../ui/icon/GameIcon.tsx';
 import { EngravedHeader, PaperSheet, TableSurface, ThemePlate } from '../../../ui/layout/tabletop.tsx';
@@ -16,7 +16,28 @@ interface BoardTourStep {
   id: string;
 }
 
-const BOARD_CONTENT = compileContent('base_design');
+interface BoardTourAnchor {
+  pointerX: number;
+  pointerY: number;
+  bubbleOffsetX: number;
+  bubbleOffsetY: number;
+}
+
+const BOARD_TOUR_ANCHORS: Record<string, BoardTourAnchor> = {
+  mapRegions: { pointerX: 45, pointerY: 48, bubbleOffsetX: -18, bubbleOffsetY: -22 },
+  extractionTokens: { pointerX: 65, pointerY: 46, bubbleOffsetX: 6, bubbleOffsetY: -22 },
+  globalGaze: { pointerX: 13, pointerY: 11, bubbleOffsetX: 8, bubbleOffsetY: 10 },
+  warMachine: { pointerX: 25, pointerY: 11, bubbleOffsetX: 8, bubbleOffsetY: 10 },
+  domains: { pointerX: 38, pointerY: 11, bubbleOffsetX: 8, bubbleOffsetY: 10 },
+  playerStrip: { pointerX: 68, pointerY: 11, bubbleOffsetX: -16, bubbleOffsetY: 10 },
+  actionDock: { pointerX: 27, pointerY: 85, bubbleOffsetX: 8, bubbleOffsetY: -18 },
+  decks: { pointerX: 84, pointerY: 84, bubbleOffsetX: -20, bubbleOffsetY: -16 },
+  beacons: { pointerX: 84, pointerY: 70, bubbleOffsetX: -20, bubbleOffsetY: -16 },
+  secretMandates: { pointerX: 58, pointerY: 11, bubbleOffsetX: -18, bubbleOffsetY: 10 },
+  terminalWarnings: { pointerX: 48, pointerY: 56, bubbleOffsetX: -12, bubbleOffsetY: -22 },
+};
+
+const BOARD_CONTENT = compileContent('stones_cry_out');
 const BOARD_STATE = initializeGame({
   type: 'StartGame',
   rulesetId: BOARD_CONTENT.ruleset.id,
@@ -49,6 +70,7 @@ const BOARD_TOUR_STEPS: BoardTourStep[] = [
 ];
 
 export function BoardTourScreen({ onBackHome, onOpenOffline }: BoardTourScreenProps) {
+  const { dir } = useAppLocale();
   const [stepIndex, setStepIndex] = useState(0);
   const [viewState, setViewState] = useState<SessionViewport>({
     focusedSeat: 0,
@@ -66,6 +88,15 @@ export function BoardTourScreen({ onBackHome, onOpenOffline }: BoardTourScreenPr
   const stepWhat = t(`ui.guide.boardTourSteps.${step.id}.what`, '');
   const stepHow = t(`ui.guide.boardTourSteps.${step.id}.how`, '');
   const stepWatch = t(`ui.guide.boardTourSteps.${step.id}.watch`, '');
+  const anchor = BOARD_TOUR_ANCHORS[step.id] ?? BOARD_TOUR_ANCHORS.mapRegions;
+  const overlayStyle = {
+    '--tour-pointer-x': `${anchor.pointerX}%`,
+    '--tour-pointer-y': `${anchor.pointerY}%`,
+    '--tour-bubble-offset-x': `${anchor.bubbleOffsetX}%`,
+    '--tour-bubble-offset-y': `${anchor.bubbleOffsetY}%`,
+  } as CSSProperties;
+  const previousChevronClass = `shell-chevron ${dir === 'rtl' ? 'is-right' : 'is-left'}`;
+  const nextChevronClass = `shell-chevron ${dir === 'rtl' ? 'is-left' : 'is-right'}`;
 
   return (
     <TableSurface className="guide-table board-tour-table shell-table shell-depth-surface">
@@ -124,7 +155,7 @@ export function BoardTourScreen({ onBackHome, onOpenOffline }: BoardTourScreenPr
                 size="sm"
                 label={(
                   <span className="plate-label-with-icon">
-                    <GameIcon name="chevronDown" size="xs" className="shell-chevron is-left" ariaLabel={t('ui.guide.previousStep', 'Previous')} />
+                    <GameIcon name="chevronDown" size="xs" className={previousChevronClass} ariaLabel={t('ui.guide.previousStep', 'Previous')} />
                     <span>{t('ui.guide.previousStep', 'Previous')}</span>
                   </span>
                 )}
@@ -136,7 +167,7 @@ export function BoardTourScreen({ onBackHome, onOpenOffline }: BoardTourScreenPr
                 label={(
                   <span className="plate-label-with-icon">
                     <span>{t('ui.guide.nextStep', 'Next')}</span>
-                    <GameIcon name="chevronDown" size="xs" className="shell-chevron is-right" ariaLabel={t('ui.guide.nextStep', 'Next')} />
+                    <GameIcon name="chevronDown" size="xs" className={nextChevronClass} ariaLabel={t('ui.guide.nextStep', 'Next')} />
                   </span>
                 )}
                 variant="primary"
@@ -158,7 +189,7 @@ export function BoardTourScreen({ onBackHome, onOpenOffline }: BoardTourScreenPr
                 autoAdvanceTransientUi
               />
 
-              <div className={`board-tour-overlay board-tour-overlay-step-${step.id}`.trim()} aria-hidden="true">
+              <div className={`board-tour-overlay board-tour-overlay-step-${step.id}`.trim()} style={overlayStyle} aria-hidden="true">
                 <div className="board-tour-pointer" />
                 <div className="board-tour-bubble">
                   <span>{stepTitle}</span>

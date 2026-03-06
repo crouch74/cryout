@@ -41,7 +41,7 @@ import { DEFAULT_GAME_VIEW_STATE } from '../../src/features/session-setup/model/
 
 const startCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
   type: 'StartGame',
-  rulesetId: 'base_design',
+  rulesetId: 'stones_cry_out',
   mode: 'LIBERATION',
   humanPlayerCount: 2,
   seatFactionIds: ['congo_basin_collective', 'levant_sumud', 'mekong_echo_network', 'amazon_guardians'],
@@ -438,8 +438,8 @@ test('route screens point at the production guides and setup shell', () => {
   assert.match(boardTour, /ui\.guide\.boardTourTitle|Board Tour/);
   assert.match(guidelines, /compileContent\(rulesetId\)/);
   assert.match(playerGuide, /compileContent\(rulesetId\)/);
-  assert.doesNotMatch(guidelines, /compileContent\('base_design'\)/);
-  assert.doesNotMatch(playerGuide, /compileContent\('base_design'\)/);
+  assert.doesNotMatch(guidelines, /compileContent\('stones_cry_out'\)/);
+  assert.doesNotMatch(playerGuide, /compileContent\('stones_cry_out'\)/);
   assert.match(appRoot, /<GuidelinesScreen[\s\S]*rulesetId=\{activeRulesetId\}/);
   assert.match(appRoot, /<PlayerGuideScreen[\s\S]*rulesetId=\{activeRulesetId\}/);
 });

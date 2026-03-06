@@ -5,7 +5,7 @@ import type { DomainEvent, EngineState } from '../../src/engine/index.ts';
 
 const startCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
   type: 'StartGame',
-  rulesetId: 'base_design',
+  rulesetId: 'stones_cry_out',
   mode: 'LIBERATION',
   humanPlayerCount: 4,
   seatFactionIds: ['congo_basin_collective', 'levant_sumud', 'mekong_echo_network', 'amazon_guardians'],
@@ -15,7 +15,7 @@ const startCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
 
 const multiOwnerStartCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
   type: 'StartGame',
-  rulesetId: 'base_design',
+  rulesetId: 'stones_cry_out',
   mode: 'LIBERATION',
   humanPlayerCount: 2,
   seatFactionIds: ['congo_basin_collective', 'levant_sumud', 'mekong_echo_network', 'amazon_guardians'],
@@ -80,12 +80,12 @@ function findStartupWithdrawal(
 
 test('canonical ruleset registry exposes the shipped rulesets', () => {
   const rulesets = listRulesets();
-  const baseDesign = rulesets.find((ruleset) => ruleset.id === 'base_design');
+  const stonesCryOut = rulesets.find((ruleset) => ruleset.id === 'stones_cry_out');
   const algeria = rulesets.find((ruleset) => ruleset.id === 'algerian_war_of_independence');
 
-  assert.equal(Boolean(baseDesign), true);
+  assert.equal(Boolean(stonesCryOut), true);
   assert.equal(Boolean(algeria), true);
-  assert.equal(baseDesign?.regions.length, 6);
+  assert.equal(stonesCryOut?.regions.length, 6);
 });
 
 test('same seed produces deterministic system deck order', () => {

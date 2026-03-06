@@ -71,7 +71,7 @@ scenarios/
   defineScenario.ts
   shared/
   testing/
-  base_design/
+  stones_cry_out/
   tahrir_square/
   woman_life_freedom/
   testing/example-hooks/
@@ -681,7 +681,7 @@ For compatibility-backed scenarios, add at least:
 
 ### Shipped Scenarios
 
-- `base_design`
+- `stones_cry_out`
 - `tahrir_square`
 - `woman_life_freedom`
 

@@ -5,7 +5,7 @@ import { applyScenarioPatch } from '../../src/simulation/experiments/applyScenar
 
 const startCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
   type: 'StartGame',
-  rulesetId: 'base_design',
+  rulesetId: 'stones_cry_out',
   mode: 'LIBERATION',
   humanPlayerCount: 4,
   seatFactionIds: ['congo_basin_collective', 'levant_sumud', 'mekong_echo_network', 'amazon_guardians'],
@@ -21,7 +21,7 @@ const tahrirStartCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
 };
 
 test('binary scenarios preserve mandate-failure defeat behavior', () => {
-  const content = compileContent('base_design');
+  const content = compileContent('stones_cry_out');
   const state = initializeGame(startCommand);
   for (const region of Object.values(state.regions)) {
     region.extractionTokens = 0;

@@ -4,7 +4,7 @@ import { buildConfig, parseArgs, renderHelpManual } from '../../src/simulation/o
 
 test('optimizer CLI parser reads all explicit flags', () => {
   const parsed = parseArgs([
-    '--scenario', 'base_design',
+    '--scenario', 'stones_cry_out',
     '--iterations', '12',
     '--baseline-runs', '9000',
     '--candidate-runs', '4000',
@@ -20,7 +20,7 @@ test('optimizer CLI parser reads all explicit flags', () => {
     '--strategy', 'trajectory_discovery',
   ]);
 
-  assert.equal(parsed.scenarioId, 'base_design');
+  assert.equal(parsed.scenarioId, 'stones_cry_out');
   assert.equal(parsed.iterations, 12);
   assert.equal(parsed.baselineRuns, 9000);
   assert.equal(parsed.candidateRuns, 4000);
@@ -37,7 +37,7 @@ test('optimizer CLI parser reads all explicit flags', () => {
 
 test('optimizer config applies balanced defaults when optional flags are omitted', async () => {
   const config = await buildConfig([
-    '--scenario', 'base_design',
+    '--scenario', 'stones_cry_out',
   ]);
 
   assert.equal(config.runtime, 'balanced');
@@ -56,7 +56,7 @@ test('optimizer config applies balanced defaults when optional flags are omitted
 
 test('optimizer config maps mode=both to liberation and symbolic', async () => {
   const config = await buildConfig([
-    '--scenario', 'base_design',
+    '--scenario', 'stones_cry_out',
     '--mode', 'both',
   ]);
 

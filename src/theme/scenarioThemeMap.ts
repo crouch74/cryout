@@ -1,7 +1,7 @@
 import type { ScenarioOverlayId } from './types.ts';
 
 const SCENARIO_THEME_MAP: Record<string, ScenarioOverlayId> = {
-  base_design: 'burnt-earth-resistance',
+  stones_cry_out: 'burnt-earth-resistance',
   tahrir_square: 'night-map-escalation',
   woman_life_freedom: 'dossier-of-the-disappeared',
   algerian_war_of_independence: 'desert-horizon',

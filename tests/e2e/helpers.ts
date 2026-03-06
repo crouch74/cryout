@@ -1,9 +1,13 @@
 import type { Page } from '@playwright/test';
 
+export async function forceLocale(page: Page, locale: string) {
+  await page.addInitScript((nextLocale) => {
+    window.localStorage.setItem('stones-cutover-locale', nextLocale);
+  }, locale);
+}
+
 export async function forceEnglishLocale(page: Page) {
-  await page.addInitScript(() => {
-    window.localStorage.setItem('stones-cutover-locale', 'en');
-  });
+  await forceLocale(page, 'en');
 }
 
 export async function useStableUiPreferences(page: Page) {

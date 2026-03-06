@@ -10,7 +10,7 @@ import { runBalanceSearch } from '../../src/simulation/balance/SearchEngine.ts';
 
 test('experiment output includes mandate diagnostics in arm summaries, comparison json, and markdown report', async () => {
   const outputRoot = await mkdtemp(join(tmpdir(), 'stones-exp-lab-'));
-  const definition = getExperimentById('base_design_new_baseline_validation');
+  const definition = getExperimentById('stones_cry_out_new_baseline_validation');
   assert.ok(definition);
 
   await runExperiment({
@@ -50,7 +50,7 @@ test('experiment output includes mandate diagnostics in arm summaries, compariso
 test('balance search writes best_candidates.json with ordered top candidates', async () => {
   const outputRoot = await mkdtemp(join(tmpdir(), 'stones-balance-lab-'));
   const result = await runBalanceSearch({
-    scenarioId: 'base_design',
+    scenarioId: 'stones_cry_out',
     iterations: 2,
     runsPerCandidate: 2,
     seed: 123,

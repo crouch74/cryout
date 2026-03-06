@@ -1,6 +1,7 @@
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 import { cpus } from 'node:os';
+import { listRulesets } from '../engine/index.ts';
 import { runSimulationBatch } from './autoplayEngine.ts';
 import type { SimulationBatchConfig, SimulationVictoryMode } from './types.ts';
 
@@ -129,7 +130,10 @@ export function parseCliArgs(argv: string[]): SimulationCliOptions {
 
 export async function runCli(argv: string[]) {
   const parsed = parseCliArgs(argv);
-  const debugScenario = parsed.scenarios[0] ?? 'base_design';
+  const debugScenario = parsed.scenarios[0] ?? listRulesets()[0]?.id;
+  if (!debugScenario) {
+    throw new Error('No scenarios are registered.');
+  }
   const config: SimulationBatchConfig = {
     runsPerScenario: parsed.debugSingle ? 1 : parsed.runs,
     scenarios: parsed.debugSingle

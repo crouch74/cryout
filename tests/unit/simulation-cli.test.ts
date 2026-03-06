@@ -5,7 +5,7 @@ import { parseCliArgs } from '../../src/simulation/runSimulation.ts';
 test('CLI parser handles runs, scenarios, mode, seed, and parallel options', () => {
   const parsed = parseCliArgs([
     '--runs', '2500',
-    '--scenario', 'base_design,tahrir_square',
+    '--scenario', 'stones_cry_out,tahrir_square',
     '--scenario', 'woman_life_freedom',
     '--mode', 'symbolic',
     '--seed', '999',
@@ -13,7 +13,7 @@ test('CLI parser handles runs, scenarios, mode, seed, and parallel options', () 
   ]);
 
   assert.equal(parsed.runs, 2500);
-  assert.deepEqual(parsed.scenarios, ['base_design', 'tahrir_square', 'woman_life_freedom']);
+  assert.deepEqual(parsed.scenarios, ['stones_cry_out', 'tahrir_square', 'woman_life_freedom']);
   assert.deepEqual(parsed.victoryModes, ['symbolic']);
   assert.equal(parsed.seed, 999);
   assert.equal(parsed.parallelWorkers, 8);
