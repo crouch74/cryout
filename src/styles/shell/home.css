@@ -17,7 +17,9 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(120% 60% at 50% 0%, var(--color-background-wash), transparent 70%);
+  background:
+    var(--pattern-linen),
+    radial-gradient(120% 60% at 50% 0%, var(--color-background-wash), transparent 70%);
   opacity: 0.55;
 }
 
@@ -136,8 +138,11 @@
 .home-surface {
   border-color: var(--home-border-color);
   background:
+    var(--texture-paper-noise),
+    linear-gradient(125deg, color-mix(in srgb, var(--skin-action-secondary) 7%, transparent), transparent 46%),
     linear-gradient(180deg, color-mix(in srgb, var(--legacy-color-fff) 74%, transparent 26%), color-mix(in srgb, var(--legacy-color-fff) 22%, transparent 78%)),
     color-mix(in srgb, var(--color-surface-elevated) 90%, var(--color-surface-tint) 10%);
+  background-size: 220px 220px, 100% 100%, 100% 100%, auto;
 }
 
 .home-focus-surface {
@@ -148,8 +153,10 @@
 .home-surface-note {
   border-color: var(--home-border-color);
   background:
+    var(--texture-paper-noise),
     linear-gradient(180deg, color-mix(in srgb, var(--legacy-color-fff) 66%, transparent 34%), color-mix(in srgb, var(--legacy-color-fff) 12%, transparent 88%)),
     color-mix(in srgb, var(--color-surface) 90%, var(--color-surface-tint) 10%);
+  background-size: 200px 200px, 100% 100%, auto;
 }
 
 .scenario-select-major {

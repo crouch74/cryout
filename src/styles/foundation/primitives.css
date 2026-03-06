@@ -145,12 +145,14 @@
 
 .button-primary,
 .primary-button {
-  background: var(--color-action-primary, var(--accent-primary));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--skin-action-secondary) 12%, transparent), transparent 44%),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-action-primary, var(--accent-primary)) 90%, var(--skin-layer-elevated) 10%), color-mix(in srgb, var(--color-action-primary, var(--accent-primary)) 78%, var(--skin-layer-scrim) 22%));
   color: var(--color-text-inverted, var(--surface-2));
   font-family: var(--font-display);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  box-shadow: var(--shadow-level-1);
+  box-shadow: var(--shadow-raised), inset 0 1px 0 color-mix(in srgb, var(--skin-text-inverse) 22%, transparent);
 }
 
 .button-danger {
@@ -164,7 +166,9 @@
 .ready-button,
 .compact-button,
 .toast-dismiss {
-  background: var(--color-bg-panel, var(--surface-3));
+  background:
+    var(--texture-paper-noise),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-bg-panel, var(--surface-3)) 92%, var(--skin-layer-elevated) 8%), color-mix(in srgb, var(--color-bg-panel, var(--surface-3)) 84%, var(--skin-layer-surface) 16%));
   color: var(--color-text-primary, var(--text-1));
   border: var(--border-width-thin) solid var(--color-border-subtle, var(--line-soft));
 }
@@ -197,6 +201,7 @@
 .coalition-section-trigger:hover,
 .toast-dismiss:hover {
   transform: translateY(-1px);
+  box-shadow: var(--shadow-floating);
 }
 
 .primary-button:disabled,

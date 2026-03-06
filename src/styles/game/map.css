@@ -8,6 +8,8 @@
   overflow: hidden;
   border: var(--border-width-thin) solid var(--panel-rim-strong);
   background:
+    var(--pattern-contour),
+    var(--pattern-linen),
     radial-gradient(circle at 14% 12%, color-mix(in srgb, var(--skin-layer-elevated) 30%, transparent), transparent 18%),
     radial-gradient(circle at 78% 16%, color-mix(in srgb, var(--skin-action-secondary) 10%, transparent), transparent 20%),
     linear-gradient(
@@ -16,6 +18,7 @@
       color-mix(in srgb, var(--skin-layer-surface) 58%, var(--skin-layer-overlay) 42%)
     ),
     var(--board-ivory);
+  background-size: 220px 220px, 10px 10px, auto, auto, auto, auto;
   box-shadow:
     var(--shadow-level-2),
     inset 0 0 18px color-mix(in srgb, var(--skin-text-primary) 6%, transparent);
@@ -31,8 +34,11 @@
 
 .game-screen-compressed .board-map-shell::before {
   background:
+    linear-gradient(color-mix(in srgb, var(--skin-border-strong) 14%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--skin-border-strong) 14%, transparent) 1px, transparent 1px),
     radial-gradient(circle at 50% 10%, color-mix(in srgb, var(--skin-layer-elevated) 24%, transparent), transparent 26%),
     linear-gradient(120deg, transparent 0 26%, color-mix(in srgb, var(--skin-text-primary) 4%, transparent) 26% 27%, transparent 27% 100%);
+  background-size: 180px 180px, 180px 180px, 100% 100%, 100% 100%;
   z-index: var(--z-base);
   mix-blend-mode: multiply;
 }
@@ -62,7 +68,7 @@
   height: 100%;
   min-height: min(var(--size-card-width), 40vh);
   overflow: hidden;
-  z-index: var(--z-panel);
+  z-index: calc(var(--z-panel) + 1);
 }
 
 .game-screen-compressed .board-world-map {
@@ -70,7 +76,7 @@
   inset: 0;
   overflow: hidden;
   pointer-events: auto;
-  z-index: var(--z-panel);
+  z-index: calc(var(--z-panel) + 3);
 }
 
 .game-screen-compressed .board-world-map>svg,
@@ -80,6 +86,7 @@
   left: var(--map-canvas-left);
   width: var(--map-canvas-width);
   height: var(--map-canvas-height);
+  z-index: calc(var(--z-panel) + 3);
 }
 
 .game-screen-compressed .board-world-map-svg {
@@ -137,6 +144,8 @@
   border-radius: var(--radius-16);
   border: var(--border-width-thin) solid color-mix(in srgb, var(--skin-text-primary) 22%, transparent);
   background:
+    var(--texture-paper-noise),
+    linear-gradient(135deg, color-mix(in srgb, var(--skin-action-secondary) 9%, transparent), transparent 42%),
     linear-gradient(
       180deg,
       color-mix(in srgb, var(--skin-layer-elevated) 97%, var(--skin-layer-surface) 3%),
@@ -193,7 +202,7 @@
 }
 
 .game-screen-compressed .board-region-clusters {
-  z-index: var(--z-panel);
+  z-index: calc(var(--z-panel) + 4);
 }
 
 .game-screen-compressed .board-region-cluster {
@@ -275,6 +284,7 @@
   place-items: center;
   color: var(--token-material-ink);
   background:
+    var(--pattern-guilloche),
     radial-gradient(circle at 28% 20%, color-mix(in srgb, var(--skin-layer-elevated) 38%, transparent), color-mix(in srgb, var(--skin-layer-elevated) 0%, transparent) 42%),
     radial-gradient(circle at 50% 64%, color-mix(in srgb, var(--token-material-core) 88%, black 12%), color-mix(in srgb, var(--token-material-base) 64%, black 36%) 58%, color-mix(in srgb, var(--token-material-base) 30%, white 70%) 100%),
     linear-gradient(180deg, color-mix(in srgb, var(--token-material-base) 72%, white 28%), var(--token-material-base) 46%, color-mix(in srgb, var(--token-material-core) 76%, black 24%));
@@ -299,7 +309,9 @@
 .game-screen-compressed .board-region-token::before {
   inset: 1px;
   border: var(--border-width-thin) solid color-mix(in srgb, var(--token-material-rim) 44%, transparent);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--skin-layer-elevated) 24%, transparent), color-mix(in srgb, var(--skin-layer-elevated) 0%, transparent) 50%);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--skin-layer-elevated) 24%, transparent), color-mix(in srgb, var(--skin-layer-elevated) 0%, transparent) 50%),
+    var(--pattern-linen);
 }
 
 .game-screen-compressed .board-region-token::after {

@@ -284,6 +284,28 @@
   --seat-3: var(--color-state-warning, #C07A2C);
   --seat-4: var(--color-state-danger, #A03B2E);
 
+  /* Premium material/pattern primitives */
+  --pattern-contour:
+    repeating-linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--skin-border-strong) 10%, transparent) 0 1px,
+      transparent 1px 18px
+    );
+  --pattern-linen:
+    linear-gradient(90deg, color-mix(in srgb, var(--skin-text-primary) 4%, transparent) 0 1px, transparent 1px 7px),
+    linear-gradient(color-mix(in srgb, var(--skin-text-primary) 3%, transparent) 0 1px, transparent 1px 7px);
+  --pattern-grid-fine:
+    linear-gradient(color-mix(in srgb, var(--skin-border-strong) 16%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--skin-border-strong) 16%, transparent) 1px, transparent 1px);
+  --pattern-guilloche:
+    repeating-radial-gradient(
+      circle at center,
+      color-mix(in srgb, var(--skin-action-secondary) 20%, transparent) 0 1px,
+      transparent 1px 7px
+    );
+  --texture-paper-noise:
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 220 220' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+
   --scenario-glow-a: color-mix(in srgb, var(--color-token-glow) 42%, transparent);
   --scenario-glow-b: color-mix(in srgb, var(--color-selection-highlight) 42%, transparent);
 

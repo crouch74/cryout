@@ -8,10 +8,12 @@
   min-height: calc(100vh - 48px);
   overflow: auto;
   background:
+    var(--pattern-contour),
+    var(--pattern-linen),
     linear-gradient(color-mix(in srgb, var(--skin-border-strong) var(--board-topography-opacity), transparent) 1px, transparent 1px),
     linear-gradient(90deg, color-mix(in srgb, var(--skin-border-strong) var(--board-topography-opacity), transparent) 1px, transparent 1px),
     var(--board-sand);
-  background-size: 140px 140px, 140px 140px, auto;
+  background-size: 240px 240px, 12px 12px, 140px 140px, 140px 140px, auto;
   color: var(--board-ink);
 }
 
@@ -106,7 +108,11 @@
   border-radius: var(--radius-10);
   pointer-events: none;
   background: linear-gradient(115deg, transparent 0%, color-mix(in srgb, var(--skin-layer-elevated) 24%, transparent) 45%, transparent 76%);
-  opacity: 0;
+  opacity: 0.28;
+}
+
+.status-pill:hover::after {
+  opacity: 0.45;
 }
 
 .status-pill-objective {
@@ -301,6 +307,8 @@
   border-radius: var(--radius-16);
   border: var(--border-width-thin) solid rgba(115, 89, 48, 0.18);
   background:
+    var(--texture-paper-noise),
+    linear-gradient(135deg, color-mix(in srgb, var(--skin-action-secondary) 10%, transparent), transparent 38%),
     linear-gradient(180deg, color-mix(in srgb, var(--skin-text-inverse) 94%, transparent), rgba(226, 208, 178, 0.82)),
     var(--skin-layer-elevated);
   box-shadow: 0 10px 20px color-mix(in srgb, var(--skin-layer-scrim) 10%, transparent), inset 0 1px 0 color-mix(in srgb, var(--skin-text-inverse) 80%, transparent);
@@ -320,7 +328,8 @@
   justify-self: start;
   padding: 4px 10px;
   border-radius: var(--radius-pill);
-  background: rgba(88, 67, 37, 0.08);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--skin-action-secondary) 14%, transparent), color-mix(in srgb, var(--skin-text-primary) 6%, transparent));
   color: var(--text-2);
   font-size: 0.74rem;
   text-transform: uppercase;
@@ -333,7 +342,8 @@
 }
 
 .beacon-objective-card.is-complete .beacon-objective-state {
-  background: rgba(200, 167, 94, 0.2);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--skin-action-secondary) 26%, transparent), color-mix(in srgb, var(--skin-action-secondary) 14%, transparent));
   color: var(--legacy-color-5f4620);
 }
 
@@ -693,6 +703,8 @@ html[dir='rtl'] .deck-reveal-deck-label {
   border-radius: var(--radius-14);
   border: var(--border-width-thin) solid var(--panel-rim);
   background:
+    var(--texture-paper-noise),
+    linear-gradient(135deg, color-mix(in srgb, var(--skin-action-secondary) 9%, transparent), transparent 40%),
     linear-gradient(180deg, color-mix(in srgb, var(--skin-layer-elevated) 92%, transparent), color-mix(in srgb, var(--skin-layer-surface) 82%, var(--skin-layer-overlay) 18%)),
     var(--skin-layer-surface);
   box-shadow: var(--panel-shadow), inset 0 1px 0 color-mix(in srgb, var(--skin-layer-elevated) 74%, transparent);
@@ -785,6 +797,7 @@ html[dir='rtl'] .deck-reveal-deck-label {
   padding: 12px 14px;
   border-radius: var(--radius-14);
   background:
+    var(--texture-paper-noise),
     linear-gradient(180deg, color-mix(in srgb, var(--skin-text-inverse) 96%, transparent), rgba(224, 209, 182, 0.9)),
     var(--skin-layer-surface);
   border: var(--border-width-thin) solid var(--panel-rim);
@@ -869,6 +882,7 @@ html[dir='rtl'] .deck-reveal-deck-label {
   border-radius: var(--radius-12);
   border: var(--border-width-thin) solid var(--tile-rim-dark);
   background:
+    linear-gradient(135deg, color-mix(in srgb, var(--skin-action-secondary) 8%, transparent), transparent 38%),
     linear-gradient(180deg, color-mix(in srgb, var(--skin-text-inverse) 98%, transparent), rgba(218, 201, 172, 0.9)),
     var(--skin-layer-surface);
   box-shadow: var(--tile-shadow), var(--tile-emboss);
@@ -895,6 +909,7 @@ html[dir='rtl'] .deck-reveal-deck-label {
   padding: 12px 14px;
   border-radius: var(--radius-14);
   background:
+    var(--texture-paper-noise),
     linear-gradient(180deg, color-mix(in srgb, var(--skin-text-inverse) 96%, transparent), rgba(221, 205, 177, 0.9)),
     var(--skin-layer-surface);
   border: var(--border-width-thin) solid var(--panel-rim);

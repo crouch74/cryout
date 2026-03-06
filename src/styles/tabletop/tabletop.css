@@ -1042,6 +1042,7 @@ textarea:focus-visible {
     inset 0 1px 0 color-mix(in srgb, var(--deck-ink) 16%, transparent),
     inset 0 -1px 0 color-mix(in srgb, var(--deck-base) 32%, transparent);
   background:
+    var(--pattern-guilloche),
     linear-gradient(180deg, color-mix(in srgb, var(--deck-ink) 6%, transparent), color-mix(in srgb, var(--deck-base) 24%, transparent)),
     var(--deck-base);
 }
@@ -1066,6 +1067,16 @@ textarea:focus-visible {
     linear-gradient(90deg, color-mix(in srgb, var(--deck-ink) 11%, transparent) 1px, transparent 1px),
     linear-gradient(color-mix(in srgb, var(--deck-ink) 11%, transparent) 1px, transparent 1px);
   background-size: 12px 12px;
+}
+
+.deck-back-art .deck-back-emblem::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: var(--radius-pill);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--deck-accent) 28%, transparent);
+  opacity: 0.55;
+  pointer-events: none;
 }
 
 .deck-stack-system {
