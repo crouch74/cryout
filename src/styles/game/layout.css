@@ -942,7 +942,7 @@ html[dir='rtl'] .deck-reveal-deck-label {
   gap: var(--space-0-5);
   font-size: 11px;
   font-weight: 700;
-  color: var(--skin-text-primary);
+  color: color-mix(in srgb, var(--faction-accent, var(--skin-text-primary)) 64%, var(--skin-text-primary) 36%);
 }
 
 .front-track-meter {
@@ -1010,7 +1010,8 @@ html[dir='rtl'] .deck-reveal-deck-label {
     opacity var(--motion-mid),
     box-shadow var(--motion-mid);
   background: var(--context-surface);
-  border: var(--border-width-thin) solid var(--panel-rim);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--faction-accent, var(--panel-rim)) 32%, var(--panel-rim) 68%);
+  border-inline-start: 4px solid color-mix(in srgb, var(--faction-accent, var(--accent-primary)) 78%, var(--panel-rim) 22%);
   border-radius: var(--radius-16) 0 0 var(--radius-16);
   box-shadow: -18px 0 40px color-mix(in srgb, var(--skin-layer-scrim) 22%, transparent), inset 0 1px 0 color-mix(in srgb, var(--skin-text-inverse) 62%, transparent);
   overflow: visible;
@@ -1035,7 +1036,7 @@ html[dir='rtl'] .deck-reveal-deck-label {
   justify-content: space-between;
   gap: var(--space-1);
   padding: 10px 12px;
-  border-bottom: var(--border-width-thin) solid var(--panel-rim);
+  border-bottom: var(--border-width-thin) solid color-mix(in srgb, var(--faction-accent, var(--panel-rim)) 32%, var(--panel-rim) 68%);
 }
 
 .context-panel-tabs {
@@ -1067,8 +1068,13 @@ html[dir='rtl'] .deck-reveal-deck-label {
 .dock-control-button.is-active,
 .dock-control-button.is-primary,
 .context-primary {
-  border-color: var(--accent-primary-strong);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--ui-accent-warm) 22%, var(--ui-surface-paper) 78%), color-mix(in srgb, var(--ui-accent-warm) 40%, var(--ui-surface-paper) 60%));
+  border-color: color-mix(in srgb, var(--faction-accent, var(--accent-primary-strong)) 68%, var(--tile-rim-dark) 32%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--faction-accent, var(--accent-primary-strong)) 24%, var(--ui-surface-paper) 76%),
+    color-mix(in srgb, var(--faction-accent, var(--accent-primary-strong)) 40%, var(--ui-surface-paper) 60%)
+  );
+  color: color-mix(in srgb, var(--faction-accent, var(--skin-text-primary)) 62%, var(--skin-text-primary) 38%);
 }
 
 .context-panel-body {
@@ -1090,7 +1096,7 @@ html[dir='rtl'] .deck-reveal-deck-label {
   padding: var(--space-2);
   border-radius: var(--radius-14);
   background: color-mix(in srgb, var(--skin-text-inverse) 78%, transparent);
-  border: var(--border-width-thin) solid var(--line-soft);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--faction-accent, var(--line-soft)) 24%, var(--line-soft) 76%);
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--skin-text-inverse) 54%, transparent);
 }
 
@@ -1212,10 +1218,16 @@ html[dir='rtl'] .deck-reveal-deck-label {
 .context-form input {
   min-height: 38px;
   border-radius: var(--radius-12);
-  border: var(--border-width-thin) solid var(--line-soft);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--faction-accent, var(--line-soft)) 34%, var(--line-soft) 66%);
   background: var(--legacy-color-fffdf9);
   padding: 8px 10px;
   color: inherit;
+}
+
+.context-form select:focus-visible,
+.context-form input:focus-visible {
+  outline: var(--border-width-strong) solid color-mix(in srgb, var(--faction-accent, var(--color-accent)) 68%, var(--legacy-color-ffffff) 32%);
+  outline-offset: 1px;
 }
 
 .preview-chip-row,
@@ -1707,9 +1719,13 @@ html[dir='rtl'] .deck-reveal-deck-label {
   min-height: 36px;
   padding: 7px 11px;
   border-radius: var(--radius-10);
-  border: var(--border-width-thin) solid var(--tile-rim-dark);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--seat-accent, var(--tile-rim-dark)) 58%, var(--tile-rim-dark) 42%);
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--skin-text-inverse) 96%, transparent), color-mix(in srgb, var(--ui-surface-paper-strong) 90%, var(--ui-surface-panel) 10%)),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--skin-text-inverse) 96%, transparent),
+      color-mix(in srgb, var(--seat-accent, var(--ui-surface-paper-strong)) 14%, var(--ui-surface-paper-strong) 86%)
+    ),
     var(--skin-layer-surface);
   box-shadow: var(--tile-shadow), var(--tile-emboss);
   font-weight: 700;
@@ -1728,7 +1744,7 @@ html[dir='rtl'] .deck-reveal-deck-label {
   border-radius: var(--radius-8);
   background: color-mix(in srgb, var(--skin-layer-elevated) 35%, transparent);
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--skin-layer-elevated) 50%, transparent);
-  border: var(--border-width-thin) solid color-mix(in srgb, var(--skin-text-primary) 8%, transparent);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--seat-accent, var(--skin-text-primary)) 26%, transparent);
 }
 
 .seat-chip-info {
@@ -1753,20 +1769,25 @@ html[dir='rtl'] .deck-reveal-deck-label {
 }
 
 .player-seat-chip.is-active {
-  border-color: color-mix(in srgb, var(--faction-accent, var(--accent-gold)) 70%, var(--tile-rim-dark) 30%);
+  border-color: color-mix(in srgb, var(--seat-accent, var(--faction-accent, var(--accent-gold))) 74%, var(--tile-rim-dark) 26%);
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--skin-text-inverse) 98%, transparent), color-mix(in srgb, var(--ui-accent-warm) 24%, var(--ui-surface-paper) 76%)),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--skin-text-inverse) 98%, transparent),
+      color-mix(in srgb, var(--seat-accent, var(--ui-accent-warm)) 24%, var(--ui-surface-paper) 76%)
+    ),
     var(--skin-layer-surface);
   box-shadow:
     0 0 0 1px color-mix(in srgb, var(--skin-text-inverse) 80%, transparent),
-    0 0 0 4px color-mix(in srgb, var(--faction-accent, var(--accent-gold)) 14%, transparent),
+    0 0 0 4px color-mix(in srgb, var(--seat-accent, var(--faction-accent, var(--accent-gold))) 14%, transparent),
     var(--tile-shadow),
     var(--tile-emboss);
 }
 
 .player-seat-chip.is-active .seat-chip-frame {
   background: color-mix(in srgb, var(--skin-layer-elevated) 45%, transparent);
-  border-color: color-mix(in srgb, var(--ui-accent-warm) 34%, transparent);
+  border-color: color-mix(in srgb, var(--seat-accent, var(--faction-accent, var(--ui-accent-warm))) 58%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--skin-layer-elevated) 58%, transparent);
 }
 
 .player-strip-focus {
@@ -1778,7 +1799,7 @@ html[dir='rtl'] .deck-reveal-deck-label {
   font-family: var(--font-display);
   font-weight: 800;
   font-size: 1.05rem;
-  color: var(--skin-text-primary);
+  color: color-mix(in srgb, var(--faction-accent, var(--skin-text-primary)) 64%, var(--skin-text-primary) 36%);
 }
 
 .player-strip-identity span,
@@ -1794,9 +1815,13 @@ html[dir='rtl'] .deck-reveal-deck-label {
 .player-strip-metrics span {
   padding: 6px 10px;
   border-radius: var(--radius-10);
-  border: var(--border-width-thin) solid color-mix(in srgb, var(--skin-text-primary) 16%, transparent);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--faction-accent, var(--skin-text-primary)) 28%, transparent);
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--skin-layer-elevated) 94%, transparent), color-mix(in srgb, var(--skin-layer-surface) 84%, var(--skin-layer-overlay) 16%)),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--faction-accent, var(--skin-layer-elevated)) 16%, var(--skin-layer-elevated) 84%),
+      color-mix(in srgb, var(--faction-accent, var(--skin-layer-surface)) 12%, var(--skin-layer-surface) 88%)
+    ),
     color-mix(in srgb, var(--skin-text-inverse) 88%, transparent);
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--skin-text-inverse) 75%, transparent);
   font-family: var(--font-data);
@@ -1818,7 +1843,8 @@ html[dir='rtl'] .deck-reveal-deck-label {
 
 .context-panel {
   position: relative;
-  border: var(--border-width-thin) solid var(--panel-rim);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--faction-accent, var(--panel-rim)) 32%, var(--panel-rim) 68%);
+  border-inline-start: 4px solid color-mix(in srgb, var(--faction-accent, var(--accent-primary)) 78%, var(--panel-rim) 22%);
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--skin-layer-elevated) 98%, transparent), color-mix(in srgb, var(--skin-layer-surface) 92%, var(--skin-layer-overlay) 8%)),
     var(--context-surface);
@@ -1826,7 +1852,7 @@ html[dir='rtl'] .deck-reveal-deck-label {
 }
 
 .context-panel-header {
-  border-bottom: var(--border-width-thin) solid var(--ui-line-rule);
+  border-bottom: var(--border-width-thin) solid color-mix(in srgb, var(--faction-accent, var(--ui-line-rule)) 32%, var(--ui-line-rule) 68%);
 }
 
 .context-panel-tabs button,
@@ -1842,12 +1868,12 @@ html[dir='rtl'] .deck-reveal-deck-label {
 }
 
 .context-panel-tabs button.is-active .ui-icon {
-  color: var(--skin-action-secondary);
+  color: var(--faction-accent, var(--skin-action-secondary));
 }
 
 .context-card {
   border-radius: var(--radius-12);
-  border: var(--border-width-thin) solid color-mix(in srgb, var(--skin-text-primary) 14%, transparent);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--faction-accent, var(--skin-text-primary)) 24%, transparent);
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--skin-layer-elevated) 90%, transparent), color-mix(in srgb, var(--ui-surface-paper) 86%, var(--ui-surface-panel) 14%)),
     var(--skin-layer-surface);
@@ -2124,7 +2150,7 @@ html[dir='rtl'] .deck-reveal-deck-label {
 .action-dock-button .ui-icon {
   width: 26px;
   height: 26px;
-  color: var(--skin-text-primary);
+  color: color-mix(in srgb, var(--faction-accent, var(--skin-text-primary)) 64%, var(--skin-text-primary) 36%);
 }
 
 .action-dock-button span {
@@ -2142,10 +2168,14 @@ html[dir='rtl'] .deck-reveal-deck-label {
 .action-dock-button.is-quick,
 .dock-control-button.is-primary,
 .dock-control-button.is-active {
-  border-color: color-mix(in srgb, var(--skin-action-secondary) 46%, var(--tile-rim-dark));
+  border-color: color-mix(in srgb, var(--faction-accent, var(--skin-action-secondary)) 58%, var(--tile-rim-dark));
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--skin-text-inverse) 98%, transparent), color-mix(in srgb, var(--ui-accent-warm) 30%, var(--ui-surface-paper) 70%)),
-    color-mix(in srgb, var(--ui-accent-warm) 36%, var(--ui-surface-paper) 64%);
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--skin-text-inverse) 98%, transparent),
+      color-mix(in srgb, var(--faction-accent, var(--ui-accent-warm)) 30%, var(--ui-surface-paper) 70%)
+    ),
+    color-mix(in srgb, var(--faction-accent, var(--ui-accent-warm)) 36%, var(--ui-surface-paper) 64%);
 }
 
 .action-dock-submit {
@@ -2271,10 +2301,14 @@ html[dir='rtl'] .deck-reveal-deck-label {
 .dock-control-button.is-active,
 .dock-control-button.is-primary,
 .context-primary {
-  border-color: color-mix(in srgb, var(--skin-action-secondary) 48%, var(--tile-rim-dark));
+  border-color: color-mix(in srgb, var(--faction-accent, var(--skin-action-secondary)) 58%, var(--tile-rim-dark));
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--skin-text-inverse) 96%, transparent), color-mix(in srgb, var(--ui-accent-warm) 28%, var(--ui-surface-paper) 72%)),
-    color-mix(in srgb, var(--ui-accent-warm) 34%, var(--ui-surface-paper) 66%);
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--skin-text-inverse) 96%, transparent),
+      color-mix(in srgb, var(--faction-accent, var(--ui-accent-warm)) 28%, var(--ui-surface-paper) 72%)
+    ),
+    color-mix(in srgb, var(--faction-accent, var(--ui-accent-warm)) 34%, var(--ui-surface-paper) 66%);
 }
 
 .phase-progress-controls {

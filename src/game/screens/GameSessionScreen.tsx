@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import {
   toCompatStructuredEvent,
   getAvailableDomains,
@@ -13,10 +13,8 @@ import {
   type DomainId,
   type EngineCommand,
   type EngineState,
-  type Effect,
   type QueuedIntent,
   type RegionId,
-  type SystemPersistentModifiers,
 } from '../../engine/index.ts';
 import {
   formatNumber,
@@ -339,96 +337,6 @@ function getPrintedDeckTitle(deckId: VisibleDeckId) {
   }
 }
 
-function formatSignedLabel(value: number, label: string) {
-  return `${value > 0 ? '+' : ''}${formatNumber(value)} ${label}`;
-}
-
-function summarizeCardEffect(effect: Effect, content: CompiledContent) {
-  switch (effect.type) {
-    case 'modify_gaze':
-      return formatSignedLabel(effect.delta, t('ui.game.globalGaze', 'Global Gaze'));
-    case 'modify_war_machine':
-      return formatSignedLabel(effect.delta, t('ui.game.northernWarMachine', 'War Machine'));
-    case 'modify_domain':
-      return typeof effect.domain === 'string' && effect.domain !== 'target_domain'
-        ? formatSignedLabel(effect.delta, localizeDomainField(effect.domain, 'name', content.domains[effect.domain].name))
-        : formatSignedLabel(effect.delta, t('ui.game.domain', 'Domain'));
-    case 'add_extraction':
-      return formatSignedLabel(effect.amount, t('ui.game.extractionTokens', 'Extraction Tokens'));
-    case 'remove_extraction':
-      return formatSignedLabel(effect.amount * -1, t('ui.game.extractionTokens', 'Extraction Tokens'));
-    case 'add_comrades':
-      return formatSignedLabel(effect.amount, t('ui.game.comrades', 'Comrades'));
-    case 'remove_comrades':
-      return formatSignedLabel(effect.amount * -1, t('ui.game.comrades', 'Comrades'));
-    case 'gain_evidence':
-      return formatSignedLabel(effect.amount, t('ui.game.evidence', 'Evidence'));
-    case 'lose_evidence':
-      return formatSignedLabel(effect.amount * -1, t('ui.game.evidence', 'Evidence'));
-    case 'set_defense':
-      return `${t('ui.game.defense', 'Defense')} ${formatNumber(effect.amount)}`;
-    case 'draw_resistance':
-      return formatSignedLabel(effect.count, t('ui.game.resistanceDeckPrinted', 'Resistance'));
-    case 'log':
-      return null;
-  }
-}
-
-function getPersistentModifierChips(persistentModifiers: SystemPersistentModifiers | undefined) {
-  if (!persistentModifiers) {
-    return [];
-  }
-
-  const chips: string[] = [];
-  if (persistentModifiers.campaignTargetDelta) {
-    chips.push(t('ui.game.campaignTargetShift', 'Campaign target +{{count}}', { count: persistentModifiers.campaignTargetDelta }));
-  }
-  if (persistentModifiers.campaignModifierDelta) {
-    chips.push(t('ui.game.campaignRollShift', 'Campaign roll {{count}}', { count: persistentModifiers.campaignModifierDelta }));
-  }
-  if (persistentModifiers.outreachCostDelta) {
-    chips.push(t('ui.game.outreachCostShift', 'Outreach cost +{{count}}', { count: persistentModifiers.outreachCostDelta }));
-  }
-  if (persistentModifiers.resistanceDrawDelta) {
-    chips.push(t('ui.game.resistanceDrawShift', 'Resistance draw {{count}}', { count: persistentModifiers.resistanceDrawDelta }));
-  }
-  if (persistentModifiers.crisisDrawDelta) {
-    chips.push(t('ui.game.crisisDrawShift', 'Crisis draw +{{count}}', { count: persistentModifiers.crisisDrawDelta }));
-  }
-  if (persistentModifiers.crisisExtractionBonus) {
-    chips.push(t('ui.game.crisisExtractionShift', 'Crisis extraction +{{count}}', { count: persistentModifiers.crisisExtractionBonus }));
-  }
-  return chips;
-}
-
-function getRevealSummaryChips(content: CompiledContent, _deckId: VisibleDeckId, cardId: string) {
-  const card = content.cards[cardId];
-  if (!card) {
-    return [];
-  }
-
-  const chips: string[] = [];
-  if (card.deck === 'resistance') {
-    chips.push(card.type === 'support' ? t('ui.game.supportCard', 'Support Card') : t('ui.game.actionCard', 'Action Card'));
-    if (typeof card.campaignBonus === 'number') {
-      chips.push(t('ui.game.campaignBonusChip', 'Campaign +{{count}}', { count: card.campaignBonus }));
-    }
-    if (card.domainBonus) {
-      chips.push(localizeDomainField(card.domainBonus, 'name', content.domains[card.domainBonus].name));
-    }
-  }
-
-  if (card.deck === 'system') {
-    chips.push(t('ui.game.persistentEscalation', 'Persistent escalation'));
-    chips.push(...getPersistentModifierChips(card.persistentModifiers));
-  }
-
-  const effectList = card.deck === 'system' ? card.onReveal : card.effects ?? [];
-  chips.push(...effectList.map((effect) => summarizeCardEffect(effect, content)).filter((chip): chip is string => Boolean(chip)));
-
-  return [...new Set(chips)].slice(0, 3);
-}
-
 function getPhaseInsights(state: EngineState, focusedSeat: number): PhaseInsight[] {
   if (state.phase === 'SYSTEM') {
     return [
@@ -689,7 +597,6 @@ export function GameSessionScreen({
   const [activeCardReveal, setActiveCardReveal] = useState<CardRevealQueueItem | null>(null);
   const [cardRevealStage, setCardRevealStage] = useState<CardRevealStage>('lift');
   const [activeCardRevealOrigin, setActiveCardRevealOrigin] = useState<CardRevealOrigin | null>(null);
-  const [showRevealImpactSummary, setShowRevealImpactSummary] = useState(false);
   const [activeCampaignResult, setActiveCampaignResult] = useState<CampaignResolvedEventPayload | null>(null);
   const [campaignDismissEnabled, setCampaignDismissEnabled] = useState(false);
   const [introDismissed, setIntroDismissed] = useState(false);
@@ -706,7 +613,6 @@ export function GameSessionScreen({
   const revealCleanupTimerRef = useRef<number | null>(null);
   const autoAdvanceTimerRef = useRef<number | null>(null);
   const revealActionButtonRef = useRef<HTMLButtonElement | null>(null);
-  const revealBodyRef = useRef<HTMLParagraphElement | null>(null);
   const deckButtonRefs = useRef<Record<VisibleDeckId, HTMLButtonElement | null>>({
     system: null,
     resistance: null,
@@ -877,6 +783,17 @@ export function GameSessionScreen({
     () => new Set([...liveVisualTargets].filter((key) => key.startsWith('region:'))),
     [liveVisualTargets],
   );
+  const playerSeatAccents = useMemo(
+    () => Object.fromEntries(
+      state.players
+        .filter((player) => ownedSeats.includes(player.seat))
+        .map((player) => [player.seat, getFactionAccent(player.factionId)]),
+    ) as Record<number, string>,
+    [ownedSeats, state.players],
+  );
+  const gameSurfaceStyle = {
+    ['--faction-accent' as string]: focusedFactionAccent,
+  } as CSSProperties;
   const phaseHelpContent = (
     <span className="phase-help-copy">
       <span>{phasePresentation.copy}</span>
@@ -1147,44 +1064,7 @@ export function GameSessionScreen({
   const activeRevealHeadline = activeRevealCopy
     ? activeRevealCopy.impactedRegions[0] ?? activeRevealCopy.impactedFactions[0] ?? activeRevealCopy.title
     : '';
-  const activeRevealImpactLines = activeCardReveal
-    ? getRevealSummaryChips(content, activeCardReveal.deckId, activeCardReveal.cardId)
-    : [];
 
-  useEffect(() => {
-    if (!activeCardReveal || !activeRevealCopy?.body || activeRevealImpactLines.length === 0) {
-      setShowRevealImpactSummary(false);
-      return;
-    }
-
-    const paragraph = revealBodyRef.current;
-    if (!paragraph) {
-      setShowRevealImpactSummary(false);
-      return;
-    }
-
-    const compute = () => {
-      const style = window.getComputedStyle(paragraph);
-      const fontSize = Number.parseFloat(style.fontSize) || 16;
-      let lineHeight = Number.parseFloat(style.lineHeight);
-      if (!Number.isFinite(lineHeight)) {
-        lineHeight = fontSize * 1.4;
-      }
-      const renderedHeight = paragraph.getBoundingClientRect().height;
-      const renderedLines = lineHeight > 0 ? Math.round(renderedHeight / lineHeight) : 0;
-      setShowRevealImpactSummary(renderedLines > 2);
-    };
-
-    compute();
-    const observer = new ResizeObserver(compute);
-    observer.observe(paragraph);
-    window.addEventListener('resize', compute);
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener('resize', compute);
-    };
-  }, [activeCardReveal, activeRevealCopy?.body, activeRevealImpactLines.length]);
   const activeBeaconObjectives = state.activeBeaconIds.map((beaconId) => ({
     id: beaconId,
     title: localizeBeaconField(beaconId, 'title', content.beacons[beaconId]?.title ?? beaconId),
@@ -1338,6 +1218,40 @@ export function GameSessionScreen({
       closeOpenDrawers();
     }
   }, [autoAdvanceTransientUi, closeOpenDrawers, contextOpen, introOpen, selectedRegionId]);
+
+  useEffect(() => {
+    if (!autoAdvanceTransientUi) {
+      return;
+    }
+
+    if (activeCardReveal) {
+      console.log('🃏 [Autoplay] Dismissing active reveal card to keep simulation moving.');
+      startRevealDismiss(false);
+    }
+
+    if (activeCampaignResult && campaignDismissEnabled) {
+      console.log('🎲 [Autoplay] Dismissing resolved campaign panel.');
+      setActiveCampaignResult(null);
+      setCampaignDismissEnabled(false);
+    }
+
+    if (startupMandateOpen) {
+      console.log('✉️ [Autoplay] Closing startup mandate reveal while autoplay is active.');
+      setStartupMandateDismissed(true);
+    }
+
+    if (mandateModalOpen) {
+      console.log('📜 [Autoplay] Closing mandate panel while autoplay is active.');
+      setMandateModalOpen(false);
+    }
+  }, [
+    activeCampaignResult,
+    activeCardReveal,
+    autoAdvanceTransientUi,
+    campaignDismissEnabled,
+    mandateModalOpen,
+    startupMandateOpen,
+  ]);
 
   useEffect(() => () => {
     if (revealTimerRef.current !== null) {
@@ -1569,7 +1483,10 @@ export function GameSessionScreen({
   ]);
 
   return (
-    <TableSurface className={`game-screen game-screen-compressed ${activeCardReveal ? 'is-reveal-active' : ''}`.trim()}>
+    <TableSurface
+      className={`game-screen game-screen-compressed ${activeCardReveal ? 'is-reveal-active' : ''}`.trim()}
+      style={gameSurfaceStyle}
+    >
       <main
         className={`game-compression-layout ${contextOpen ? 'is-context-open' : 'is-context-closed'}`.trim()}
         onPointerDownCapture={handleEmptySpacePointerDown}
@@ -1590,6 +1507,7 @@ export function GameSessionScreen({
                   focusedSeat={focusedPlayer.seat}
                   onSelectSeat={(seat) => onViewStateChange({ focusedSeat: seat })}
                   accentColor={focusedFactionAccent}
+                  seatAccentBySeat={playerSeatAccents}
                 />
               </section>
 
@@ -1789,13 +1707,7 @@ export function GameSessionScreen({
                       <span className="deck-reveal-illustration-title">{activeRevealCopy?.title ?? getPrintedDeckTitle(activeCardReveal.deckId)}</span>
                     </div>
                     <div className="deck-reveal-body-copy">
-                      <p ref={revealBodyRef}>{activeRevealCopy?.body}</p>
-                      {showRevealImpactSummary && activeRevealImpactLines.length > 0 ? (
-                        <p className="deck-reveal-impact-copy">
-                          <strong>{t('ui.game.effectSummary', 'Effect summary')}:</strong>{' '}
-                          {activeRevealImpactLines.join(' · ')}
-                        </p>
-                      ) : null}
+                      <p>{activeRevealCopy?.body}</p>
                     </div>
                     <div className="deck-reveal-footer">
                       <button

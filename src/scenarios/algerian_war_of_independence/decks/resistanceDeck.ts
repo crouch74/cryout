@@ -6,7 +6,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     deck: 'resistance',
     type: 'action',
     name: 'Urban Cell Network',
-    text: 'Acting faction gains 1 Evidence and adds 1 Comrade to the target region.',
+    text: 'The movement creates a brief opening through collective action. Acting faction gains 1 Evidence and adds 1 Comrade to the target region. Use this shift quickly before the System closes ranks again.',
     effects: [
       { type: 'gain_evidence', seat: 'acting_player', amount: 1 },
       { type: 'add_comrades', region: 'target_region', seat: 'acting_player', amount: 1 },
@@ -17,7 +17,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     deck: 'resistance',
     type: 'support',
     name: 'Mountain Guerrilla Offensive',
-    text: 'Acting faction gets +2 on a campaign launched in Kabylie Mountains.',
+    text: 'The movement creates a brief opening through collective action. Acting faction gets +2 on a campaign launched in Kabylie Mountains. Use this shift quickly before the System closes ranks again.',
     campaignBonus: 2,
     regionBonus: 'KabylieMountains',
   },
@@ -26,7 +26,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     deck: 'resistance',
     type: 'action',
     name: 'International Student Solidarity',
-    text: 'Acting faction raises Global Gaze by 2 and gains 1 Evidence.',
+    text: 'The movement creates a brief opening through collective action. Acting faction raises Global Gaze by 2 and gains 1 Evidence. Use this shift quickly before the System closes ranks again.',
     effects: [
       { type: 'modify_gaze', delta: 2 },
       { type: 'gain_evidence', seat: 'acting_player', amount: 1 },
@@ -37,7 +37,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     deck: 'resistance',
     type: 'action',
     name: 'Labor Strike',
-    text: 'Advance Empty Stomach by 1 and add 1 Comrade to Oran for the acting faction.',
+    text: 'The movement creates a brief opening through collective action. Advance Empty Stomach by 1 and add 1 Comrade to Oran for the acting faction. Use this shift quickly before the System closes ranks again.',
     effects: [
       { type: 'modify_domain', domain: 'EmptyStomach', delta: 1 },
       { type: 'add_comrades', region: 'Oran', seat: 'acting_player', amount: 1 },
@@ -48,7 +48,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     deck: 'resistance',
     type: 'support',
     name: 'Cultural Resistance Campaign',
-    text: 'Acting faction gets +1 on a Silenced Truth campaign.',
+    text: 'The movement creates a brief opening through collective action. Acting faction gets +1 on a Silenced Truth campaign. Use this shift quickly before the System closes ranks again.',
     campaignBonus: 1,
     domainBonus: 'SilencedTruth',
   },
@@ -57,7 +57,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     deck: 'resistance',
     type: 'action',
     name: 'Underground Printing Press',
-    text: 'Acting faction gains 2 Evidence and raises Global Gaze by 1.',
+    text: 'The movement creates a brief opening through collective action. Acting faction gains 2 Evidence and raises Global Gaze by 1. Use this shift quickly before the System closes ranks again.',
     effects: [
       { type: 'gain_evidence', seat: 'acting_player', amount: 2 },
       { type: 'modify_gaze', delta: 1 },
@@ -68,7 +68,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     deck: 'resistance',
     type: 'action',
     name: 'Mass Funeral Mobilization',
-    text: 'Add 2 Comrades to Algiers for the acting faction and advance Revolutionary Wave by 1.',
+    text: 'The movement creates a brief opening through collective action. Add 2 Comrades to Algiers for the acting faction and advance Revolutionary Wave by 1. Use this shift quickly before the System closes ranks again.',
     effects: [
       { type: 'add_comrades', region: 'Algiers', seat: 'acting_player', amount: 2 },
       { type: 'modify_domain', domain: 'RevolutionaryWave', delta: 1 },
@@ -79,7 +79,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     deck: 'resistance',
     type: 'action',
     name: 'Negotiation Delegation',
-    text: 'Acting faction raises Global Gaze by 1 and gains 1 Evidence.',
+    text: 'The movement creates a brief opening through collective action. Acting faction raises Global Gaze by 1 and gains 1 Evidence. Use this shift quickly before the System closes ranks again.',
     effects: [
       { type: 'modify_gaze', delta: 1 },
       { type: 'gain_evidence', seat: 'acting_player', amount: 1 },
@@ -90,7 +90,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     deck: 'resistance',
     type: 'action',
     name: 'Cross-Border Supply',
-    text: 'Add 2 Comrades to Tunisian Border for the acting faction and gain 1 Evidence.',
+    text: 'The movement creates a brief opening through collective action. Add 2 Comrades to Tunisian Border for the acting faction and gain 1 Evidence. Use this shift quickly before the System closes ranks again.',
     effects: [
       { type: 'add_comrades', region: 'TunisianBorder', seat: 'acting_player', amount: 2 },
       { type: 'gain_evidence', seat: 'acting_player', amount: 1 },
@@ -101,7 +101,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     deck: 'resistance',
     type: 'action',
     name: 'Prison Solidarity Network',
-    text: 'Reduce Gilded Cage by 1 and give the acting faction 1 Evidence.',
+    text: 'The movement creates a brief opening through collective action. Reduce Gilded Cage by 1 and give the acting faction 1 Evidence. Use this shift quickly before the System closes ranks again.',
     effects: [
       { type: 'modify_domain', domain: 'GildedCage', delta: -1 },
       { type: 'gain_evidence', seat: 'acting_player', amount: 1 },
@@ -112,7 +112,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     deck: 'resistance',
     type: 'support',
     name: 'Ceasefire Proposal',
-    text: 'Acting faction gets +1 on an Unfinished Justice campaign.',
+    text: 'The movement creates a brief opening through collective action. Acting faction gets +1 on an Unfinished Justice campaign. Use this shift quickly before the System closes ranks again.',
     campaignBonus: 1,
     domainBonus: 'UnfinishedJustice',
   },
@@ -121,7 +121,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     deck: 'resistance',
     type: 'action',
     name: 'Grassroots Education',
-    text: 'Advance Revolutionary Wave by 1 and give the acting faction 1 Evidence.',
+    text: 'The movement creates a brief opening through collective action. Advance Revolutionary Wave by 1 and give the acting faction 1 Evidence. Use this shift quickly before the System closes ranks again.',
     effects: [
       { type: 'modify_domain', domain: 'RevolutionaryWave', delta: 1 },
       { type: 'gain_evidence', seat: 'acting_player', amount: 1 },

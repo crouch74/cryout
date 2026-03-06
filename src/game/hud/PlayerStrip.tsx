@@ -8,11 +8,13 @@ export function PlayerStrip({
   focusedSeat,
   onSelectSeat,
   accentColor,
+  seatAccentBySeat = {},
 }: {
   summaries: PlayerStripSummary[];
   focusedSeat: number;
   onSelectSeat: (seat: number) => void;
   accentColor?: string;
+  seatAccentBySeat?: Record<number, string>;
 }) {
   const active = summaries.find((summary) => summary.seat === focusedSeat) ?? summaries[0];
   const style = accentColor
@@ -28,6 +30,9 @@ export function PlayerStrip({
             type="button"
             className={`player-seat-chip player-seat-chip-${summary.seat + 1} ${summary.seat === focusedSeat ? 'is-active' : ''}`.trim()}
             onClick={() => onSelectSeat(summary.seat)}
+            style={{
+              ['--seat-accent' as string]: seatAccentBySeat[summary.seat] ?? accentColor ?? 'var(--color-accent)',
+            }}
           >
             <div className="seat-chip-frame">
               <Icon type="seat" size="sm" title={t('ui.game.seat', 'Seat {{seat}}', { seat: summary.seat + 1 })} />

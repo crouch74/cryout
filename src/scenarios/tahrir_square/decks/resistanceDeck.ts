@@ -6,7 +6,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
         deck: 'resistance',
         type: 'support',
         name: 'Cell Phone Video',
-        text: 'Acting faction gains 2 Evidence. May be used on Silenced Truth campaigns or to Go Viral.',
+        text: 'The movement creates a brief opening through collective action and media coordination. The acting faction gains 2 Evidence, usable on Silenced Truth campaigns or to Go Viral. Use this shift quickly before the System closes ranks again.',
         domainBonus: 'SilencedTruth',
         campaignBonus: 1,
         effects: [
@@ -18,7 +18,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
         deck: 'resistance',
         type: 'support',
         name: 'Al Jazeera Interview',
-        text: 'Acting faction gains 3 Evidence and raises Global Gaze by 1.',
+        text: 'The movement creates a brief opening through collective action. Acting faction gains 3 Evidence and raises Global Gaze by 1. Use this shift quickly before the System closes ranks again.',
         domainBonus: 'SilencedTruth',
         campaignBonus: 1,
         effects: [
@@ -31,7 +31,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
         deck: 'resistance',
         type: 'action',
         name: 'Facebook Event Page',
-        text: 'Add 1 Comrade to Cairo for the acting faction.',
+        text: 'The movement creates a brief opening through collective action. Add 1 Comrade to Cairo for the acting faction. Use this shift quickly before the System closes ranks again.',
         regionBonus: 'Cairo',
         effects: [
             { type: 'add_comrades', region: 'Cairo', seat: 'acting_player', amount: 1 }
@@ -42,7 +42,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
         deck: 'resistance',
         type: 'action',
         name: 'Lawyer\'s Legal Brief',
-        text: 'Add 1 Comrade to Alexandria for the acting faction and advance Patriarchal Grip by 1.',
+        text: 'The movement creates a brief opening through collective action. Add 1 Comrade to Alexandria for the acting faction and advance Patriarchal Grip by 1. Use this shift quickly before the System closes ranks again.',
         domainBonus: 'PatriarchalGrip',
         effects: [
             { type: 'modify_domain', domain: 'PatriarchalGrip', delta: 1 },

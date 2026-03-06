@@ -6,7 +6,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
         deck: 'resistance',
         type: 'support',
         name: 'VPN Network',
-        text: 'Acting faction gains 2 Evidence. This support helps against Silenced Truth pressure and internet blackout penalties.',
+        text: 'The movement creates a brief opening through collective action and secure communication. The acting faction gains 2 Evidence, strengthening responses to Silenced Truth pressure and blackout penalties. Use this shift quickly before the System closes ranks again.',
         domainBonus: 'SilencedTruth',
         campaignBonus: 1,
         effects: [
@@ -18,7 +18,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
         deck: 'resistance',
         type: 'action',
         name: 'Cutting Hair Solidarity',
-        text: 'Raise Global Gaze by 2 for the coalition.',
+        text: 'The movement creates a brief opening through collective action. Raise Global Gaze by 2 for the coalition. Use this shift quickly before the System closes ranks again.',
         effects: [
             { type: 'modify_gaze', delta: 2 }
         ]
@@ -28,7 +28,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
         deck: 'resistance',
         type: 'action',
         name: 'Diaspora Protest Rally',
-        text: 'Add 2 Comrades to the target region for the acting faction.',
+        text: 'The movement creates a brief opening through collective action. Add 2 Comrades to the target region for the acting faction. Use this shift quickly before the System closes ranks again.',
         effects: [
             { type: 'add_comrades', region: 'target_region', seat: 'acting_player', amount: 2 }
         ]

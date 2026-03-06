@@ -144,6 +144,8 @@ export default function DevGameSessionShell({
     setAutoPlayRounds(String(roundsToPlay));
     setAutoPlayTargetRound(state.round + roundsToPlay);
     setAutoPlayRunning(true);
+    setShowDevPanel(false);
+    setShowDevMenu(false);
     setAutoPlayStatus(t('ui.debug.autoplayArmed', 'Autoplay armed for {{count}} rounds.', { count: roundsToPlay }));
     console.log(`🧪 [DevPanel] Autoplay armed for ${roundsToPlay} rounds at speed ${autoPlaySpeed}.`);
   };

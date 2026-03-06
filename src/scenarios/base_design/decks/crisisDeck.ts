@@ -7,7 +7,7 @@ const baseCrisisCards: CrisisCardDefinition[] = [
     id: 'crisis_military_raid',
     deck: 'crisis',
     name: 'Military Raid',
-    text: 'Add 1 Extraction Token to the region most vulnerable to War Machine and raise War Machine by 1.',
+    text: 'The System moves first and forces a hard turn. Add 1 Extraction Token to the region most vulnerable to War Machine and raise War Machine by 1. The coalition must absorb this pressure and reorganize before the next phase.',
     effects: [
       { type: 'modify_war_machine', delta: 1 },
       { type: 'add_extraction', region: { byVulnerability: 'WarMachine' }, amount: 1 },
@@ -17,7 +17,7 @@ const baseCrisisCards: CrisisCardDefinition[] = [
     id: 'crisis_media_smear',
     deck: 'crisis',
     name: 'Media Smear',
-    text: 'Lower Global Gaze by 1 and add 1 Extraction Token to the region most vulnerable to Silenced Truth.',
+    text: 'The System moves first and forces a hard turn. Lower Global Gaze by 1 and add 1 Extraction Token to the region most vulnerable to Silenced Truth. The coalition must absorb this pressure and reorganize before the next phase.',
     effects: [
       { type: 'modify_gaze', delta: -1 },
       { type: 'add_extraction', region: { byVulnerability: 'SilencedTruth' }, amount: 1 },
@@ -27,7 +27,7 @@ const baseCrisisCards: CrisisCardDefinition[] = [
     id: 'crisis_fuel_convoy',
     deck: 'crisis',
     name: 'Fuel Convoy',
-    text: 'Raise War Machine by 1 and add 1 Extraction Token to the region most vulnerable to Fossil Grip.',
+    text: 'The System moves first and forces a hard turn. Raise War Machine by 1 and add 1 Extraction Token to the region most vulnerable to Fossil Grip. The coalition must absorb this pressure and reorganize before the next phase.',
     effects: [
       { type: 'modify_war_machine', delta: 1 },
       { type: 'add_extraction', region: { byVulnerability: 'FossilGrip' }, amount: 1 },
@@ -37,7 +37,7 @@ const baseCrisisCards: CrisisCardDefinition[] = [
     id: 'crisis_border_lockdown',
     deck: 'crisis',
     name: 'Border Lockdown',
-    text: 'Raise War Machine by 1 and add 1 Extraction Token to the region most vulnerable to Gilded Cage.',
+    text: 'The System moves first and forces a hard turn. Raise War Machine by 1 and add 1 Extraction Token to the region most vulnerable to Gilded Cage. The coalition must absorb this pressure and reorganize before the next phase.',
     effects: [
       { type: 'modify_war_machine', delta: 1 },
       { type: 'add_extraction', region: { byVulnerability: 'GildedCage' }, amount: 1 },
@@ -47,7 +47,7 @@ const baseCrisisCards: CrisisCardDefinition[] = [
     id: 'crisis_hunger_discipline',
     deck: 'crisis',
     name: 'Hunger Discipline',
-    text: 'Lower Global Gaze by 1 and add 1 Extraction Token to the region most vulnerable to Empty Stomach.',
+    text: 'The System moves first and forces a hard turn. Lower Global Gaze by 1 and add 1 Extraction Token to the region most vulnerable to Empty Stomach. The coalition must absorb this pressure and reorganize before the next phase.',
     effects: [
       { type: 'modify_gaze', delta: -1 },
       { type: 'add_extraction', region: { byVulnerability: 'EmptyStomach' }, amount: 1 },
@@ -57,7 +57,7 @@ const baseCrisisCards: CrisisCardDefinition[] = [
     id: 'crisis_climate_shock',
     deck: 'crisis',
     name: 'Climate Shock',
-    text: 'Add 1 Extraction Token to the region most vulnerable to Dying Planet and add 1 Extraction Token to Sahel.',
+    text: 'The System moves first and forces a hard turn. Add 1 Extraction Token to the region most vulnerable to Dying Planet and add 1 Extraction Token to Sahel. The coalition must absorb this pressure and reorganize before the next phase.',
     effects: [
       { type: 'add_extraction', region: { byVulnerability: 'DyingPlanet' }, amount: 1 },
       { type: 'add_extraction', region: 'Sahel', amount: 1 },
@@ -67,7 +67,7 @@ const baseCrisisCards: CrisisCardDefinition[] = [
     id: 'crisis_memory_purge',
     deck: 'crisis',
     name: 'Memory Purge',
-    text: 'Lower Global Gaze by 1 and add 1 Extraction Token to the region most vulnerable to Stolen Voice.',
+    text: 'The System moves first and forces a hard turn. Lower Global Gaze by 1 and add 1 Extraction Token to the region most vulnerable to Stolen Voice. The coalition must absorb this pressure and reorganize before the next phase.',
     effects: [
       { type: 'modify_gaze', delta: -1 },
       { type: 'add_extraction', region: { byVulnerability: 'StolenVoice' }, amount: 1 },
@@ -77,7 +77,7 @@ const baseCrisisCards: CrisisCardDefinition[] = [
     id: 'crisis_attention_backlash',
     deck: 'crisis',
     name: 'Attention Backlash',
-    text: 'Raise Global Gaze by 1, add 1 Extraction Token to the region most vulnerable to War Machine, and add 1 Extraction Token to the region most vulnerable to Silenced Truth.',
+    text: 'The System moves first and forces a hard turn. Raise Global Gaze by 1, add 1 Extraction Token to the region most vulnerable to War Machine, and add 1 Extraction Token to the region most vulnerable to Silenced Truth. The coalition must absorb this pressure and reorganize before the next phase.',
     effects: [
       { type: 'modify_gaze', delta: 1 },
       { type: 'add_extraction', region: { byVulnerability: 'WarMachine' }, amount: 1 },
@@ -88,7 +88,7 @@ const baseCrisisCards: CrisisCardDefinition[] = [
     id: 'crisis_port_seizure',
     deck: 'crisis',
     name: 'Port Seizure',
-    text: 'Add 1 Extraction Token to Congo and add 1 Extraction Token to the region most vulnerable to Empty Stomach.',
+    text: 'The System moves first and forces a hard turn. Add 1 Extraction Token to Congo and add 1 Extraction Token to the region most vulnerable to Empty Stomach. The coalition must absorb this pressure and reorganize before the next phase.',
     effects: [
       { type: 'add_extraction', region: 'Congo', amount: 1 },
       { type: 'add_extraction', region: { byVulnerability: 'EmptyStomach' }, amount: 1 },
@@ -98,7 +98,7 @@ const baseCrisisCards: CrisisCardDefinition[] = [
     id: 'crisis_platform_blackout',
     deck: 'crisis',
     name: 'Platform Blackout',
-    text: 'Lower Global Gaze by 1, add 1 Extraction Token to the region most vulnerable to Silenced Truth, and add 1 Extraction Token to Mekong.',
+    text: 'The System moves first and forces a hard turn. Lower Global Gaze by 1, add 1 Extraction Token to the region most vulnerable to Silenced Truth, and add 1 Extraction Token to Mekong. The coalition must absorb this pressure and reorganize before the next phase.',
     effects: [
       { type: 'modify_gaze', delta: -1 },
       { type: 'add_extraction', region: { byVulnerability: 'SilencedTruth' }, amount: 1 },

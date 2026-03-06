@@ -519,6 +519,8 @@ export function getSeatPresentation(player: PlayerState, content: CompiledConten
 export function getPlayerStripSummary(player: PlayerState, content: CompiledContent, state: EngineState): PlayerStripSummary {
   const faction = content.factions[player.factionId];
   const passive = getPassiveShorthand(faction.id);
+  const localizedPassive = localizeFactionField(faction.id, 'passive', faction.passive);
+  const localizedWeakness = localizeFactionField(faction.id, 'weakness', faction.weakness);
   const secretMandatesEnabled = state.secretMandatesEnabled;
   return {
     seat: player.seat,
@@ -528,8 +530,8 @@ export function getPlayerStripSummary(player: PlayerState, content: CompiledCont
     comrades: getPlayerBodyTotal(state, player.seat),
     evidence: player.evidence,
     moves: player.actionsRemaining,
-    passivePrimary: passive.primary,
-    passiveSecondary: passive.secondary,
+    passivePrimary: passive.primary || localizedPassive,
+    passiveSecondary: passive.secondary || `${t('ui.game.weakness', 'Weakness')}: ${localizedWeakness}`,
     detailEyebrow: secretMandatesEnabled
       ? t('ui.game.secretMandate', 'Secret Mandate')
       : t('ui.game.openRole', 'Open Role'),
