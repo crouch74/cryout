@@ -21,20 +21,37 @@ const tahrirStartCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
 };
 
 test('binary scenarios preserve mandate-failure defeat behavior', () => {
-  const content = compileContent('stones_cry_out');
-  const state = initializeGame(startCommand);
-  for (const region of Object.values(state.regions)) {
-    region.extractionTokens = 0;
-  }
-  state.round = 3;
-  state.phase = 'RESOLUTION';
-  for (const player of state.players) {
-    player.mandateSatisfied = false;
-  }
+  const mounted = applyScenarioPatch({
+    experimentId: 'unit_binary_mandate_failure',
+    scenarioId: 'stones_cry_out',
+    patch: {
+      victoryScoring: {
+        mode: 'binary',
+      },
+    },
+  });
 
-  const next = dispatchCommand(state, { type: 'ResolveResolutionPhase' }, content);
-  assert.equal(next.phase, 'LOSS');
-  assert.equal(next.terminalOutcome?.cause, 'mandate_failure');
+  try {
+    const content = compileContent(mounted.treatmentScenarioId);
+    const state = initializeGame({
+      ...startCommand,
+      rulesetId: mounted.treatmentScenarioId,
+    });
+    for (const region of Object.values(state.regions)) {
+      region.extractionTokens = 0;
+    }
+    state.round = 3;
+    state.phase = 'RESOLUTION';
+    for (const player of state.players) {
+      player.mandateSatisfied = false;
+    }
+
+    const next = dispatchCommand(state, { type: 'ResolveResolutionPhase' }, content);
+    assert.equal(next.phase, 'LOSS');
+    assert.equal(next.terminalOutcome?.cause, 'mandate_failure');
+  } finally {
+    mounted.unregister();
+  }
 });
 
 test('score mode awards victory when threshold is met', () => {
@@ -53,7 +70,7 @@ test('score mode awards victory when threshold is met', () => {
   const next = dispatchCommand(state, { type: 'ResolveResolutionPhase' }, content);
   assert.equal(next.phase, 'WIN');
   assert.equal(next.terminalOutcome?.victoryScore, 100);
-  assert.equal(next.terminalOutcome?.victoryThreshold, 45);
+  assert.equal(next.terminalOutcome?.victoryThreshold, content.ruleset.victoryScoring?.threshold);
 });
 
 test('score cap prevents success when catastrophic condition is active', () => {

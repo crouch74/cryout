@@ -48,11 +48,14 @@ export function PhaseProgress({ phase, activeContent, activeHint, activeHelpCont
           return {
             key: step,
             tooltipId,
+            tooltipClassName: 'phase-progress-help-popover',
             tooltipContent,
             label: (
               <span className="phase-progress-label-shell">
                 <span>{title}</span>
-                <span className="phase-help-glyph" aria-hidden="true">{t('ui.game.phaseHelpGlyph', '?')}</span>
+                <span className="phase-help-trigger" aria-expanded={isActive && activeHelpContent ? 'true' : 'false'}>
+                  <span className="phase-help-glyph" aria-hidden="true">{t('ui.game.phaseHelpGlyph', '?')}</span>
+                </span>
               </span>
             ),
           };

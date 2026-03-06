@@ -19,6 +19,9 @@ interface RoomLobbyScreenProps {
   onCopyRoomLink: (roomLink: string) => Promise<void> | void;
 }
 
+const EMPTY_SEAT_FACTION_IDS: FactionId[] = [];
+const EMPTY_SEAT_OWNER_IDS: number[] = [];
+
 function getFactionLabel(factionId: FactionId) {
   return localizeFactionField(factionId, 'name', factionId);
 }
@@ -32,8 +35,8 @@ export function RoomLobbyScreen({
   onCopyRoomLink,
 }: RoomLobbyScreenProps) {
   const ruleset = listRulesets().find((entry) => entry.id === snapshot.config.rulesetId);
-  const seatFactionIds = snapshot.config.seatFactionIds ?? [];
-  const seatOwnerIds = snapshot.config.seatOwnerIds ?? [];
+  const seatFactionIds = snapshot.config.seatFactionIds ?? EMPTY_SEAT_FACTION_IDS;
+  const seatOwnerIds = snapshot.config.seatOwnerIds ?? EMPTY_SEAT_OWNER_IDS;
   const shareUrl = useMemo(() => {
     if (typeof window === 'undefined') {
       return `/rooms/${roomId}`;
@@ -52,8 +55,8 @@ export function RoomLobbyScreen({
 
   return (
     <ShellScreenLayout
-      tableClassName="room-lobby-table"
-      boardClassName="room-lobby-board"
+      tableClassName="shell-table room-lobby-table"
+      boardClassName="shell-board room-lobby-board"
       eyebrow={t('ui.room.lobbyEyebrow', 'Room Lobby')}
       title={localizeRulesetField(snapshot.config.rulesetId, 'name', ruleset?.name ?? snapshot.config.rulesetId)}
       detail={t(
@@ -74,7 +77,7 @@ export function RoomLobbyScreen({
       )}
     >
       <div className="room-lobby-grid">
-        <ShellSectionCard icon="mandate" title={t('ui.room.roomCode', 'Room Code')} className="room-lobby-summary">
+        <ShellSectionCard icon="mandate" title={t('ui.room.roomCode', 'Room Code')} className="shell-card room-lobby-summary">
           <h2>{roomId}</h2>
           <p>{t('ui.room.shareRoom', 'Share this room link with the coalition so each player can claim their own slot.')}</p>
           <div className="room-lobby-link-row">
@@ -102,7 +105,7 @@ export function RoomLobbyScreen({
           </p>
         </ShellSectionCard>
 
-        <ShellSectionCard icon="comrades" title={t('ui.room.coalitionRoster', 'Coalition Roster')} className="room-lobby-owners">
+        <ShellSectionCard icon="comrades" title={t('ui.room.coalitionRoster', 'Coalition Roster')} className="shell-card room-lobby-owners">
           <div className="room-owner-grid">
             {ownerFactionMap.map((owner) => {
               const isViewer = owner.ownerId === viewerOwnerId;
@@ -146,7 +149,7 @@ export function RoomLobbyScreen({
         </ShellSectionCard>
       </div>
 
-      <ShellSectionCard icon="launchCampaign" title={t('ui.room.launchRoom', 'Launch Room')} tone="note" className="room-lobby-actions">
+      <ShellSectionCard icon="launchCampaign" title={t('ui.room.launchRoom', 'Launch Room')} tone="note" className="shell-card room-lobby-actions">
         <p>
           {viewerIsHost
             ? allClaimed

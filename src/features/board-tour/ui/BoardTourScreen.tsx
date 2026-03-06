@@ -103,7 +103,8 @@ export function BoardTourScreen({ onBackHome, onOpenOffline }: BoardTourScreenPr
 
   return (
     <ShellScreenLayout
-      tableClassName="guide-table board-tour-table"
+      tableClassName="shell-table guide-table board-tour-table"
+      boardClassName="shell-board"
       eyebrow={t('ui.guide.boardTour', 'Board Tour')}
       title={t('ui.guide.boardTourTitle', 'Read the table before it breaks')}
       detail={t('ui.guide.boardTourDetail', 'Each panel explains what a board component means, how to use it, and what danger signals to monitor.')}
@@ -129,7 +130,7 @@ export function BoardTourScreen({ onBackHome, onOpenOffline }: BoardTourScreenPr
       )}
     >
       <div className="board-tour-stage">
-        <ShellSectionCard icon="objective" title={t('ui.guide.boardTourSequence', 'Guided Sequence')} className="board-tour-sequence-card">
+        <ShellSectionCard icon="objective" title={t('ui.guide.boardTourSequence', 'Guided Sequence')} className="shell-card board-tour-sequence-card">
           <div className="board-tour-sequence-head">
             <span />
             <strong className="shell-progress-chip">{progress}</strong>

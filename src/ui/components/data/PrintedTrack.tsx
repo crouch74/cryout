@@ -20,6 +20,7 @@ export function PrintedTrack({
     label: ReactNode;
     tooltipId?: string;
     tooltipContent?: ReactNode;
+    tooltipClassName?: string;
   }>;
   activeIndex: number;
   activeContent?: ReactNode;
@@ -44,7 +45,11 @@ export function PrintedTrack({
                   <span className="printed-track-step-label">{step.label}</span>
                 </div>
                 {step.tooltipContent ? (
-                  <span id={step.tooltipId} role="tooltip" className="phase-progress-help-tooltip">
+                  <span
+                    id={step.tooltipId}
+                    role="tooltip"
+                    className={['phase-progress-help-tooltip', step.tooltipClassName].filter(Boolean).join(' ')}
+                  >
                     {step.tooltipContent}
                   </span>
                 ) : null}

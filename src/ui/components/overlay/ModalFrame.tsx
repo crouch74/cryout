@@ -1,7 +1,25 @@
-import { useId, useRef, type ReactNode, type RefObject } from 'react';
+import { useId, useRef, type AriaRole, type ReactNode, type RefObject } from 'react';
 import { Modal } from '../../modal/Modal.tsx';
 import { PaperSheet } from '../../layout/PaperSheet.tsx';
 import './modal-frame.css';
+
+interface ModalFrameProps {
+  open: boolean;
+  title: ReactNode;
+  description?: ReactNode;
+  dismissEnabled?: boolean;
+  onRequestClose?: () => void;
+  size?: 'md' | 'lg' | 'xl';
+  variant?: 'guide' | 'game';
+  actions?: ReactNode;
+  children: ReactNode;
+  initialFocusRef?: RefObject<HTMLElement | null>;
+  hideHeader?: boolean;
+  className?: string;
+  shellClassName?: string;
+  role?: AriaRole;
+  'aria-modal'?: boolean | 'true' | 'false';
+}
 
 export function ModalFrame({
   open,
@@ -17,21 +35,9 @@ export function ModalFrame({
   hideHeader = false,
   className = '',
   shellClassName = '',
-}: {
-  open: boolean;
-  title: ReactNode;
-  description?: ReactNode;
-  dismissEnabled?: boolean;
-  onRequestClose?: () => void;
-  size?: 'md' | 'lg' | 'xl';
-  variant?: 'guide' | 'game';
-  actions?: ReactNode;
-  children: ReactNode;
-  initialFocusRef?: RefObject<HTMLElement | null>;
-  hideHeader?: boolean;
-  className?: string;
-  shellClassName?: string;
-}) {
+  role = 'dialog',
+  'aria-modal': ariaModal = true,
+}: ModalFrameProps) {
   const titleId = useId();
   const descriptionId = useId();
   const fallbackFocusRef = useRef<HTMLDivElement | null>(null);
@@ -48,6 +54,8 @@ export function ModalFrame({
       className={className}
       a11yTitle={typeof title === 'string' ? title : 'Dialog'}
       a11yDescription={typeof description === 'string' ? description : undefined}
+      role={role}
+      aria-modal={ariaModal}
     >
       <PaperSheet
         tone="folio"

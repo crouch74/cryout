@@ -46,6 +46,8 @@ export function TerminalOutcomeModal({
   return (
     <ModalFrame
       open={open}
+      role="dialog"
+      aria-modal="true"
       size="lg"
       variant="game"
       title={outcome.title}
