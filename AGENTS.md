@@ -57,6 +57,51 @@ When updating one shell screen, audit adjacent shell screens for drift and align
 
 If a requested UI change introduces style drift from Home, reframe it to preserve cross-screen consistency.
 
+THEME / SKIN FRAMEWORK DIRECTIVE (NON-NEGOTIABLE)
+
+All visual identity work must use the semantic skin system. Do not add ad-hoc colors directly in feature components when the change is intended to be theme-wide.
+
+When adding or updating skins:
+
+1) Update skin IDs and types first
+- Add new IDs in `src/theme/types.ts` under `UiSkinId`.
+- Keep IDs kebab-case and descriptive (for URL/query and persistence compatibility).
+
+2) Add full token coverage in registry
+- Add a complete `UiSkinDefinition` entry in `src/theme/themeRegistry.ts` under `UI_SKINS`.
+- Populate all semantic token groups:
+  - `layer`, `text`, `border`, `focus`, `action`, `state`, `map`, `domain`, `effects`
+- Never leave partial skins or rely on fallback role tokens for a production skin.
+
+3) Keep selector behavior and persistence intact
+- Theme switching is registry-driven via `UI_SKINS`; new skins should appear automatically in existing selectors.
+- Preserve runtime behavior:
+  - URL query precedence (`?skin=<id>`)
+  - localStorage key `stones.ui.skin`
+  - resolver path in `src/theme/themeRuntime.ts` and provider in `src/app/providers/ThemeProvider.tsx`
+
+4) Localize theme labels
+- Add `ui.theme.<skin-id>` keys in:
+  - `src/i18n/en.json`
+  - `src/i18n/ar.json`
+  - `src/i18n/ar-EG.json`
+  - `src/i18n/fr.json`
+- Also ensure `ui.theme.label` exists and is localized.
+
+5) Do not change layout/UX for skin-only requests
+- Skin work must not modify geometry, spacing, navigation flow, interaction mechanics, or game rules.
+- If spacing/layout appears to change as a side effect, treat it as a regression and correct it in the same pass.
+
+6) Verify before delivery
+- Run `npm run -s build`.
+- Manually validate at least:
+  - Home shell
+  - in-game board layers (map, pills, panels, buttons, overlays)
+  - dev tools/menu readability
+- Check contrast/readability for key states (`danger`, `warning`, `success`, `info`) in every added skin.
+
+If a theme request asks for political or regional framing, keep tone dignified and movement-centered, and avoid caricature or militarized romanticization in names/copy.
+
 CANONICAL TERMINOLOGY (Allow for translations and localisation)
 
 Extraction Tokens — Black hexes placed in regions (0–6).

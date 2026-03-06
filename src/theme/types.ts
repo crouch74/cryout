@@ -1,7 +1,9 @@
 export type UiSkinId =
   | 'documentary-ink'
   | 'nocturnal-dossier'
-  | 'civic-signal';
+  | 'civic-signal'
+  | 'olive-tree'
+  | 'guerrilla-camouflage';
 
 export type ThemeContrastMode = 'default' | 'high';
 
@@ -77,6 +79,59 @@ export interface UiSkinEffectTokens {
   surfaceTint: string;
 }
 
+export interface UiSkinBorderWidthTokens {
+  hairline: string;
+  thin: string;
+  regular: string;
+  strong: string;
+}
+
+export interface UiSkinSizeTokens {
+  iconXs: string;
+  iconSm: string;
+  iconMd: string;
+  iconLg: string;
+  chipHeight: string;
+  controlHeight: string;
+  drawerWidthNarrow: string;
+  drawerWidth: string;
+  drawerWidthWide: string;
+  cardWidth: string;
+}
+
+export interface UiSkinMotionTokens {
+  instant: string;
+  quick: string;
+  fast: string;
+  normal: string;
+  slow: string;
+  deliberate: string;
+  reveal: string;
+  pulse: string;
+}
+
+export interface UiSkinOpacityTokens {
+  faint: string;
+  soft: string;
+  medium: string;
+  strong: string;
+  intense: string;
+}
+
+export interface UiSkinShadowTokens {
+  raised: string;
+  floating: string;
+  glow: string;
+}
+
+export interface UiSkinStyleTokens {
+  borderWidth: UiSkinBorderWidthTokens;
+  size: UiSkinSizeTokens;
+  motion: UiSkinMotionTokens;
+  opacity: UiSkinOpacityTokens;
+  shadow: UiSkinShadowTokens;
+}
+
 export interface UiSkinDefinition {
   id: UiSkinId;
   label: string;
@@ -89,6 +144,7 @@ export interface UiSkinDefinition {
   map: UiSkinMapTokens;
   domain: UiSkinDomainTokens;
   effects: UiSkinEffectTokens;
+  style: UiSkinStyleTokens;
 }
 
 export interface ThemeColors {

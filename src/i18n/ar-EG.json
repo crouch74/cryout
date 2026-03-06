@@ -1101,6 +1101,14 @@
       "traceDrawHandled": "حُل السحب من خلال أثره المخصص.",
       "lossSuddenDeath": "انتهت الجولة {{round}} من غير نصر حاسم.",
       "roundBegins": "تبدأ الجولة {{round}}."
+    },
+    "theme": {
+      "label": "الثيم",
+      "documentary-ink": "حبر وثائقي",
+      "nocturnal-dossier": "ملف ليلي",
+      "civic-signal": "إشارة مدنية",
+      "olive-tree": "شجرة الزيتون",
+      "guerrilla-camouflage": "تمويه حرب العصابات"
     }
   },
   "content": {

@@ -7,7 +7,7 @@
 
 .coalition-hand-container {
   display: flex;
-  gap: 12px;
+  gap: var(--space-2);
   overflow-x: auto;
   padding: 10px 4px 20px;
   scrollbar-width: none;
@@ -21,20 +21,25 @@
 .action-card {
   flex: 0 0 160px;
   height: 220px;
-  background: linear-gradient(135deg, var(--legacy-color-1a2333), var(--legacy-color-0c1018));
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--skin-layer-surface) 78%, var(--skin-layer-canvas) 22%),
+      color-mix(in srgb, var(--skin-layer-overlay) 88%, var(--skin-layer-canvas) 12%)
+    );
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--skin-border-strong) 28%, transparent);
   border-radius: var(--radius-sm);
-  padding: 14px;
+  padding: var(--space-2-5);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   cursor: pointer;
-  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all var(--duration-slow) cubic-bezier(0.34, 1.56, 0.64, 1);
   position: relative;
   user-select: none;
   box-shadow:
-    0 8px 16px rgba(0, 0, 0, 0.5),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    0 8px 16px color-mix(in srgb, var(--skin-layer-scrim) 72%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--skin-text-inverse) 10%, transparent);
 }
 
 .action-card::after {
@@ -48,15 +53,15 @@
 
 .action-card:hover {
   transform: translateY(-12px) scale(1.04);
-  border-color: rgba(255, 255, 255, 0.3);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+  border-color: color-mix(in srgb, var(--skin-border-strong) 58%, transparent);
+  box-shadow: 0 20px 40px color-mix(in srgb, var(--skin-layer-scrim) 86%, transparent);
 }
 
 .action-card.selected {
   transform: translateY(-16px) scale(1.08);
   border-color: var(--accent-primary);
   box-shadow:
-    0 0 0 4px rgba(0, 0, 0, 0.3),
+    0 0 0 4px color-mix(in srgb, var(--skin-layer-scrim) 44%, transparent),
     0 0 30px color-mix(in srgb, var(--accent-primary) 40%, transparent);
 }
 
@@ -70,8 +75,8 @@
 .action-card-cost {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 8px;
+  gap: var(--space-0);
+  margin-top: var(--space-1);
 }
 
 .action-card-footer {
@@ -88,13 +93,13 @@
   position: fixed;
   inset: 0;
   z-index: var(--z-toast);
-  background: rgba(0, 0, 0, 0.85);
+  background: color-mix(in srgb, var(--skin-layer-scrim) 82%, transparent);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: var(--space-4);
-  animation: reading-overlay-in 0.4s ease forwards;
+  animation: reading-overlay-in var(--duration-deliberate) ease forwards;
 }
 
 @keyframes reading-overlay-in {
@@ -111,11 +116,11 @@
   width: 100%;
   max-width: 480px;
   background: var(--surface-1);
-  border: 1px solid var(--line-strong);
+  border: var(--border-width-thin) solid var(--line-strong);
   border-radius: var(--radius-lg);
   padding: var(--space-4);
   box-shadow: var(--shadow-2);
-  animation: reading-card-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: reading-card-in var(--duration-deliberate) cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes reading-card-in {
@@ -134,14 +139,14 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  border: var(--border-width-strong) solid color-mix(in srgb, var(--skin-text-inverse) 28%, transparent);
   background: transparent;
-  transition: transform 0.2s, border-color 0.2s;
+  transition: transform var(--duration-normal), border-color var(--duration-normal);
   padding: 0;
 }
 
 .mini-seat-dot.active {
-  border-color: var(--legacy-color-fff);
+  border-color: var(--skin-text-inverse);
   transform: scale(1.2);
 }
 
@@ -170,23 +175,23 @@
   justify-content: space-between;
   align-items: center;
   padding: 10px 14px;
-  background: var(--legacy-color-0d121b);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-left: 4px solid var(--accent-primary);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  background: color-mix(in srgb, var(--skin-layer-overlay) 92%, var(--skin-layer-canvas) 8%);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--skin-border-subtle) 38%, transparent);
+  border-left: var(--border-width-strong) solid var(--accent-primary);
+  box-shadow: 0 4px 8px color-mix(in srgb, var(--skin-layer-scrim) 46%, transparent);
 }
 
 .empty-queue-placeholder {
-  padding: 24px;
+  padding: var(--space-4);
   text-align: center;
   color: var(--text-disabled);
-  border: 2px dashed rgba(255, 255, 255, 0.05);
+  border: var(--border-width-strong) dashed color-mix(in srgb, var(--skin-border-subtle) 24%, transparent);
   border-radius: var(--radius-md);
   font-family: var(--font-data);
 }
 
 .coalition-seat-tabs.mini {
   display: flex;
-  gap: 8px;
-  margin-top: 4px;
+  gap: var(--space-1);
+  margin-top: var(--space-0);
 }

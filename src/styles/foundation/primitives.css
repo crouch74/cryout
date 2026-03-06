@@ -1,6 +1,6 @@
 .shell-panel {
   border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border-subtle, var(--line-soft));
+  border: var(--border-width-thin) solid var(--color-border-subtle, var(--line-soft));
   background: var(--color-bg-panel, var(--surface-3));
   box-shadow: var(--shadow-level-1);
   padding: var(--panel-padding);
@@ -13,7 +13,7 @@
 
 .shell-card {
   border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border-subtle, var(--line-soft));
+  border: var(--border-width-thin) solid var(--color-border-subtle, var(--line-soft));
   background: var(--color-bg-panel, var(--surface-3));
   box-shadow: var(--shadow-level-1);
   padding: var(--panel-padding);
@@ -21,7 +21,7 @@
 
 .loading-card {
   border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border-subtle, var(--line-soft));
+  border: var(--border-width-thin) solid var(--color-border-subtle, var(--line-soft));
   background: var(--color-bg-panel, var(--surface-3));
   box-shadow: var(--shadow-level-1);
   padding: var(--panel-padding);
@@ -29,7 +29,7 @@
 
 .tier-c-panel {
   border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border-subtle, var(--line-soft));
+  border: var(--border-width-thin) solid var(--color-border-subtle, var(--line-soft));
   background: var(--color-bg-panel, var(--surface-3));
   box-shadow: var(--shadow-level-1);
   padding: var(--panel-padding);
@@ -111,8 +111,8 @@
 .locale-switcher select {
   min-height: 44px;
   padding: 10px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-pill);
+  border: var(--border-width-thin) solid var(--line-soft);
   background: color-mix(in srgb, var(--skin-layer-elevated) 92%, var(--skin-layer-surface) 8%);
   color: var(--text-1);
 }
@@ -166,19 +166,19 @@
 .toast-dismiss {
   background: var(--color-bg-panel, var(--surface-3));
   color: var(--color-text-primary, var(--text-1));
-  border: 1px solid var(--color-border-subtle, var(--line-soft));
+  border: var(--border-width-thin) solid var(--color-border-subtle, var(--line-soft));
 }
 
 .button-ghost {
   background: transparent;
   color: var(--color-text-primary, var(--text-1));
-  border: 1px solid var(--color-border-subtle, var(--line-soft));
+  border: var(--border-width-thin) solid var(--color-border-subtle, var(--line-soft));
 }
 
 .coalition-section-trigger {
   background: var(--color-bg-panel, var(--surface-3));
   color: var(--color-text-primary, var(--text-1));
-  border: 1px solid var(--color-border-subtle, var(--line-soft));
+  border: var(--border-width-thin) solid var(--color-border-subtle, var(--line-soft));
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -217,7 +217,7 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid var(--skin-focus-ring-color, color-mix(in srgb, var(--skin-action-secondary) 74%, var(--skin-layer-elevated) 26%));
+  outline: var(--border-width-strong) solid var(--skin-focus-ring-color, color-mix(in srgb, var(--skin-action-secondary) 74%, var(--skin-layer-elevated) 26%));
   outline-offset: 3px;
 }
 
@@ -226,14 +226,14 @@ textarea:focus-visible {
   flex-wrap: wrap;
   gap: 8px;
   padding: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--skin-layer-surface) 82%, var(--skin-layer-elevated) 18%);
-  border: 1px solid var(--line-soft);
+  border: var(--border-width-thin) solid var(--line-soft);
 }
 
 .segmented button {
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 10px 14px;
   background: transparent;
   color: var(--text-2);
@@ -254,8 +254,8 @@ textarea:focus-visible {
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-pill);
+  border: var(--border-width-thin) solid var(--line-soft);
   background: color-mix(in srgb, var(--skin-layer-surface) 90%, var(--skin-layer-elevated) 10%);
   color: var(--text-2);
   font-family: var(--font-data);
@@ -297,7 +297,7 @@ html[dir='rtl'] .modal-vote-row {
 .priority-chip {
   display: inline-flex;
   padding: 8px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--skin-state-info) 18%, transparent);
   color: var(--accent-secondary);
   font-weight: 800;
@@ -331,7 +331,7 @@ select,
 textarea {
   width: 100%;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--line-strong);
+  border: var(--border-width-thin) solid var(--line-strong);
   background: color-mix(in srgb, var(--skin-layer-elevated) 92%, var(--skin-layer-surface) 8%);
   color: var(--text-1);
   padding: 12px 14px;

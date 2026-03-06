@@ -4,9 +4,9 @@
   height: 100%;
   width: 100%;
   margin: 0;
-  border-radius: 24px;
+  border-radius: var(--radius-24);
   overflow: hidden;
-  border: 1px solid var(--panel-rim-strong);
+  border: var(--border-width-thin) solid var(--panel-rim-strong);
   background:
     radial-gradient(circle at 14% 12%, color-mix(in srgb, var(--skin-layer-elevated) 30%, transparent), transparent 18%),
     radial-gradient(circle at 78% 16%, color-mix(in srgb, var(--skin-action-secondary) 10%, transparent), transparent 20%),
@@ -60,7 +60,7 @@
   position: relative;
   width: 100%;
   height: 100%;
-  min-height: min(320px, 40vh);
+  min-height: min(var(--size-card-width), 40vh);
   overflow: hidden;
   z-index: var(--z-panel);
 }
@@ -91,7 +91,7 @@
   fill: color-mix(in srgb, var(--skin-text-muted) 20%, transparent);
   stroke: color-mix(in srgb, var(--skin-text-primary) 38%, transparent);
   stroke-width: 1px;
-  transition: fill 140ms ease, filter 140ms ease, stroke 140ms ease;
+  transition: fill var(--duration-quick) ease, filter var(--duration-quick) ease, stroke var(--duration-quick) ease;
 }
 
 .game-screen-compressed .board-world-map-svg .map-region-territory,
@@ -127,15 +127,15 @@
 
 .game-screen-compressed .board-region-sidecard {
   position: absolute;
-  top: 28px;
-  inset-inline-end: 16px;
+  top: var(--space-4-5);
+  inset-inline-end: var(--space-3);
   z-index: var(--z-panel);
   width: min(300px, calc(100% - 32px));
   display: grid;
-  gap: 10px;
+  gap: var(--space-1-5);
   padding: 14px 16px;
-  border-radius: 16px;
-  border: 1px solid color-mix(in srgb, var(--skin-text-primary) 22%, transparent);
+  border-radius: var(--radius-16);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--skin-text-primary) 22%, transparent);
   background:
     linear-gradient(
       180deg,
@@ -167,18 +167,18 @@
 .game-screen-compressed .board-region-sidecard-fronts {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-1);
 }
 
 .game-screen-compressed .board-region-sidecard-metrics span,
 .game-screen-compressed .board-region-sidecard-fronts span {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-0-5);
   min-height: 28px;
   padding: 5px 9px;
-  border-radius: 10px;
-  border: 1px solid color-mix(in srgb, var(--skin-text-primary) 14%, transparent);
+  border-radius: var(--radius-10);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--skin-text-primary) 14%, transparent);
   background: color-mix(in srgb, var(--skin-layer-overlay) 62%, transparent);
   color: var(--skin-text-primary);
   font-family: var(--font-data);
@@ -209,7 +209,7 @@
 }
 
 .game-screen-compressed .board-region-cluster.is-changing {
-  animation: region-cluster-update 900ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: region-cluster-update var(--duration-reveal) cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .game-screen-compressed .board-region-cluster:hover,
@@ -228,9 +228,9 @@
   z-index: var(--z-panel);
   min-width: max-content;
   padding: 2px 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--skin-layer-elevated) 92%, transparent);
-  border: 1px solid color-mix(in srgb, var(--skin-text-primary) 12%, transparent);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--skin-text-primary) 12%, transparent);
   color: var(--skin-text-primary);
   font-size: 11px;
   font-weight: 800;
@@ -259,7 +259,7 @@
 }
 
 .game-screen-compressed .board-region-token-group.is-changing {
-  animation: token-group-update 900ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: token-group-update var(--duration-reveal) cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .game-screen-compressed .board-region-token {
@@ -278,12 +278,12 @@
     radial-gradient(circle at 28% 20%, color-mix(in srgb, var(--skin-layer-elevated) 38%, transparent), color-mix(in srgb, var(--skin-layer-elevated) 0%, transparent) 42%),
     radial-gradient(circle at 50% 64%, color-mix(in srgb, var(--token-material-core) 88%, black 12%), color-mix(in srgb, var(--token-material-base) 64%, black 36%) 58%, color-mix(in srgb, var(--token-material-base) 30%, white 70%) 100%),
     linear-gradient(180deg, color-mix(in srgb, var(--token-material-base) 72%, white 28%), var(--token-material-base) 46%, color-mix(in srgb, var(--token-material-core) 76%, black 24%));
-  border: 1px solid var(--token-material-rim);
-  outline: 1px solid color-mix(in srgb, var(--token-material-rim) 56%, transparent);
-  border-radius: 999px;
+  border: var(--border-width-thin) solid var(--token-material-rim);
+  outline: var(--border-width-thin) solid color-mix(in srgb, var(--token-material-rim) 56%, transparent);
+  border-radius: var(--radius-pill);
   transform: translate(-50%, -50%) rotate(var(--token-rotation, 0deg));
   transition: transform var(--motion-fast), opacity var(--motion-fast);
-  animation: board-token-enter 220ms var(--motion-ease-standard) both;
+  animation: board-token-enter var(--duration-normal) var(--motion-ease-standard) both;
   animation-delay: calc(var(--token-index, 0) * 18ms);
   z-index: calc(var(--z-panel) + var(--token-stack-order, 0));
 }
@@ -298,7 +298,7 @@
 
 .game-screen-compressed .board-region-token::before {
   inset: 1px;
-  border: 1px solid color-mix(in srgb, var(--token-material-rim) 44%, transparent);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--token-material-rim) 44%, transparent);
   background: linear-gradient(180deg, color-mix(in srgb, var(--skin-layer-elevated) 24%, transparent), color-mix(in srgb, var(--skin-layer-elevated) 0%, transparent) 50%);
 }
 
@@ -306,7 +306,7 @@
   inset: auto 2px 2px 2px;
   height: 38%;
   border-radius: 0 0 999px 999px;
-  border-top: 1px solid color-mix(in srgb, var(--token-material-rim) 54%, transparent);
+  border-top: var(--border-width-thin) solid color-mix(in srgb, var(--token-material-rim) 54%, transparent);
   background: linear-gradient(180deg, color-mix(in srgb, var(--token-material-core) 46%, transparent), color-mix(in srgb, var(--token-material-core) 94%, black 6%));
   opacity: 0.84;
 }
@@ -357,7 +357,7 @@
 
 .game-screen-compressed .board-region-token-group.is-changing .board-region-token,
 .game-screen-compressed .board-region-token-group.is-changing .board-region-overflow-badge {
-  animation: token-group-update 640ms var(--motion-ease-standard);
+  animation: token-group-update var(--duration-reveal) var(--motion-ease-standard);
 }
 
 .game-screen-compressed .board-region-token-group.is-changing .board-region-token .board-region-token-icon {
@@ -376,8 +376,8 @@
   align-items: center;
   justify-content: center;
   padding: 0 6px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--skin-text-primary) 16%, transparent);
+  border-radius: var(--radius-pill);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--skin-text-primary) 16%, transparent);
   background: color-mix(in srgb, var(--color-bg-elevated) 94%, transparent);
   color: var(--skin-text-primary);
   font-family: var(--font-data);
@@ -418,24 +418,24 @@
 }
 
 .game-screen-compressed .board-region-debug-radius {
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--skin-map-safe) 10%, transparent);
+  border-radius: var(--radius-pill);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--skin-map-safe) 10%, transparent);
   transform: translate(-50%, -50%);
 }
 
 .game-screen-compressed .board-region-debug-anchor {
   width: 8px;
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--skin-map-critical) 88%, transparent);
   transform: translate(-50%, -50%);
 }
 
 .game-screen-compressed .board-region-debug-crosshair {
-  width: 24px;
-  height: 24px;
-  border-left: 1px solid color-mix(in srgb, var(--skin-map-safe) 40%, transparent);
-  border-top: 1px solid color-mix(in srgb, var(--skin-map-safe) 40%, transparent);
+  width: var(--size-chip-height);
+  height: var(--size-chip-height);
+  border-left: var(--border-width-thin) solid color-mix(in srgb, var(--skin-map-safe) 40%, transparent);
+  border-top: var(--border-width-thin) solid color-mix(in srgb, var(--skin-map-safe) 40%, transparent);
   transform: translate(-50%, -50%);
 }
 
@@ -447,10 +447,10 @@
 
 .game-screen-compressed .region-hover-card {
   display: grid;
-  gap: 8px;
+  gap: var(--space-1);
   padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px solid var(--panel-rim);
+  border-radius: var(--radius-14);
+  border: var(--border-width-thin) solid var(--panel-rim);
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--skin-layer-elevated) 97%, transparent), color-mix(in srgb, var(--skin-layer-surface) 92%, var(--skin-layer-overlay) 8%)),
     var(--skin-layer-surface);
@@ -460,17 +460,17 @@
 .game-screen-compressed .region-hover-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-1);
 }
 
 .game-screen-compressed .region-hover-row span {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-0-5);
   min-height: 28px;
   padding: 5px 9px;
-  border-radius: 10px;
-  border: 1px solid color-mix(in srgb, var(--skin-text-primary) 14%, transparent);
+  border-radius: var(--radius-10);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--skin-text-primary) 14%, transparent);
   background: color-mix(in srgb, var(--skin-text-primary) 6%, transparent);
   color: var(--skin-text-primary);
   font-family: var(--font-data);
@@ -556,8 +556,8 @@ html[data-motion='reduced'] .game-screen-compressed .board-region-token {
 
   .game-screen-compressed .board-region-sidecard {
     width: min(280px, calc(100% - 24px));
-    top: 12px;
-    inset-inline-end: 12px;
+    top: var(--space-2);
+    inset-inline-end: var(--space-2);
   }
 
   .game-screen-compressed .board-region-label {

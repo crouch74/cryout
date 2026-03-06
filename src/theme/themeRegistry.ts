@@ -6,9 +6,101 @@ import type {
   ThemeOverlayDefinition,
   UiSkinDefinition,
   UiSkinId,
+  UiSkinStyleTokens,
 } from './types.ts';
 
 const { motion, radius, shadows, spacing, typography, zIndex, layout } = uiTokens;
+
+const BASE_STYLE_TOKENS: UiSkinStyleTokens = {
+  borderWidth: {
+    hairline: '0.8px',
+    thin: '1px',
+    regular: '1.5px',
+    strong: '2px',
+  },
+  size: {
+    iconXs: '14px',
+    iconSm: '16px',
+    iconMd: '18px',
+    iconLg: '20px',
+    chipHeight: '24px',
+    controlHeight: '34px',
+    drawerWidthNarrow: '320px',
+    drawerWidth: '360px',
+    drawerWidthWide: '460px',
+    cardWidth: '320px',
+  },
+  motion: {
+    instant: '80ms',
+    quick: '140ms',
+    fast: '180ms',
+    normal: '260ms',
+    slow: '360ms',
+    deliberate: '500ms',
+    reveal: '760ms',
+    pulse: '2400ms',
+  },
+  opacity: {
+    faint: '0.08',
+    soft: '0.16',
+    medium: '0.28',
+    strong: '0.44',
+    intense: '0.62',
+  },
+  shadow: {
+    raised: '0 8px 18px rgba(0, 0, 0, 0.2)',
+    floating: '0 14px 30px rgba(0, 0, 0, 0.28)',
+    glow: '0 0 18px rgba(0, 0, 0, 0.24)',
+  },
+};
+
+const SKIN_STYLE_TOKENS: Record<UiSkinId, UiSkinStyleTokens> = {
+  'documentary-ink': BASE_STYLE_TOKENS,
+  'nocturnal-dossier': {
+    ...BASE_STYLE_TOKENS,
+    borderWidth: { hairline: '1px', thin: '1px', regular: '1.5px', strong: '2px' },
+    motion: { ...BASE_STYLE_TOKENS.motion, quick: '120ms', fast: '160ms', normal: '240ms', reveal: '720ms' },
+    opacity: { faint: '0.1', soft: '0.2', medium: '0.34', strong: '0.52', intense: '0.72' },
+    shadow: {
+      raised: '0 10px 22px rgba(3, 7, 12, 0.34)',
+      floating: '0 18px 34px rgba(2, 5, 10, 0.44)',
+      glow: '0 0 22px rgba(215, 154, 71, 0.22)',
+    },
+  },
+  'civic-signal': {
+    ...BASE_STYLE_TOKENS,
+    borderWidth: { hairline: '0.8px', thin: '1px', regular: '1.5px', strong: '2px' },
+    motion: { ...BASE_STYLE_TOKENS.motion, quick: '130ms', fast: '170ms', normal: '240ms' },
+    opacity: { faint: '0.06', soft: '0.12', medium: '0.22', strong: '0.36', intense: '0.52' },
+    shadow: {
+      raised: '0 7px 16px rgba(20, 54, 62, 0.16)',
+      floating: '0 12px 26px rgba(18, 47, 54, 0.22)',
+      glow: '0 0 18px rgba(30, 95, 114, 0.2)',
+    },
+  },
+  'olive-tree': {
+    ...BASE_STYLE_TOKENS,
+    borderWidth: { hairline: '0.8px', thin: '1px', regular: '1.5px', strong: '2px' },
+    motion: { ...BASE_STYLE_TOKENS.motion, normal: '280ms', slow: '380ms' },
+    opacity: { faint: '0.07', soft: '0.14', medium: '0.24', strong: '0.38', intense: '0.56' },
+    shadow: {
+      raised: '0 8px 18px rgba(42, 52, 30, 0.22)',
+      floating: '0 14px 30px rgba(36, 44, 26, 0.3)',
+      glow: '0 0 20px rgba(164, 115, 47, 0.24)',
+    },
+  },
+  'guerrilla-camouflage': {
+    ...BASE_STYLE_TOKENS,
+    borderWidth: { hairline: '1px', thin: '1px', regular: '1.5px', strong: '2px' },
+    motion: { ...BASE_STYLE_TOKENS.motion, quick: '120ms', fast: '160ms', normal: '230ms', reveal: '700ms' },
+    opacity: { faint: '0.11', soft: '0.2', medium: '0.34', strong: '0.5', intense: '0.72' },
+    shadow: {
+      raised: '0 10px 20px rgba(7, 12, 8, 0.34)',
+      floating: '0 18px 34px rgba(6, 10, 7, 0.44)',
+      glow: '0 0 20px rgba(180, 136, 60, 0.24)',
+    },
+  },
+};
 
 export const DEFAULT_UI_SKIN_ID: UiSkinId = 'documentary-ink';
 
@@ -70,6 +162,7 @@ export const UI_SKINS: Record<UiSkinId, UiSkinDefinition> = {
       tokenGlow: 'rgba(160, 59, 46, 0.28)',
       surfaceTint: 'rgba(160, 59, 46, 0.06)',
     },
+    style: SKIN_STYLE_TOKENS['documentary-ink'],
   },
   'nocturnal-dossier': {
     id: 'nocturnal-dossier',
@@ -128,6 +221,7 @@ export const UI_SKINS: Record<UiSkinId, UiSkinDefinition> = {
       tokenGlow: 'rgba(215, 154, 71, 0.28)',
       surfaceTint: 'rgba(121, 150, 187, 0.14)',
     },
+    style: SKIN_STYLE_TOKENS['nocturnal-dossier'],
   },
   'civic-signal': {
     id: 'civic-signal',
@@ -186,6 +280,125 @@ export const UI_SKINS: Record<UiSkinId, UiSkinDefinition> = {
       tokenGlow: 'rgba(209, 142, 61, 0.26)',
       surfaceTint: 'rgba(47, 110, 144, 0.08)',
     },
+    style: SKIN_STYLE_TOKENS['civic-signal'],
+  },
+  'olive-tree': {
+    id: 'olive-tree',
+    label: 'Olive Tree',
+    layer: {
+      canvas: '#E2DDC5',
+      surface: '#EFE8CC',
+      elevated: '#F8F2DE',
+      overlay: '#DCD4B6',
+      scrim: 'rgba(20, 24, 14, 0.6)',
+    },
+    text: {
+      primary: '#2B311F',
+      muted: '#4E5B40',
+      inverse: '#F6F2E6',
+    },
+    border: {
+      subtle: '#C8C0A2',
+      strong: '#8E936A',
+      danger: '#8A2E2A',
+    },
+    focus: {
+      ring: '0 0 0 3px rgba(94, 123, 58, 0.34)',
+    },
+    action: {
+      primary: '#425A2D',
+      secondary: '#A4732F',
+      utility: '#D6D0B2',
+    },
+    state: {
+      success: '#476639',
+      warning: '#B07A2C',
+      danger: '#9E302E',
+      info: '#3F6658',
+      neutral: '#65694D',
+    },
+    map: {
+      safe: '#476639',
+      strained: '#B07A2C',
+      critical: '#9E302E',
+    },
+    domain: {
+      warMachine: '#8F4639',
+      climate: '#4E6C3E',
+      fossil: '#5C513E',
+      justice: '#7F7349',
+      voice: '#4D6E5C',
+      hunger: '#AB7C33',
+      patriarchy: '#7A5A6E',
+      revolution: '#7E332E',
+    },
+    effects: {
+      heroTone: 'radial-gradient(120% 90% at 14% 8%, rgba(122, 146, 74, 0.26), transparent 58%), linear-gradient(140deg, rgba(46, 58, 33, 0.88), rgba(98, 104, 70, 0.78))',
+      backgroundWash: 'rgba(58, 78, 40, 0.22)',
+      selectionHighlight: 'rgba(94, 120, 56, 0.3)',
+      tokenGlow: 'rgba(176, 124, 44, 0.3)',
+      surfaceTint: 'rgba(84, 112, 58, 0.1)',
+    },
+    style: SKIN_STYLE_TOKENS['olive-tree'],
+  },
+  'guerrilla-camouflage': {
+    id: 'guerrilla-camouflage',
+    label: 'Guerrilla Camouflage',
+    layer: {
+      canvas: '#151C15',
+      surface: '#1F2A1F',
+      elevated: '#2A3527',
+      overlay: '#1A251B',
+      scrim: 'rgba(4, 8, 4, 0.8)',
+    },
+    text: {
+      primary: '#E2E8D4',
+      muted: '#AEB99A',
+      inverse: '#10140F',
+    },
+    border: {
+      subtle: '#41543F',
+      strong: '#63775E',
+      danger: '#B34B3F',
+    },
+    focus: {
+      ring: '0 0 0 3px rgba(176, 137, 72, 0.34)',
+    },
+    action: {
+      primary: '#6B7A3D',
+      secondary: '#B4873C',
+      utility: '#324334',
+    },
+    state: {
+      success: '#739858',
+      warning: '#C58E34',
+      danger: '#C75245',
+      info: '#879C74',
+      neutral: '#93A084',
+    },
+    map: {
+      safe: '#739858',
+      strained: '#C58E34',
+      critical: '#C75245',
+    },
+    domain: {
+      warMachine: '#B55D47',
+      climate: '#6F9155',
+      fossil: '#7A6A4C',
+      justice: '#AA8E55',
+      voice: '#839273',
+      hunger: '#B4863E',
+      patriarchy: '#8A6F87',
+      revolution: '#C57639',
+    },
+    effects: {
+      heroTone: 'radial-gradient(120% 90% at 14% 8%, rgba(107, 126, 61, 0.3), transparent 58%), linear-gradient(140deg, rgba(12, 18, 12, 0.92), rgba(34, 48, 30, 0.84))',
+      backgroundWash: 'rgba(17, 26, 17, 0.34)',
+      selectionHighlight: 'rgba(180, 136, 60, 0.32)',
+      tokenGlow: 'rgba(197, 142, 52, 0.3)',
+      surfaceTint: 'rgba(111, 151, 82, 0.12)',
+    },
+    style: SKIN_STYLE_TOKENS['guerrilla-camouflage'],
   },
 };
 

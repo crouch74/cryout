@@ -1091,6 +1091,14 @@
       "traceDrawHandled": "Card draw was resolved by its dedicated trace.",
       "lossSuddenDeath": "Round {{round}} ended without a decisive victory.",
       "roundBegins": "Round {{round}} begins."
+    },
+    "theme": {
+      "label": "Thème",
+      "documentary-ink": "Encre documentaire",
+      "nocturnal-dossier": "Dossier nocturne",
+      "civic-signal": "Signal civique",
+      "olive-tree": "Olivier",
+      "guerrilla-camouflage": "Camouflage guérilla"
     }
   },
   "content": {
