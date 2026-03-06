@@ -85,6 +85,11 @@ interface LayoutViewport {
   top: number;
 }
 
+interface SourceViewBox {
+  width: number;
+  height: number;
+}
+
 interface TokenLayoutOptions {
   tokenSize: number;
   gap: number;
@@ -105,6 +110,7 @@ export interface BuildRegionLayoutsInput {
   canvasWidth: number;
   canvasHeight: number;
   mapViewport: MapViewport;
+  sourceViewBox?: SourceViewBox;
   defaultVisibleWorldWidth: number;
   currentVisibleWorldWidth: number;
   regionIds: RegionId[];
@@ -152,6 +158,25 @@ function getViewportMetrics(mapViewport: MapViewport, canvasWidth: number, canva
     height: (percentToNumber(mapViewport.canvasHeight) / 100) * canvasHeight,
     left: (percentToNumber(mapViewport.canvasLeft) / 100) * canvasWidth,
     top: (percentToNumber(mapViewport.canvasTop) / 100) * canvasHeight,
+  };
+}
+
+// Map anchors are authored in SVG viewBox space. When the SVG is letterboxed in the canvas
+// (xMidYMid meet), token anchors must be projected into that fitted content box.
+function getAnchorViewport(viewport: LayoutViewport, sourceViewBox?: SourceViewBox): LayoutViewport {
+  if (!sourceViewBox || sourceViewBox.width <= 0 || sourceViewBox.height <= 0) {
+    return viewport;
+  }
+
+  const scale = Math.min(viewport.width / sourceViewBox.width, viewport.height / sourceViewBox.height);
+  const fittedWidth = sourceViewBox.width * scale;
+  const fittedHeight = sourceViewBox.height * scale;
+
+  return {
+    width: fittedWidth,
+    height: fittedHeight,
+    left: viewport.left + (viewport.width - fittedWidth) / 2,
+    top: viewport.top + (viewport.height - fittedHeight) / 2,
   };
 }
 
@@ -510,6 +535,7 @@ function getTotalTokenCount(counts: RegionCountSummary) {
 
 export function buildRegionLayouts(input: BuildRegionLayoutsInput) {
   const viewport = getViewportMetrics(input.mapViewport, input.canvasWidth, input.canvasHeight);
+  const anchorViewport = getAnchorViewport(viewport, input.sourceViewBox);
   const sizing = getTokenSizing(input.defaultVisibleWorldWidth, input.currentVisibleWorldWidth);
   const layouts = input.regionIds.map((regionId) => {
     const manifestEntry = input.manifest[regionId];
@@ -517,8 +543,8 @@ export function buildRegionLayouts(input: BuildRegionLayoutsInput) {
       throw new Error(`Missing board region entry for ${regionId}.`);
     }
     const counts = input.regionCounts[regionId];
-    const baseX = viewport.left + viewport.width * (percentToNumber(manifestEntry.tokenAnchor.x) / 100) + manifestEntry.anchorBias.x;
-    const baseY = viewport.top + viewport.height * (percentToNumber(manifestEntry.tokenAnchor.y) / 100) + manifestEntry.anchorBias.y;
+    const baseX = anchorViewport.left + anchorViewport.width * (percentToNumber(manifestEntry.tokenAnchor.x) / 100) + manifestEntry.anchorBias.x;
+    const baseY = anchorViewport.top + anchorViewport.height * (percentToNumber(manifestEntry.tokenAnchor.y) / 100) + manifestEntry.anchorBias.y;
     const snappedBaseX = snapToGrid(baseX, ANCHOR_SNAP_STEP_X);
     const snappedBaseY = snapToGrid(baseY, ANCHOR_SNAP_STEP_Y);
     const cluster = buildClusterLayout(regionId, manifestEntry, counts, sizing);

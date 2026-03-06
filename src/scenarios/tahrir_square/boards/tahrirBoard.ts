@@ -1,5 +1,5 @@
 import type { ScenarioBoardDefinition } from '../../../engine/index.ts';
-import { EGYPT_SCENARIO_MARKERS } from '../../shared/boards/generatedScenarioAnchors.ts';
+import { EGYPT_SCENARIO_MARKERS, EGYPT_SCENARIO_TOKEN_ANCHORS } from '../../shared/boards/generatedScenarioAnchors.ts';
 
 export const tahrirBoard: ScenarioBoardDefinition = {
   assetPath: '/assets/scenarios/tahrir_square/egypt-location-map.svg',
@@ -16,7 +16,7 @@ export const tahrirBoard: ScenarioBoardDefinition = {
       regionId: 'Cairo',
       label: 'Cairo',
       marker: { ...EGYPT_SCENARIO_MARKERS.Cairo },
-      tokenAnchor: { ...EGYPT_SCENARIO_MARKERS.Cairo },
+      tokenAnchor: { ...EGYPT_SCENARIO_TOKEN_ANCHORS.Cairo },
       anchorBias: { x: 0, y: 0 },
       clusterRadius: 72,
       labelOffsetY: -14,
@@ -36,7 +36,7 @@ export const tahrirBoard: ScenarioBoardDefinition = {
       regionId: 'Alexandria',
       label: 'Alexandria',
       marker: { ...EGYPT_SCENARIO_MARKERS.Alexandria },
-      tokenAnchor: { ...EGYPT_SCENARIO_MARKERS.Alexandria },
+      tokenAnchor: { ...EGYPT_SCENARIO_TOKEN_ANCHORS.Alexandria },
       anchorBias: { x: 0, y: 0 },
       clusterRadius: 68,
       labelOffsetY: -14,
@@ -56,7 +56,7 @@ export const tahrirBoard: ScenarioBoardDefinition = {
       regionId: 'NileDelta',
       label: 'Nile Delta',
       marker: { ...EGYPT_SCENARIO_MARKERS.NileDelta },
-      tokenAnchor: { ...EGYPT_SCENARIO_MARKERS.NileDelta },
+      tokenAnchor: { ...EGYPT_SCENARIO_TOKEN_ANCHORS.NileDelta },
       anchorBias: { x: 0, y: 0 },
       clusterRadius: 70,
       labelOffsetY: -14,
@@ -76,7 +76,7 @@ export const tahrirBoard: ScenarioBoardDefinition = {
       regionId: 'UpperEgypt',
       label: 'Upper Egypt',
       marker: { ...EGYPT_SCENARIO_MARKERS.UpperEgypt },
-      tokenAnchor: { ...EGYPT_SCENARIO_MARKERS.UpperEgypt },
+      tokenAnchor: { ...EGYPT_SCENARIO_TOKEN_ANCHORS.UpperEgypt },
       anchorBias: { x: 0, y: 0 },
       clusterRadius: 74,
       labelOffsetY: -14,
@@ -96,7 +96,7 @@ export const tahrirBoard: ScenarioBoardDefinition = {
       regionId: 'Suez',
       label: 'Suez',
       marker: { ...EGYPT_SCENARIO_MARKERS.Suez },
-      tokenAnchor: { ...EGYPT_SCENARIO_MARKERS.Suez },
+      tokenAnchor: { ...EGYPT_SCENARIO_TOKEN_ANCHORS.Suez },
       anchorBias: { x: 0, y: 0 },
       clusterRadius: 66,
       labelOffsetY: -14,
@@ -116,7 +116,7 @@ export const tahrirBoard: ScenarioBoardDefinition = {
       regionId: 'Sinai',
       label: 'Sinai',
       marker: { ...EGYPT_SCENARIO_MARKERS.Sinai },
-      tokenAnchor: { ...EGYPT_SCENARIO_MARKERS.Sinai },
+      tokenAnchor: { ...EGYPT_SCENARIO_TOKEN_ANCHORS.Sinai },
       anchorBias: { x: 0, y: 0 },
       clusterRadius: 68,
       labelOffsetY: -14,

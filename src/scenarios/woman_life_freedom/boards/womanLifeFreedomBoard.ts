@@ -1,5 +1,5 @@
 import type { ScenarioBoardDefinition } from '../../../engine/index.ts';
-import { IRAN_SCENARIO_MARKERS } from '../../shared/boards/generatedScenarioAnchors.ts';
+import { IRAN_SCENARIO_MARKERS, IRAN_SCENARIO_TOKEN_ANCHORS } from '../../shared/boards/generatedScenarioAnchors.ts';
 
 export const womanLifeFreedomBoard: ScenarioBoardDefinition = {
   assetPath: '/assets/scenarios/woman_life_freedom/iran-location-map.svg',
@@ -16,7 +16,7 @@ export const womanLifeFreedomBoard: ScenarioBoardDefinition = {
       regionId: 'Tehran',
       label: 'Tehran',
       marker: { ...IRAN_SCENARIO_MARKERS.Tehran },
-      tokenAnchor: { ...IRAN_SCENARIO_MARKERS.Tehran },
+      tokenAnchor: { ...IRAN_SCENARIO_TOKEN_ANCHORS.Tehran },
       anchorBias: { x: 0, y: 0 },
       clusterRadius: 70,
       labelOffsetY: -14,
@@ -36,7 +36,7 @@ export const womanLifeFreedomBoard: ScenarioBoardDefinition = {
       regionId: 'Kurdistan',
       label: 'Kurdistan',
       marker: { ...IRAN_SCENARIO_MARKERS.Kurdistan },
-      tokenAnchor: { ...IRAN_SCENARIO_MARKERS.Kurdistan },
+      tokenAnchor: { ...IRAN_SCENARIO_TOKEN_ANCHORS.Kurdistan },
       anchorBias: { x: 0, y: 0 },
       clusterRadius: 70,
       labelOffsetY: -14,
@@ -56,7 +56,7 @@ export const womanLifeFreedomBoard: ScenarioBoardDefinition = {
       regionId: 'Isfahan',
       label: 'Isfahan',
       marker: { ...IRAN_SCENARIO_MARKERS.Isfahan },
-      tokenAnchor: { ...IRAN_SCENARIO_MARKERS.Isfahan },
+      tokenAnchor: { ...IRAN_SCENARIO_TOKEN_ANCHORS.Isfahan },
       anchorBias: { x: 0, y: 0 },
       clusterRadius: 68,
       labelOffsetY: -14,
@@ -76,7 +76,7 @@ export const womanLifeFreedomBoard: ScenarioBoardDefinition = {
       regionId: 'Mashhad',
       label: 'Mashhad',
       marker: { ...IRAN_SCENARIO_MARKERS.Mashhad },
-      tokenAnchor: { ...IRAN_SCENARIO_MARKERS.Mashhad },
+      tokenAnchor: { ...IRAN_SCENARIO_TOKEN_ANCHORS.Mashhad },
       anchorBias: { x: 0, y: 0 },
       clusterRadius: 68,
       labelOffsetY: -14,
@@ -96,7 +96,7 @@ export const womanLifeFreedomBoard: ScenarioBoardDefinition = {
       regionId: 'Khuzestan',
       label: 'Khuzestan',
       marker: { ...IRAN_SCENARIO_MARKERS.Khuzestan },
-      tokenAnchor: { ...IRAN_SCENARIO_MARKERS.Khuzestan },
+      tokenAnchor: { ...IRAN_SCENARIO_TOKEN_ANCHORS.Khuzestan },
       anchorBias: { x: 0, y: 0 },
       clusterRadius: 70,
       labelOffsetY: -14,
@@ -116,7 +116,7 @@ export const womanLifeFreedomBoard: ScenarioBoardDefinition = {
       regionId: 'Balochistan',
       label: 'Balochistan',
       marker: { ...IRAN_SCENARIO_MARKERS.Balochistan },
-      tokenAnchor: { ...IRAN_SCENARIO_MARKERS.Balochistan },
+      tokenAnchor: { ...IRAN_SCENARIO_TOKEN_ANCHORS.Balochistan },
       anchorBias: { x: 0, y: 0 },
       clusterRadius: 70,
       labelOffsetY: -14,

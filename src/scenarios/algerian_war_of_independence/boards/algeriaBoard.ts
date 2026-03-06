@@ -1,5 +1,5 @@
 import type { ScenarioBoardDefinition } from '../../../engine/index.ts';
-import { ALGERIA_SCENARIO_MARKERS } from '../../shared/boards/generatedScenarioAnchors.ts';
+import { ALGERIA_SCENARIO_MARKERS, ALGERIA_SCENARIO_TOKEN_ANCHORS } from '../../shared/boards/generatedScenarioAnchors.ts';
 
 export const algeriaBoard: ScenarioBoardDefinition = {
   assetPath: '/assets/scenarios/algerian_war_of_independence/algeria-location-map.svg',
@@ -16,7 +16,7 @@ export const algeriaBoard: ScenarioBoardDefinition = {
       regionId: 'Algiers',
       label: 'Algiers',
       marker: { ...ALGERIA_SCENARIO_MARKERS.Algiers },
-      tokenAnchor: { ...ALGERIA_SCENARIO_MARKERS.Algiers },
+      tokenAnchor: { ...ALGERIA_SCENARIO_TOKEN_ANCHORS.Algiers },
       anchorBias: { x: 0, y: 0 },
       clusterRadius: 68,
       labelOffsetY: -14,
@@ -36,7 +36,7 @@ export const algeriaBoard: ScenarioBoardDefinition = {
       regionId: 'KabylieMountains',
       label: 'Kabylie Mountains',
       marker: { ...ALGERIA_SCENARIO_MARKERS.KabylieMountains },
-      tokenAnchor: { ...ALGERIA_SCENARIO_MARKERS.KabylieMountains },
+      tokenAnchor: { ...ALGERIA_SCENARIO_TOKEN_ANCHORS.KabylieMountains },
       anchorBias: { x: 0, y: 0 },
       clusterRadius: 72,
       labelOffsetY: -14,
@@ -56,7 +56,7 @@ export const algeriaBoard: ScenarioBoardDefinition = {
       regionId: 'Oran',
       label: 'Oran',
       marker: { ...ALGERIA_SCENARIO_MARKERS.Oran },
-      tokenAnchor: { ...ALGERIA_SCENARIO_MARKERS.Oran },
+      tokenAnchor: { ...ALGERIA_SCENARIO_TOKEN_ANCHORS.Oran },
       anchorBias: { x: 0, y: 0 },
       clusterRadius: 68,
       labelOffsetY: -14,
@@ -76,7 +76,7 @@ export const algeriaBoard: ScenarioBoardDefinition = {
       regionId: 'SaharaSouth',
       label: 'Sahara South',
       marker: { ...ALGERIA_SCENARIO_MARKERS.SaharaSouth },
-      tokenAnchor: { ...ALGERIA_SCENARIO_MARKERS.SaharaSouth },
+      tokenAnchor: { ...ALGERIA_SCENARIO_TOKEN_ANCHORS.SaharaSouth },
       anchorBias: { x: 0, y: 0 },
       clusterRadius: 76,
       labelOffsetY: -14,
@@ -96,7 +96,7 @@ export const algeriaBoard: ScenarioBoardDefinition = {
       regionId: 'TunisianBorder',
       label: 'Tunisian Border',
       marker: { ...ALGERIA_SCENARIO_MARKERS.TunisianBorder },
-      tokenAnchor: { ...ALGERIA_SCENARIO_MARKERS.TunisianBorder },
+      tokenAnchor: { ...ALGERIA_SCENARIO_TOKEN_ANCHORS.TunisianBorder },
       anchorBias: { x: 0, y: 0 },
       clusterRadius: 68,
       labelOffsetY: -14,
@@ -116,7 +116,7 @@ export const algeriaBoard: ScenarioBoardDefinition = {
       regionId: 'FrenchMetropoleInfluence',
       label: 'French Metropole Influence',
       marker: { ...ALGERIA_SCENARIO_MARKERS.FrenchMetropoleInfluence },
-      tokenAnchor: { ...ALGERIA_SCENARIO_MARKERS.FrenchMetropoleInfluence },
+      tokenAnchor: { ...ALGERIA_SCENARIO_TOKEN_ANCHORS.FrenchMetropoleInfluence },
       anchorBias: { x: 0, y: 0 },
       clusterRadius: 62,
       labelOffsetY: -14,

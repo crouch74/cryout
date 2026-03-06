@@ -273,6 +273,7 @@ export function WorldMapBoard({
       canvasWidth: canvasSize.width,
       canvasHeight: canvasSize.height,
       mapViewport,
+      sourceViewBox: geometry.viewBox ? { width: geometry.viewBox[2], height: geometry.viewBox[3] } : undefined,
       defaultVisibleWorldWidth: mapCamera.defaultBounds.maxX - mapCamera.defaultBounds.minX,
       currentVisibleWorldWidth: mapCamera.bounds.maxX - mapCamera.bounds.minX,
       regionIds,

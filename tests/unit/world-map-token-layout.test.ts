@@ -196,3 +196,32 @@ test('effective cluster radius scales with viewport zoom', () => {
   assert.equal(broad.Congo.cluster.radius >= 52, true);
   assert.equal(focused.Congo.cluster.radius <= 76, true);
 });
+
+test('anchor projection uses fitted svg content box when source viewBox aspect differs', () => {
+  const manifestEntry = BOARD_REGION_MAP_MANIFEST.Congo;
+  assert.ok(manifestEntry);
+
+  const layouts = buildRegionLayouts({
+    canvasWidth: 1000,
+    canvasHeight: 360,
+    mapViewport: { canvasWidth: '100%', canvasHeight: '100%', canvasLeft: '0%', canvasTop: '0%' },
+    sourceViewBox: { width: 1000, height: 800 },
+    defaultVisibleWorldWidth: 653,
+    currentVisibleWorldWidth: 653,
+    regionIds: ['Congo'],
+    selectedRegionId: null,
+    regionCounts: {
+      Congo: buildRegionCountSummary(0, 0, 0),
+    } as Record<RegionId, ReturnType<typeof buildRegionCountSummary>>,
+    manifest: {
+      Congo: {
+        ...manifestEntry,
+        tokenAnchor: { x: '25%', y: '50%' },
+        anchorBias: { x: 0, y: 0 },
+      },
+    },
+  });
+
+  assert.equal(Number(layouts.Congo.anchor.baseX.toFixed(2)), 387.5);
+  assert.equal(Number(layouts.Congo.anchor.baseY.toFixed(2)), 180);
+});

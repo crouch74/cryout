@@ -12,6 +12,7 @@ const SCENARIOS = [
     sourceGeoJson: 'data/geojson/egypt-adm1/geoBoundaries-EGY-ADM1_simplified.geojson',
     outputSvg: 'public/assets/scenarios/tahrir_square/egypt-location-map.svg',
     markerExport: 'EGYPT_SCENARIO_MARKERS',
+    tokenAnchorExport: 'EGYPT_SCENARIO_TOKEN_ANCHORS',
     regions: [
       {
         regionId: 'Cairo',
@@ -89,6 +90,7 @@ const SCENARIOS = [
     sourceGeoJson: 'data/geojson/iran-adm1/geoBoundaries-IRN-ADM1_simplified.geojson',
     outputSvg: 'public/assets/scenarios/woman_life_freedom/iran-location-map.svg',
     markerExport: 'IRAN_SCENARIO_MARKERS',
+    tokenAnchorExport: 'IRAN_SCENARIO_TOKEN_ANCHORS',
     regions: [
       {
         regionId: 'Tehran',
@@ -146,6 +148,7 @@ const SCENARIOS = [
     sourceGeoJson: 'data/geojson/algeria-adm1/geoBoundaries-DZA-ADM1_simplified.geojson',
     outputSvg: 'public/assets/scenarios/algerian_war_of_independence/algeria-location-map.svg',
     markerExport: 'ALGERIA_SCENARIO_MARKERS',
+    tokenAnchorExport: 'ALGERIA_SCENARIO_TOKEN_ANCHORS',
     regions: [
       {
         regionId: 'Algiers',
@@ -353,6 +356,106 @@ function simplifyClosedRing(points, tolerance = 0.8) {
   return [...simplified, simplified[0]];
 }
 
+function getProjectedFeatureRings(features, project) {
+  return features
+    .flatMap((feature) => getPolygons(feature.geometry))
+    .flatMap((polygon) => polygon.map((ring) => ring.map((coordinate) => project(coordinate))));
+}
+
+function getProjectedRingsBounds(rings) {
+  let minX = Number.POSITIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+
+  for (const ring of rings) {
+    for (const point of ring) {
+      minX = Math.min(minX, point.x);
+      minY = Math.min(minY, point.y);
+      maxX = Math.max(maxX, point.x);
+      maxY = Math.max(maxY, point.y);
+    }
+  }
+
+  return { minX, minY, maxX, maxY };
+}
+
+function getSignedRingArea(ring) {
+  if (ring.length < 3) {
+    return 0;
+  }
+
+  let area = 0;
+  for (let index = 0; index < ring.length; index += 1) {
+    const current = ring[index];
+    const next = ring[(index + 1) % ring.length];
+    area += current.x * next.y - next.x * current.y;
+  }
+
+  return area / 2;
+}
+
+function getRingCentroid(ring) {
+  const signedArea = getSignedRingArea(ring);
+  if (Math.abs(signedArea) < 1e-8) {
+    const bounds = getProjectedRingsBounds([ring]);
+    return {
+      x: (bounds.minX + bounds.maxX) / 2,
+      y: (bounds.minY + bounds.maxY) / 2,
+      area: 0,
+    };
+  }
+
+  let centroidX = 0;
+  let centroidY = 0;
+  for (let index = 0; index < ring.length; index += 1) {
+    const current = ring[index];
+    const next = ring[(index + 1) % ring.length];
+    const factor = current.x * next.y - next.x * current.y;
+    centroidX += (current.x + next.x) * factor;
+    centroidY += (current.y + next.y) * factor;
+  }
+
+  return {
+    x: centroidX / (6 * signedArea),
+    y: centroidY / (6 * signedArea),
+    area: Math.abs(signedArea),
+  };
+}
+
+function getRegionGeometryAnchorPoint(regionFeatures, project) {
+  const rings = getProjectedFeatureRings(regionFeatures, project);
+  const bounds = getProjectedRingsBounds(rings);
+  if (!Number.isFinite(bounds.minX) || !Number.isFinite(bounds.minY) || !Number.isFinite(bounds.maxX) || !Number.isFinite(bounds.maxY)) {
+    return null;
+  }
+
+  let weightedX = 0;
+  let weightedY = 0;
+  let totalArea = 0;
+  for (const ring of rings) {
+    const centroid = getRingCentroid(ring);
+    if (centroid.area <= 0) {
+      continue;
+    }
+    weightedX += centroid.x * centroid.area;
+    weightedY += centroid.y * centroid.area;
+    totalArea += centroid.area;
+  }
+
+  if (totalArea <= 0) {
+    return {
+      x: (bounds.minX + bounds.maxX) / 2,
+      y: (bounds.minY + bounds.maxY) / 2,
+    };
+  }
+
+  return {
+    x: weightedX / totalArea,
+    y: weightedY / totalArea,
+  };
+}
+
 function ringToSvgPath(ring, project) {
   const simplifiedRing = simplifyClosedRing(ring.map((coordinate) => project(coordinate)));
 
@@ -464,8 +567,15 @@ function buildInsetMarkup(inset) {
   ].filter(Boolean).join('\n');
 }
 
-function renderAnchorModule(anchorSets) {
-  const blocks = anchorSets.map(({ exportName, anchors }) => {
+function renderAnchorModule(markerSets, tokenAnchorSets) {
+  const markerBlocks = markerSets.map(({ exportName, anchors }) => {
+    const entries = Object.entries(anchors)
+      .map(([regionId, point]) => `  ${regionId}: { x: '${point.x}', y: '${point.y}' },`)
+      .join('\n');
+
+    return `export const ${exportName} = {\n${entries}\n} as const;`;
+  }).join('\n\n');
+  const tokenAnchorBlocks = tokenAnchorSets.map(({ exportName, anchors }) => {
     const entries = Object.entries(anchors)
       .map(([regionId, point]) => `  ${regionId}: { x: '${point.x}', y: '${point.y}' },`)
       .join('\n');
@@ -475,14 +585,17 @@ function renderAnchorModule(anchorSets) {
 
   return `// Generated by scripts/generate-scenario-maps.mjs from checked-in GeoJSON.
 // The board manifests spread these values so authored offsets remain readable
-// while the actual anchor positions stay tied to the underlying geography.
+// while token anchors stay tied to region geometry.
 
-${blocks}
+${markerBlocks}
+
+${tokenAnchorBlocks}
 `;
 }
 
 function main() {
-  const anchorSets = [];
+  const markerSets = [];
+  const tokenAnchorSets = [];
 
   for (const scenario of SCENARIOS) {
     const { collection, featuresByName } = loadScenarioSource(scenario.sourceGeoJson);
@@ -492,7 +605,8 @@ function main() {
     const countryPath = featuresToSvgPath(collection.features, project);
     const boundaryPaths = collection.features.map((feature) => featuresToSvgPath([feature], project));
     const regionLayers = [];
-    const anchors = {};
+    const markers = {};
+    const tokenAnchors = {};
 
     console.log(`🗺️ Generating ${scenario.countryLabel} scenario map from ${scenario.sourceGeoJson}`);
 
@@ -502,6 +616,10 @@ function main() {
       const regionFeatures = getNamedFeatures(featuresByName, region.adminNames, region.regionId);
       const cityCoordinate = loadCityCoordinate(region.cityGeoJson);
       const cityPoint = project(cityCoordinate);
+      const geometryAnchorPoint = getRegionGeometryAnchorPoint(regionFeatures, project);
+      if (!geometryAnchorPoint) {
+        throw new Error(`Could not derive geometry anchor for ${scenario.countryLabel} ${region.regionId}.`);
+      }
 
       regionLayers.push({
         groupId: region.groupId,
@@ -509,9 +627,13 @@ function main() {
         path: featuresToSvgPath(regionFeatures, project),
         accent: region.accent,
       });
-      anchors[region.regionId] = pointToPercent(cityPoint);
+      markers[region.regionId] = pointToPercent(cityPoint);
+      tokenAnchors[region.regionId] = pointToPercent(geometryAnchorPoint);
 
-      console.log(`📍 ${scenario.countryLabel} ${region.regionId} anchor resolved to ${anchors[region.regionId].x}, ${anchors[region.regionId].y}`);
+      console.log(
+        `📍 ${scenario.countryLabel} ${region.regionId} marker ${markers[region.regionId].x}, ${markers[region.regionId].y}`
+        + ` | token anchor ${tokenAnchors[region.regionId].x}, ${tokenAnchors[region.regionId].y}`,
+      );
     }
 
     if (scenario.authoredInset) {
@@ -529,10 +651,14 @@ function main() {
         height: scenario.authoredInset.box.height - scenario.authoredInset.box.padding * 2,
       });
       const insetPoint = insetProject(scenario.authoredInset.anchorCoordinate);
-      anchors[scenario.authoredInset.regionId] = pointToPercent(insetPoint);
+      markers[scenario.authoredInset.regionId] = pointToPercent(insetPoint);
+      tokenAnchors[scenario.authoredInset.regionId] = pointToPercent(insetPoint);
       scenario.authoredInset.path = featuresToSvgPath(insetFeatures, insetProject);
       scenario.authoredInset.markup = buildInsetMarkup(scenario.authoredInset);
-      console.log(`📍 ${scenario.countryLabel} ${scenario.authoredInset.regionId} anchor resolved to ${anchors[scenario.authoredInset.regionId].x}, ${anchors[scenario.authoredInset.regionId].y}`);
+      console.log(
+        `📍 ${scenario.countryLabel} ${scenario.authoredInset.regionId} marker ${markers[scenario.authoredInset.regionId].x}, ${markers[scenario.authoredInset.regionId].y}`
+        + ` | token anchor ${tokenAnchors[scenario.authoredInset.regionId].x}, ${tokenAnchors[scenario.authoredInset.regionId].y}`,
+      );
     }
 
     const svgMarkup = renderScenarioSvg({
@@ -548,11 +674,12 @@ function main() {
     writeFileSync(svgOutputPath, svgMarkup, 'utf8');
     console.log(`🧱 Wrote ${scenario.outputSvg}`);
 
-    anchorSets.push({ exportName: scenario.markerExport, anchors });
+    markerSets.push({ exportName: scenario.markerExport, anchors: markers });
+    tokenAnchorSets.push({ exportName: scenario.tokenAnchorExport, anchors: tokenAnchors });
   }
 
   const anchorModulePath = resolve(ROOT, 'src/scenarios/shared/boards/generatedScenarioAnchors.ts');
-  writeFileSync(anchorModulePath, renderAnchorModule(anchorSets), 'utf8');
+  writeFileSync(anchorModulePath, renderAnchorModule(markerSets, tokenAnchorSets), 'utf8');
   console.log('✅ Wrote src/scenarios/shared/boards/generatedScenarioAnchors.ts');
 }
 
