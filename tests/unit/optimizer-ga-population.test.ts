@@ -9,7 +9,12 @@ import {
   randomGenome,
   tournamentSelect,
 } from '../../src/simulation/optimizer/ga/population.ts';
+import {
+  buildMutationSpaceFromScenario,
+  validateScenarioPatch,
+} from '../../src/simulation/optimizer/ga/mutationSpace.ts';
 import type { GaConfig } from '../../src/simulation/optimizer/ga/types.ts';
+import { getRulesetDefinition } from '../../src/engine/index.ts';
 
 // ---------------------------------------------------------------------------
 // Deterministic RNG for tests
@@ -151,4 +156,44 @@ test('computePopulationStats correctly calculates best, worst, mean, median', ()
   assert.ok(Math.abs(stats.worstFitness - 0.1) < 1e-9);
   assert.ok(Math.abs(stats.meanFitness - 0.5) < 1e-6);
   assert.ok(Math.abs(stats.medianFitness - 0.5) < 1e-9);
+});
+
+test('mutation space excludes crisis spike extraction when scenario has no crisis extraction adds', () => {
+  const scenario = getRulesetDefinition('egypt_1919_revolution');
+  assert.ok(scenario);
+
+  const mutationSpace = buildMutationSpaceFromScenario(scenario);
+  const paths = mutationSpace.map((entry) => entry.path);
+
+  assert.equal(paths.includes('pressure.crisisSpikeExtractionDelta'), false);
+  assert.equal(paths.includes('pressure.maxExtractionAddedPerRound'), true);
+});
+
+test('scenario patch validation rejects unsupported crisis spike extraction deltas', () => {
+  const scenario = getRulesetDefinition('egypt_1919_revolution');
+  assert.ok(scenario);
+
+  assert.equal(
+    validateScenarioPatch(
+      {
+        pressure: {
+          crisisSpikeExtractionDelta: 1,
+        },
+      },
+      scenario,
+    ),
+    false,
+  );
+
+  assert.equal(
+    validateScenarioPatch(
+      {
+        pressure: {
+          maxExtractionAddedPerRound: 1,
+        },
+      },
+      scenario,
+    ),
+    true,
+  );
 });

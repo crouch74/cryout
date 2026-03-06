@@ -2756,7 +2756,7 @@ export function dispatchCommand(
   state: EngineState,
   command: EngineCommand,
   content: CompiledContent,
-  options?: { assumeNormalized?: boolean },
+  options?: { assumeNormalized?: boolean; captureCommandLog?: boolean },
 ): EngineState {
   if (command.type === 'LoadSnapshot') {
     return normalizeEngineState(command.payload.snapshot);
@@ -2764,7 +2764,9 @@ export function dispatchCommand(
 
   if (command.type === 'SaveSnapshot') {
     const next = cloneState(state);
-    next.commandLog.push(cloneState(command));
+    if (options?.captureCommandLog !== false) {
+      next.commandLog.push(cloneState(command));
+    }
     addSimpleEvent(next, 'command', 'SaveSnapshot', '💾', 'Snapshot prepared.', ['SaveSnapshot']);
     return next;
   }
@@ -2774,7 +2776,9 @@ export function dispatchCommand(
   }
 
   const next = options?.assumeNormalized ? cloneState(state) : normalizeEngineState(state);
-  next.commandLog.push(cloneState(command));
+  if (options?.captureCommandLog !== false) {
+    next.commandLog.push(cloneState(command));
+  }
 
   switch (command.type) {
     case 'QueueIntent': {

@@ -390,6 +390,81 @@ function initializeActionCounts() {
   };
 }
 
+interface SimulationMetricsAccumulator {
+  actionCounts: ReturnType<typeof initializeActionCounts>;
+  actionCountsExtra: Record<string, number>;
+  campaignStats: {
+    campaignAttempts: number;
+    campaignSuccess: number;
+    attentionFailures: number;
+    backlashFailures: number;
+  };
+  resourceStats: {
+    comradesSpent: number;
+    evidenceSpent: number;
+  };
+}
+
+function createSimulationMetricsAccumulator(): SimulationMetricsAccumulator {
+  return {
+    actionCounts: initializeActionCounts(),
+    actionCountsExtra: {},
+    campaignStats: {
+      campaignAttempts: 0,
+      campaignSuccess: 0,
+      attentionFailures: 0,
+      backlashFailures: 0,
+    },
+    resourceStats: {
+      comradesSpent: 0,
+      evidenceSpent: 0,
+    },
+  };
+}
+
+function updateSimulationMetrics(
+  metrics: SimulationMetricsAccumulator,
+  events: DomainEvent[],
+) {
+  for (const event of events) {
+    if (event.sourceType !== 'action') {
+      continue;
+    }
+
+    const actionId = event.sourceId;
+    const actionKey = BASE_ACTION_KEY_MAP[actionId as keyof typeof BASE_ACTION_KEY_MAP];
+    if (actionKey) {
+      metrics.actionCounts[actionKey] += 1;
+    } else {
+      metrics.actionCountsExtra[actionId] = (metrics.actionCountsExtra[actionId] ?? 0) + 1;
+    }
+
+    if (actionId === 'launch_campaign' && event.context?.roll) {
+      metrics.campaignStats.campaignAttempts += 1;
+      if (event.context.roll.success) {
+        metrics.campaignStats.campaignSuccess += 1;
+      }
+      if (event.context.roll.outcomeBand === 'attention') {
+        metrics.campaignStats.attentionFailures += 1;
+      }
+      if (event.context.roll.outcomeBand === 'backlash') {
+        metrics.campaignStats.backlashFailures += 1;
+      }
+    }
+
+    for (const trace of event.trace) {
+      for (const delta of trace.deltas) {
+        if (delta.kind === 'comrades' && typeof delta.before === 'number' && typeof delta.after === 'number' && delta.after < delta.before) {
+          metrics.resourceStats.comradesSpent += delta.before - delta.after;
+        }
+        if (delta.kind === 'evidence' && typeof delta.before === 'number' && typeof delta.after === 'number' && delta.after < delta.before) {
+          metrics.resourceStats.evidenceSpent += delta.before - delta.after;
+        }
+      }
+    }
+  }
+}
+
 function buildMandateOutcomeById(
   state: EngineState,
   debug: boolean,
@@ -433,61 +508,9 @@ function buildRunRecord(
   stalled: boolean,
   preDefeatSnapshots: PreDefeatSnapshot[],
   roundSnapshots: RoundSnapshot[],
+  metrics: SimulationMetricsAccumulator,
   debug: boolean,
 ): SimulationRecord {
-  const actionCounts = initializeActionCounts();
-  const actionCountsExtra: Record<string, number> = {};
-
-  const campaignStats = {
-    campaignAttempts: 0,
-    campaignSuccess: 0,
-    attentionFailures: 0,
-    backlashFailures: 0,
-  };
-
-  const resourceStats = {
-    comradesSpent: 0,
-    evidenceSpent: 0,
-  };
-
-  for (const event of state.eventLog) {
-    if (event.sourceType !== 'action') {
-      continue;
-    }
-
-    const actionId = event.sourceId;
-    const actionKey = BASE_ACTION_KEY_MAP[actionId as keyof typeof BASE_ACTION_KEY_MAP];
-    if (actionKey) {
-      actionCounts[actionKey] += 1;
-    } else {
-      actionCountsExtra[actionId] = (actionCountsExtra[actionId] ?? 0) + 1;
-    }
-
-    if (actionId === 'launch_campaign' && event.context?.roll) {
-      campaignStats.campaignAttempts += 1;
-      if (event.context.roll.success) {
-        campaignStats.campaignSuccess += 1;
-      }
-      if (event.context.roll.outcomeBand === 'attention') {
-        campaignStats.attentionFailures += 1;
-      }
-      if (event.context.roll.outcomeBand === 'backlash') {
-        campaignStats.backlashFailures += 1;
-      }
-    }
-
-    for (const trace of event.trace) {
-      for (const delta of trace.deltas) {
-        if (delta.kind === 'comrades' && typeof delta.before === 'number' && typeof delta.after === 'number' && delta.after < delta.before) {
-          resourceStats.comradesSpent += delta.before - delta.after;
-        }
-        if (delta.kind === 'evidence' && typeof delta.before === 'number' && typeof delta.after === 'number' && delta.after < delta.before) {
-          resourceStats.evidenceSpent += delta.before - delta.after;
-        }
-      }
-    }
-  }
-
   const terminalReason = state.terminalOutcome?.cause ?? (stalled ? 'simulation_stalled' : 'simulation_stalled');
   const resultType = state.phase === 'WIN' ? 'victory' : 'defeat';
   const normalizedSnapshots = roundSnapshots.slice(0, MAX_SNAPSHOTS_PER_GAME);
@@ -525,10 +548,10 @@ function buildRunRecord(
       domains: buildFinalDomains(state),
       fronts: buildFinalFronts(state),
     },
-    campaignStats,
-    resourceStats,
-    actionCounts,
-    actionCountsExtra,
+    campaignStats: metrics.campaignStats,
+    resourceStats: metrics.resourceStats,
+    actionCounts: metrics.actionCounts,
+    actionCountsExtra: metrics.actionCountsExtra,
     preDefeatSnapshots,
     roundSnapshots: normalizedSnapshots,
     timeline: convertRoundSnapshotsToTimeline(normalizedSnapshots),
@@ -539,6 +562,7 @@ function appendRoundSnapshot(
   run: PlannedSimulationRun,
   roundSnapshots: RoundSnapshot[],
   state: EngineState,
+  metrics: SimulationMetricsAccumulator,
   snapshotLimitReached: { value: boolean },
   debug: boolean,
 ) {
@@ -553,7 +577,22 @@ function appendRoundSnapshot(
   if (debug) {
     console.log(`📸 Capturing round snapshot r=${state.round} sim=${run.simulationId}`);
   }
-  roundSnapshots.push(captureRoundSnapshot(state));
+  const snapshot = captureRoundSnapshot(state);
+  roundSnapshots.push({
+    ...snapshot,
+    actions: { ...metrics.actionCounts },
+    campaign: {
+      attempts: metrics.campaignStats.campaignAttempts,
+      success: metrics.campaignStats.campaignSuccess,
+      attentionFailures: metrics.campaignStats.attentionFailures,
+      backlashFailures: metrics.campaignStats.backlashFailures,
+    },
+    escalationFlags: {
+      extractionThresholdTriggered: Boolean(state.usedSystemEscalationTriggers.extraction_threshold),
+      warMachineThresholdTriggered: Boolean(state.usedSystemEscalationTriggers.war_machine_threshold),
+      globalGazeCollapse: Boolean(state.usedSystemEscalationTriggers.gaze_threshold || state.globalGaze <= 5),
+    },
+  });
 }
 
 function getPreDefeatPhase(command: SimulationCommand): string | null {
@@ -879,7 +918,9 @@ export function runSingleSimulation(
   let stalled = false;
   const preDefeatSnapshots: PreDefeatSnapshot[] = [];
   const roundSnapshots: RoundSnapshot[] = [];
+  const metrics = createSimulationMetricsAccumulator();
   const snapshotLimitReached = { value: false };
+  let commandCount = state.commandLog.length;
 
   for (let step = 0; step < maxSteps; step += 1) {
     if (state.terminalOutcome || state.phase === 'WIN' || state.phase === 'LOSS') {
@@ -898,13 +939,19 @@ export function runSingleSimulation(
     logPhaseHeader(state, command, debug);
     // Capture immediately before dispatching commands that can evaluate defeat.
     appendPreDefeatSnapshot(preDefeatSnapshots, state, command, debug);
-    state = dispatchCommand(state, command, content, { assumeNormalized: true });
+    state = dispatchCommand(state, command, content, {
+      assumeNormalized: true,
+      captureCommandLog: trajectoryRecording || debug,
+    });
+    commandCount += 1;
+    const newEvents = state.eventLog.slice(eventStartIndex);
+    updateSimulationMetrics(metrics, newEvents);
     if (trajectoryRecorder && stateBeforeCommand) {
       appendTrajectorySteps(
         trajectoryRecorder,
         stateBeforeCommand,
         state,
-        state.eventLog.slice(eventStartIndex),
+        newEvents,
         debug,
       );
     }
@@ -916,7 +963,12 @@ export function runSingleSimulation(
     }
 
     if (command.type === 'ResolveResolutionPhase') {
-      appendRoundSnapshot(run, roundSnapshots, state, snapshotLimitReached, debug);
+      appendRoundSnapshot(run, roundSnapshots, state, metrics, snapshotLimitReached, debug);
+    }
+
+    if (!trajectoryRecording) {
+      state.eventLog = [];
+      state.commandLog = [];
     }
   }
 
@@ -932,7 +984,7 @@ export function runSingleSimulation(
     }
   }
 
-  const record = buildRunRecord(run, state, stalled, preDefeatSnapshots, roundSnapshots, debug);
+  const record = buildRunRecord(run, state, stalled, preDefeatSnapshots, roundSnapshots, metrics, debug);
   const trajectory = trajectoryRecorder && (record.publicVictoryAchieved || record.result.type === 'victory')
     ? trajectoryRecorder.buildTrajectory({
       scenarioId: run.scenario,
@@ -968,7 +1020,7 @@ export function runSingleSimulation(
 
   return {
     record,
-    terminalCommandLogLength: state.commandLog.length,
+    terminalCommandLogLength: commandCount,
     trajectory,
   };
 }

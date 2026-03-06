@@ -148,3 +148,55 @@ test('victory gating exploration mode emits victory gate strategies', async () =
   assert.equal(candidates.some((entry) => entry.strategy === 'victory_gating_action'), true);
   assert.equal(candidates.some((entry) => entry.strategy === 'victory_gating_progress'), true);
 });
+
+test('candidate generator filters unsupported pressure mutations per scenario', async () => {
+  const candidates = await generateCandidatePatches({
+    scenarioId: 'egypt_1919_revolution',
+    iteration: 3,
+    seed: 42,
+    targetCount: 12,
+    candidateRuns: 200,
+    runtime: 'balanced',
+    strategyMode: 'full_optimizer',
+    analysis: {
+      outOfRange: {
+        publicVictoryRate: true,
+        successRate: true,
+        mandateFailRateGivenPublic: false,
+        averageTurns: true,
+      },
+      defeatPressure: {
+        extractionBreachRate: 0.5,
+        comradesExhaustedRate: 0.1,
+        suddenDeathRate: 0.2,
+        pressureDetected: true,
+      },
+      structural: {
+        turnOnePublicVictoryRate: 0,
+        victoryBeforeAllowedRoundRate: 0,
+        earlyTerminationRate: 0,
+        noGameplayDetected: false,
+        impossibleMandates: [],
+      },
+      topMandateFailures: [],
+      insights: ['Average turns are short and may indicate early collapse.'],
+    },
+    trajectorySummary: null,
+    hillClimbSourcePatch: {
+      pressure: {
+        maxExtractionAddedPerRound: 2,
+      },
+    },
+    balanceSeedOutputDir: '/tmp/optimizer-candidate-tests',
+    useBalanceSearchSeeding: false,
+  });
+
+  assert.equal(
+    candidates.some((entry) => entry.patch.pressure?.crisisSpikeExtractionDelta !== undefined),
+    false,
+  );
+  assert.equal(
+    candidates.some((entry) => entry.patch.pressure?.maxExtractionAddedPerRound !== undefined),
+    true,
+  );
+});

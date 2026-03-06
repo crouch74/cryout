@@ -3,6 +3,12 @@ import { balanceCandidateToPatch, runBalanceSearch } from '../balance/SearchEngi
 import type { ScenarioPatch } from '../experiments/patchDsl.ts';
 import type { TrajectorySummary } from '../trajectory/types.ts';
 import { getRulesetDefinition } from '../../engine/index.ts';
+import {
+  buildMutationSpaceFromScenario,
+  scenarioHasCatastrophicCap,
+  validateScenarioPatch,
+  type MutationDescriptor,
+} from './ga/mutationSpace.ts';
 import type {
   OptimizerAnalysis,
   OptimizerCandidate,
@@ -40,18 +46,36 @@ interface PatchGenome {
   catastrophicCapValue: number;
 }
 
-const GENOME_LIMITS = {
-  globalGazeDelta: { min: -2, max: 3 },
-  northernWarMachineDelta: { min: -2, max: 2 },
-  seededExtractionTotalDelta: { min: -3, max: 3 },
-  crisisSpikeExtractionDelta: { min: -2, max: 2 },
-  liberationThresholdDelta: { min: -2, max: 2 },
-  relaxAllThresholdsBy: { min: -1, max: 3 },
-  scoreThreshold: { min: 65, max: 75 },
-  publicVictoryWeight: { min: 30, max: 50 },
-  mandatesWeight: { min: 40, max: 60 },
-  catastrophicCapValue: { min: 60, max: 75 },
+type GenomeKey = keyof PatchGenome;
+
+type GenomeFieldDescriptor = {
+  path: string;
+  type: 'number' | 'boolean' | 'nullableInt';
+  min?: number;
+  max?: number;
+  defaultValue: number | boolean | null;
+};
+
+const GENOME_FIELDS: Record<GenomeKey, GenomeFieldDescriptor> = {
+  globalGazeDelta: { path: 'setup.globalGazeDelta', type: 'number', min: -2, max: 3, defaultValue: 0 },
+  northernWarMachineDelta: { path: 'setup.northernWarMachineDelta', type: 'number', min: -2, max: 2, defaultValue: 0 },
+  seededExtractionTotalDelta: { path: 'setup.seededExtractionTotalDelta', type: 'number', min: -3, max: 3, defaultValue: 0 },
+  crisisSpikeExtractionDelta: { path: 'pressure.crisisSpikeExtractionDelta', type: 'number', min: -2, max: 2, defaultValue: 0 },
+  liberationThresholdDelta: { path: 'victory.liberationThresholdDelta', type: 'number', min: -2, max: 2, defaultValue: 0 },
+  relaxAllThresholdsBy: { path: 'mandates.relaxAllThresholdsBy', type: 'number', min: -1, max: 3, defaultValue: 0 },
+  maxExtractionAddedPerRound: { path: 'pressure.maxExtractionAddedPerRound', type: 'nullableInt', min: 1, max: 4, defaultValue: null },
+  scoreThreshold: { path: 'victoryScoring.scoreThreshold', type: 'number', min: 65, max: 75, defaultValue: 70 },
+  publicVictoryWeight: { path: 'victoryScoring.publicVictoryWeight', type: 'number', min: 30, max: 50, defaultValue: 45 },
+  mandatesWeight: { path: 'victoryScoring.mandatesWeight', type: 'number', min: 40, max: 60, defaultValue: 55 },
+  catastrophicCapEnabled: { path: 'victoryScoring.catastrophicCapEnabled', type: 'boolean', defaultValue: true },
+  catastrophicCapValue: { path: 'victoryScoring.catastrophicCapValue', type: 'number', min: 60, max: 75, defaultValue: 69 },
 } as const;
+
+interface ScenarioMutationConfig {
+  allowCatastrophicCap: boolean;
+  mutationSpace: MutationDescriptor[];
+  supportedPaths: Set<string>;
+}
 
 function stableHash(value: string) {
   let hash = 2166136261 >>> 0;
@@ -92,26 +116,53 @@ function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
 
-function toGenome(patch: ScenarioPatch | null): PatchGenome {
-  const publicVictoryWeight = patch?.victoryScoring?.publicVictoryWeight ?? 45;
-  const mandatesWeight = patch?.victoryScoring?.mandatesWeight ?? 55;
+function hasMutationPath(config: ScenarioMutationConfig, path: string) {
+  return config.supportedPaths.has(path);
+}
+
+function createScenarioMutationConfig(scenarioId: string): ScenarioMutationConfig {
+  const ruleset = getRulesetDefinition(scenarioId);
+  if (!ruleset) {
+    throw new Error(`Unknown scenario: ${scenarioId}`);
+  }
+
+  const mutationSpace = buildMutationSpaceFromScenario(ruleset);
   return {
-    globalGazeDelta: patch?.setup?.globalGazeDelta ?? 0,
-    northernWarMachineDelta: patch?.setup?.northernWarMachineDelta ?? 0,
-    seededExtractionTotalDelta: patch?.setup?.seededExtractionTotalDelta ?? 0,
-    crisisSpikeExtractionDelta: patch?.pressure?.crisisSpikeExtractionDelta ?? 0,
-    liberationThresholdDelta: patch?.victory?.liberationThresholdDelta ?? 0,
-    relaxAllThresholdsBy: patch?.mandates?.relaxAllThresholdsBy ?? 0,
-    maxExtractionAddedPerRound: patch?.pressure?.maxExtractionAddedPerRound ?? null,
-    scoreThreshold: patch?.victoryScoring?.threshold ?? 70,
-    publicVictoryWeight,
-    mandatesWeight,
-    catastrophicCapEnabled: patch?.victoryScoring?.catastrophicCapEnabled ?? true,
-    catastrophicCapValue: patch?.victoryScoring?.catastrophicCapValue ?? 69,
+    allowCatastrophicCap: scenarioHasCatastrophicCap(ruleset),
+    mutationSpace,
+    supportedPaths: new Set(mutationSpace.map((entry) => entry.path)),
   };
 }
 
-function fromGenome(genome: PatchGenome, note: string): ScenarioPatch {
+function toGenome(patch: ScenarioPatch | null, config: ScenarioMutationConfig): PatchGenome {
+  const publicVictoryWeight = patch?.victoryScoring?.publicVictoryWeight ?? 45;
+  const mandatesWeight = patch?.victoryScoring?.mandatesWeight ?? 55;
+  const genome: PatchGenome = {
+    globalGazeDelta: patch?.setup?.globalGazeDelta ?? 0,
+    northernWarMachineDelta: patch?.setup?.northernWarMachineDelta ?? 0,
+    seededExtractionTotalDelta: patch?.setup?.seededExtractionTotalDelta ?? 0,
+    crisisSpikeExtractionDelta: hasMutationPath(config, 'pressure.crisisSpikeExtractionDelta')
+      ? (patch?.pressure?.crisisSpikeExtractionDelta ?? 0)
+      : 0,
+    liberationThresholdDelta: patch?.victory?.liberationThresholdDelta ?? 0,
+    relaxAllThresholdsBy: patch?.mandates?.relaxAllThresholdsBy ?? 0,
+    maxExtractionAddedPerRound: hasMutationPath(config, 'pressure.maxExtractionAddedPerRound')
+      ? (patch?.pressure?.maxExtractionAddedPerRound ?? null)
+      : null,
+    scoreThreshold: patch?.victoryScoring?.threshold ?? 70,
+    publicVictoryWeight,
+    mandatesWeight,
+    catastrophicCapEnabled: config.allowCatastrophicCap
+      ? (patch?.victoryScoring?.catastrophicCapEnabled ?? true)
+      : true,
+    catastrophicCapValue: config.allowCatastrophicCap
+      ? (patch?.victoryScoring?.catastrophicCapValue ?? 69)
+      : 69,
+  };
+  return genome;
+}
+
+function fromGenome(genome: PatchGenome, note: string, config: ScenarioMutationConfig): ScenarioPatch {
   const patch: ScenarioPatch = {
     note,
   };
@@ -129,12 +180,15 @@ function fromGenome(genome: PatchGenome, note: string): ScenarioPatch {
     }
   }
 
-  if (genome.crisisSpikeExtractionDelta !== 0 || genome.maxExtractionAddedPerRound !== null) {
+  if (
+    (hasMutationPath(config, 'pressure.crisisSpikeExtractionDelta') && genome.crisisSpikeExtractionDelta !== 0)
+    || (hasMutationPath(config, 'pressure.maxExtractionAddedPerRound') && genome.maxExtractionAddedPerRound !== null)
+  ) {
     patch.pressure = {};
-    if (genome.crisisSpikeExtractionDelta !== 0) {
+    if (hasMutationPath(config, 'pressure.crisisSpikeExtractionDelta') && genome.crisisSpikeExtractionDelta !== 0) {
       patch.pressure.crisisSpikeExtractionDelta = genome.crisisSpikeExtractionDelta;
     }
-    if (genome.maxExtractionAddedPerRound !== null) {
+    if (hasMutationPath(config, 'pressure.maxExtractionAddedPerRound') && genome.maxExtractionAddedPerRound !== null) {
       patch.pressure.maxExtractionAddedPerRound = genome.maxExtractionAddedPerRound;
     }
   }
@@ -155,8 +209,8 @@ function fromGenome(genome: PatchGenome, note: string): ScenarioPatch {
     genome.scoreThreshold !== 70
     || genome.publicVictoryWeight !== 45
     || genome.mandatesWeight !== 55
-    || genome.catastrophicCapEnabled !== true
-    || genome.catastrophicCapValue !== 69
+    || (config.allowCatastrophicCap && genome.catastrophicCapEnabled !== true)
+    || (config.allowCatastrophicCap && genome.catastrophicCapValue !== 69)
   ) {
     patch.victoryScoring = {
       mode: 'score',
@@ -164,21 +218,49 @@ function fromGenome(genome: PatchGenome, note: string): ScenarioPatch {
       publicVictoryWeight: genome.publicVictoryWeight,
       mandatesWeight: genome.mandatesWeight,
       mandateProgressMode: 'binary',
-      catastrophicCapEnabled: genome.catastrophicCapEnabled,
-      catastrophicCapValue: genome.catastrophicCapValue,
     };
+    if (config.allowCatastrophicCap) {
+      patch.victoryScoring.catastrophicCapEnabled = genome.catastrophicCapEnabled;
+      patch.victoryScoring.catastrophicCapValue = genome.catastrophicCapValue;
+    }
   }
 
   return normalizeScenarioPatch(patch);
 }
 
-function mutateGenome(base: PatchGenome, rng: () => number): PatchGenome {
+function mutateGenome(base: PatchGenome, rng: () => number, config: ScenarioMutationConfig): PatchGenome {
   const next = { ...base };
-  const knobs = Object.keys(GENOME_LIMITS) as Array<keyof typeof GENOME_LIMITS>;
-  const key = knobs[rng() % knobs.length];
-  const bounds = GENOME_LIMITS[key];
-  const step = rng() % 2 === 0 ? -1 : 1;
-  next[key] = clamp(next[key] + step, bounds.min, bounds.max);
+  const mutableFields = config.mutationSpace
+    .map((entry) => Object.entries(GENOME_FIELDS).find(([, field]) => field.path === entry.path))
+    .filter((entry): entry is [GenomeKey, GenomeFieldDescriptor] => entry !== undefined);
+
+  if (mutableFields.length === 0) {
+    return next;
+  }
+
+  const [key, field] = mutableFields[rng() % mutableFields.length];
+  if (field.type === 'number') {
+    const descriptor = config.mutationSpace.find((entry) => entry.path === field.path);
+    const min = descriptor?.min ?? field.min ?? 0;
+    const max = descriptor?.max ?? field.max ?? 0;
+    const step = key === 'publicVictoryWeight' || key === 'mandatesWeight'
+      ? (rng() % 2 === 0 ? -5 : 5)
+      : (rng() % 2 === 0 ? -1 : 1);
+    next[key] = clamp(next[key] + step, min, max) as never;
+  } else if (field.type === 'nullableInt') {
+    const descriptor = config.mutationSpace.find((entry) => entry.path === field.path);
+    const min = descriptor?.min ?? field.min ?? 1;
+    const max = descriptor?.max ?? field.max ?? 4;
+    if (next[key] === null) {
+      next[key] = intInRange(rng, min, max) as never;
+    } else if (rng() % 3 === 0) {
+      next[key] = null as never;
+    } else {
+      next[key] = clamp((next[key] as number) + (rng() % 2 === 0 ? -1 : 1), min, max) as never;
+    }
+  } else if (field.type === 'boolean') {
+    next[key] = (!next[key]) as never;
+  }
 
   if (key === 'publicVictoryWeight') {
     next.mandatesWeight = 100 - next.publicVictoryWeight;
@@ -186,7 +268,7 @@ function mutateGenome(base: PatchGenome, rng: () => number): PatchGenome {
     next.publicVictoryWeight = 100 - next.mandatesWeight;
   }
 
-  if (rng() % 5 === 0) {
+  if (hasMutationPath(config, 'pressure.maxExtractionAddedPerRound') && rng() % 5 === 0) {
     if (next.maxExtractionAddedPerRound === null) {
       next.maxExtractionAddedPerRound = intInRange(rng, 1, 4);
     } else if (rng() % 3 === 0) {
@@ -196,31 +278,33 @@ function mutateGenome(base: PatchGenome, rng: () => number): PatchGenome {
     }
   }
 
-  if (rng() % 7 === 0) {
+  if (config.allowCatastrophicCap && rng() % 7 === 0) {
     next.catastrophicCapEnabled = !next.catastrophicCapEnabled;
   }
 
   return next;
 }
 
-function randomGenome(rng: () => number): PatchGenome {
+function randomGenome(rng: () => number, config: ScenarioMutationConfig): PatchGenome {
   const genome: PatchGenome = {
-    globalGazeDelta: intInRange(rng, GENOME_LIMITS.globalGazeDelta.min, GENOME_LIMITS.globalGazeDelta.max),
-    northernWarMachineDelta: intInRange(rng, GENOME_LIMITS.northernWarMachineDelta.min, GENOME_LIMITS.northernWarMachineDelta.max),
-    seededExtractionTotalDelta: intInRange(rng, GENOME_LIMITS.seededExtractionTotalDelta.min, GENOME_LIMITS.seededExtractionTotalDelta.max),
-    crisisSpikeExtractionDelta: intInRange(rng, GENOME_LIMITS.crisisSpikeExtractionDelta.min, GENOME_LIMITS.crisisSpikeExtractionDelta.max),
-    liberationThresholdDelta: intInRange(rng, GENOME_LIMITS.liberationThresholdDelta.min, GENOME_LIMITS.liberationThresholdDelta.max),
-    relaxAllThresholdsBy: intInRange(rng, GENOME_LIMITS.relaxAllThresholdsBy.min, GENOME_LIMITS.relaxAllThresholdsBy.max),
+    globalGazeDelta: intInRange(rng, GENOME_FIELDS.globalGazeDelta.min ?? 0, GENOME_FIELDS.globalGazeDelta.max ?? 0),
+    northernWarMachineDelta: intInRange(rng, GENOME_FIELDS.northernWarMachineDelta.min ?? 0, GENOME_FIELDS.northernWarMachineDelta.max ?? 0),
+    seededExtractionTotalDelta: intInRange(rng, GENOME_FIELDS.seededExtractionTotalDelta.min ?? 0, GENOME_FIELDS.seededExtractionTotalDelta.max ?? 0),
+    crisisSpikeExtractionDelta: hasMutationPath(config, 'pressure.crisisSpikeExtractionDelta')
+      ? intInRange(rng, GENOME_FIELDS.crisisSpikeExtractionDelta.min ?? 0, GENOME_FIELDS.crisisSpikeExtractionDelta.max ?? 0)
+      : 0,
+    liberationThresholdDelta: intInRange(rng, GENOME_FIELDS.liberationThresholdDelta.min ?? 0, GENOME_FIELDS.liberationThresholdDelta.max ?? 0),
+    relaxAllThresholdsBy: intInRange(rng, GENOME_FIELDS.relaxAllThresholdsBy.min ?? 0, GENOME_FIELDS.relaxAllThresholdsBy.max ?? 0),
     maxExtractionAddedPerRound: null,
     scoreThreshold: [65, 70, 75][rng() % 3],
     publicVictoryWeight: [30, 35, 40, 45, 50][rng() % 5],
     mandatesWeight: 55,
-    catastrophicCapEnabled: rng() % 2 === 0,
-    catastrophicCapValue: [65, 69, 72][rng() % 3],
+    catastrophicCapEnabled: config.allowCatastrophicCap ? rng() % 2 === 0 : true,
+    catastrophicCapValue: config.allowCatastrophicCap ? [65, 69, 72][rng() % 3] : 69,
   };
   genome.mandatesWeight = 100 - genome.publicVictoryWeight;
 
-  if (rng() % 4 === 0) {
+  if (hasMutationPath(config, 'pressure.maxExtractionAddedPerRound') && rng() % 4 === 0) {
     genome.maxExtractionAddedPerRound = intInRange(rng, 1, 4);
   }
   return genome;
@@ -260,11 +344,6 @@ function serializePatch(patch: ScenarioPatch) {
   return JSON.stringify(normalizeValue(patch) ?? {});
 }
 
-function scenarioHasCatastrophicCap(scenarioId: string) {
-  const ruleset = getRulesetDefinition(scenarioId);
-  return Boolean(ruleset?.victoryScoring?.caps?.capScoreAtIf?.some((rule) => rule.id === 'catastrophic_state'));
-}
-
 function sanitizeCapPatch(patch: ScenarioPatch, allowCatastrophicCap: boolean): ScenarioPatch {
   if (allowCatastrophicCap || !patch.victoryScoring) {
     return patch;
@@ -295,8 +374,13 @@ export function isScenarioPatchEmpty(patch: ScenarioPatch) {
   return entries.length === 0;
 }
 
-function buildParameterSweepCandidates(analysis: OptimizerAnalysis): ScenarioPatch[] {
+function buildParameterSweepCandidates(
+  analysis: OptimizerAnalysis,
+  config: ScenarioMutationConfig,
+): ScenarioPatch[] {
   const candidates: ScenarioPatch[] = [];
+  const canMutateCrisisSpike = hasMutationPath(config, 'pressure.crisisSpikeExtractionDelta');
+  const canMutateExtractionCap = hasMutationPath(config, 'pressure.maxExtractionAddedPerRound');
 
   if (analysis.outOfRange.successRate || analysis.outOfRange.publicVictoryRate) {
     candidates.push({
@@ -306,9 +390,11 @@ function buildParameterSweepCandidates(analysis: OptimizerAnalysis): ScenarioPat
         northernWarMachineDelta: -1,
         seededExtractionTotalDelta: -1,
       },
-      pressure: {
-        crisisSpikeExtractionDelta: -1,
-      },
+      pressure: canMutateCrisisSpike
+        ? {
+          crisisSpikeExtractionDelta: -1,
+        }
+        : undefined,
     });
   }
 
@@ -321,10 +407,15 @@ function buildParameterSweepCandidates(analysis: OptimizerAnalysis): ScenarioPat
           threshold,
           publicVictoryWeight: 45,
           mandatesWeight: 55,
-          catastrophicCapEnabled: true,
-          catastrophicCapValue: 69,
         },
       });
+      if (config.allowCatastrophicCap) {
+        candidates[candidates.length - 1].victoryScoring = {
+          ...candidates[candidates.length - 1].victoryScoring,
+          catastrophicCapEnabled: true,
+          catastrophicCapValue: 69,
+        };
+      }
     }
     for (const publicVictoryWeight of [30, 35, 40, 45, 50]) {
       candidates.push({
@@ -334,21 +425,28 @@ function buildParameterSweepCandidates(analysis: OptimizerAnalysis): ScenarioPat
           threshold: 70,
           publicVictoryWeight,
           mandatesWeight: 100 - publicVictoryWeight,
+        },
+      });
+      if (config.allowCatastrophicCap) {
+        candidates[candidates.length - 1].victoryScoring = {
+          ...candidates[candidates.length - 1].victoryScoring,
           catastrophicCapEnabled: true,
           catastrophicCapValue: 69,
+        };
+      }
+    }
+    if (config.allowCatastrophicCap) {
+      candidates.push({
+        note: '🧠 Sweep: disable catastrophic score cap',
+        victoryScoring: {
+          mode: 'score',
+          threshold: 70,
+          publicVictoryWeight: 45,
+          mandatesWeight: 55,
+          catastrophicCapEnabled: false,
         },
       });
     }
-    candidates.push({
-      note: '🧠 Sweep: disable catastrophic score cap',
-      victoryScoring: {
-        mode: 'score',
-        threshold: 70,
-        publicVictoryWeight: 45,
-        mandatesWeight: 55,
-        catastrophicCapEnabled: false,
-      },
-    });
   }
 
   if (analysis.outOfRange.mandateFailRateGivenPublic) {
@@ -378,9 +476,11 @@ function buildParameterSweepCandidates(analysis: OptimizerAnalysis): ScenarioPat
     } else {
       candidates.push({
         note: '🧠 Sweep: accelerate resolution pacing',
-        pressure: {
-          crisisSpikeExtractionDelta: 1,
-        },
+        pressure: canMutateCrisisSpike
+          ? {
+            crisisSpikeExtractionDelta: 1,
+          }
+          : undefined,
         victory: {
           liberationThresholdDelta: 1,
         },
@@ -389,12 +489,16 @@ function buildParameterSweepCandidates(analysis: OptimizerAnalysis): ScenarioPat
   }
 
   if (analysis.defeatPressure.pressureDetected) {
+    const pressurePatch: ScenarioPatch['pressure'] = {};
+    if (canMutateExtractionCap) {
+      pressurePatch.maxExtractionAddedPerRound = 2;
+    }
+    if (canMutateCrisisSpike) {
+      pressurePatch.crisisSpikeExtractionDelta = -1;
+    }
     candidates.push({
       note: '🧠 Sweep: cap per-round extraction spikes',
-      pressure: {
-        maxExtractionAddedPerRound: 2,
-        crisisSpikeExtractionDelta: -1,
-      },
+      pressure: Object.keys(pressurePatch).length > 0 ? pressurePatch : undefined,
     });
   }
 
@@ -530,12 +634,16 @@ function buildVictoryGatingCandidates(mode: OptimizerStrategyMode, analysis: Opt
 
 export async function generateCandidatePatches(input: CandidateGenerationInput): Promise<OptimizerCandidate[]> {
   const rng = createRng(mixSeed(input.seed, stableHash(`optimizer-candidates:${input.iteration}`)));
-  const allowCatastrophicCap = scenarioHasCatastrophicCap(input.scenarioId);
+  const mutationConfig = createScenarioMutationConfig(input.scenarioId);
   const dedup = new Map<string, Omit<OptimizerCandidate, 'candidateId'>>();
 
   const addCandidate = (strategy: OptimizerCandidate['strategy'], patch: ScenarioPatch) => {
-    const normalized = sanitizeCapPatch(normalizeScenarioPatch(patch), allowCatastrophicCap);
+    const normalized = sanitizeCapPatch(normalizeScenarioPatch(patch), mutationConfig.allowCatastrophicCap);
     if (isScenarioPatchEmpty(normalized)) {
+      return;
+    }
+    const ruleset = getRulesetDefinition(input.scenarioId);
+    if (!ruleset || !validateScenarioPatch(normalized, ruleset)) {
       return;
     }
     const key = serializePatch(normalized);
@@ -549,7 +657,7 @@ export async function generateCandidatePatches(input: CandidateGenerationInput):
   };
 
   if (includeNumericStrategies(input.strategyMode)) {
-    for (const patch of buildParameterSweepCandidates(input.analysis)) {
+    for (const patch of buildParameterSweepCandidates(input.analysis, mutationConfig)) {
       addCandidate('parameter_sweep', patch);
     }
   }
@@ -566,10 +674,10 @@ export async function generateCandidatePatches(input: CandidateGenerationInput):
   }
 
   if (input.hillClimbSourcePatch && includeNumericStrategies(input.strategyMode)) {
-    const hillSource = toGenome(input.hillClimbSourcePatch);
+    const hillSource = toGenome(input.hillClimbSourcePatch, mutationConfig);
     for (let index = 0; index < 4; index += 1) {
-      const mutated = mutateGenome(hillSource, rng);
-      addCandidate('hill_climb', fromGenome(mutated, '🧠 Hill-climb mutation'));
+      const mutated = mutateGenome(hillSource, rng, mutationConfig);
+      addCandidate('hill_climb', fromGenome(mutated, '🧠 Hill-climb mutation', mutationConfig));
     }
   }
 
@@ -621,7 +729,7 @@ export async function generateCandidatePatches(input: CandidateGenerationInput):
       continue;
     }
 
-    const patch = fromGenome(randomGenome(rng), '🎲 Randomized mutation');
+    const patch = fromGenome(randomGenome(rng, mutationConfig), '🎲 Randomized mutation', mutationConfig);
     addCandidate('random', patch);
   }
 

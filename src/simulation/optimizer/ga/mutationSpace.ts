@@ -7,6 +7,15 @@ export interface MutationDescriptor {
   max?: number;
 }
 
+function rulesetHasCrisisExtractionAdds(scenario: RulesetDefinition) {
+  return scenario.crisisCards.some((card) => card.effects.some((effect) => effect.type === 'add_extraction'));
+}
+
+function rulesetHasAnyExtractionAdds(scenario: RulesetDefinition) {
+  return scenario.crisisCards.some((card) => card.effects.some((effect) => effect.type === 'add_extraction'))
+    || scenario.systemCards.some((card) => card.onReveal.some((effect) => effect.type === 'add_extraction'));
+}
+
 export function buildMutationSpaceFromScenario(scenario: RulesetDefinition): MutationDescriptor[] {
   const space: MutationDescriptor[] = [];
   
@@ -14,8 +23,12 @@ export function buildMutationSpaceFromScenario(scenario: RulesetDefinition): Mut
   space.push({ path: 'setup.northernWarMachineDelta', type: 'number', min: -2, max: 2 });
   space.push({ path: 'setup.seededExtractionTotalDelta', type: 'number', min: -3, max: 3 });
   
-  space.push({ path: 'pressure.crisisSpikeExtractionDelta', type: 'number', min: -2, max: 2 });
-  space.push({ path: 'pressure.maxExtractionAddedPerRound', type: 'nullableInt', min: 1, max: 4 });
+  if (rulesetHasCrisisExtractionAdds(scenario)) {
+    space.push({ path: 'pressure.crisisSpikeExtractionDelta', type: 'number', min: -2, max: 2 });
+  }
+  if (rulesetHasAnyExtractionAdds(scenario)) {
+    space.push({ path: 'pressure.maxExtractionAddedPerRound', type: 'nullableInt', min: 1, max: 4 });
+  }
   
   space.push({ path: 'victory.liberationThresholdDelta', type: 'number', min: -2, max: 2 });
   space.push({ path: 'mandates.relaxAllThresholdsBy', type: 'number', min: -1, max: 3 });
@@ -46,6 +59,12 @@ export function pathExists(scenario: RulesetDefinition, path: string): boolean {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validateScenarioPatch(patch: any, scenario: RulesetDefinition): boolean {
+  if (patch.pressure?.crisisSpikeExtractionDelta !== undefined && !rulesetHasCrisisExtractionAdds(scenario)) {
+    return false;
+  }
+  if (patch.pressure?.maxExtractionAddedPerRound !== undefined && !rulesetHasAnyExtractionAdds(scenario)) {
+    return false;
+  }
   if (patch.victoryScoring && (patch.victoryScoring.catastrophicCapEnabled !== undefined || patch.victoryScoring.catastrophicCapValue !== undefined)) {
     if (!scenarioHasCatastrophicCap(scenario)) {
       return false;

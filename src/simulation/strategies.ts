@@ -206,28 +206,36 @@ function topBandSelection(
     return null;
   }
 
-  const sorted = candidates
-    .map((candidate) => ({
-      ...candidate,
-      reasons: Array.from(new Set(candidate.reasons)),
-    }))
-    .sort((left, right) => {
-      if (right.score !== left.score) {
-        return right.score - left.score;
-      }
-      return buildIntentKey(left.action).localeCompare(buildIntentKey(right.action));
-    });
+  let bestScore = Number.NEGATIVE_INFINITY;
+  const keyedCandidates = candidates.map((candidate) => ({
+    candidate,
+    key: buildIntentKey(candidate.action),
+  }));
+  for (const entry of keyedCandidates) {
+    if (entry.candidate.score > bestScore) {
+      bestScore = entry.candidate.score;
+    }
+  }
 
-  const best = sorted[0].score;
-  const topBand = sorted.filter((candidate) => candidate.score >= best - TOP_BAND_DELTA);
-  const pick = topBand[deterministicIndex(state, seat, strategyId, topBand.length)] ?? sorted[0];
+  const topBand = keyedCandidates
+    .filter((entry) => entry.candidate.score >= bestScore - TOP_BAND_DELTA)
+    .sort((left, right) => {
+      if (right.candidate.score !== left.candidate.score) {
+        return right.candidate.score - left.candidate.score;
+      }
+      return left.key.localeCompare(right.key);
+    });
+  const pick = topBand[deterministicIndex(state, seat, strategyId, topBand.length)]?.candidate ?? topBand[0]?.candidate;
+  if (!pick) {
+    return null;
+  }
 
   return {
     seat,
     action: pick.action,
     baseScore: pick.baseScore,
     score: pick.score,
-    reasons: [...pick.reasons, `strategy:${strategyId}`],
+    reasons: [...new Set([...pick.reasons, `strategy:${strategyId}`])],
   };
 }
 
@@ -364,7 +372,8 @@ function applyRiskAvoider(candidate: StrategyCandidate, context: StrategyContext
 }
 
 function chooseByProfile(context: StrategyContext, applyAdjustments: (candidate: StrategyCandidate, context: StrategyContext) => void) {
-  const adjusted = context.candidates.map((candidate) => {
+  const adjusted: StrategyCandidate[] = [];
+  for (const candidate of context.candidates) {
     const next: StrategyCandidate = {
       seat: candidate.seat,
       action: candidate.action,
@@ -373,8 +382,8 @@ function chooseByProfile(context: StrategyContext, applyAdjustments: (candidate:
       reasons: [...candidate.reasons],
     };
     applyAdjustments(next, context);
-    return next;
-  });
+    adjusted.push(next);
+  }
 
   return topBandSelection(context.state, context.seat, context.strategyId, adjusted);
 }
@@ -407,31 +416,13 @@ export function buildStrategyCandidatesForSeat(
   const candidates = listAutoPlayIntentsForSeat(state, content, seat, {
     includeDisabledReasons: false,
   })
-    .map((intent) => ({
-      intent,
-      intentKey: buildIntentKey(intent),
-    }))
-    .sort((left, right) => left.intentKey.localeCompare(right.intentKey))
-    .map((intent) => ({
-      candidate: scoreAutoPlayCandidate(state, content, {
+    .map((intent) => scoreAutoPlayCandidate(state, content, {
         seat,
-        action: intent.intent,
+        action: intent,
         score: 0,
         reasons: [],
-      }),
-      intentKey: intent.intentKey,
-    }))
-    .map(({ candidate, intentKey }) => ({
-      candidate: toStrategyCandidate(candidate),
-      intentKey,
-    }))
-    .sort((left, right) => {
-      if (right.candidate.baseScore !== left.candidate.baseScore) {
-        return right.candidate.baseScore - left.candidate.baseScore;
-      }
-      return left.intentKey.localeCompare(right.intentKey);
-    })
-    .map(({ candidate }) => candidate);
+      }))
+    .map(toStrategyCandidate);
 
   return candidates;
 }
