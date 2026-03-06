@@ -695,6 +695,7 @@ export function GameSessionScreen({
       }
     }
     return groups;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.eventLog]);
 
   const queueIntent = (nextDraft: DraftState) => {
@@ -1263,6 +1264,7 @@ export function GameSessionScreen({
       console.log('📜 [Autoplay] Closing mandate panel while autoplay is active.');
       setMandateModalOpen(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     activeCampaignResult,
     activeCardReveal,
@@ -1375,6 +1377,7 @@ export function GameSessionScreen({
     }
 
     revealActionButtonRef.current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeCardReveal, autoAdvanceTransientUi, cardRevealStage, motionMode]);
 
   useEffect(() => {
@@ -1492,6 +1495,7 @@ export function GameSessionScreen({
     return () => {
       window.removeEventListener('keydown', handleEscapeDismiss);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     activeCardReveal,
     contextOpen,

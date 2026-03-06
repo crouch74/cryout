@@ -720,8 +720,9 @@ function buildTrajectoryTargets(event: DomainEvent) {
   if (event.context?.targetDomainId) {
     targets.push(event.context.targetDomainId);
   }
-  if (typeof (event.context as any)?.targetSeat === 'number') {
-    targets.push(buildSeatKey((event.context as any).targetSeat));
+  const context = event.context as { targetSeat?: number } | undefined;
+  if (typeof context?.targetSeat === 'number') {
+    targets.push(buildSeatKey(context.targetSeat));
   }
   return targets.length > 0 ? targets : undefined;
 }

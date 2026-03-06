@@ -6,9 +6,7 @@ import { join } from 'node:path';
 import { writeJson, writeMarkdown } from '../io.ts';
 import type { GaGenerationReport, GaSearchResult } from './types.ts';
 
-function percent(value: number) {
-  return `${(value * 100).toFixed(2)}%`;
-}
+
 
 function float(value: number) {
   return value.toFixed(6);

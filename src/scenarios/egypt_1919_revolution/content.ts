@@ -510,6 +510,7 @@ export const compatRuleset: RulesetDefinition = {
         svgCoverage: [],
         note: 'Village networks.',
       },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any,
   },
   regions,

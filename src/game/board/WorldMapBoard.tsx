@@ -245,7 +245,7 @@ export function WorldMapBoard({
       minWidthRatio: 1.0,
       minHeightRatio: 1.0,
     });
-  }, [canvasSize.height, canvasSize.width, focusRegionIds, geometry]);
+  }, [board.viewport, canvasSize.height, canvasSize.width, focusRegionIds, geometry]);
   const mapViewport = mapCamera?.viewport ?? board.viewport;
 
   const regionCounts = useMemo(() => Object.fromEntries(
@@ -296,7 +296,7 @@ export function WorldMapBoard({
       regionCounts,
       manifest: board.regions,
     });
-  }, [board.regions, canvasSize.height, canvasSize.width, mapCamera, mapViewport, regionCounts, regionIds, selectedRegionId]);
+  }, [board.regions, canvasSize.height, canvasSize.width, geometry.viewBox, mapCamera, mapViewport, regionCounts, regionIds, selectedRegionId]);
 
   useEffect(() => {
     if (!svgHostRef.current || !svgMarkup) {
