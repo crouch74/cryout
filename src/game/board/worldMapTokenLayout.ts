@@ -8,6 +8,8 @@ export interface RegionTokenUnit {
   type: RegionTokenVisual;
   x: number;
   y: number;
+  rotationDeg: number;
+  stackOrder: number;
 }
 
 export interface RegionOverflowBadgeLayout {
@@ -96,6 +98,7 @@ interface TokenLayoutOptions {
   padding: number;
   overflowBadgeWidth: number;
   opticalCorrection: { x: number; y: number };
+  randomizeStack?: boolean;
 }
 
 interface TokenSizing {
@@ -111,6 +114,7 @@ export interface BuildRegionLayoutsInput {
   canvasHeight: number;
   mapViewport: MapViewport;
   sourceViewBox?: SourceViewBox;
+  svgFitMode?: 'meet' | 'slice';
   defaultVisibleWorldWidth: number;
   currentVisibleWorldWidth: number;
   regionIds: RegionId[];
@@ -161,14 +165,20 @@ function getViewportMetrics(mapViewport: MapViewport, canvasWidth: number, canva
   };
 }
 
-// Map anchors are authored in SVG viewBox space. When the SVG is letterboxed in the canvas
-// (xMidYMid meet), token anchors must be projected into that fitted content box.
-function getAnchorViewport(viewport: LayoutViewport, sourceViewBox?: SourceViewBox): LayoutViewport {
+// Map anchors are authored in SVG viewBox space. Token anchors must use the same fitted box
+// that the SVG renderer uses (xMidYMid meet/slice), otherwise visible drift appears.
+function getAnchorViewport(
+  viewport: LayoutViewport,
+  sourceViewBox?: SourceViewBox,
+  fitMode: 'meet' | 'slice' = 'meet',
+): LayoutViewport {
   if (!sourceViewBox || sourceViewBox.width <= 0 || sourceViewBox.height <= 0) {
     return viewport;
   }
 
-  const scale = Math.min(viewport.width / sourceViewBox.width, viewport.height / sourceViewBox.height);
+  const scale = fitMode === 'slice'
+    ? Math.max(viewport.width / sourceViewBox.width, viewport.height / sourceViewBox.height)
+    : Math.min(viewport.width / sourceViewBox.width, viewport.height / sourceViewBox.height);
   const fittedWidth = sourceViewBox.width * scale;
   const fittedHeight = sourceViewBox.height * scale;
 
@@ -189,8 +199,8 @@ function getTokenSizing(defaultVisibleWorldWidth: number, currentVisibleWorldWid
   return {
     tokenScale,
     tokenSize,
-    gap: tokenSize >= 14 ? 6 : 4,
-    padding: tokenSize >= 14 ? 6 : 4,
+    gap: tokenSize >= 14 ? 4 : 3,
+    padding: tokenSize >= 14 ? 4 : 3,
     overflowBadgeWidth: tokenSize >= 14 ? 28 : 24,
   };
 }
@@ -266,9 +276,82 @@ function getSmartStackDimensions(
   };
 }
 
+function getColumnStackSizes(visibleCount: number) {
+  const columnCount = clamp(Math.ceil(visibleCount / 3), 1, 3);
+  const base = Math.floor(visibleCount / columnCount);
+  const remainder = visibleCount % columnCount;
+  return Array.from({ length: columnCount }, (_, index) => base + (index < remainder ? 1 : 0));
+}
+
+function getColumnStackDimensions(
+  visibleCount: number,
+  tokenSize: number,
+  gap: number,
+  padding: number,
+  hasOverflow: boolean,
+  overflowBadgeWidth: number,
+) {
+  const columnSizes = getColumnStackSizes(visibleCount);
+  const stackStepX = Math.max(3, Math.round(tokenSize * 0.52));
+  const stackStepY = Math.max(2, Math.round(tokenSize * 0.24));
+  const columnsWidth = tokenSize + Math.max(0, columnSizes.length - 1) * stackStepX;
+  const columnHeights = columnSizes.map((size) => tokenSize + Math.max(0, size - 1) * stackStepY);
+  const gridHeight = Math.max(...columnHeights, tokenSize);
+  const totalWidth = columnsWidth + padding * 2 + (hasOverflow ? overflowBadgeWidth + gap : 0);
+
+  return {
+    width: totalWidth,
+    height: gridHeight + padding * 2,
+    gridWidth: columnsWidth,
+    gridHeight,
+    stackStepX,
+    stackStepY,
+    columnSizes,
+  };
+}
+
 // Three-token groups use a shallow arc so the eye reads them as a single countable cluster.
 function getThreeTokenArcYOffset(columnIndex: number) {
   return columnIndex === 1 ? 0 : -4;
+}
+
+function getUnitScatterSeed(regionId: RegionId, type: RegionTokenVisual, unitIndex: number) {
+  return hashRegionId(`${regionId}:${type}:${unitIndex}`);
+}
+
+function applyTabletopScatter(
+  units: RegionTokenUnit[],
+  regionId: RegionId,
+  type: RegionTokenVisual,
+  tokenSize: number,
+  randomizeStack: boolean,
+) {
+  if (!randomizeStack || units.length <= 1) {
+    return units.map((unit, index) => ({
+      ...unit,
+      rotationDeg: 0,
+      stackOrder: unit.stackOrder || index + 1,
+    }));
+  }
+
+  const maxScatter = Math.max(1.5, Math.round(tokenSize * 0.14 * 100) / 100);
+
+  return units.map((unit, index) => {
+    const seed = getUnitScatterSeed(regionId, type, index);
+    const angle = ((seed % 360) * Math.PI) / 180;
+    const radius = (((seed >>> 9) % 100) / 100) * maxScatter;
+    const jitterX = Math.cos(angle) * radius;
+    const jitterY = Math.sin(angle) * radius * 0.72;
+    const rotationDeg = ((seed >>> 16) % 15) - 7;
+
+    return {
+      ...unit,
+      x: normalizeZero(Number((unit.x + jitterX).toFixed(2))),
+      y: normalizeZero(Number((unit.y + jitterY).toFixed(2))),
+      rotationDeg,
+      stackOrder: unit.stackOrder || index + 1,
+    };
+  });
 }
 
 export function buildTokenGroupLayout(
@@ -283,9 +366,19 @@ export function buildTokenGroupLayout(
 
   const visibleCount = Math.min(count, MAX_VISIBLE_TOKENS);
   const hasOverflow = count > MAX_VISIBLE_TOKENS;
-  const useSmartStack = visibleCount >= SMART_STACK_THRESHOLD;
+  const useColumnStack = Boolean(options.randomizeStack);
+  const useSmartStack = !useColumnStack && visibleCount >= SMART_STACK_THRESHOLD;
   const rowSizes = useSmartStack ? [] : getRowSizes(visibleCount);
-  const dimensions = useSmartStack
+  const dimensions = useColumnStack
+    ? getColumnStackDimensions(
+      visibleCount,
+      options.tokenSize,
+      options.gap,
+      options.padding,
+      hasOverflow,
+      options.overflowBadgeWidth,
+    )
+    : useSmartStack
     ? getSmartStackDimensions(
       visibleCount,
       options.tokenSize,
@@ -307,7 +400,32 @@ export function buildTokenGroupLayout(
   const units: RegionTokenUnit[] = [];
   let tokenIndex = 0;
 
-  if (useSmartStack) {
+  if (useColumnStack) {
+    const columnDimensions = dimensions as ReturnType<typeof getColumnStackDimensions>;
+    const columnsWidth = options.tokenSize + Math.max(0, columnDimensions.columnSizes.length - 1) * columnDimensions.stackStepX;
+    const startX = options.padding + (columnDimensions.gridWidth - columnsWidth) / 2;
+
+    columnDimensions.columnSizes.forEach((columnSize, columnIndex) => {
+      const columnX = startX + columnIndex * columnDimensions.stackStepX + options.tokenSize / 2;
+      const columnHeight = options.tokenSize + Math.max(0, columnSize - 1) * columnDimensions.stackStepY;
+      const startY = options.padding + (columnDimensions.gridHeight - columnHeight) / 2 + options.tokenSize / 2;
+
+      for (let level = 0; level < columnSize; level += 1) {
+        const y = startY + level * columnDimensions.stackStepY;
+        const relativeX = normalizeZero(Number((columnX - groupCenterX + options.opticalCorrection.x).toFixed(2)));
+        const relativeY = normalizeZero(Number((y - groupCenterY + options.opticalCorrection.y).toFixed(2)));
+        units.push({
+          key: `${regionId}-${type}-${tokenIndex}`,
+          type,
+          x: relativeX,
+          y: relativeY,
+          rotationDeg: 0,
+          stackOrder: (level + 1) * 10 + columnIndex + 1,
+        });
+        tokenIndex += 1;
+      }
+    });
+  } else if (useSmartStack) {
     const smartDimensions = dimensions as ReturnType<typeof getSmartStackDimensions>;
     const topRowCount = smartDimensions.topRowCount;
     const bottomRowCount = smartDimensions.bottomRowCount;
@@ -324,6 +442,8 @@ export function buildTokenGroupLayout(
         type,
         x: normalizeZero(relativeX),
         y: normalizeZero(relativeY),
+        rotationDeg: 0,
+        stackOrder: tokenIndex + 1,
       });
       tokenIndex += 1;
     }
@@ -342,6 +462,8 @@ export function buildTokenGroupLayout(
           type,
           x: normalizeZero(relativeX),
           y: normalizeZero(relativeY),
+          rotationDeg: 0,
+          stackOrder: tokenIndex + 1,
         });
         tokenIndex += 1;
       }
@@ -371,6 +493,8 @@ export function buildTokenGroupLayout(
           type,
           x: normalizeZero(relativeX),
           y: normalizeZero(relativeY),
+          rotationDeg: 0,
+          stackOrder: tokenIndex + 1,
         });
         tokenIndex += 1;
       }
@@ -398,7 +522,7 @@ export function buildTokenGroupLayout(
     height: dimensions.height,
     x: 0,
     y: 0,
-    units,
+    units: applyTabletopScatter(units, regionId, type, options.tokenSize, options.randomizeStack ?? false),
     overflowBadge,
   };
 }
@@ -417,6 +541,7 @@ function buildClusterLayout(
       padding: sizing.padding,
       overflowBadgeWidth: sizing.overflowBadgeWidth,
       opticalCorrection: manifestEntry.opticalCenteringByTokenType[type],
+      randomizeStack: true,
     }))
     .filter((item): item is RegionClusterItemLayout => Boolean(item));
 
@@ -535,7 +660,7 @@ function getTotalTokenCount(counts: RegionCountSummary) {
 
 export function buildRegionLayouts(input: BuildRegionLayoutsInput) {
   const viewport = getViewportMetrics(input.mapViewport, input.canvasWidth, input.canvasHeight);
-  const anchorViewport = getAnchorViewport(viewport, input.sourceViewBox);
+  const anchorViewport = getAnchorViewport(viewport, input.sourceViewBox, input.svgFitMode ?? 'meet');
   const sizing = getTokenSizing(input.defaultVisibleWorldWidth, input.currentVisibleWorldWidth);
   const layouts = input.regionIds.map((regionId) => {
     const manifestEntry = input.manifest[regionId];

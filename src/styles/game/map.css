@@ -57,7 +57,7 @@
   position: relative;
   width: 100%;
   height: 100%;
-  min-height: 360px;
+  min-height: min(320px, 40vh);
   overflow: hidden;
   z-index: var(--z-panel);
 }
@@ -80,6 +80,7 @@
 }
 
 .game-screen-compressed .board-world-map-svg {
+  background: transparent;
   filter: sepia(0.54) saturate(0.42) contrast(1.1) brightness(0.96);
 }
 
@@ -256,51 +257,84 @@
 
 .game-screen-compressed .board-region-token {
   --token-glyph-scale: 1;
+  --token-material-base: color-mix(in srgb, var(--theme-paper) 58%, var(--theme-ink) 42%);
+  --token-material-edge: color-mix(in srgb, var(--theme-ink) 38%, var(--theme-paper) 62%);
+  --token-material-rim: color-mix(in srgb, var(--token-material-edge) 72%, black 28%);
+  --token-material-core: color-mix(in srgb, var(--token-material-base) 58%, black 42%);
+  --token-material-ink: color-mix(in srgb, var(--theme-ink) 91%, var(--theme-paper) 9%);
   position: absolute;
   z-index: var(--z-panel);
   display: grid;
   place-items: center;
-  color: var(--theme-ink);
-  background: transparent;
-  border: 0;
-  transform: translate(-50%, -50%);
-  transition: transform var(--motion-fast), box-shadow var(--motion-fast), opacity var(--motion-fast);
+  color: var(--token-material-ink);
+  background:
+    radial-gradient(circle at 28% 20%, rgba(255, 252, 243, 0.38), rgba(255, 252, 243, 0) 42%),
+    radial-gradient(circle at 50% 64%, color-mix(in srgb, var(--token-material-core) 88%, black 12%), color-mix(in srgb, var(--token-material-base) 64%, black 36%) 58%, color-mix(in srgb, var(--token-material-base) 30%, white 70%) 100%),
+    linear-gradient(180deg, color-mix(in srgb, var(--token-material-base) 72%, white 28%), var(--token-material-base) 46%, color-mix(in srgb, var(--token-material-core) 76%, black 24%));
+  border: 1px solid var(--token-material-rim);
+  outline: 1px solid color-mix(in srgb, var(--token-material-rim) 56%, transparent);
+  border-radius: 999px;
+  transform: translate(-50%, -50%) rotate(var(--token-rotation, 0deg));
+  transition: transform var(--motion-fast), opacity var(--motion-fast);
   animation: board-token-enter 220ms var(--motion-ease-standard) both;
   animation-delay: calc(var(--token-index, 0) * 18ms);
+  z-index: calc(var(--z-panel) + var(--token-stack-order, 0));
+}
+
+.game-screen-compressed .board-region-token::before,
+.game-screen-compressed .board-region-token::after {
+  content: '';
+  position: absolute;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.game-screen-compressed .board-region-token::before {
+  inset: 1px;
+  border: 1px solid color-mix(in srgb, var(--token-material-rim) 44%, transparent);
+  background: linear-gradient(180deg, rgba(255, 251, 241, 0.24), rgba(255, 251, 241, 0) 50%);
+}
+
+.game-screen-compressed .board-region-token::after {
+  inset: auto 2px 2px 2px;
+  height: 38%;
+  border-radius: 0 0 999px 999px;
+  border-top: 1px solid color-mix(in srgb, var(--token-material-rim) 54%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--token-material-core) 46%, transparent), color-mix(in srgb, var(--token-material-core) 94%, black 6%));
+  opacity: 0.84;
 }
 
 .game-screen-compressed .board-region-token-icon {
   transform: scale(var(--token-glyph-scale));
   transform-origin: center;
-  filter: drop-shadow(0 1px 1px color-mix(in srgb, var(--theme-ink) 16%, transparent));
+  opacity: 0.98;
+  stroke: color-mix(in srgb, var(--token-material-ink) 96%, transparent);
+  stroke-width: 2.6;
 }
 
 .game-screen-compressed .board-region-cluster.is-selected .board-region-token .board-region-token-icon {
-  filter:
-    drop-shadow(0 0 0 color-mix(in srgb, var(--color-bg-elevated) 92%, transparent))
-    drop-shadow(0 0 4px color-mix(in srgb, var(--region-tone) 26%, transparent))
-    drop-shadow(0 2px 4px color-mix(in srgb, var(--theme-ink) 18%, transparent));
+  opacity: 1;
 }
 
 .game-screen-compressed .board-region-token-extraction {
   --token-glyph-scale: 0.96;
-  color: var(--color-domain-fossil);
-}
-
-.game-screen-compressed .board-region-token-extraction .board-region-token-icon {
-  filter:
-    drop-shadow(0 1px 1px color-mix(in srgb, var(--theme-ink) 18%, transparent))
-    drop-shadow(0 0 2px color-mix(in srgb, var(--color-domain-fossil) 26%, transparent));
+  --token-material-base: color-mix(in srgb, var(--color-domain-fossil) 56%, var(--theme-paper) 44%);
+  --token-material-edge: color-mix(in srgb, var(--color-domain-fossil) 72%, var(--theme-ink) 28%);
+  --token-material-ink: color-mix(in srgb, var(--color-domain-fossil) 90%, var(--theme-ink) 10%);
 }
 
 .game-screen-compressed .board-region-token-defense {
   --token-glyph-scale: 0.94;
-  color: var(--color-state-info);
+  --token-material-base: color-mix(in srgb, var(--color-state-info) 48%, var(--theme-paper) 52%);
+  --token-material-edge: color-mix(in srgb, var(--color-state-info) 70%, var(--theme-ink) 30%);
+  --token-material-ink: color-mix(in srgb, var(--color-state-info) 90%, var(--theme-ink) 10%);
 }
 
 .game-screen-compressed .board-region-token-comrades {
   --token-glyph-scale: 0.92;
-  color: var(--color-state-danger);
+  --token-material-base: color-mix(in srgb, var(--color-state-danger) 52%, var(--theme-paper) 48%);
+  --token-material-edge: color-mix(in srgb, var(--color-state-danger) 76%, var(--theme-ink) 24%);
+  --token-material-ink: color-mix(in srgb, var(--color-state-danger) 92%, var(--theme-ink) 8%);
 }
 
 .game-screen-compressed .board-region-cluster.is-changing .board-region-label {
@@ -484,17 +518,17 @@
 @keyframes board-token-enter {
   0% {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.72);
+    transform: translate(-50%, -50%) rotate(var(--token-rotation, 0deg)) scale(0.72);
   }
 
   60% {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1.06);
+    transform: translate(-50%, -50%) rotate(var(--token-rotation, 0deg)) scale(1.06);
   }
 
   100% {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translate(-50%, -50%) rotate(var(--token-rotation, 0deg)) scale(1);
   }
 }
 

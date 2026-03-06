@@ -92,6 +92,28 @@ test('seven and above tokens switch to smart stacking with compact overlap', () 
   assert.equal(minimumStep < TOKEN_OPTIONS.tokenSize, true);
 });
 
+test('randomized tabletop mode stacks tokens into overlapping multi-column piles', () => {
+  const layout = buildTokenGroupLayout('Congo', 'comrades', 8, {
+    ...TOKEN_OPTIONS,
+    randomizeStack: true,
+  });
+
+  assert.ok(layout);
+  assert.equal(layout.units.length, 8);
+
+  const xs = layout.units.map((unit) => unit.x);
+  const ys = layout.units.map((unit) => unit.y).sort((left, right) => left - right);
+  const xRange = Math.max(...xs) - Math.min(...xs);
+  const minVerticalStep = ys.slice(1).reduce((smallest, value, index) => {
+    const delta = Math.abs(value - ys[index]);
+    return delta === 0 ? smallest : Math.min(smallest, delta);
+  }, Number.POSITIVE_INFINITY);
+
+  assert.equal(xRange > TOKEN_OPTIONS.tokenSize * 0.9, true);
+  assert.equal(minVerticalStep < TOKEN_OPTIONS.tokenSize, true);
+  assert.equal(layout.units.some((unit) => unit.rotationDeg !== 0), true);
+});
+
 test('overflow layout caps visible tokens for compact stacks and shows a numeric badge', () => {
   const layout = buildTokenGroupLayout('Congo', 'extraction', 15, TOKEN_OPTIONS);
 
@@ -223,5 +245,35 @@ test('anchor projection uses fitted svg content box when source viewBox aspect d
   });
 
   assert.equal(Number(layouts.Congo.anchor.baseX.toFixed(2)), 387.5);
+  assert.equal(Number(layouts.Congo.anchor.baseY.toFixed(2)), 180);
+});
+
+test('anchor projection supports slice fit mode to maximize map fill in container', () => {
+  const manifestEntry = BOARD_REGION_MAP_MANIFEST.Congo;
+  assert.ok(manifestEntry);
+
+  const layouts = buildRegionLayouts({
+    canvasWidth: 1000,
+    canvasHeight: 360,
+    mapViewport: { canvasWidth: '100%', canvasHeight: '100%', canvasLeft: '0%', canvasTop: '0%' },
+    sourceViewBox: { width: 1000, height: 800 },
+    svgFitMode: 'slice',
+    defaultVisibleWorldWidth: 653,
+    currentVisibleWorldWidth: 653,
+    regionIds: ['Congo'],
+    selectedRegionId: null,
+    regionCounts: {
+      Congo: buildRegionCountSummary(0, 0, 0),
+    } as Record<RegionId, ReturnType<typeof buildRegionCountSummary>>,
+    manifest: {
+      Congo: {
+        ...manifestEntry,
+        tokenAnchor: { x: '25%', y: '50%' },
+        anchorBias: { x: 0, y: 0 },
+      },
+    },
+  });
+
+  assert.equal(Number(layouts.Congo.anchor.baseX.toFixed(2)), 250);
   assert.equal(Number(layouts.Congo.anchor.baseY.toFixed(2)), 180);
 });

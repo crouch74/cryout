@@ -116,6 +116,20 @@ function getRegionSummaryLabel(regionId: RegionId, state: EngineState, content: 
     + `${t('ui.game.comrades', 'Comrades')} ${formatNumber(totalComrades)}.`;
 }
 
+function parseSvgLength(value: string | null, total: number, fallback: number) {
+  if (!value) {
+    return fallback;
+  }
+  const normalized = value.trim();
+  if (!normalized) {
+    return fallback;
+  }
+  if (normalized.endsWith('%')) {
+    return (Number.parseFloat(normalized) / 100) * total;
+  }
+  return Number.parseFloat(normalized);
+}
+
 export function WorldMapBoard({
   state,
   content,
@@ -274,6 +288,7 @@ export function WorldMapBoard({
       canvasHeight: canvasSize.height,
       mapViewport,
       sourceViewBox: geometry.viewBox ? { width: geometry.viewBox[2], height: geometry.viewBox[3] } : undefined,
+      svgFitMode: 'meet',
       defaultVisibleWorldWidth: mapCamera.defaultBounds.maxX - mapCamera.defaultBounds.minX,
       currentVisibleWorldWidth: mapCamera.bounds.maxX - mapCamera.bounds.minX,
       regionIds,
@@ -295,6 +310,26 @@ export function WorldMapBoard({
     }
 
     rootSvg.classList.add('board-world-map-svg');
+    rootSvg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    rootSvg.style.background = 'transparent';
+    const viewBox = rootSvg.viewBox.baseVal;
+    const topLevelRects = rootSvg.querySelectorAll(':scope > rect');
+    for (const rect of topLevelRects) {
+      const rectWidth = parseSvgLength(rect.getAttribute('width'), viewBox.width, 0);
+      const rectHeight = parseSvgLength(rect.getAttribute('height'), viewBox.height, 0);
+      const rectX = parseSvgLength(rect.getAttribute('x'), viewBox.width, 0);
+      const rectY = parseSvgLength(rect.getAttribute('y'), viewBox.height, 0);
+      const coversCanvas = rectWidth >= viewBox.width * 0.98
+        && rectHeight >= viewBox.height * 0.98
+        && Math.abs(rectX - viewBox.x) <= 1
+        && Math.abs(rectY - viewBox.y) <= 1;
+      if (!coversCanvas) {
+        continue;
+      }
+      rect.setAttribute('fill', 'transparent');
+      rect.setAttribute('stroke', 'none');
+      rect.setAttribute('aria-hidden', 'true');
+    }
     const interactionRegionByPathId = new Map<string, RegionId>();
 
     for (const regionId of regionIds) {
@@ -527,6 +562,8 @@ export function WorldMapBoard({
                               width: `${layout.cluster.tokenSize}px`,
                               height: `${layout.cluster.tokenSize}px`,
                               ['--token-index' as string]: String(unitIndex),
+                              ['--token-rotation' as string]: `${unit.rotationDeg}deg`,
+                              ['--token-stack-order' as string]: String(unit.stackOrder),
                             }}
                           >
                             <Icon
