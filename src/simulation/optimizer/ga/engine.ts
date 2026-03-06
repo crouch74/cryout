@@ -30,6 +30,8 @@ import type {
   GaSearchInput,
   GaSearchResult,
 } from './types.ts';
+import { getRulesetDefinition } from '../../../engine/index.ts';
+import { buildMutationSpaceFromScenario, validateScenarioPatch } from './mutationSpace.ts';
 
 // ---------------------------------------------------------------------------
 // Internal RNG
@@ -78,6 +80,17 @@ async function scoreIndividual(
   experimentDir: string,
 ): Promise<GaIndividual> {
   const patch = genomeToCandidate(individual.genome);
+  
+  const ruleset = getRulesetDefinition(input.scenarioId);
+  if (ruleset && !validateScenarioPatch(patch, ruleset)) {
+      console.log(`⚠️ Rejecting invalid scenario patch for ${individual.id}`);
+      return {
+          ...individual,
+          fitness: 0,
+          simulated: true,
+      };
+  }
+  
   const experimentId = `ga_${input.scenarioId}_iter_${pad2(input.iteration)}_gen_${pad2(generationIndex)}_${individual.id}`;
 
   const definition: ExperimentDefinition = {
@@ -155,11 +168,20 @@ export async function runGaSearch(input: GaSearchInput): Promise<GaSearchResult>
   await ensureDir(gaDir);
 
   const rng = createRng(mixSeed(input.seed, stableHash(`ga:${input.scenarioId}:iter_${input.iteration}`)));
+  
+  const ruleset = getRulesetDefinition(input.scenarioId);
+  if (!ruleset) {
+    throw new Error(`Ruleset not found for scenario: ${input.scenarioId}`);
+  }
 
+  const mutationSpace = buildMutationSpaceFromScenario(ruleset);
+
+  console.log(`🧬 Building mutation space for scenario=${input.scenarioId}`);
+  console.log(`🧬 Mutation parameters discovered: ${mutationSpace.length}`);
   console.log(`🧬 GA search start scenario=${input.scenarioId} population=${config.populationSize} generations=${config.generations}`);
   console.log(`🧬 GA config mutation=${config.mutationRate} crossover=${config.crossoverRate} elitism=${config.elitism} runsPerIndividual=${config.runsPerIndividual}`);
 
-  let population = initPopulation(config.populationSize, rng);
+  let population = initPopulation(config.populationSize, rng, mutationSpace);
   const generationReports: GaGenerationReport[] = [];
 
   for (let gen = 1; gen <= config.generations; gen += 1) {
@@ -210,7 +232,7 @@ export async function runGaSearch(input: GaSearchInput): Promise<GaSearchResult>
 
     // Evolve to produce the next generation (skip after last generation)
     if (gen < config.generations) {
-      population = evolveGeneration(scored, config, gen, rng);
+      population = evolveGeneration(scored, config, gen, rng, mutationSpace);
     } else {
       population = scored;
     }

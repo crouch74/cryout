@@ -1034,7 +1034,12 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
 
   console.log('🏆 Optimization complete');
   console.log(`🏆 Run progress completed ${completedExperiments}/${estimatedTotalExperiments} (${formatProgressPercent(completedExperiments, estimatedTotalExperiments)}%)`);
-  console.log(`🏆 Best configuration discovered for scenario=${config.scenarioId}`);
+  if (Object.keys(report.recommendedPatch).length > 0) {
+    console.log(`🏆 Best configuration discovered for scenario=${config.scenarioId}:`);
+    console.log(JSON.stringify(report.recommendedPatch, null, 2));
+  } else {
+    console.log(`🏆 No improved configuration discovered for scenario=${config.scenarioId} (baseline remains best)`);
+  }
   console.log(`📊 Success Rate: ${percent(finalMetrics.metrics.successRate)}`);
   console.log(`📊 Public Victory Rate: ${percent(finalMetrics.metrics.publicVictoryRate)}`);
   console.log(`📊 Mandate Failure Given Public: ${percent(finalMetrics.metrics.mandateFailRateGivenPublic)}`);

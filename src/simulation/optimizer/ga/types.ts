@@ -18,18 +18,18 @@ import type { OptimizerCandidate } from '../types.ts';
  * Ranges are enforced by GENOME_LIMITS in population.ts.
  */
 export interface PatchGenome {
-  globalGazeDelta: number;
-  northernWarMachineDelta: number;
-  seededExtractionTotalDelta: number;
-  crisisSpikeExtractionDelta: number;
-  liberationThresholdDelta: number;
-  relaxAllThresholdsBy: number;
-  maxExtractionAddedPerRound: number | null;
-  scoreThreshold: number;
-  publicVictoryWeight: number;
-  mandatesWeight: number;
-  catastrophicCapEnabled: boolean;
-  catastrophicCapValue: number;
+  globalGazeDelta?: number;
+  northernWarMachineDelta?: number;
+  seededExtractionTotalDelta?: number;
+  crisisSpikeExtractionDelta?: number;
+  liberationThresholdDelta?: number;
+  relaxAllThresholdsBy?: number;
+  maxExtractionAddedPerRound?: number | null;
+  scoreThreshold?: number;
+  publicVictoryWeight?: number;
+  mandatesWeight?: number;
+  catastrophicCapEnabled?: boolean;
+  catastrophicCapValue?: number;
 }
 
 // ---------------------------------------------------------------------------

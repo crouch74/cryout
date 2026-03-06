@@ -51,20 +51,7 @@ function padId(index: number) {
 /** Return a fully random genome within all parameter bounds. */
 export function randomGenome(rng: () => number, mutationSpace?: MutationDescriptor[]): PatchGenome {
   const publicVictoryWeight = [30, 35, 40, 45, 50][rng() % 5];
-  const genome: PatchGenome = {
-    globalGazeDelta: 0,
-    northernWarMachineDelta: 0,
-    seededExtractionTotalDelta: 0,
-    crisisSpikeExtractionDelta: 0,
-    liberationThresholdDelta: 0,
-    relaxAllThresholdsBy: 0,
-    maxExtractionAddedPerRound: null,
-    scoreThreshold: 70,
-    publicVictoryWeight: 45,
-    mandatesWeight: 55,
-    catastrophicCapEnabled: true,
-    catastrophicCapValue: 69,
-  };
+  const genome: PatchGenome = {};
 
   if (!mutationSpace) {
     // Fallback for tests or legacy callers
@@ -120,8 +107,6 @@ export function mutateGenome(genome: PatchGenome, mutationRate: number, rng: () 
   const mutableNext = next as Record<string, number | boolean | null>;
 
   if (mutationSpace) {
-    // Collect paths to randomly iterate or we just iterate sequentially
-    // Let's iterate sequentially and apply probability.
     for (const m of mutationSpace) {
       if ((rng() / 0xFFFFFFFF) >= mutationRate) continue;
 
@@ -130,7 +115,8 @@ export function mutateGenome(genome: PatchGenome, mutationRate: number, rng: () 
         if (key === 'publicVictoryWeight' || key === 'mandatesWeight') {
           if (!mutationApplied) {
              const step = (rng() % 2 === 0 ? -1 : 1) * 5;
-             mutableNext.publicVictoryWeight = clamp((mutableNext.publicVictoryWeight as number) + step, 30, 50);
+             const current = (mutableNext.publicVictoryWeight as number) || 45;
+             mutableNext.publicVictoryWeight = clamp(current + step, 30, 50);
              mutableNext.mandatesWeight = 100 - (mutableNext.publicVictoryWeight as number);
              console.log(`🧪 Applying mutation path=${m.path} value=${mutableNext.publicVictoryWeight}`);
              mutationApplied = true;
@@ -146,7 +132,7 @@ export function mutateGenome(genome: PatchGenome, mutationRate: number, rng: () 
         console.log(`🧪 Applying mutation path=${m.path} value=${mutableNext[key]}`);
         mutationApplied = true;
       } else if (m.type === 'nullableInt') {
-        if (mutableNext[key] === null) {
+        if (mutableNext[key] === null || mutableNext[key] === undefined) {
           mutableNext[key] = intInRange(rng, m.min ?? 1, m.max ?? 4);
         } else if (rng() % 3 === 0) {
           mutableNext[key] = null;
@@ -156,17 +142,13 @@ export function mutateGenome(genome: PatchGenome, mutationRate: number, rng: () 
         console.log(`🧪 Applying mutation path=${m.path} value=${mutableNext[key]}`);
         mutationApplied = true;
       } else if (m.type === 'boolean') {
-        mutableNext[key] = !mutableNext[key];
+        mutableNext[key] = !(mutableNext[key] ?? true);
         console.log(`🧪 Applying mutation path=${m.path} value=${mutableNext[key]}`);
         mutationApplied = true;
       }
     }
 
-    // Identify paths that we skipped (for example simulated logging)
-    // The prompt explicitly wants "⚠️ Mutation skipped path=victoryScoring.catastrophicCapEnabled (not present)"
-    // Since we only loop through mutationSpace, we only see present fields. Let's explicitly check catastrophic if missing!
     if (!mutationSpace.some(m => m.path === 'victoryScoring.catastrophicCapEnabled')) {
-       // This simulates trying to mutate a static list, and skipping what's not in the space.
        if ((rng() / 0xFFFFFFFF) < mutationRate) {
           console.log(`⚠️ Mutation skipped path=victoryScoring.catastrophicCapEnabled (not present)`);
        }
@@ -181,7 +163,7 @@ export function mutateGenome(genome: PatchGenome, mutationRate: number, rng: () 
       }
       const bounds = GENOME_LIMITS[key];
       const step = rng() % 2 === 0 ? -1 : 1;
-      const current = mutableNext[key] as number;
+      const current = (mutableNext[key] as number) ?? 0;
       mutableNext[key] = clamp(current + step, bounds.min, bounds.max);
 
       if (key === 'publicVictoryWeight') {
@@ -191,7 +173,7 @@ export function mutateGenome(genome: PatchGenome, mutationRate: number, rng: () 
       }
     }
     if ((rng() / 0xFFFFFFFF) < mutationRate * 0.3) {
-      if (mutableNext.maxExtractionAddedPerRound === null) {
+      if (mutableNext.maxExtractionAddedPerRound === null || mutableNext.maxExtractionAddedPerRound === undefined) {
         mutableNext.maxExtractionAddedPerRound = intInRange(rng, 1, 4);
       } else if (rng() % 3 === 0) {
         mutableNext.maxExtractionAddedPerRound = null;
@@ -204,7 +186,7 @@ export function mutateGenome(genome: PatchGenome, mutationRate: number, rng: () 
       }
     }
     if ((rng() / 0xFFFFFFFF) < mutationRate * 0.15) {
-      mutableNext.catastrophicCapEnabled = !(mutableNext.catastrophicCapEnabled as boolean);
+      mutableNext.catastrophicCapEnabled = !(mutableNext.catastrophicCapEnabled as boolean ?? true);
     }
   }
 
@@ -226,21 +208,27 @@ export function crossover(
     return { ...parentA };
   }
 
-  const child: PatchGenome = {
-    globalGazeDelta: rng() % 2 === 0 ? parentA.globalGazeDelta : parentB.globalGazeDelta,
-    northernWarMachineDelta: rng() % 2 === 0 ? parentA.northernWarMachineDelta : parentB.northernWarMachineDelta,
-    seededExtractionTotalDelta: rng() % 2 === 0 ? parentA.seededExtractionTotalDelta : parentB.seededExtractionTotalDelta,
-    crisisSpikeExtractionDelta: rng() % 2 === 0 ? parentA.crisisSpikeExtractionDelta : parentB.crisisSpikeExtractionDelta,
-    liberationThresholdDelta: rng() % 2 === 0 ? parentA.liberationThresholdDelta : parentB.liberationThresholdDelta,
-    relaxAllThresholdsBy: rng() % 2 === 0 ? parentA.relaxAllThresholdsBy : parentB.relaxAllThresholdsBy,
-    maxExtractionAddedPerRound: rng() % 2 === 0 ? parentA.maxExtractionAddedPerRound : parentB.maxExtractionAddedPerRound,
-    scoreThreshold: rng() % 2 === 0 ? parentA.scoreThreshold : parentB.scoreThreshold,
-    publicVictoryWeight: rng() % 2 === 0 ? parentA.publicVictoryWeight : parentB.publicVictoryWeight,
-    mandatesWeight: 0,
-    catastrophicCapEnabled: rng() % 2 === 0 ? parentA.catastrophicCapEnabled : parentB.catastrophicCapEnabled,
-    catastrophicCapValue: rng() % 2 === 0 ? parentA.catastrophicCapValue : parentB.catastrophicCapValue,
-  };
-  child.mandatesWeight = 100 - child.publicVictoryWeight;
+  const child: PatchGenome = {};
+  
+  // Cross over all keys present in either parent
+  const allKeys = new Set([...Object.keys(parentA), ...Object.keys(parentB)]);
+  const mutableChild = child as Record<string, number | boolean | null>;
+  const mutA = parentA as Record<string, number | boolean | null>;
+  const mutB = parentB as Record<string, number | boolean | null>;
+
+  for (const key of allKeys) {
+      // randomly pick A or B
+      if (rng() % 2 === 0) {
+          if (mutA[key] !== undefined) mutableChild[key] = mutA[key];
+      } else {
+          if (mutB[key] !== undefined) mutableChild[key] = mutB[key];
+      }
+  }
+
+  if (child.publicVictoryWeight !== undefined) {
+      child.mandatesWeight = 100 - child.publicVictoryWeight;
+  }
+  
   return child;
 }
 
