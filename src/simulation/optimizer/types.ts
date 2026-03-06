@@ -2,11 +2,18 @@ import type { ScenarioPatch } from '../experiments/patchDsl.ts';
 import type { ExperimentArmSummary, MetricComparison } from '../experiments/types.ts';
 import type { TrajectorySummary } from '../trajectory/types.ts';
 import type { VictoryMode } from '../experiments/types.ts';
+import type { GaConfig } from './ga/types.ts';
 
 export type OptimizerRuntimeProfile = 'fast' | 'balanced' | 'thorough';
 export type OptimizerSignificanceMode = 'strict' | 'balanced' | 'lenient';
 export type OptimizerMode = 'liberation' | 'symbolic' | 'both';
 export type OptimizerExecutionMode = 'single_scenario' | 'all_scenarios_parallel';
+/**
+ * Controls whether the optimizer uses the existing hill-climbing approach
+ * (local), a pure GA evolutionary search (evolutionary), or a hybrid that
+ * combines both exploration strategies (hybrid — default when GA is active).
+ */
+export type OptimizerSearchMode = 'local' | 'evolutionary' | 'hybrid';
 export type OptimizerStrategyMode =
   | 'numeric_balancing'
   | 'victory_gating_exploration'
@@ -21,7 +28,8 @@ export type OptimizerCandidateStrategy =
   | 'balance_seed'
   | 'victory_gating_round'
   | 'victory_gating_action'
-  | 'victory_gating_progress';
+  | 'victory_gating_progress'
+  | 'evolutionary';
 
 export interface OptimizerConfig {
   scenarioId: string;
@@ -41,6 +49,10 @@ export interface OptimizerConfig {
   victoryModes: VictoryMode[];
   playerCounts: number[];
   useBalanceSearchSeeding?: boolean;
+  /** Controls whether the GA exploration phase is active. Default: 'local'. */
+  searchMode?: OptimizerSearchMode;
+  /** GA parameters, used when searchMode is 'evolutionary' or 'hybrid'. */
+  gaConfig?: GaConfig;
 }
 
 export interface OptimizerTargetScore {

@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] — GA Hybrid Evolutionary Optimizer
+
+### Added
+
+- 🧬 **GA Hybrid Evolutionary Optimizer** — upgraded the scenario optimizer to a 3-stage pipeline:
+  1. **Evolutionary Search** — a configurable Genetic Algorithm explores the parameter space across generations.
+  2. **Simulation Scoring** — each GA individual is scored using lightweight reduced-run simulations.
+  3. **A/B Statistical Validation** — top GA candidates are promoted to the existing experiment engine for rigorous validation before acceptance.
+
+- 📁 **New `src/simulation/optimizer/ga/` module** with five files:
+  - `types.ts` — `GaConfig`, `GaIndividual`, `GaGenerationReport`, `GaSearchResult`, `GaSearchInput`
+  - `population.ts` — `initPopulation`, `randomGenome`, `crossover` (uniform with weight coupling), `mutateGenome` (per-gene probability gate), `tournamentSelect` (k=3 tournament), `evolveGeneration` (elitism + crossover + mutation), `computePopulationStats`
+  - `genome.ts` — `genomeToCandidate` (PatchGenome → ScenarioPatch, zero-delta normalisation)
+  - `engine.ts` — `runGaSearch`: multi-generation loop with concurrent individual scoring and per-generation JSON/Markdown reports
+  - `reporter.ts` — `renderGenerationMarkdown`, `renderGaSummaryMarkdown`, `writeGenerationReport`, `writeGaReport`
+
+- 🎛️ **Three optimizer search modes** controlled by `--search-mode`:
+  - `local` — existing hill-climbing only (default, no regression risk)
+  - `evolutionary` — pure GA; all A/B candidates come from the evolutionary search
+  - `hybrid` — GA candidates merged with regular hill-climb candidates into the A/B pool
+
+- 🖥️ **New CLI flags** for full GA control:
+  - `--search-mode <local|evolutionary|hybrid>`
+  - `--population <n>` (default 30)
+  - `--generations <n>` (default 10)
+  - `--ga-runs <n>` runs per individual (default 1000)
+  - `--top-candidates <n>` GA promotions to A/B (default 5)
+  - `--mutation-rate <f>` (default 0.15)
+  - `--crossover-rate <f>` (default 0.6)
+  - `--elitism <n>` (default 3)
+
+- 🧪 **New unit tests** — `tests/unit/optimizer-ga-population.test.ts` covering genome bounds, crossover invariants, mutation gate, tournament selection, elitism preservation, and population statistics. CLI tests extended with GA flag parsing and `buildConfig` GA config assembly coverage.
+
+### Changed
+
+- `src/simulation/optimizer/types.ts` — added `OptimizerSearchMode`, `'evolutionary'` to `OptimizerCandidateStrategy`, and optional `searchMode`/`gaConfig` to `OptimizerConfig`.
+- `src/simulation/optimizer/engine.ts` — integrated GA search phase; GA candidates replace or augment the regular candidate pool depending on `searchMode`.
+- `src/simulation/optimizer/cli.ts` — extended `parseArgs`, `buildConfig`, `buildManual`, and the interactive prompt with all GA parameters.
+
 ## [0.10.1] - 2026-03-03
 
 ### Changed

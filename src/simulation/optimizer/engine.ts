@@ -13,6 +13,8 @@ import {
   movedTowardRange,
   scoreArmSummary,
 } from './fitness.ts';
+import { runGaSearch } from './ga/engine.ts';
+import { GA_DEFAULT_CONFIG } from './ga/types.ts';
 import {
   buildRunStamp,
   ensureDir,
@@ -755,11 +757,11 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
       }
 
       console.log('🧠 Generating candidate rule patches');
-      const candidates = await generateCandidatePatches({
+      let candidates = await generateCandidatePatches({
         scenarioId: config.scenarioId,
         iteration,
         seed: config.seed,
-        targetCount: config.candidates,
+        targetCount: config.searchMode === 'evolutionary' ? 0 : config.candidates,
         candidateRuns: config.candidateRuns,
         runtime: config.runtime,
         strategyMode: config.strategy,
@@ -769,6 +771,46 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
         balanceSeedOutputDir: join(iterationDir, 'balance_seed'),
         useBalanceSearchSeeding: config.useBalanceSearchSeeding ?? true,
       });
+
+      // -----------------------------------------------------------------------
+      // 🧬 GA Evolutionary Search Phase
+      // -----------------------------------------------------------------------
+      const activeSearchMode = config.searchMode ?? 'local';
+      if (activeSearchMode === 'evolutionary' || activeSearchMode === 'hybrid') {
+        const gaConfig = { ...GA_DEFAULT_CONFIG, ...(config.gaConfig ?? {}) };
+        console.log(`🧬 GA search starting searchMode=${activeSearchMode} population=${gaConfig.populationSize} generations=${gaConfig.generations}`);
+        try {
+          const gaResult = await runGaSearch({
+            scenarioId: config.scenarioId,
+            iteration,
+            seed: mixSeed(config.seed, stableHash(`ga-search:${iteration}`)),
+            config: gaConfig,
+            parallelWorkers: config.parallelWorkers,
+            victoryModes: config.victoryModes as string[],
+            playerCounts: config.playerCounts,
+            outDir: iterationDir,
+          });
+          await writeJson(join(iterationDir, 'ga_search_report.json'), gaResult);
+
+          if (activeSearchMode === 'evolutionary') {
+            // Pure GA: replace all candidates with GA promotions
+            candidates = gaResult.topCandidates;
+            console.log(`🧬 GA search complete: replaced candidate pool with ${candidates.length} GA-promoted candidates`);
+          } else {
+            // Hybrid: merge GA candidates into existing pool (dedup by patch)
+            const existingKeys = new Set(candidates.map((c) => JSON.stringify(normalizeScenarioPatch(c.patch))));
+            const newGaCandidates = gaResult.topCandidates.filter(
+              (c) => !existingKeys.has(JSON.stringify(normalizeScenarioPatch(c.patch))),
+            );
+            candidates = [...candidates, ...newGaCandidates];
+            console.log(`🧬 GA search complete: merged ${newGaCandidates.length} new GA candidates (total=${candidates.length})`);
+          }
+        } catch (error) {
+          const err = error as Error;
+          console.log(`⚠️ GA search failed iteration=${iteration}: ${err.message}`);
+        }
+      }
+
       await writeJson(join(iterationDir, 'candidate_patches.json'), candidates);
       console.log(`🧠 ${candidates.length} candidates created`);
 

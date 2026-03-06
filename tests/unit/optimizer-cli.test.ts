@@ -105,3 +105,70 @@ test('optimizer help manual documents all primary input flags and impacts', () =
   assert.match(manual, /Impact:/);
   assert.match(manual, /Options:/);
 });
+
+test('optimizer CLI parser reads all GA flags', () => {
+  const parsed = parseArgs([
+    '--scenario', 'stones_cry_out',
+    '--search-mode', 'hybrid',
+    '--population', '20',
+    '--generations', '8',
+    '--ga-runs', '500',
+    '--top-candidates', '4',
+    '--mutation-rate', '0.2',
+    '--crossover-rate', '0.7',
+    '--elitism', '2',
+  ]);
+
+  assert.equal(parsed.searchMode, 'hybrid');
+  assert.equal(parsed.gaPopulation, 20);
+  assert.equal(parsed.gaGenerations, 8);
+  assert.equal(parsed.gaRuns, 500);
+  assert.equal(parsed.gaTopCandidates, 4);
+  assert.ok(Math.abs((parsed.gaMutationRate ?? 0) - 0.2) < 1e-9);
+  assert.ok(Math.abs((parsed.gaCrossoverRate ?? 0) - 0.7) < 1e-9);
+  assert.equal(parsed.gaElitism, 2);
+});
+
+test('optimizer buildConfig defaults to local search mode with GA defaults when no GA flags given', async () => {
+  const config = await buildConfig(['--scenario', 'stones_cry_out']);
+
+  assert.equal(config.searchMode, 'local');
+  assert.ok(config.gaConfig !== undefined);
+  assert.equal(config.gaConfig?.populationSize, 30);
+  assert.equal(config.gaConfig?.generations, 10);
+  assert.equal(config.gaConfig?.runsPerIndividual, 1000);
+  assert.equal(config.gaConfig?.topCandidates, 5);
+  assert.ok(Math.abs((config.gaConfig?.mutationRate ?? 0) - 0.15) < 1e-9);
+  assert.ok(Math.abs((config.gaConfig?.crossoverRate ?? 0) - 0.6) < 1e-9);
+  assert.equal(config.gaConfig?.elitism, 3);
+});
+
+test('optimizer buildConfig applies GA overrides from CLI flags', async () => {
+  const config = await buildConfig([
+    '--scenario', 'stones_cry_out',
+    '--search-mode', 'evolutionary',
+    '--population', '15',
+    '--generations', '5',
+    '--ga-runs', '200',
+  ]);
+
+  assert.equal(config.searchMode, 'evolutionary');
+  assert.equal(config.gaConfig?.populationSize, 15);
+  assert.equal(config.gaConfig?.generations, 5);
+  assert.equal(config.gaConfig?.runsPerIndividual, 200);
+});
+
+test('optimizer help manual documents all GA flags and section header', () => {
+  const manual = renderHelpManual();
+
+  assert.match(manual, /GA Evolutionary Search Parameters/);
+  assert.match(manual, /--search-mode <local\|evolutionary\|hybrid>/);
+  assert.match(manual, /--population <n>/);
+  assert.match(manual, /--generations <n>/);
+  assert.match(manual, /--ga-runs <n>/);
+  assert.match(manual, /--top-candidates <n>/);
+  assert.match(manual, /--mutation-rate <f>/);
+  assert.match(manual, /--crossover-rate <f>/);
+  assert.match(manual, /--elitism <n>/);
+});
+

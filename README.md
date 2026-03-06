@@ -302,7 +302,7 @@ Run without a scenario (interactive selector):
 npm run optimize
 ```
 
-Interactive mode prompts for the main optimizer controls (runtime, strategy, mode, significance, iterations, run budgets, candidate count, patience, seed, and output path) with short impact descriptions showing the accuracy/runtime tradeoff for each setting.
+Interactive mode prompts for the main optimizer controls (runtime, strategy, mode, significance, search mode, iterations, run budgets, candidate count, patience, seed, and output path) with short impact descriptions showing the accuracy/runtime tradeoff for each setting.
 
 Common options:
 
@@ -321,8 +321,43 @@ Common options:
 - `--significance strict|balanced|lenient`
 - `--strategy numeric_balancing|victory_gating_exploration|trajectory_discovery|full_optimizer`
 
+**GA Evolutionary Search parameters** (all optional; only active when `--search-mode` is not `local`):
+
+- `--search-mode local|evolutionary|hybrid` _(default: `local`)_
+  - `local` — existing hill-climbing only; no GA
+  - `evolutionary` — pure GA: all A/B candidates come from the evolutionary search
+  - `hybrid` — GA candidates merged with regular hill-climb candidates
+- `--population <n>` — individuals per generation (default 30)
+- `--generations <n>` — generations to evolve (default 10)
+- `--ga-runs <n>` — simulations per individual (default 1000; lighter than full A/B)
+- `--top-candidates <n>` — GA individuals promoted to A/B (default 5)
+- `--mutation-rate <f>` — per-gene mutation probability 0–1 (default 0.15)
+- `--crossover-rate <f>` — crossover probability 0–1 (default 0.6)
+- `--elitism <n>` — top individuals preserved unchanged (default 3)
+
+GA examples:
+
+```bash
+# Pure evolutionary: GA picks all candidates
+npm run optimize -- --scenario tahrir_square --search-mode evolutionary --population 30 --generations 10 --ga-runs 1000
+
+# Hybrid: GA candidates merged with hill-climb (recommended for thoroughness)
+npm run optimize -- --scenario tahrir_square --search-mode hybrid --population 20 --generations 6 --ga-runs 500
+
+# Fast smoke test for GA integration
+npm run optimize -- --scenario tahrir_square --search-mode evolutionary --population 5 --generations 2 --ga-runs 300 --iterations 2 --runtime fast
+```
+
+When GA search is active, the optimizer writes additional per-iteration artifacts:
+- `iteration_<NN>/ga_search_report.json` — top candidates and generation summary
+- `iteration_<NN>/ga_search/generation_<NN>.json` — per-generation stats + best genome
+- `iteration_<NN>/ga_search/generation_<NN>.md` — human-readable generation report
+- `iteration_<NN>/ga_search/ga_search_result.json` — full GA search result
+- `iteration_<NN>/ga_search/ga_search_summary.md` — full GA run summary
+
 `--parallel-workers` controls both optimizer-level candidate experiment concurrency and per-experiment simulation worker batching.
 `--optimizer-mode all_scenarios_parallel` runs full iterative optimization for every shipped scenario concurrently (with shared worker budget partitioning per scenario).
+
 
 Outputs are written to:
 

@@ -4,11 +4,13 @@ import { pathToFileURL } from 'node:url';
 import { cpus } from 'node:os';
 import { listRulesets } from '../../engine/index.ts';
 import { runAllScenariosParallelDiagnostics, runScenarioOptimizer } from './engine.ts';
+import { GA_DEFAULT_CONFIG } from './ga/types.ts';
 import type {
   OptimizerConfig,
   OptimizerExecutionMode,
   OptimizerMode,
   OptimizerRuntimeProfile,
+  OptimizerSearchMode,
   OptimizerSignificanceMode,
   OptimizerStrategyMode,
 } from './types.ts';
@@ -29,6 +31,15 @@ interface CliArgs {
   runtime?: OptimizerRuntimeProfile;
   significance?: OptimizerSignificanceMode;
   strategy?: OptimizerStrategyMode;
+  // GA flags
+  searchMode?: OptimizerSearchMode;
+  gaPopulation?: number;
+  gaGenerations?: number;
+  gaRuns?: number;
+  gaTopCandidates?: number;
+  gaMutationRate?: number;
+  gaCrossoverRate?: number;
+  gaElitism?: number;
 }
 
 interface InteractiveConfigAnswers {
@@ -38,6 +49,7 @@ interface InteractiveConfigAnswers {
   mode: OptimizerMode;
   significance: OptimizerSignificanceMode;
   strategy: OptimizerStrategyMode;
+  searchMode: OptimizerSearchMode;
   iterations: number;
   baselineRuns: number;
   candidateRuns: number;
@@ -78,6 +90,12 @@ const STRATEGY_DESCRIPTIONS: Record<OptimizerStrategyMode, string> = {
   victory_gating_exploration: 'Focuses on victory gate parameters (round/action/progress) to reduce structural early wins.',
   trajectory_discovery: 'Prioritizes trajectory-guided mutations based on sampled victory paths.',
   full_optimizer: 'Uses all candidate families (numeric, gating, trajectory, hill-climb, and random fallback).',
+};
+
+const SEARCH_MODE_DESCRIPTIONS: Record<OptimizerSearchMode, string> = {
+  local: 'Existing hill-climbing optimizer only. No GA exploration.',
+  evolutionary: 'Pure GA exploration: all candidates come from the evolutionary search. A/B validation still applies.',
+  hybrid: 'GA exploration + existing hill-climb candidates merged into the A/B pool (recommended for thoroughness).',
 };
 
 const SIGNIFICANCE_DESCRIPTIONS: Record<OptimizerSignificanceMode, string> = {
@@ -217,6 +235,60 @@ ${scenarioOptions}
       full_optimizer: ${STRATEGY_DESCRIPTIONS.full_optimizer}
     Impact: Changes the search space and shape of proposed rule patches.
 
+GA Evolutionary Search Parameters:
+
+  --search-mode <local|evolutionary|hybrid>
+    Name: Search Mode
+    Functionality: Controls whether GA evolutionary exploration is active.
+    Implementation:
+      local: ${SEARCH_MODE_DESCRIPTIONS.local}
+      evolutionary: ${SEARCH_MODE_DESCRIPTIONS.evolutionary}
+      hybrid: ${SEARCH_MODE_DESCRIPTIONS.hybrid}
+    Impact: Enables GA-driven exploration on top of (or replacing) existing hill-climb candidates.
+    Default: local
+
+  --population <n>
+    Name: GA Population Size
+    Functionality: Number of candidate individuals in each GA generation.
+    Implementation: Positive integer; default ${GA_DEFAULT_CONFIG.populationSize}.
+    Impact: More individuals = wider search per generation, proportionally more simulation time.
+
+  --generations <n>
+    Name: GA Generations
+    Functionality: Number of evolutionary generations to run.
+    Implementation: Positive integer; default ${GA_DEFAULT_CONFIG.generations}.
+    Impact: More generations = deeper refinement, longer GA search phase.
+
+  --ga-runs <n>
+    Name: Runs Per Individual
+    Functionality: Simulation runs used to score each GA individual.
+    Implementation: Positive integer; default ${GA_DEFAULT_CONFIG.runsPerIndividual}. Fewer than A/B runs to keep GA phase tractable.
+    Impact: Higher values improve individual fitness estimates but increase GA runtime.
+
+  --top-candidates <n>
+    Name: GA Top Candidates Promoted
+    Functionality: How many top GA individuals are promoted to the A/B validation pool.
+    Implementation: Positive integer; default ${GA_DEFAULT_CONFIG.topCandidates}.
+    Impact: More promotions = more A/B experiments per iteration when GA is active.
+
+  --mutation-rate <f>
+    Name: GA Mutation Rate
+    Functionality: Per-gene probability of mutation in each evolved individual.
+    Implementation: Float 0–1; default ${GA_DEFAULT_CONFIG.mutationRate}.
+    Impact: Higher values increase exploration; lower values increase exploitation.
+
+  --crossover-rate <f>
+    Name: GA Crossover Rate
+    Functionality: Probability that two parents produce a crossover child (vs. clone).
+    Implementation: Float 0–1; default ${GA_DEFAULT_CONFIG.crossoverRate}.
+    Impact: Controls how much genetic mixing occurs per generation.
+
+  --elitism <n>
+    Name: GA Elitism Count
+    Functionality: Number of top individuals copied unchanged into the next generation.
+    Implementation: Positive integer; default ${GA_DEFAULT_CONFIG.elitism}.
+    Impact: Preserves best solutions across generations; too high reduces diversity.
+
 Derived/Fixed Inputs (Not CLI Flags):
 
   victoryModes
@@ -235,6 +307,8 @@ Examples:
   npm run optimize -- --scenario tahrir_square --mode liberation --runtime balanced --strategy full_optimizer
   npm run optimize -- --scenario stones_cry_out --iterations 15 --baseline-runs 20000 --candidate-runs 8000 --candidates 20
   npm run optimize -- --scenario woman_life_freedom --mode both --significance strict --parallel-workers 8 --seed 2026
+  npm run optimize -- --scenario tahrir_square --search-mode evolutionary --population 30 --generations 10 --ga-runs 1000
+  npm run optimize -- --scenario tahrir_square --search-mode hybrid --population 20 --generations 6 --ga-runs 500
 `;
 }
 
@@ -299,6 +373,22 @@ function parseStrategy(raw: string): OptimizerStrategyMode {
   throw new Error(
     `Unsupported --strategy value "${raw}". Use numeric_balancing, victory_gating_exploration, trajectory_discovery, or full_optimizer.`,
   );
+}
+
+function parseSearchMode(raw: string): OptimizerSearchMode {
+  const value = raw.toLowerCase();
+  if (value === 'local' || value === 'evolutionary' || value === 'hybrid') {
+    return value;
+  }
+  throw new Error(`Unsupported --search-mode value "${raw}". Use local, evolutionary, or hybrid.`);
+}
+
+function toFloat(value: string, label: string) {
+  const parsed = Number.parseFloat(value);
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 1) {
+    throw new Error(`${label} must be a float between 0 and 1.`);
+  }
+  return parsed;
 }
 
 function modeToVictoryModes(mode: OptimizerMode): OptimizerConfig['victoryModes'] {
@@ -388,6 +478,38 @@ export function parseArgs(argv: string[]): CliArgs {
       args.strategy = parseStrategy(readValue());
       continue;
     }
+    if (arg === '--search-mode') {
+      args.searchMode = parseSearchMode(readValue());
+      continue;
+    }
+    if (arg === '--population') {
+      args.gaPopulation = toPositiveInteger(readValue(), '--population');
+      continue;
+    }
+    if (arg === '--generations') {
+      args.gaGenerations = toPositiveInteger(readValue(), '--generations');
+      continue;
+    }
+    if (arg === '--ga-runs') {
+      args.gaRuns = toPositiveInteger(readValue(), '--ga-runs');
+      continue;
+    }
+    if (arg === '--top-candidates') {
+      args.gaTopCandidates = toPositiveInteger(readValue(), '--top-candidates');
+      continue;
+    }
+    if (arg === '--mutation-rate') {
+      args.gaMutationRate = toFloat(readValue(), '--mutation-rate');
+      continue;
+    }
+    if (arg === '--crossover-rate') {
+      args.gaCrossoverRate = toFloat(readValue(), '--crossover-rate');
+      continue;
+    }
+    if (arg === '--elitism') {
+      args.gaElitism = toPositiveInteger(readValue(), '--elitism');
+      continue;
+    }
 
     throw new Error(`Unknown argument: ${arg}`);
   }
@@ -434,6 +556,7 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
       mode: OptimizerMode;
       significance: OptimizerSignificanceMode;
       strategy: OptimizerStrategyMode;
+      searchMode: OptimizerSearchMode;
     }>([
       {
         type: 'list',
@@ -490,6 +613,17 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
           { name: 'strict - fewer false positives, slower acceptance', value: 'strict' },
           { name: 'balanced - recommended confidence gate', value: 'balanced' },
           { name: 'lenient - faster acceptance, higher regression risk', value: 'lenient' },
+        ],
+      },
+      {
+        type: 'list',
+        name: 'searchMode',
+        message: 'Search mode (controls GA evolutionary exploration)',
+        default: prefill.searchMode ?? 'local',
+        choices: [
+          { name: 'local - existing hill-climb only (fastest)', value: 'local' },
+          { name: 'hybrid - GA exploration + hill-climb candidates merged (recommended)', value: 'hybrid' },
+          { name: 'evolutionary - pure GA candidates only', value: 'evolutionary' },
         ],
       },
     ]);
@@ -569,6 +703,7 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
       mode: firstPass.mode,
       significance: firstPass.significance,
       strategy: firstPass.strategy,
+      searchMode: firstPass.searchMode,
       ...secondPass,
     };
   };
@@ -588,12 +723,24 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
   const runtimeDefaults = RUNTIME_DEFAULTS[runtime];
   const mode = args.mode ?? 'liberation';
   const strategy = args.strategy ?? 'full_optimizer';
+  const searchMode: OptimizerSearchMode = args.searchMode ?? interactiveAnswers?.searchMode ?? 'local';
   const executionModeResolved = args.executionMode ?? 'single_scenario';
   const scenarioId = executionModeResolved === 'all_scenarios_parallel'
     ? (args.scenarioId ?? interactiveAnswers?.scenarioId ?? 'all_scenarios')
     : args.scenarioId
       ? validateScenarioId(args.scenarioId)
       : validateScenarioId(interactiveAnswers?.scenarioId ?? '');
+
+  const gaConfig = {
+    ...GA_DEFAULT_CONFIG,
+    ...(args.gaPopulation !== undefined ? { populationSize: args.gaPopulation } : {}),
+    ...(args.gaGenerations !== undefined ? { generations: args.gaGenerations } : {}),
+    ...(args.gaRuns !== undefined ? { runsPerIndividual: args.gaRuns } : {}),
+    ...(args.gaTopCandidates !== undefined ? { topCandidates: args.gaTopCandidates } : {}),
+    ...(args.gaMutationRate !== undefined ? { mutationRate: args.gaMutationRate } : {}),
+    ...(args.gaCrossoverRate !== undefined ? { crossoverRate: args.gaCrossoverRate } : {}),
+    ...(args.gaElitism !== undefined ? { elitism: args.gaElitism } : {}),
+  };
 
   return {
     scenarioId,
@@ -613,6 +760,8 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
     victoryModes: modeToVictoryModes(mode),
     playerCounts: [2, 3, 4],
     useBalanceSearchSeeding: true,
+    searchMode,
+    gaConfig,
   };
 }
 
