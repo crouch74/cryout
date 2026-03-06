@@ -40,6 +40,7 @@ interface CliArgs {
   gaMutationRate?: number;
   gaCrossoverRate?: number;
   gaElitism?: number;
+  playerCounts?: number[];
 }
 
 interface InteractiveConfigAnswers {
@@ -58,6 +59,7 @@ interface InteractiveConfigAnswers {
   seed: number;
   parallelWorkers: number;
   outDir: string;
+  playerCounts: number[];
 }
 
 interface InquirerPrompt {
@@ -235,7 +237,14 @@ ${scenarioOptions}
       full_optimizer: ${STRATEGY_DESCRIPTIONS.full_optimizer}
     Impact: Changes the search space and shape of proposed rule patches.
 
+  --players <n,n,...>
+    Name: Player Count Scope
+    Functionality: Comma-separated list of player counts to include in optimization simulations.
+    Implementation: e.g., --players 2,4. Default is 2,3,4.
+    Impact: Controls the player balance targets; results are aggregated and reported per count.
+
 GA Evolutionary Search Parameters:
+
 
   --search-mode <local|evolutionary|hybrid>
     Name: Search Mode
@@ -294,7 +303,7 @@ Derived/Fixed Inputs (Not CLI Flags):
   victoryModes
     Derived from --mode; liberation => [liberation], symbolic => [symbolic], both => [liberation, symbolic].
   playerCounts
-    Fixed to [2, 3, 4] by CLI buildConfig().
+    Derived from --players flag or interactive selection (comma-separated).
   useBalanceSearchSeeding
     Fixed true in CLI output; enables periodic seeding from balance search inside candidate generation.
 
@@ -510,6 +519,11 @@ export function parseArgs(argv: string[]): CliArgs {
       args.gaElitism = toPositiveInteger(readValue(), '--elitism');
       continue;
     }
+    if (arg === '--players') {
+      const value = readValue();
+      args.playerCounts = value.split(',').map((v) => toPositiveInteger(v.trim(), '--players'));
+      continue;
+    }
 
     throw new Error(`Unknown argument: ${arg}`);
   }
@@ -552,10 +566,11 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
 
     const firstPass = await prompt<{
       scenarioSelection: string;
+      playerCounts: number[];
       runtime: OptimizerRuntimeProfile;
+      strategy: OptimizerStrategyMode;
       mode: OptimizerMode;
       significance: OptimizerSignificanceMode;
-      strategy: OptimizerStrategyMode;
       searchMode: OptimizerSearchMode;
     }>([
       {
@@ -569,6 +584,23 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
         default: prefill.executionMode === 'all_scenarios_parallel'
           ? ALL_SCENARIOS_SELECTION
           : prefill.scenarioId,
+      },
+      {
+        type: 'checkbox',
+        name: 'playerCounts',
+        message: 'Select player counts to optimize for:',
+        default: prefill.playerCounts ?? [2, 3, 4],
+        choices: [
+          { name: '2 players', value: 2 },
+          { name: '3 players', value: 3 },
+          { name: '4 players', value: 4 },
+        ],
+        validate: (answer: number[]) => {
+          if (answer.length < 1) {
+            return 'You must choose at least one player count.';
+          }
+          return true;
+        },
       },
       {
         type: 'list',
@@ -634,7 +666,7 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
       {
         type: 'input',
         name: 'iterations',
-        message: 'Max iterations (more iterations = broader search, longer runtime)',
+        message: 'Max iterations (more iterations = broader search, longest runtime)',
         default: prefill.iterations ?? 10,
         filter: (value: unknown) => toPositiveInteger(String(value), 'iterations'),
       },
@@ -704,6 +736,7 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
       significance: firstPass.significance,
       strategy: firstPass.strategy,
       searchMode: firstPass.searchMode,
+      playerCounts: firstPass.playerCounts,
       ...secondPass,
     };
   };
@@ -713,7 +746,6 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
     ? null
     : await promptInteractiveConfig(parsed);
 
-  // CLI flags remain authoritative when provided; interactive answers fill missing primary inputs.
   const args: CliArgs = {
     ...(interactiveAnswers ?? {}),
     ...parsed,
@@ -723,7 +755,7 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
   const runtimeDefaults = RUNTIME_DEFAULTS[runtime];
   const mode = args.mode ?? 'liberation';
   const strategy = args.strategy ?? 'full_optimizer';
-  const searchMode: OptimizerSearchMode = args.searchMode ?? interactiveAnswers?.searchMode ?? 'local';
+  const searchMode: OptimizerSearchMode = args.searchMode ?? 'local';
   const executionModeResolved = args.executionMode ?? 'single_scenario';
   const scenarioId = executionModeResolved === 'all_scenarios_parallel'
     ? (args.scenarioId ?? interactiveAnswers?.scenarioId ?? 'all_scenarios')
@@ -758,7 +790,7 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
     strategy,
     mode,
     victoryModes: modeToVictoryModes(mode),
-    playerCounts: [2, 3, 4],
+    playerCounts: args.playerCounts ?? [2, 3, 4],
     useBalanceSearchSeeding: true,
     searchMode,
     gaConfig,
@@ -784,6 +816,7 @@ export async function runCli(argv: string[]) {
     patience: config.patience,
     seed: config.seed,
     parallelWorkers: config.parallelWorkers,
+    playerCounts: config.playerCounts,
     runtime: config.runtime,
     significance: config.significance,
     mode: config.mode,

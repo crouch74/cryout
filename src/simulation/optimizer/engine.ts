@@ -502,6 +502,23 @@ function evaluateGate(input: {
 
 function renderFinalReportMarkdown(report: OptimizerFinalReport) {
   const final = report.finalMetrics;
+  
+  const playerCountRows = Object.entries(final.metrics.byPlayerCount)
+    .sort(([a], [b]) => Number(a) - Number(b))
+    .map(([count, stats]) => {
+      return `| ${count} | ${percent(stats.successRate)} | ${percent(stats.publicVictoryRate)} | ${stats.turns.average.toFixed(2)} | ${stats.n} |`;
+    })
+    .join('\n');
+
+  const playerCountBreakdown = playerCountRows.length > 0
+    ? `
+## Player Performance Breakdown
+| Players | Success Rate | Public Victory | Avg Turns | Samples |
+| --- | ---: | ---: | ---: | ---: |
+${playerCountRows}
+`
+    : '';
+
   return `# Scenario Optimization Report
 
 - Scenario: ${report.scenarioId}
@@ -515,7 +532,7 @@ function renderFinalReportMarkdown(report: OptimizerFinalReport) {
 - Mandate Failure Given Public: ${percent(final.metrics.mandateFailRateGivenPublic)}
 - Average Turns: ${final.metrics.turns.average.toFixed(2)}
 - Balance Score: ${final.score.score.toFixed(6)}
-
+${playerCountBreakdown}
 ## Recommended Patch
 \`\`\`json
 ${JSON.stringify(report.recommendedPatch, null, 2)}

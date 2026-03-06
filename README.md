@@ -320,6 +320,9 @@ Common options:
 - `--runtime fast|balanced|thorough`
 - `--significance strict|balanced|lenient`
 - `--strategy numeric_balancing|victory_gating_exploration|trajectory_discovery|full_optimizer`
+- `--players <n,n,...>` multi-select specific player counts, e.g., `--players 2,4` (default: `2,3,4`).
+
+The final Markdown report and data artifacts now include a **Player Performance Breakdown** table, showing success rates and average turns per chosen player count bucket.
 
 **GA Evolutionary Search parameters** (all optional; only active when `--search-mode` is not `local`):
 

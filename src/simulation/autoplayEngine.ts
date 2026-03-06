@@ -75,6 +75,9 @@ function getCompiledContent(rulesetId: string) {
   }
 
   const compiled = compileContent(rulesetId);
+  if (CONTENT_CACHE.size > 50) {
+    CONTENT_CACHE.clear(); // Guard against infinite growth during long optimization loops
+  }
   CONTENT_CACHE.set(rulesetId, compiled);
   return compiled;
 }
@@ -717,8 +720,8 @@ function buildTrajectoryTargets(event: DomainEvent) {
   if (event.context?.targetDomainId) {
     targets.push(event.context.targetDomainId);
   }
-  if (typeof event.context?.targetSeat === 'number') {
-    targets.push(buildSeatKey(event.context.targetSeat));
+  if (typeof (event.context as any)?.targetSeat === 'number') {
+    targets.push(buildSeatKey((event.context as any).targetSeat));
   }
   return targets.length > 0 ? targets : undefined;
 }
@@ -1209,7 +1212,8 @@ async function writeTrajectoryToDirectory(trajectoryDir: string, trajectory: Vic
     const suffixLabel = suffix === 0 ? '' : `_${suffix}`;
     const filePath = join(trajectoryDir, `${stem}${suffixLabel}.json`);
     try {
-      await writeFile(filePath, `${JSON.stringify(trajectory, null, 2)}\n`, { encoding: 'utf8', flag: 'wx' });
+      // Avoid pretty-printing large trajectories to reduce string allocation overhead and heap pressure.
+      await writeFile(filePath, `${JSON.stringify(trajectory)}\n`, { encoding: 'utf8', flag: 'wx' });
       return filePath;
     } catch (error) {
       const err = error as { code?: string };
@@ -1237,6 +1241,10 @@ export async function executeRunChunk(
   let activeScenario: string | null = null;
 
   try {
+    if (chunk.trajectoryRecording && chunk.trajectoryDir) {
+      await mkdir(chunk.trajectoryDir, { recursive: true });
+    }
+
     if (chunk.scenarioPatches && chunk.scenarioPatches.length > 0) {
       const { applyScenarioPatch } = await import('./experiments/applyScenarioPatch.ts');
       for (const scenarioPatch of chunk.scenarioPatches) {
@@ -1267,13 +1275,16 @@ export async function executeRunChunk(
       updateSummaryAccumulator(summary, record);
 
       if (chunk.trajectoryRecording && trajectory && chunk.trajectoryDir) {
-        capturedTrajectories += 1;
-        if (capturedTrajectories <= 5 || capturedTrajectories % 50 === 0) {
-          console.log(`🏁 Public victory trajectory captured sim=${run.simulationId} count=${capturedTrajectories}`);
-        }
-        const writtenPath = await writeTrajectoryToDirectory(chunk.trajectoryDir, trajectory);
-        if (capturedTrajectories <= 5 || capturedTrajectories % 50 === 0) {
-          console.log(`💾 Trajectory written to disk ${writtenPath}`);
+        // Cap worker-level recording to keep reservoir sampling tractable and prevent I/O storm.
+        if (capturedTrajectories < 50) {
+          capturedTrajectories += 1;
+          if (capturedTrajectories <= 5 || capturedTrajectories % 50 === 0) {
+            console.log(`🏁 Public victory trajectory captured sim=${run.simulationId} count=${capturedTrajectories}`);
+          }
+          const writtenPath = await writeTrajectoryToDirectory(chunk.trajectoryDir, trajectory);
+          if (capturedTrajectories <= 5 || capturedTrajectories % 50 === 0) {
+            console.log(`💾 Trajectory written to disk ${writtenPath}`);
+          }
         }
       }
 
@@ -1411,7 +1422,6 @@ async function runWorkerChunk(
 ) {
   return await new Promise<WorkerResultMessage>((resolvePromise, rejectPromise) => {
     const worker = new Worker(new URL('./worker.ts', import.meta.url), {
-      type: 'module',
       workerData: chunk,
       env: {
         ...process.env,

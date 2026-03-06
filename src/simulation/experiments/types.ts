@@ -48,7 +48,27 @@ export type ExperimentDefinition = {
   decisionRule: DecisionRule;
 };
 
+/** Compact balance summary for a single player count bucket. */
+export interface PlayerCountSummary {
+  playerCount: number;
+  n: number;
+  successRate: number;
+  publicVictoryRate: number;
+  earlyTerminationRate: number;
+  turns: {
+    average: number;
+    median: number;
+  };
+  defeatRates: {
+    extraction_breach: number;
+    comrades_exhausted: number;
+    mandate_failure: number;
+    sudden_death: number;
+  };
+}
+
 export interface ExperimentArmSummary {
+
   arm: ExperimentArm;
   n: number;
   successes: number;
@@ -90,6 +110,8 @@ export interface ExperimentArmSummary {
     successRate: number;
   };
   reservoirSampleSize: number;
+  /** Per-player-count breakdowns (keyed by player count as a string, e.g. "2", "3", "4"). */
+  byPlayerCount: Record<string, PlayerCountSummary>;
 }
 
 export interface ProportionComparisonStats {

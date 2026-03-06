@@ -172,3 +172,16 @@ test('optimizer help manual documents all GA flags and section header', () => {
   assert.match(manual, /--elitism <n>/);
 });
 
+test('optimizer CLI parser reads --players flag', () => {
+  const args = parseArgs(['--players', '2,4']);
+  assert.deepStrictEqual(args.playerCounts, [2, 4]);
+
+  const argsSolo = parseArgs(['--players', '3']);
+  assert.deepStrictEqual(argsSolo.playerCounts, [3]);
+});
+
+test('optimizer buildConfig applies player counts from CLI', async () => {
+  const config = await buildConfig(['--scenario', 'tahrir_square', '--players', '2,4']);
+  assert.deepStrictEqual(config.playerCounts, [2, 4]);
+});
+

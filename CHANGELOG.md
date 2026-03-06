@@ -11,6 +11,10 @@ All notable changes to this project will be documented in this file.
   2. **Simulation Scoring** — each GA individual is scored using lightweight reduced-run simulations.
   3. **A/B Statistical Validation** — top GA candidates are promoted to the existing experiment engine for rigorous validation before acceptance.
 
+- 📊 **Per-Player-Count Reporting** — the optimizer now tracks and displays balance metrics broken down by player count (2, 3, 4 players) in the final Markdown report and data artifacts.
+
+- 👥 **Multi-Select Player Counts** — added the `--players` flag and interactive checkbox selectors to choose specific player distributions for optimization.
+
 - 📁 **New `src/simulation/optimizer/ga/` module** with five files:
   - `types.ts` — `GaConfig`, `GaIndividual`, `GaGenerationReport`, `GaSearchResult`, `GaSearchInput`
   - `population.ts` — `initPopulation`, `randomGenome`, `crossover` (uniform with weight coupling), `mutateGenome` (per-gene probability gate), `tournamentSelect` (k=3 tournament), `evolveGeneration` (elitism + crossover + mutation), `computePopulationStats`
@@ -32,14 +36,17 @@ All notable changes to this project will be documented in this file.
   - `--mutation-rate <f>` (default 0.15)
   - `--crossover-rate <f>` (default 0.6)
   - `--elitism <n>` (default 3)
+  - `--players <n,n,...>` multi-select specific player counts (default 2,3,4)
 
 - 🧪 **New unit tests** — `tests/unit/optimizer-ga-population.test.ts` covering genome bounds, crossover invariants, mutation gate, tournament selection, elitism preservation, and population statistics. CLI tests extended with GA flag parsing and `buildConfig` GA config assembly coverage.
 
 ### Changed
 
 - `src/simulation/optimizer/types.ts` — added `OptimizerSearchMode`, `'evolutionary'` to `OptimizerCandidateStrategy`, and optional `searchMode`/`gaConfig` to `OptimizerConfig`.
-- `src/simulation/optimizer/engine.ts` — integrated GA search phase; GA candidates replace or augment the regular candidate pool depending on `searchMode`.
-- `src/simulation/optimizer/cli.ts` — extended `parseArgs`, `buildConfig`, `buildManual`, and the interactive prompt with all GA parameters.
+- `src/simulation/optimizer/engine.ts` — integrated GA search phase and added player performance breakdown table to the final report.
+- `src/simulation/optimizer/cli.ts` — extended `parseArgs`, `buildConfig`, `buildManual`, and the interactive prompt with all GA parameters and player count multi-select.
+- `src/simulation/experiments/report.ts` — added `PlayerCountAccumulator` to bucket metrics by `playerCount` into the `ExperimentArmSummary`.
+- `src/simulation/experiments/types.ts` — added `PlayerCountSummary` interface and `byPlayerCount` mapping to `ExperimentArmSummary`.
 
 ## [0.10.1] - 2026-03-03
 

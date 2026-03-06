@@ -9,6 +9,7 @@ import type {
   ExperimentRecommendation,
   MetricComparison,
   MetricDelta,
+  PlayerCountSummary,
   ProportionComparisonStats,
 } from './types.ts';
 
@@ -66,6 +67,8 @@ export interface ArmAccumulator {
   reservoir: Reservoir;
   scoreReservoir: Reservoir;
   mandateFailureAsCostlyWin: boolean;
+  /** Per-player-count mini-accumulators, keyed by player count as string. */
+  byPlayerCount: Record<string, PlayerCountAccumulator>;
 }
 
 function nextUint(state: number) {
@@ -73,6 +76,69 @@ function nextUint(state: number) {
   next = Math.imul(next ^ (next >>> 15), next | 1) >>> 0;
   next ^= next + Math.imul(next ^ (next >>> 7), next | 61);
   return (next ^ (next >>> 14)) >>> 0;
+}
+
+// -------------------------------------------------------------------------
+// Per-player-count mini-accumulator
+// -------------------------------------------------------------------------
+
+interface PlayerCountAccumulator {
+  playerCount: number;
+  n: number;
+  successes: number;
+  publicVictories: number;
+  earlyTerminations: number;
+  totalTurns: number;
+  turnsReservoir: Reservoir;
+  defeatReasons: {
+    extraction_breach: number;
+    comrades_exhausted: number;
+    mandate_failure: number;
+    sudden_death: number;
+  };
+}
+
+function createPlayerCountAccumulator(playerCount: number, seed: number): PlayerCountAccumulator {
+  return {
+    playerCount,
+    n: 0,
+    successes: 0,
+    publicVictories: 0,
+    earlyTerminations: 0,
+    totalTurns: 0,
+    turnsReservoir: {
+      capacity: 1024,
+      seen: 0,
+      values: [],
+      state: (seed ^ (playerCount * 0x9e3779b9)) >>> 0,
+    },
+    defeatReasons: {
+      extraction_breach: 0,
+      comrades_exhausted: 0,
+      mandate_failure: 0,
+      sudden_death: 0,
+    },
+  };
+}
+
+function finalizePlayerCountSummary(acc: PlayerCountAccumulator): PlayerCountSummary {
+  return {
+    playerCount: acc.playerCount,
+    n: acc.n,
+    successRate: ratio(acc.successes, acc.n),
+    publicVictoryRate: ratio(acc.publicVictories, acc.n),
+    earlyTerminationRate: ratio(acc.earlyTerminations, acc.n),
+    turns: {
+      average: ratio(acc.totalTurns, acc.n),
+      median: roundTo(percentile(acc.turnsReservoir.values, 0.5)),
+    },
+    defeatRates: {
+      extraction_breach: ratio(acc.defeatReasons.extraction_breach, acc.n),
+      comrades_exhausted: ratio(acc.defeatReasons.comrades_exhausted, acc.n),
+      mandate_failure: ratio(acc.defeatReasons.mandate_failure, acc.n),
+      sudden_death: ratio(acc.defeatReasons.sudden_death, acc.n),
+    },
+  };
 }
 
 function roundTo(value: number, digits = 6) {
@@ -289,6 +355,11 @@ export function createArmAccumulator(
       state: (seed ^ 0xa5a5a5a5) >>> 0,
     },
     mandateFailureAsCostlyWin: Boolean(options?.mandateFailureAsCostlyWin),
+    byPlayerCount: {
+      '2': createPlayerCountAccumulator(2, seed),
+      '3': createPlayerCountAccumulator(3, seed),
+      '4': createPlayerCountAccumulator(4, seed),
+    },
   };
 }
 
@@ -344,6 +415,38 @@ export function ingestArmRecord(accumulator: ArmAccumulator, record: SimulationR
   accumulator.campaignSuccess += record.campaignStats.campaignSuccess;
   mergeCountMaps(accumulator.mandateFailuresById, record.mandateOutcomeById.failuresByMandate);
   mergeCountMaps(accumulator.mandateSuccessesById, record.mandateOutcomeById.successesByMandate);
+
+  // 🎲 Route into per-player-count sub-accumulator
+  const pcKey = String(record.playerCount);
+  if (!accumulator.byPlayerCount[pcKey]) {
+    // Unexpected player count encountered at runtime — create on-demand
+    accumulator.byPlayerCount[pcKey] = createPlayerCountAccumulator(record.playerCount, accumulator.reservoir.state);
+  }
+  const pc = accumulator.byPlayerCount[pcKey];
+  pc.n += 1;
+  pc.totalTurns += record.turnsPlayed;
+  addToReservoir(pc.turnsReservoir, record.turnsPlayed);
+  if (record.turnsPlayed < 3) {
+    pc.earlyTerminations += 1;
+  }
+  if (success) {
+    pc.successes += 1;
+  }
+  if (record.publicVictoryAchieved) {
+    pc.publicVictories += 1;
+  }
+  if (record.result.reason === 'extraction_breach') {
+    pc.defeatReasons.extraction_breach += 1;
+  }
+  if (record.result.reason === 'comrades_exhausted') {
+    pc.defeatReasons.comrades_exhausted += 1;
+  }
+  if (record.result.reason === 'mandate_failure') {
+    pc.defeatReasons.mandate_failure += 1;
+  }
+  if (record.result.reason === 'sudden_death') {
+    pc.defeatReasons.sudden_death += 1;
+  }
 }
 
 export function finalizeArmSummary(accumulator: ArmAccumulator): ExperimentArmSummary {
@@ -354,6 +457,13 @@ export function finalizeArmSummary(accumulator: ArmAccumulator): ExperimentArmSu
   const componentContributionAverages = Object.fromEntries(
     Object.entries(accumulator.componentContributionTotals)
       .map(([componentId, value]) => [componentId, ratio(value, accumulator.n)]),
+  );
+
+  const byPlayerCount = Object.fromEntries(
+    Object.entries(accumulator.byPlayerCount)
+      .filter(([, acc]) => acc.n > 0)
+      .sort(([a], [b]) => Number(a) - Number(b))
+      .map(([key, acc]) => [key, finalizePlayerCountSummary(acc)]),
   );
 
   return {
@@ -401,6 +511,7 @@ export function finalizeArmSummary(accumulator: ArmAccumulator): ExperimentArmSu
       successRate: ratio(accumulator.campaignSuccess, accumulator.campaignAttempts),
     },
     reservoirSampleSize: accumulator.reservoir.values.length,
+    byPlayerCount,
   };
 }
 
