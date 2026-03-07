@@ -100,12 +100,34 @@ const titleCase = (value: string) =>
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (match) => match.toUpperCase());
 
+function readUrlState(): {
+  level?: (typeof LEVELS)[number]['id'];
+  scenario?: string;
+  scope?: RunScope;
+  runKey?: string;
+} {
+  const params = new URLSearchParams(window.location.search);
+  const level = params.get('level');
+  const scenario = params.get('scenario');
+  const scope = params.get('scope');
+  const runKey = params.get('runKey');
+
+  return {
+    level: LEVELS.some((item) => item.id === level) ? (level as (typeof LEVELS)[number]['id']) : undefined,
+    scenario: scenario || undefined,
+    scope: RUN_SCOPE_OPTIONS.some((item) => item.value === scope) ? (scope as RunScope) : undefined,
+    runKey: runKey || undefined,
+  };
+}
+
 function App() {
-  const [activeLevel, setActiveLevel] = useState<(typeof LEVELS)[number]['id']>('overview');
+  const initialUrlState = readUrlState();
+  const [activeLevel, setActiveLevel] = useState<(typeof LEVELS)[number]['id']>(initialUrlState.level || 'overview');
   const [overview, setOverview] = useState<OverviewPayload | null>(null);
-  const [selectedScenario, setSelectedScenario] = useState('');
-  const [runScope, setRunScope] = useState<RunScope>('latest_single');
-  const [selectedRunKey, setSelectedRunKey] = useState('');
+  const [selectedScenario, setSelectedScenario] = useState(initialUrlState.scenario || '');
+  const [runScope, setRunScope] = useState<RunScope>(initialUrlState.scope || 'latest_single');
+  const [selectedRunKey, setSelectedRunKey] = useState(initialUrlState.runKey || '');
+  const [selectedOptimizerIteration, setSelectedOptimizerIteration] = useState<number | 'all'>('all');
   const [scenarioData, setScenarioData] = useState<ScenarioPayload | null>(null);
   const [loadingOverview, setLoadingOverview] = useState(true);
   const [loadingScenario, setLoadingScenario] = useState(false);
@@ -138,9 +160,6 @@ function App() {
   useEffect(() => {
     if (!selectedScenario) return;
     if (runScope === 'specific_run' && !selectedRunKey) {
-      if (runCatalog[0]?.runKey) {
-        setSelectedRunKey(runCatalog[0].runKey);
-      }
       return;
     }
     const fetchScenario = async () => {
@@ -165,12 +184,62 @@ function App() {
       }
     };
     void fetchScenario();
-  }, [selectedScenario, runScope, selectedRunKey, runCatalog]);
+  }, [selectedScenario, runScope, selectedRunKey]);
+
+  useEffect(() => {
+    if (runScope !== 'specific_run') return;
+    if (selectedRunKey) return;
+    const firstRunKey = runCatalog[0]?.runKey || '';
+    if (firstRunKey) {
+      setSelectedRunKey(firstRunKey);
+    }
+  }, [runScope, selectedRunKey, runCatalog]);
 
   useEffect(() => {
     setSelectedRunKey('');
     setScenarioData(null);
+    setSelectedOptimizerIteration('all');
   }, [selectedScenario]);
+
+  useEffect(() => {
+    const availableIterations = Array.from(
+      new Set((optimizer?.iterations || []).map((item: any) => item.iteration).filter(Boolean)),
+    ).sort((a, b) => a - b);
+
+    if (!availableIterations.length) {
+      setSelectedOptimizerIteration('all');
+      return;
+    }
+
+    if (
+      selectedOptimizerIteration !== 'all' &&
+      !availableIterations.includes(selectedOptimizerIteration)
+    ) {
+      setSelectedOptimizerIteration(availableIterations[availableIterations.length - 1]);
+    }
+
+    if (selectedOptimizerIteration === 'all' && availableIterations.length === 1) {
+      setSelectedOptimizerIteration(availableIterations[0]);
+    }
+  }, [optimizer, selectedOptimizerIteration]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    params.set('level', activeLevel);
+    if (selectedScenario) {
+      params.set('scenario', selectedScenario);
+    } else {
+      params.delete('scenario');
+    }
+    params.set('scope', runScope);
+    if (runScope === 'specific_run' && selectedRunKey) {
+      params.set('runKey', selectedRunKey);
+    } else {
+      params.delete('runKey');
+    }
+    const nextUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState({}, '', nextUrl);
+  }, [activeLevel, selectedScenario, runScope, selectedRunKey]);
 
   const globalScenarioRows = useMemo(
     () =>
@@ -278,17 +347,78 @@ function App() {
   const actionMixRows = trajectory?.actionMix || [];
   const frontPressureRows = trajectory?.frontPressure || [];
 
+  const optimizerIterationOptions = useMemo(
+    () =>
+      Array.from(
+        new Set((optimizer?.iterations || []).map((item: any) => item.iteration).filter(Boolean)),
+      ).sort((a, b) => a - b),
+    [optimizer],
+  );
+
+  const gaRowsForIteration = useMemo(() => {
+    const filtered =
+      selectedOptimizerIteration === 'all'
+        ? generationRows
+        : generationRows.filter((row: any) => row.iteration === selectedOptimizerIteration);
+
+    const byGeneration = new Map<number, any[]>();
+    filtered.forEach((row: any) => {
+      const bucket = byGeneration.get(row.generation) || [];
+      bucket.push(row);
+      byGeneration.set(row.generation, bucket);
+    });
+
+    return Array.from(byGeneration.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([generation, rows]) => ({
+        generation,
+        bestFitness: rows.reduce((sum, row) => sum + (row.bestFitness || 0), 0) / rows.length,
+        meanFitness: rows.reduce((sum, row) => sum + (row.meanFitness || 0), 0) / rows.length,
+        medianFitness: rows.reduce((sum, row) => sum + (row.medianFitness || 0), 0) / rows.length,
+        worstFitness: rows.reduce((sum, row) => sum + (row.worstFitness || 0), 0) / rows.length,
+        sampleCount: rows.length,
+      }));
+  }, [generationRows, selectedOptimizerIteration]);
+
   const genomePreview = useMemo(() => {
     const keys = new Set<string>();
     genomeRows.forEach((row: any) => {
       Object.keys(row).forEach((key) => {
-        if (key !== 'iteration' && key !== 'generation') {
+        if (
+          !['iteration', 'generation', 'label', 'runLabel'].includes(key) &&
+          typeof row[key] === 'number'
+        ) {
           keys.add(key);
         }
       });
     });
     return Array.from(keys).slice(0, 5);
   }, [genomeRows]);
+
+  const genomeRowsForIteration = useMemo(() => {
+    const filtered =
+      selectedOptimizerIteration === 'all'
+        ? genomeRows
+        : genomeRows.filter((row: any) => row.iteration === selectedOptimizerIteration);
+
+    const byGeneration = new Map<number, any[]>();
+    filtered.forEach((row: any) => {
+      const bucket = byGeneration.get(row.generation) || [];
+      bucket.push(row);
+      byGeneration.set(row.generation, bucket);
+    });
+
+    return Array.from(byGeneration.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([generation, rows]) => {
+        const aggregated: Record<string, number> = { generation };
+        genomePreview.forEach((key) => {
+          aggregated[key] =
+            rows.reduce((sum, row) => sum + (Number(row[key]) || 0), 0) / rows.length;
+        });
+        return aggregated;
+      });
+  }, [genomeRows, genomePreview, selectedOptimizerIteration]);
 
   const balanceQuestions = [
     {
