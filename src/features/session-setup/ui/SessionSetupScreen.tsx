@@ -96,7 +96,7 @@ export function SessionSetupScreen({
       if (!faction) {
         continue;
       }
-      return getFactionAccent(faction.id);
+      return getFactionAccent(faction.id, faction);
     }
     return 'var(--color-accent)';
   };

@@ -24,6 +24,11 @@ const FACTION_ACCENTS: Record<string, string> = {
   railway_workers: '#2c3e50',
   womens_action_circles: '#8e44ad',
   provincial_organizers: '#a0522d',
+  palestinian_sumud_committees: '#2f7a4c',
+  gaza_west_bank_witness_medics: '#2f8088',
+  venezuelan_communal_councils: '#b8862b',
+  cuban_cdr_neighborhood_defense: '#b24738',
+  corridor_workers_refuge_networks: '#6b5aa6',
 };
 
 export function getFactionAccent(factionId: FactionId | undefined | null, definition?: FactionDefinition): string {
