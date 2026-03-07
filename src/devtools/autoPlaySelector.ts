@@ -213,16 +213,75 @@ function listCardCandidates(
   return matchingCards.length > 0 ? matchingCards : [undefined];
 }
 
+function compareOptionalStrings(left: string | undefined, right: string | undefined) {
+  if (left === right) {
+    return 0;
+  }
+  if (left === undefined) {
+    return -1;
+  }
+  if (right === undefined) {
+    return 1;
+  }
+  return left.localeCompare(right);
+}
+
+function compareOptionalNumbers(left: number | undefined, right: number | undefined) {
+  if (left === right) {
+    return 0;
+  }
+  if (left === undefined) {
+    return -1;
+  }
+  if (right === undefined) {
+    return 1;
+  }
+  return left - right;
+}
+
+function compareIntent(left: Omit<QueuedIntent, 'slot'>, right: Omit<QueuedIntent, 'slot'>) {
+  const actionCompare = left.actionId.localeCompare(right.actionId);
+  if (actionCompare !== 0) {
+    return actionCompare;
+  }
+  const regionCompare = compareOptionalStrings(left.regionId, right.regionId);
+  if (regionCompare !== 0) {
+    return regionCompare;
+  }
+  const domainCompare = compareOptionalStrings(left.domainId, right.domainId);
+  if (domainCompare !== 0) {
+    return domainCompare;
+  }
+  const seatCompare = compareOptionalNumbers(left.targetSeat, right.targetSeat);
+  if (seatCompare !== 0) {
+    return seatCompare;
+  }
+  const comradesCompare = compareOptionalNumbers(left.comradesCommitted, right.comradesCommitted);
+  if (comradesCompare !== 0) {
+    return comradesCompare;
+  }
+  const evidenceCompare = compareOptionalNumbers(left.evidenceCommitted, right.evidenceCommitted);
+  if (evidenceCompare !== 0) {
+    return evidenceCompare;
+  }
+  return compareOptionalStrings(left.cardId, right.cardId);
+}
+
 function buildIntentKey(intent: Omit<QueuedIntent, 'slot'>) {
-  return [
-    intent.actionId,
-    intent.regionId ?? '_',
-    intent.domainId ?? '_',
-    intent.targetSeat ?? '_',
-    intent.comradesCommitted ?? '_',
-    intent.evidenceCommitted ?? '_',
-    intent.cardId ?? '_',
-  ].join('|');
+  return `${intent.actionId}|${intent.regionId ?? '_'}|${intent.domainId ?? '_'}|${intent.targetSeat ?? '_'}|${intent.comradesCommitted ?? '_'}|${intent.evidenceCommitted ?? '_'}|${intent.cardId ?? '_'}`;
+}
+
+function buildCommittedValueCandidates(maxValue: number, minimum: number) {
+  if (maxValue < minimum) {
+    return [] as number[];
+  }
+  const values = new Set<number>([minimum, maxValue]);
+  const midpoint = Math.ceil((minimum + maxValue) / 2);
+  values.add(midpoint);
+  if (maxValue >= minimum + 2) {
+    values.add(minimum + 1);
+  }
+  return [...values].filter((value) => value >= minimum && value <= maxValue).sort((left, right) => left - right);
 }
 
 function pushReason(reasons: string[], condition: boolean, reason: string) {
@@ -462,26 +521,47 @@ export function listAutoPlayIntentsForSeat(
 
   const intents: Omit<QueuedIntent, 'slot'>[] = [];
   const seen = new Set<string>();
+  const availableRegions = getAvailableRegions(content);
+  const availableDomains = getAvailableDomains(content);
+  const targetSeatCandidates = state.players.filter((candidate) => candidate.seat !== seat).map((candidate) => candidate.seat);
 
   for (const action of getSeatActions(content)) {
-    const regionCandidates = action.needsRegion ? getAvailableRegions(content) : [undefined];
-    const domainCandidates = action.needsDomain ? getAvailableDomains(content) : [undefined];
-    const targetSeatCandidates = action.needsTargetSeat
-      ? state.players.filter((candidate) => candidate.seat !== seat).map((candidate) => candidate.seat)
-      : [undefined];
+    const regionCandidates = action.needsRegion ? availableRegions : [undefined];
+    const domainCandidates = action.needsDomain ? availableDomains : [undefined];
+    const selectedTargetSeats = action.needsTargetSeat ? targetSeatCandidates : [undefined];
     const cardCandidates = listCardCandidates(state, content, seat, action);
+    const outreachCost = action.id === 'international_outreach' ? getOutreachCost(state, content, seat) : 0;
 
     for (const regionId of regionCandidates) {
       const comradesInRegion = regionId ? state.regions[regionId].comradesPresent[seat] ?? 0 : 0;
-      const comradeCandidates = action.needsComrades
-        ? Array.from({ length: Math.max(1, comradesInRegion) }, (_, index) => index + 1)
-        : [undefined];
-      const evidenceCandidates = action.needsEvidence
-        ? Array.from({ length: Math.max(player.evidence, 0) + 1 }, (_, index) => index)
-        : [undefined];
+      const comradeCandidates = action.id === 'launch_campaign' || action.id === 'defend'
+        ? buildCommittedValueCandidates(comradesInRegion, 1)
+        : action.needsComrades
+          ? buildCommittedValueCandidates(comradesInRegion, 1)
+          : [undefined];
+      const evidenceCandidates = action.id === 'launch_campaign'
+        ? buildCommittedValueCandidates(player.evidence, 0)
+        : action.id === 'international_outreach'
+          ? (player.evidence >= outreachCost ? [undefined] : [])
+          : action.needsEvidence
+            ? buildCommittedValueCandidates(player.evidence, 0)
+            : [undefined];
+
+      if (action.id === 'build_solidarity' && comradesInRegion < 3) {
+        continue;
+      }
+      if (action.id === 'smuggle_evidence' && (player.evidence <= 0 || comradesInRegion < 1)) {
+        continue;
+      }
+      if ((action.id === 'launch_campaign' || action.id === 'defend') && comradesInRegion < 1) {
+        continue;
+      }
+      if (action.id === 'international_outreach' && player.evidence < outreachCost) {
+        continue;
+      }
 
       for (const domainId of domainCandidates) {
-        for (const targetSeat of targetSeatCandidates) {
+        for (const targetSeat of selectedTargetSeats) {
           for (const comradesCommitted of comradeCandidates) {
             for (const evidenceCommitted of evidenceCandidates) {
               for (const cardId of cardCandidates) {
@@ -589,7 +669,7 @@ export function buildAutoPlayCandidates(state: EngineState, content: CompiledCon
     if (left.seat !== right.seat) {
       return left.seat - right.seat;
     }
-    return buildIntentKey(left.action).localeCompare(buildIntentKey(right.action));
+    return compareIntent(left.action, right.action);
   });
 }
 

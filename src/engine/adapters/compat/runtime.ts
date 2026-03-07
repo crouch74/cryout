@@ -145,6 +145,77 @@ function cloneState<T>(value: T): T {
   return structuredClone(value);
 }
 
+function cloneTerminalOutcomeForSimulation(outcome: TerminalOutcomeSummary | null): TerminalOutcomeSummary | null {
+  if (!outcome) {
+    return null;
+  }
+  return {
+    ...outcome,
+    ...(outcome.failedMandateSeatIds ? { failedMandateSeatIds: [...outcome.failedMandateSeatIds] } : {}),
+    ...(outcome.failedMandateIds ? { failedMandateIds: [...outcome.failedMandateIds] } : {}),
+    ...(outcome.scoreBreakdown ? { scoreBreakdown: { ...outcome.scoreBreakdown } } : {}),
+  };
+}
+
+function cloneStateForSimulation(state: EngineState): EngineState {
+  return {
+    ...state,
+    rng: { ...state.rng },
+    customTracks: Object.fromEntries(
+      Object.entries(state.customTracks).map(([trackId, track]) => [trackId, { ...track }]),
+    ),
+    domains: Object.fromEntries(
+      Object.entries(state.domains).map(([domainId, domain]) => [domainId, { ...domain }]),
+    ) as EngineState['domains'],
+    regions: Object.fromEntries(
+      Object.entries(state.regions).map(([regionId, region]) => [
+        regionId,
+        {
+          ...region,
+          vulnerability: { ...region.vulnerability },
+          comradesPresent: { ...region.comradesPresent },
+        },
+      ]),
+    ) as EngineState['regions'],
+    players: state.players.map((player) => ({
+      ...player,
+      queuedIntents: player.queuedIntents.map((intent) => ({ ...intent })),
+      resistanceHand: [...player.resistanceHand],
+    })),
+    decks: Object.fromEntries(
+      Object.entries(state.decks).map(([deckId, deck]) => [deckId, {
+        ...deck,
+        drawPile: [...deck.drawPile],
+        discardPile: [...deck.discardPile],
+      }]),
+    ) as EngineState['decks'],
+    beacons: Object.fromEntries(
+      Object.entries(state.beacons).map(([beaconId, beacon]) => [beaconId, { ...beacon }]),
+    ),
+    activeBeaconIds: [...state.activeBeaconIds],
+    activeSystemCardIds: [...state.activeSystemCardIds],
+    usedSystemEscalationTriggers: { ...state.usedSystemEscalationTriggers },
+    lastSystemCardIds: [...state.lastSystemCardIds],
+    publicAttentionEvents: [...state.publicAttentionEvents],
+    commandLog: state.commandLog.map((command) => cloneState(command)),
+    eventLog: state.eventLog.map((event) => cloneState(event)),
+    terminalOutcome: cloneTerminalOutcomeForSimulation(state.terminalOutcome),
+    scenarioFlags: { ...state.scenarioFlags },
+    triggeredScenarioThresholds: { ...state.triggeredScenarioThresholds },
+    ...(state.victoryProgress
+      ? {
+        victoryProgress: {
+          ...state.victoryProgress,
+          actionsById: { ...state.victoryProgress.actionsById },
+          ...(state.victoryProgress.lastScoreBreakdown
+            ? { lastScoreBreakdown: { ...state.victoryProgress.lastScoreBreakdown } }
+            : {}),
+        },
+      }
+      : {}),
+  };
+}
+
 interface NormalizedStartGameConfig {
   humanPlayerCount: number;
   seatFactionIds: FactionId[];
@@ -2756,7 +2827,7 @@ export function dispatchCommand(
   state: EngineState,
   command: EngineCommand,
   content: CompiledContent,
-  options?: { assumeNormalized?: boolean; captureCommandLog?: boolean },
+  options?: { assumeNormalized?: boolean; captureCommandLog?: boolean; simulationFastClone?: boolean },
 ): EngineState {
   if (command.type === 'LoadSnapshot') {
     return normalizeEngineState(command.payload.snapshot);
@@ -2775,7 +2846,9 @@ export function dispatchCommand(
     return initializeGame(command);
   }
 
-  const next = options?.assumeNormalized ? cloneState(state) : normalizeEngineState(state);
+  const next = options?.assumeNormalized
+    ? (options?.simulationFastClone ? cloneStateForSimulation(state) : cloneState(state))
+    : normalizeEngineState(state);
   if (options?.captureCommandLog !== false) {
     next.commandLog.push(cloneState(command));
   }

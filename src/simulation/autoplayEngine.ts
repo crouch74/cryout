@@ -250,42 +250,75 @@ function createPlannedRuns(config: NormalizedSimulationBatchConfig): PlannedSimu
   });
 }
 
-function buildIntentKey(command: EngineCommand) {
-  if (command.type !== 'QueueIntent') {
-    return command.type;
+function compareOptionalStrings(left: string | undefined, right: string | undefined) {
+  if (left === right) {
+    return 0;
   }
+  if (left === undefined) {
+    return -1;
+  }
+  if (right === undefined) {
+    return 1;
+  }
+  return left.localeCompare(right);
+}
 
-  return [
-    command.action.actionId,
-    command.action.regionId ?? '_',
-    command.action.domainId ?? '_',
-    command.action.targetSeat ?? '_',
-    command.action.comradesCommitted ?? '_',
-    command.action.evidenceCommitted ?? '_',
-    command.action.cardId ?? '_',
-  ].join('|');
+function compareOptionalNumbers(left: number | undefined, right: number | undefined) {
+  if (left === right) {
+    return 0;
+  }
+  if (left === undefined) {
+    return -1;
+  }
+  if (right === undefined) {
+    return 1;
+  }
+  return left - right;
+}
+
+function compareQueuedIntent(left: StrategyDecision['action'], right: StrategyDecision['action']) {
+  const actionCompare = left.actionId.localeCompare(right.actionId);
+  if (actionCompare !== 0) {
+    return actionCompare;
+  }
+  const regionCompare = compareOptionalStrings(left.regionId, right.regionId);
+  if (regionCompare !== 0) {
+    return regionCompare;
+  }
+  const domainCompare = compareOptionalStrings(left.domainId, right.domainId);
+  if (domainCompare !== 0) {
+    return domainCompare;
+  }
+  const seatCompare = compareOptionalNumbers(left.targetSeat, right.targetSeat);
+  if (seatCompare !== 0) {
+    return seatCompare;
+  }
+  const comradesCompare = compareOptionalNumbers(left.comradesCommitted, right.comradesCommitted);
+  if (comradesCompare !== 0) {
+    return comradesCompare;
+  }
+  const evidenceCompare = compareOptionalNumbers(left.evidenceCommitted, right.evidenceCommitted);
+  if (evidenceCompare !== 0) {
+    return evidenceCompare;
+  }
+  return compareOptionalStrings(left.cardId, right.cardId);
 }
 
 function chooseDecisionFromTopBand(state: EngineState, runSeed: number, decisions: StrategyDecision[]) {
-  const ordered = decisions
-    .map((decision) => ({
-      decision,
-      intentKey: buildIntentKey({ type: 'QueueIntent', seat: decision.seat, action: decision.action }),
-    }))
-    .sort((left, right) => {
-      if (right.decision.score !== left.decision.score) {
-        return right.decision.score - left.decision.score;
+  const ordered = decisions.slice().sort((left, right) => {
+      if (right.score !== left.score) {
+        return right.score - left.score;
       }
-      if (left.decision.seat !== right.decision.seat) {
-        return left.decision.seat - right.decision.seat;
+      if (left.seat !== right.seat) {
+        return left.seat - right.seat;
       }
-      return left.intentKey.localeCompare(right.intentKey);
+      return compareQueuedIntent(left.action, right.action);
     });
 
-  const bestScore = ordered[0]?.decision.score ?? 0;
-  const topBand = ordered.filter((candidate) => candidate.decision.score >= bestScore - 5);
+  const bestScore = ordered[0]?.score ?? 0;
+  const topBand = ordered.filter((candidate) => candidate.score >= bestScore - 5);
   const pickIndex = (state.rng.state ^ state.rng.calls ^ runSeed ^ (state.round * 193)) >>> 0;
-  return topBand[pickIndex % topBand.length]?.decision ?? ordered[0]?.decision;
+  return topBand[pickIndex % topBand.length] ?? ordered[0];
 }
 
 function selectSimulationCommand(
@@ -942,6 +975,7 @@ export function runSingleSimulation(
     state = dispatchCommand(state, command, content, {
       assumeNormalized: true,
       captureCommandLog: trajectoryRecording || debug,
+      simulationFastClone: !trajectoryRecording,
     });
     commandCount += 1;
     const newEvents = state.eventLog.slice(eventStartIndex);

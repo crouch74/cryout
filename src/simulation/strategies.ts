@@ -40,15 +40,61 @@ function deterministicIndex(state: EngineState, seat: number, strategyId: Strate
 }
 
 function buildIntentKey(intent: Omit<QueuedIntent, 'slot'>) {
-  return [
-    intent.actionId,
-    intent.regionId ?? '_',
-    intent.domainId ?? '_',
-    intent.targetSeat ?? '_',
-    intent.comradesCommitted ?? '_',
-    intent.evidenceCommitted ?? '_',
-    intent.cardId ?? '_',
-  ].join('|');
+  return `${intent.actionId}|${intent.regionId ?? '_'}|${intent.domainId ?? '_'}|${intent.targetSeat ?? '_'}|${intent.comradesCommitted ?? '_'}|${intent.evidenceCommitted ?? '_'}|${intent.cardId ?? '_'}`;
+}
+
+function compareOptionalStrings(left: string | undefined, right: string | undefined) {
+  if (left === right) {
+    return 0;
+  }
+  if (left === undefined) {
+    return -1;
+  }
+  if (right === undefined) {
+    return 1;
+  }
+  return left.localeCompare(right);
+}
+
+function compareOptionalNumbers(left: number | undefined, right: number | undefined) {
+  if (left === right) {
+    return 0;
+  }
+  if (left === undefined) {
+    return -1;
+  }
+  if (right === undefined) {
+    return 1;
+  }
+  return left - right;
+}
+
+function compareIntent(left: Omit<QueuedIntent, 'slot'>, right: Omit<QueuedIntent, 'slot'>) {
+  const actionCompare = left.actionId.localeCompare(right.actionId);
+  if (actionCompare !== 0) {
+    return actionCompare;
+  }
+  const regionCompare = compareOptionalStrings(left.regionId, right.regionId);
+  if (regionCompare !== 0) {
+    return regionCompare;
+  }
+  const domainCompare = compareOptionalStrings(left.domainId, right.domainId);
+  if (domainCompare !== 0) {
+    return domainCompare;
+  }
+  const targetCompare = compareOptionalNumbers(left.targetSeat, right.targetSeat);
+  if (targetCompare !== 0) {
+    return targetCompare;
+  }
+  const comradesCompare = compareOptionalNumbers(left.comradesCommitted, right.comradesCommitted);
+  if (comradesCompare !== 0) {
+    return comradesCompare;
+  }
+  const evidenceCompare = compareOptionalNumbers(left.evidenceCommitted, right.evidenceCommitted);
+  if (evidenceCompare !== 0) {
+    return evidenceCompare;
+  }
+  return compareOptionalStrings(left.cardId, right.cardId);
 }
 
 function toStrategyCandidate(candidate: AutoPlayCandidate): StrategyCandidate {
@@ -223,7 +269,7 @@ function topBandSelection(
       if (right.candidate.score !== left.candidate.score) {
         return right.candidate.score - left.candidate.score;
       }
-      return left.key.localeCompare(right.key);
+      return compareIntent(left.candidate.action, right.candidate.action);
     });
   const pick = topBand[deterministicIndex(state, seat, strategyId, topBand.length)]?.candidate ?? topBand[0]?.candidate;
   if (!pick) {
