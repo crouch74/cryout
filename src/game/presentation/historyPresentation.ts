@@ -139,7 +139,7 @@ function getRollOutcomeMeaning(roll: RollPresentationInput, content: CompiledCon
       direction: roll.domainDelta > 0
         ? t('ui.history.advance', 'Advance')
         : t('ui.history.reduce', 'Reduce'),
-      domain: localizeDomainField(roll.domainId, 'name', content.domains[roll.domainId].name, content.id),
+      domain: localizeDomainField(roll.domainId, 'name', content.domains[roll.domainId].name, content.ruleset.id),
       count: Math.abs(roll.domainDelta),
     }));
   }
@@ -219,7 +219,7 @@ function formatDeltaLabel(delta: StateDelta, content: CompiledContent) {
       }
       return delta.label;
     case 'domain':
-      return localizeDomainField(delta.label as keyof typeof content.domains, 'name', content.domains[delta.label as keyof typeof content.domains]?.name ?? delta.label, content.id);
+      return localizeDomainField(delta.label as keyof typeof content.domains, 'name', content.domains[delta.label as keyof typeof content.domains]?.name ?? delta.label, content.ruleset.id);
     case 'extraction': {
       const regionId = getRegionFromDeltaLabel(delta.label);
       const regionLabel = regionId ? localizeRegionField(regionId, 'name', content.regions[regionId].name) : delta.label;
@@ -363,7 +363,7 @@ function getEventContextLabel(event: DomainEvent, content: CompiledContent) {
     parts.push(localizeRegionField(event.context.targetRegionId, 'name', content.regions[event.context.targetRegionId].name));
   }
   if (event.context?.targetDomainId) {
-    parts.push(localizeDomainField(event.context.targetDomainId, 'name', content.domains[event.context.targetDomainId].name, content.id));
+    parts.push(localizeDomainField(event.context.targetDomainId, 'name', content.domains[event.context.targetDomainId].name, content.ruleset.id));
   }
   return parts.filter(Boolean).join(' • ');
 }

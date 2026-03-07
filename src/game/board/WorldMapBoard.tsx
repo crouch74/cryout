@@ -518,7 +518,7 @@ export function WorldMapBoard({
               .map(([domainId, value]) => (
                 <span key={domainId}>
                   <Icon type={DOMAIN_ICON_BY_ID[domainId]} size="sm" />
-                  {localizeDomainField(domainId, 'name', content.domains[domainId].name, content.id)} {formatNumber(value)}
+                  {localizeDomainField(domainId, 'name', content.domains[domainId].name, content.ruleset.id)} {formatNumber(value)}
                 </span>
               ))}
           </div>

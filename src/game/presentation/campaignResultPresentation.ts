@@ -167,7 +167,7 @@ function getOutcomeDescription(outcomeBand: CampaignResolvedEventPayload['outcom
 export function presentCampaignResult(payload: CampaignResolvedEventPayload, content: CompiledContent): PresentedCampaignResult {
   const actionLabel = localizeActionField(payload.actionId, 'name', content.actions[payload.actionId].name);
   const regionLabel = localizeRegionField(payload.regionId, 'name', content.regions[payload.regionId].name);
-  const domainLabel = localizeDomainField(payload.domainId, 'name', content.domains[payload.domainId].name, content.id);
+  const domainLabel = localizeDomainField(payload.domainId, 'name', content.domains[payload.domainId].name, content.ruleset.id);
   const modifiers = payload.modifiers.map((modifier, index) => ({
     key: `${modifier.source}:${index}`,
     label: getModifierLabel(modifier),

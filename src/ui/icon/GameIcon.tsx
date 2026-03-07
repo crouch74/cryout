@@ -107,6 +107,7 @@ const ICON_BY_NAME: Record<GameIconName, LucideIcon> = {
   fundraise: HandCoins,
   mediaBlitz: Radio,
   sanctions: Ban,
+  shieldAlert: ShieldAlert,
   check: Check,
   chevronDown: ChevronDown,
   contrast: Contrast,

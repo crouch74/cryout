@@ -198,6 +198,47 @@ const DOMAIN_TRACK_COLORS: Record<DomainId, string> = {
   UnfinishedJustice: 'var(--color-domain-justice)',
 };
 
+const CORRIDORS_BURN_DOMAIN_ICONS: Partial<Record<DomainId, IconType>> = {
+  WarMachine: 'warMachine',
+  SilencedTruth: 'scrollText',
+  EmptyStomach: 'frontHunger',
+  GildedCage: 'sanctions',
+  FossilGrip: 'frontFossil',
+};
+
+const CORRIDORS_BURN_TRACK_ICONS: Record<string, IconType> = {
+  egypt_corridor: 'smuggleEvidence',
+  turkey_corridor: 'laborStrike',
+  jordan_corridor: 'defend',
+  qatar_corridor: 'internationalOutreach',
+  gulf_blowback: 'crisis',
+  saudi_posture: 'frontFossil',
+  uae_posture: 'coordinateDigital',
+  bahrain_posture: 'warMachine',
+  kuwait_posture: 'defense',
+};
+
+const ALGERIA_TRACK_ICONS: Record<string, IconType> = {
+  repression_cycle: 'shieldAlert',
+};
+
+export function getScenarioDomainIcon(rulesetId: string, domainId: DomainId): IconType {
+  if (rulesetId === 'when_the_corridors_burn' && CORRIDORS_BURN_DOMAIN_ICONS[domainId]) {
+    return CORRIDORS_BURN_DOMAIN_ICONS[domainId] ?? DOMAIN_TRACK_ICONS[domainId];
+  }
+  return DOMAIN_TRACK_ICONS[domainId];
+}
+
+function getScenarioCustomTrackIcon(rulesetId: string, trackId: string): IconType {
+  if (rulesetId === 'when_the_corridors_burn' && CORRIDORS_BURN_TRACK_ICONS[trackId]) {
+    return CORRIDORS_BURN_TRACK_ICONS[trackId];
+  }
+  if (rulesetId === 'algerian_war_of_independence' && ALGERIA_TRACK_ICONS[trackId]) {
+    return ALGERIA_TRACK_ICONS[trackId];
+  }
+  return 'frontJustice';
+}
+
 const ACTION_ICONS: Record<ActionId, IconType> = {
   organize: 'organize',
   investigate: 'investigate',
@@ -381,7 +422,7 @@ export function getRegionDangerState(extractionTokens: number) {
 
 export function getDomainPresentation(domainId: DomainId, state: EngineState, content: CompiledContent): DomainPresentation {
   const progress = state.domains[domainId].progress;
-  const localizedDescription = localizeDomainField(domainId, 'description', content.domains[domainId].description, content.id);
+  const localizedDescription = localizeDomainField(domainId, 'description', content.domains[domainId].description, content.ruleset.id);
   return {
     icon: DOMAIN_ICONS[domainId],
     accentClass: DOMAIN_ACCENTS[domainId],
@@ -615,13 +656,13 @@ export function getStatusRibbonItems(state: EngineState, content: CompiledConten
 export function getFrontTrackRows(state: EngineState, content: CompiledContent): FrontTrackRow[] {
   const customTrackRows = (content.ruleset.customTracks ?? []).map((track) => ({
     id: track.id,
-    label: localizeScenarioTrackField(content.id, track.id, 'name', track.name),
-    shortLabel: localizeScenarioTrackField(content.id, track.id, 'name', track.name),
-    icon: 'frontJustice' as const,
+    label: localizeScenarioTrackField(content.ruleset.id, track.id, 'name', track.name),
+    shortLabel: localizeScenarioTrackField(content.ruleset.id, track.id, 'name', track.name),
+    icon: getScenarioCustomTrackIcon(content.ruleset.id, track.id),
     color: 'var(--color-domain-justice)',
     value: state.customTracks[track.id]?.value ?? track.initialValue,
     max: track.max,
-    tooltip: localizeScenarioTrackField(content.id, track.id, 'description', track.description),
+    tooltip: localizeScenarioTrackField(content.ruleset.id, track.id, 'description', track.description),
     severity: getSeverityByBands(state.customTracks[track.id]?.value ?? track.initialValue, {
       watch: track.thresholds[0] ?? Math.ceil(track.max * 0.4),
       danger: track.thresholds[1] ?? Math.ceil(track.max * 0.7),
@@ -631,13 +672,13 @@ export function getFrontTrackRows(state: EngineState, content: CompiledContent):
 
   const domainRows = (Object.keys(content.domains) as DomainId[]).map((domainId) => ({
     id: domainId,
-    label: localizeDomainField(domainId, 'name', content.domains[domainId].name, content.id),
+    label: localizeDomainField(domainId, 'name', content.domains[domainId].name, content.ruleset.id),
     shortLabel: t(`ui.domains.short.${domainId}`, DOMAIN_SHORT_LABELS[domainId]),
-    icon: DOMAIN_TRACK_ICONS[domainId],
+    icon: getScenarioDomainIcon(content.ruleset.id, domainId),
     color: DOMAIN_TRACK_COLORS[domainId],
     value: state.domains[domainId].progress,
     max: 12,
-    tooltip: localizeDomainField(domainId, 'description', content.domains[domainId].description, content.id),
+    tooltip: localizeDomainField(domainId, 'description', content.domains[domainId].description, content.ruleset.id),
     severity: getSeverityByBands(state.domains[domainId].progress, { watch: 4, danger: 7, critical: 10 }),
   }));
 
@@ -719,7 +760,7 @@ export function buildIntentPreview(
       tone: 'detail',
       label: t('ui.game.front', 'Front'),
       value: domainDef
-        ? localizeDomainField(draft.domainId, 'name', domainDef.name, content.id)
+        ? localizeDomainField(draft.domainId, 'name', domainDef.name, content.ruleset.id)
         : t('ui.game.unknownDomain', 'Unknown Domain'),
     });
   }

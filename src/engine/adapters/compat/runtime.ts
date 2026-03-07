@@ -1816,7 +1816,7 @@ function applyEffects(state: EngineState, content: CompiledContent, effects: Eff
         const before = state.domains[domainId].progress;
         state.domains[domainId].progress = clamp(state.domains[domainId].progress + effect.delta, effect.clamp ?? { min: 0, max: 12 });
         trace.message = t('ui.runtime.traceDomain', '{{domain}} {{before}} -> {{after}}.', {
-          domain: localizeDomainField(domainId, 'name', content.domains[domainId].name, content.id),
+          domain: localizeDomainField(domainId, 'name', content.domains[domainId].name, content.ruleset.id),
           before,
           after: state.domains[domainId].progress,
         });

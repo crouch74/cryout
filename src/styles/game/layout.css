@@ -1658,38 +1658,57 @@ html[dir='rtl'] .deck-reveal-deck-label {
   z-index: var(--z-panel);
 }
 
-.status-pill-tooltip {
-  position: absolute;
-  inset-inline-end: var(--space-1);
-  top: calc(100% + 8px);
+.status-pill-overlay-tooltip {
+  position: relative;
   z-index: var(--z-toast);
+  max-width: min(280px, calc(100vw - 32px));
   display: grid;
-  gap: var(--space-0);
-  width: min(260px, calc(100vw - 48px));
-  padding: 9px 11px;
-  border-radius: var(--radius-10);
-  border: var(--border-width-thin) solid color-mix(in srgb, var(--skin-text-primary) 16%, transparent);
+  gap: var(--space-1);
+  padding: 10px 12px;
+  border-radius: var(--radius-12);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--skin-border-strong) 18%, transparent);
   background:
+    var(--texture-paper-noise),
     linear-gradient(180deg,
-      color-mix(in srgb, var(--skin-layer-elevated) 97%, transparent),
-      color-mix(in srgb, var(--skin-layer-surface) 92%, var(--skin-layer-overlay) 8%)),
-    var(--skin-layer-surface);
-  box-shadow: 0 10px 18px color-mix(in srgb, var(--skin-text-primary) 14%, transparent);
-  color: var(--text-2);
-  font-size: 0.75rem;
-  line-height: 1.35;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-2px);
-  transition: opacity var(--motion-fast), transform var(--motion-fast), visibility var(--motion-fast);
+      color-mix(in srgb, var(--skin-text-inverse) 98%, transparent),
+      color-mix(in srgb, var(--ui-surface-paper) 92%, var(--ui-surface-panel) 8%)),
+    var(--ui-surface-paper);
+  background-size: 200px 200px, 100% 100%, auto;
+  box-shadow: 0 16px 32px color-mix(in srgb, var(--skin-layer-scrim) 20%, transparent);
+  color: var(--ui-copy-primary);
+  font-size: 0.78rem;
+  line-height: 1.4;
   pointer-events: none;
+  transform-origin: var(--radix-tooltip-content-transform-origin);
+  animation: status-pill-tooltip-in var(--duration-quick) var(--motion-ease-standard);
 }
 
-.status-pill:has(.ui-icon:hover) .status-pill-tooltip,
-.status-pill:focus-within .status-pill-tooltip {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
+.status-pill-overlay-tooltip[data-state='closed'] {
+  animation: status-pill-tooltip-out var(--duration-instant) var(--motion-ease-standard);
+}
+
+@keyframes status-pill-tooltip-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes status-pill-tooltip-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(2px) scale(0.99);
+  }
 }
 
 .status-pill-copy span {

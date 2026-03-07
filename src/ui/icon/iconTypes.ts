@@ -49,6 +49,7 @@ export type GameIconName =
   | 'fundraise'
   | 'mediaBlitz'
   | 'sanctions'
+  | 'shieldAlert'
   | 'check'
   | 'chevronDown'
   | 'contrast'

@@ -451,7 +451,7 @@ function getVisualDeltaGlyph(delta: EngineState['eventLog'][number]['deltas'][nu
           icon: DOMAIN_DELTA_ICONS[domainId],
           value: signedDelta ?? '*',
           tone: 'track',
-          ariaLabel: `${localizeDomainField(domainId, 'name', content.domains[domainId].name, content.id)} ${signedDelta ?? ''}`.trim(),
+          ariaLabel: `${localizeDomainField(domainId, 'name', content.domains[domainId].name, content.ruleset.id)} ${signedDelta ?? ''}`.trim(),
         } satisfies VisualDeltaGlyph,
         targetKeys: [domainId],
       };
@@ -885,7 +885,7 @@ export function GameSessionScreen({
             <select value={draft.domainId} onChange={(event) => setDraft((current) => ({ ...current, domainId: event.target.value as DomainId }))}>
               {DOMAIN_IDS.map((domainId) => (
                 <option key={domainId} value={domainId}>
-                  {localizeDomainField(domainId, 'name', content.domains[domainId].name, content.id)}
+                  {localizeDomainField(domainId, 'name', content.domains[domainId].name, content.ruleset.id)}
                 </option>
               ))}
             </select>

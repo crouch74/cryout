@@ -2421,6 +2421,12 @@
         "dramatization": "Night raids, clandestine presses, intercepted routes, mass funerals, and the persistent knowledge that liberation will not erase the violence already lived.",
         "gameplay": "Evidence builds international witness but raises Repression Cycle. Urban gains can raise War Machine. Symbolic victory requires acknowledgement of colonial abuse, not attention alone.",
         "moralCenter": "Liberation is collective and costly. Ending colonial rule does not end grief, but it changes who decides the future.",
+        "customTracks": {
+          "repression_cycle": {
+            "name": "Repression Cycle",
+            "description": "How far colonial repression has escalated against the movement."
+          }
+        },
         "specialRules": {
           "repression_feedback": {
             "label": "Repression Feedback",
