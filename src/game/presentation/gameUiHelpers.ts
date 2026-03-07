@@ -381,7 +381,7 @@ export function getRegionDangerState(extractionTokens: number) {
 
 export function getDomainPresentation(domainId: DomainId, state: EngineState, content: CompiledContent): DomainPresentation {
   const progress = state.domains[domainId].progress;
-  const localizedDescription = localizeDomainField(domainId, 'description', content.domains[domainId].description);
+  const localizedDescription = localizeDomainField(domainId, 'description', content.domains[domainId].description, content.id);
   return {
     icon: DOMAIN_ICONS[domainId],
     accentClass: DOMAIN_ACCENTS[domainId],
@@ -631,13 +631,13 @@ export function getFrontTrackRows(state: EngineState, content: CompiledContent):
 
   const domainRows = (Object.keys(content.domains) as DomainId[]).map((domainId) => ({
     id: domainId,
-    label: localizeDomainField(domainId, 'name', content.domains[domainId].name),
+    label: localizeDomainField(domainId, 'name', content.domains[domainId].name, content.id),
     shortLabel: t(`ui.domains.short.${domainId}`, DOMAIN_SHORT_LABELS[domainId]),
     icon: DOMAIN_TRACK_ICONS[domainId],
     color: DOMAIN_TRACK_COLORS[domainId],
     value: state.domains[domainId].progress,
     max: 12,
-    tooltip: localizeDomainField(domainId, 'description', content.domains[domainId].description),
+    tooltip: localizeDomainField(domainId, 'description', content.domains[domainId].description, content.id),
     severity: getSeverityByBands(state.domains[domainId].progress, { watch: 4, danger: 7, critical: 10 }),
   }));
 
@@ -719,7 +719,7 @@ export function buildIntentPreview(
       tone: 'detail',
       label: t('ui.game.front', 'Front'),
       value: domainDef
-        ? localizeDomainField(draft.domainId, 'name', domainDef.name)
+        ? localizeDomainField(draft.domainId, 'name', domainDef.name, content.id)
         : t('ui.game.unknownDomain', 'Unknown Domain'),
     });
   }

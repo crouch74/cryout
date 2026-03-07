@@ -1689,7 +1689,7 @@
         "passive": "Organize gains +2 Comrades in Gaza-West Bank and Launch Campaign gains +1 there.",
         "weakness": "Global Appeal costs +1 Evidence.",
         "mandateTitle": "Hold the Ground of Return",
-        "mandateDescription": "End with Gaza-West Bank at 2 or fewer Extraction Tokens, Popular Refusal at 4 or more, and Egyptian Corridor Posture at 3 or more."
+        "mandateDescription": "End with Gaza-West Bank at 2 or fewer Extraction Tokens, Witness Corridors at 4 or more, and Egyptian Corridor Posture at 3 or more."
       },
       "gaza_west_bank_witness_medics": {
         "name": "Gaza / West Bank Witness and Medics Network",
@@ -1713,7 +1713,7 @@
         "passive": "Investigate gains +1 Evidence in Caribbean Siege and Defend gains +1 there.",
         "weakness": "Organize outside Caribbean Siege gains no home bonus.",
         "mandateTitle": "Protect the Blockaded Memory",
-        "mandateDescription": "End with Stolen Voice at 3 or more, Gilded Cage at 3 or more, and Caribbean Siege at 2 or fewer Extraction Tokens."
+        "mandateDescription": "End with Witness Corridors at 3 or more, Sanctions Breach at 3 or more, and Caribbean Siege at 2 or fewer Extraction Tokens."
       },
       "corridor_workers_refuge_networks": {
         "name": "Corridor Workers and Refuge Networks",
@@ -2263,11 +2263,11 @@
       },
       "sup_corr_cuban_memory_brigade": {
         "name": "Cuban Memory Brigade",
-        "text": "Acting faction gets +2 on a Stolen Voice campaign. Songs, classrooms, and neighborhood memory keep blockade trauma politically legible and hard to erase."
+        "text": "Acting faction gets +2 on a Witness Corridors campaign. Songs, classrooms, and neighborhood memory keep blockade trauma politically legible and hard to erase."
       },
       "sup_corr_communal_defense_assembly": {
         "name": "Communal Defense Assembly",
-        "text": "Acting faction gets +2 on a Revolutionary Wave campaign. An assembly redistributes risk, restores discipline, and turns survival into coordinated strategy."
+        "text": "Acting faction gets +2 on a Bread Under Siege campaign. An assembly redistributes risk, restores discipline, and turns survival into coordinated strategy."
       },
       "crs_corr_rafah_gate_choked": {
         "name": "Rafah Gate Choked Again",
@@ -2315,7 +2315,7 @@
       },
       "crs_corr_monroe_message_to_caracas": {
         "name": "Monroe Message to Caracas and Havana",
-        "text": "Threats to Caracas and Havana harden the blockade line and warn the hemisphere that disobedient sovereignty will be punished."
+        "text": "Raise War Machine by 1, add 1 Extraction to Caribbean Siege, and lower Witness Corridors by 1. Threats to Caracas and Havana harden the blockade line and warn the hemisphere that disobedient sovereignty will be punished."
       },
       "sys_corr_trump_operation_epic_fury": {
         "name": "Trump Orders Operation Epic Fury",
@@ -2507,6 +2507,28 @@
         "dramatization": "Hospitals count the wounded and the missing, dockworkers count delays, communes count remaining fuel, and every new missile path threatens another population already living under discipline.",
         "gameplay": "Hold the fronts where people are being trapped, displaced, or starved, then fracture the shipping, sanctions, and basing system before the War Machine outruns the coalition's witness and survival networks.",
         "moralCenter": "No northern savior arrives. The table lives or dies by movement endurance, witness, and survival structures built by the people under attack.",
+        "domains": {
+          "WarMachine": {
+            "name": "War Machine Fracture",
+            "description": "Breaking basing chains, arms corridors, and the political tempo of escalation."
+          },
+          "SilencedTruth": {
+            "name": "Witness Corridors",
+            "description": "Keeping testimony, archives, medics, and public proof in motion under bombardment and blackout."
+          },
+          "EmptyStomach": {
+            "name": "Bread Under Siege",
+            "description": "Holding food and daily survival against siege, sanctions, and manipulated scarcity."
+          },
+          "GildedCage": {
+            "name": "Sanctions Breach",
+            "description": "Cracking carceral, financial, and legal siege across borders and banking systems."
+          },
+          "FossilGrip": {
+            "name": "Chokepoint Breakage",
+            "description": "Interrupting the oil-shipping-basing architecture that treats seas and straits as extractive property."
+          }
+        },
         "customTracks": {
           "egypt_corridor": {
             "name": "Egyptian Corridor Posture",

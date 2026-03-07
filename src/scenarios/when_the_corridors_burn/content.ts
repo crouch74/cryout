@@ -42,18 +42,6 @@ const domains: DomainDefinition[] = [
     description: 'Interrupting the oil-shipping-basing architecture that treats seas and straits as extractive property.',
     initialProgress: 0,
   },
-  {
-    id: 'StolenVoice',
-    name: 'Memory Refusal',
-    description: 'Defending political memory, language, and public dignity against erasure and platform deletion.',
-    initialProgress: 0,
-  },
-  {
-    id: 'RevolutionaryWave',
-    name: 'Popular Refusal',
-    description: 'The coalition’s capacity to keep people, witness, and survival networks moving together under extreme strain.',
-    initialProgress: 1,
-  },
 ];
 
 const regions: RegionDefinition[] = [
@@ -69,7 +57,7 @@ const regions: RegionDefinition[] = [
     name: 'Lebanon–Northern Front',
     description: 'Cross-border escalation, displacement, and the risk that northern war becomes the pretext for wider regional rupture.',
     strapline: 'The frontier expands whenever the war-state needs another horizon.',
-    vulnerability: { WarMachine: 3, SilencedTruth: 2, RevolutionaryWave: 2, GildedCage: 1 },
+    vulnerability: { WarMachine: 3, SilencedTruth: 2, EmptyStomach: 2, GildedCage: 1 },
   },
   {
     id: 'GulfHormuzCorridor',
@@ -90,7 +78,7 @@ const regions: RegionDefinition[] = [
     name: 'Caribbean Siege',
     description: 'Pressure on Cuba and Venezuela through sanctions, banking restrictions, oil coercion, platform narratives, and Monroe-style threats.',
     strapline: 'The blockade line moves through ports, banks, and screens.',
-    vulnerability: { GildedCage: 3, EmptyStomach: 2, StolenVoice: 2, FossilGrip: 1 },
+    vulnerability: { GildedCage: 3, EmptyStomach: 2, SilencedTruth: 2, FossilGrip: 1 },
   },
   {
     id: 'BlackSeaEasternFurnace',
@@ -118,12 +106,12 @@ const factions: FactionDefinition[] = [
     mandate: {
       id: 'mandate_corridors_sumud',
       title: 'Hold the Ground of Return',
-      description: 'End with Gaza–West Bank at 2 or fewer Extraction Tokens, Revolutionary Wave at 4 or more, and Egyptian Corridor Posture at 3 or more.',
+      description: 'End with Gaza–West Bank at 2 or fewer Extraction Tokens, Witness Corridors at 4 or more, and Egyptian Corridor Posture at 3 or more.',
       condition: {
         kind: 'all',
         conditions: [
           { kind: 'compare', left: { type: 'region_extraction', region: 'GazaWestBank' }, op: '<=', right: 2 },
-          { kind: 'compare', left: { type: 'domain_progress', domain: 'RevolutionaryWave' }, op: '>=', right: 4 },
+          { kind: 'compare', left: { type: 'domain_progress', domain: 'SilencedTruth' }, op: '>=', right: 4 },
           { kind: 'compare', left: { type: 'custom_track', track: 'egypt_corridor' }, op: '>=', right: 3 },
         ],
       },
@@ -196,17 +184,17 @@ const factions: FactionDefinition[] = [
     organizeBonus: 1,
     investigateBonus: 1,
     defenseBonus: 1,
-    campaignDomainBonus: 'StolenVoice',
+    campaignDomainBonus: 'SilencedTruth',
     campaignBonus: 1,
     outreachPenalty: 0,
     mandate: {
       id: 'mandate_corridors_cuba',
       title: 'Protect the Blockaded Memory',
-      description: 'End with Stolen Voice at 3 or more, Gilded Cage at 3 or more, and Caribbean Siege at 2 or fewer Extraction Tokens.',
+      description: 'End with Witness Corridors at 3 or more, Sanctions Breach at 3 or more, and Caribbean Siege at 2 or fewer Extraction Tokens.',
       condition: {
         kind: 'all',
         conditions: [
-          { kind: 'compare', left: { type: 'domain_progress', domain: 'StolenVoice' }, op: '>=', right: 3 },
+          { kind: 'compare', left: { type: 'domain_progress', domain: 'SilencedTruth' }, op: '>=', right: 3 },
           { kind: 'compare', left: { type: 'domain_progress', domain: 'GildedCage' }, op: '>=', right: 3 },
           { kind: 'compare', left: { type: 'region_extraction', region: 'CaribbeanSiege' }, op: '<=', right: 2 },
         ],
@@ -624,7 +612,7 @@ export const compatRuleset: RulesetDefinition = {
       conditions: [
         { kind: 'every_region_extraction_at_most', count: 4 },
         { kind: 'compare', left: { type: 'global_gaze' }, op: '>=', right: 6 },
-        { kind: 'compare', left: { type: 'domain_progress', domain: 'RevolutionaryWave' }, op: '>=', right: 1 },
+        { kind: 'compare', left: { type: 'domain_progress', domain: 'SilencedTruth' }, op: '>=', right: 3 },
       ],
     },
   },

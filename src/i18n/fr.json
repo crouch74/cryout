@@ -1679,7 +1679,7 @@
         "passive": "Organize gains +2 Comrades in Gaza-West Bank and Launch Campaign gains +1 there.",
         "weakness": "Global Appeal costs +1 Evidence.",
         "mandateTitle": "Hold the Ground of Return",
-        "mandateDescription": "End with Gaza-West Bank at 2 or fewer Extraction Tokens, Popular Refusal at 4 or more, and Egyptian Corridor Posture at 3 or more."
+        "mandateDescription": "End with Gaza-West Bank at 2 or fewer Extraction Tokens, Witness Corridors at 4 or more, and Egyptian Corridor Posture at 3 or more."
       },
       "gaza_west_bank_witness_medics": {
         "name": "Gaza / West Bank Witness and Medics Network",
@@ -1703,7 +1703,7 @@
         "passive": "Investigate gains +1 Evidence in Caribbean Siege and Defend gains +1 there.",
         "weakness": "Organize outside Caribbean Siege gains no home bonus.",
         "mandateTitle": "Protect the Blockaded Memory",
-        "mandateDescription": "End with Stolen Voice at 3 or more, Gilded Cage at 3 or more, and Caribbean Siege at 2 or fewer Extraction Tokens."
+        "mandateDescription": "End with Witness Corridors at 3 or more, Sanctions Breach at 3 or more, and Caribbean Siege at 2 or fewer Extraction Tokens."
       },
       "corridor_workers_refuge_networks": {
         "name": "Corridor Workers and Refuge Networks",
@@ -2215,8 +2215,8 @@
       "sup_corr_prisoner_letter_chain": { "name": "Prisoner Letter Chain", "text": "Acting faction gets +2 on a Sanctions Breach campaign. Letters from prison turn disappearance into public testimony and weaken the state's monopoly on narrative." },
       "sup_corr_red_sea_dock_strike": { "name": "Red Sea Dock Strike", "text": "Acting faction gets +2 on a Chokepoint Breakage campaign. A port stoppage turns delay into cost for shippers, insurers, and war logistics." },
       "sup_corr_black_sea_grain_solidarity": { "name": "Black Sea Grain Solidarity", "text": "Acting faction gets +2 on a Bread Under Siege campaign. Grain routes and convoy information are reclaimed for food survival instead of war planning." },
-      "sup_corr_cuban_memory_brigade": { "name": "Cuban Memory Brigade", "text": "Acting faction gets +2 on a Stolen Voice campaign. Songs, classrooms, and neighborhood memory keep blockade trauma politically legible and hard to erase." },
-      "sup_corr_communal_defense_assembly": { "name": "Communal Defense Assembly", "text": "Acting faction gets +2 on a Revolutionary Wave campaign. An assembly redistributes risk, restores discipline, and turns survival into coordinated strategy." },
+      "sup_corr_cuban_memory_brigade": { "name": "Cuban Memory Brigade", "text": "Acting faction gets +2 on a Witness Corridors campaign. Songs, classrooms, and neighborhood memory keep blockade trauma politically legible and hard to erase." },
+      "sup_corr_communal_defense_assembly": { "name": "Communal Defense Assembly", "text": "Acting faction gets +2 on a Bread Under Siege campaign. An assembly redistributes risk, restores discipline, and turns survival into coordinated strategy." },
       "crs_corr_rafah_gate_choked": { "name": "Rafah Gate Choked Again", "text": "Add 1 Extraction to Gaza-West Bank and lower Egypt Corridor by 1. Crossing restrictions and inspection delays trap the wounded, squeeze medicine, and close another exit from Gaza." },
       "crs_corr_west_bank_mass_raids": { "name": "West Bank Mass Raids", "text": "Lower Global Gaze by 1 and add 1 Extraction to Gaza-West Bank. Night raids, checkpoints, and prison sweeps widen the siege and push testimony back under armed control." },
       "crs_corr_beirut_suburbs_hit": { "name": "Beirut Suburbs Hit", "text": "Raise War Machine by 1 and add 1 Extraction to Lebanon-Northern Front. Bombardment drives displacement through Beirut's southern suburbs and widens the northern front." },
@@ -2228,7 +2228,7 @@
       "crs_corr_venezuela_oil_waiver_reversed": { "name": "Venezuela Oil Waiver Reversed", "text": "Add 1 Extraction to Caribbean Siege and lower Chokepoint Breakage by 1. Waiver reversal tightens fuel pressure, foreign-exchange pressure, and sanctions discipline on daily life." },
       "crs_corr_black_sea_grain_fire": { "name": "Black Sea Grain Fire", "text": "Raise Global Gaze by 1, add 1 Extraction to Black Sea-Eastern Furnace, and lower Bread Under Siege by 1. Port strikes burn grain capacity and fold another front into hunger politics." },
       "crs_corr_karoline_leavitt_press_discipline": { "name": "Karoline Leavitt Press Discipline", "text": "Lower Global Gaze by 1, add 1 Extraction to Gaza-West Bank, and lower Witness Corridors by 1. Official talking points narrow what counts as credible witness and push Gaza testimony off the agenda." },
-      "crs_corr_monroe_message_to_caracas": { "name": "Monroe Message to Caracas and Havana", "text": "Raise War Machine by 1, add 1 Extraction to Caribbean Siege, and lower Stolen Voice by 1. Threats to Caracas and Havana harden the blockade line and warn the hemisphere that disobedient sovereignty will be punished." },
+      "crs_corr_monroe_message_to_caracas": { "name": "Monroe Message to Caracas and Havana", "text": "Raise War Machine by 1, add 1 Extraction to Caribbean Siege, and lower Witness Corridors by 1. Threats to Caracas and Havana harden the blockade line and warn the hemisphere that disobedient sovereignty will be punished." },
       "sys_corr_trump_operation_epic_fury": { "name": "Trump Orders Operation Epic Fury", "text": "Raise War Machine by 1, add 1 Extraction to Gaza-West Bank and Gulf-Hormuz, and increase future campaign targets by 1. Direct U.S. strikes widen the war and tighten both fronts." },
       "sys_corr_hegseth_forward_posture": { "name": "Pete Hegseth Announces Forward Posture", "text": "Raise War Machine by 1, add 1 Extraction to Gulf-Hormuz, and raise Gulf Blowback by 1. Forward-posture rhetoric normalizes more basing and more carriers." },
       "sys_corr_ratcliffe_threat_brief": { "name": "Ratcliffe Threat Brief", "text": "Lower Global Gaze by 1. Threat inflation turns intelligence into escalation cover and makes de-escalation politically harder to defend." },
@@ -2377,6 +2377,28 @@
         "dramatization": "Les hopitaux comptent les blesses et les disparus, les dockers comptent les retards, les communes comptent le carburant restant, et chaque nouvelle trajectoire de missile menace une population deja placee sous discipline et coercition.",
         "gameplay": "Tenez les fronts ou les gens sont pieges, deplaces ou affames, puis fracturez le systeme de transport maritime, de sanctions et de bases avant que la War Machine ne depasse les reseaux de temoignage et de survie de la coalition.",
         "moralCenter": "Aucun sauveur du Nord n'arrive. La table vit ou tombe selon l'endurance des mouvements, les structures de temoignage et les reseaux de survie construits par les peuples attaques.",
+        "domains": {
+          "WarMachine": {
+            "name": "Fracture de la War Machine",
+            "description": "Briser les chaines de bases, les corridors d'armes et le tempo politique de l'escalade."
+          },
+          "SilencedTruth": {
+            "name": "Corridors de temoignage",
+            "description": "Maintenir en mouvement les temoignages, archives, medics et preuves publiques sous bombardement et blackout."
+          },
+          "EmptyStomach": {
+            "name": "Pain sous siege",
+            "description": "Defendre la nourriture et la survie quotidienne contre le siege, les sanctions et la penurie fabriquee."
+          },
+          "GildedCage": {
+            "name": "Breche des sanctions",
+            "description": "Fissurer le siege carceral, financier et juridique a travers les frontieres et les systemes bancaires."
+          },
+          "FossilGrip": {
+            "name": "Rupture des goulets",
+            "description": "Perturber l'architecture petroliere, maritime et de bases qui traite mers et detroits comme une propriete extractive."
+          }
+        },
         "customTracks": {
           "egypt_corridor": {
             "name": "Posture du corridor egyptien",

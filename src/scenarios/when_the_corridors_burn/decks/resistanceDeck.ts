@@ -64,7 +64,7 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     text: 'Neighborhood radio carries memory, alerts, and anti-blockade coordination when platforms and banks choke movement.',
     effects: [
       { type: 'gain_evidence', seat: 'acting_player', amount: 2 },
-      { type: 'modify_domain', domain: 'StolenVoice', delta: 1 },
+      { type: 'modify_domain', domain: 'SilencedTruth', delta: 1 },
     ],
   },
   {
@@ -129,18 +129,18 @@ export const resistanceCards: ResistanceCardDefinition[] = [
     deck: 'resistance',
     type: 'support',
     name: 'Cuban Memory Brigade',
-    text: 'Acting faction gets +2 on a Stolen Voice campaign. Songs, classrooms, and neighborhood memory keep blockade trauma politically legible and hard to erase.',
+    text: 'Acting faction gets +2 on a Witness Corridors campaign. Songs, classrooms, and neighborhood memory keep blockade trauma politically legible and hard to erase.',
     campaignBonus: 2,
-    domainBonus: 'StolenVoice',
+    domainBonus: 'SilencedTruth',
   },
   {
     id: 'sup_corr_communal_defense_assembly',
     deck: 'resistance',
     type: 'support',
     name: 'Communal Defense Assembly',
-    text: 'Acting faction gets +2 on a Revolutionary Wave campaign. An assembly redistributes risk, restores discipline, and turns survival into coordinated strategy.',
+    text: 'Acting faction gets +2 on a Bread Under Siege campaign. An assembly redistributes risk, restores discipline, and turns survival into coordinated strategy.',
     campaignBonus: 2,
-    domainBonus: 'RevolutionaryWave',
+    domainBonus: 'EmptyStomach',
   },
 ];
 

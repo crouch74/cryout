@@ -120,11 +120,11 @@ export const crisisCards: CrisisCardDefinition[] = [
     id: 'crs_corr_monroe_message_to_caracas',
     deck: 'crisis',
     name: 'Monroe Message to Caracas and Havana',
-    text: 'Raise War Machine by 1, add 1 Extraction to Caribbean Siege, and lower Stolen Voice by 1. Threats to Caracas and Havana harden the blockade line and warn the hemisphere that disobedient sovereignty will be punished.',
+    text: 'Raise War Machine by 1, add 1 Extraction to Caribbean Siege, and lower Witness Corridors by 1. Threats to Caracas and Havana harden the blockade line and warn the hemisphere that disobedient sovereignty will be punished.',
     effects: [
       { type: 'modify_war_machine', delta: 1 },
       { type: 'add_extraction', region: 'CaribbeanSiege', amount: 1 },
-      { type: 'modify_domain', domain: 'StolenVoice', delta: -1, clamp: { min: 0, max: 12 } },
+      { type: 'modify_domain', domain: 'SilencedTruth', delta: -1, clamp: { min: 0, max: 12 } },
     ],
   },
 ];
