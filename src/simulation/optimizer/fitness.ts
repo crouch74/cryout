@@ -1,5 +1,5 @@
 import type { ExperimentArmSummary } from '../experiments/types.ts';
-import type { OptimizerScoreBreakdown, OptimizerTargetScore } from './types.ts';
+import type { OptimizerFitnessMetrics, OptimizerScoreBreakdown, OptimizerTargetScore } from './types.ts';
 
 interface TargetRange {
   min: number;
@@ -7,21 +7,19 @@ interface TargetRange {
 }
 
 const TARGET_RANGES = {
-  publicVictoryRate: { min: 0.4, max: 0.6 },
-  successRate: { min: 0.25, max: 0.4 },
-  mandateFailRateGivenPublic: { min: 0.3, max: 0.4 },
-  averageTurns: { min: 6, max: 10 },
-} as const satisfies Record<string, TargetRange>;
-
-const CATASTROPHE_THRESHOLDS = {
-  extraction_breach: 0.35,
-  comrades_exhausted: 0.2,
-  sudden_death: 0.12,
-} as const;
+  winRate: { min: 0.35, max: 0.45 },
+  avgRounds: { min: 9, max: 12 },
+  earlyLossRate: { min: 0, max: 0.05 },
+  lateGameRate: { min: 0, max: 0.10 },
+} as const satisfies Record<OptimizerTargetScore['metric'], TargetRange>;
 
 function roundTo(value: number, digits = 6) {
   const factor = 10 ** digits;
   return Math.round(value * factor) / factor;
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
 }
 
 function evaluateTarget(metric: OptimizerTargetScore['metric'], value: number, range: TargetRange): OptimizerTargetScore {
@@ -32,8 +30,7 @@ function evaluateTarget(metric: OptimizerTargetScore['metric'], value: number, r
   } else if (value > range.max) {
     distance = value - range.max;
   }
-  const normalizedDistance = distance / span;
-  const normalizedScore = Math.max(0, 1 - normalizedDistance);
+
   return {
     metric,
     value: roundTo(value),
@@ -41,67 +38,102 @@ function evaluateTarget(metric: OptimizerTargetScore['metric'], value: number, r
     max: range.max,
     inRange: distance === 0,
     distanceFromRange: roundTo(distance),
-    normalizedScore: roundTo(normalizedScore),
+    normalizedScore: roundTo(clamp(1 - (distance / span), 0, 1)),
   };
 }
 
-function computeCatastrophePenalty(arm: ExperimentArmSummary) {
-  let penalty = 0;
+function computeBalanceScore(winRate: number) {
+  return roundTo(clamp(1 - (Math.abs(winRate - 0.40) / 0.40), 0, 1));
+}
 
-  const extractionOver = Math.max(0, arm.defeatRates.extraction_breach - CATASTROPHE_THRESHOLDS.extraction_breach);
-  const comradesOver = Math.max(0, arm.defeatRates.comrades_exhausted - CATASTROPHE_THRESHOLDS.comrades_exhausted);
-  const suddenOver = Math.max(0, arm.defeatRates.sudden_death - CATASTROPHE_THRESHOLDS.sudden_death);
+function computePacingScore(avgRounds: number) {
+  if (avgRounds < 9) {
+    return roundTo(clamp(avgRounds / 9, 0, 1));
+  }
+  if (avgRounds > 12) {
+    return roundTo(clamp(12 / avgRounds, 0, 1));
+  }
+  return 1;
+}
 
-  // Weight extraction collapse highest because it represents runaway systemic pressure.
-  penalty += extractionOver * 1.15;
-  penalty += comradesOver * 0.9;
-  penalty += suddenOver * 1.1;
+function computeTensionScore(earlyLossRate: number, lateGameRate: number) {
+  return roundTo(clamp(1 - (earlyLossRate * 0.7) - (lateGameRate * 0.3), 0, 1));
+}
 
-  return roundTo(Math.max(0, penalty));
+function computeVarianceScore(outcomeEntropy: number, regionCollapseVariance: number) {
+  if (outcomeEntropy > 0) {
+    return roundTo(clamp(outcomeEntropy, 0, 1));
+  }
+  return roundTo(clamp(regionCollapseVariance, 0, 1));
+}
+
+export function computeFitness(simulationResults: OptimizerFitnessMetrics): OptimizerScoreBreakdown {
+  const metrics = {
+    winRate: roundTo(simulationResults.winRate),
+    avgRounds: roundTo(simulationResults.avgRounds),
+    earlyLossRate: roundTo(simulationResults.earlyLossRate),
+    lateGameRate: roundTo(simulationResults.lateGameRate),
+    outcomeEntropy: roundTo(simulationResults.outcomeEntropy),
+    regionCollapseVariance: roundTo(simulationResults.regionCollapseVariance),
+  };
+
+  const failSafeTriggered = metrics.winRate < 0.10 || metrics.winRate > 0.80;
+  const balanceScore = failSafeTriggered ? 0 : computeBalanceScore(metrics.winRate);
+  const pacingScore = failSafeTriggered ? 0 : computePacingScore(metrics.avgRounds);
+  const tensionScore = failSafeTriggered ? 0 : computeTensionScore(metrics.earlyLossRate, metrics.lateGameRate);
+  const varianceScore = failSafeTriggered ? 0 : computeVarianceScore(metrics.outcomeEntropy, metrics.regionCollapseVariance);
+
+  const targets = {
+    winRate: evaluateTarget('winRate', metrics.winRate, TARGET_RANGES.winRate),
+    avgRounds: evaluateTarget('avgRounds', metrics.avgRounds, TARGET_RANGES.avgRounds),
+    earlyLossRate: evaluateTarget('earlyLossRate', metrics.earlyLossRate, TARGET_RANGES.earlyLossRate),
+    lateGameRate: evaluateTarget('lateGameRate', metrics.lateGameRate, TARGET_RANGES.lateGameRate),
+  };
+
+  const score = failSafeTriggered
+    ? 0
+    : roundTo(
+      (0.35 * balanceScore)
+      + (0.25 * pacingScore)
+      + (0.20 * tensionScore)
+      + (0.20 * varianceScore),
+    );
+
+  return {
+    score,
+    failSafeTriggered,
+    components: {
+      balanceScore,
+      pacingScore,
+      tensionScore,
+      varianceScore,
+    },
+    metrics,
+    targets,
+    allTargetsInRange: targets.winRate.inRange
+      && targets.avgRounds.inRange
+      && targets.earlyLossRate.inRange
+      && targets.lateGameRate.inRange,
+  };
 }
 
 export function scoreArmSummary(arm: ExperimentArmSummary): OptimizerScoreBreakdown {
-  const publicVictoryRate = evaluateTarget('publicVictoryRate', arm.publicVictoryRate, TARGET_RANGES.publicVictoryRate);
-  const successRate = evaluateTarget('successRate', arm.successRate, TARGET_RANGES.successRate);
-  const mandateFailRateGivenPublic = evaluateTarget(
-    'mandateFailRateGivenPublic',
-    arm.mandateFailRateGivenPublic,
-    TARGET_RANGES.mandateFailRateGivenPublic,
-  );
-  const averageTurns = evaluateTarget('averageTurns', arm.turns.average, TARGET_RANGES.averageTurns);
-
-  const catastrophePenalty = computeCatastrophePenalty(arm);
-  const scoreWithoutPenalty = (
-    publicVictoryRate.normalizedScore
-    + successRate.normalizedScore
-    + mandateFailRateGivenPublic.normalizedScore
-    + averageTurns.normalizedScore
-  ) / 4;
-
-  return {
-    score: roundTo(scoreWithoutPenalty - catastrophePenalty),
-    catastrophePenalty,
-    targets: {
-      publicVictoryRate,
-      successRate,
-      mandateFailRateGivenPublic,
-      averageTurns,
-    },
-    allTargetsInRange: publicVictoryRate.inRange
-      && successRate.inRange
-      && mandateFailRateGivenPublic.inRange
-      && averageTurns.inRange,
-  };
+  return computeFitness({
+    winRate: arm.successRate,
+    avgRounds: arm.turns.average,
+    earlyLossRate: arm.earlyLossRate,
+    lateGameRate: arm.lateGameRate,
+    outcomeEntropy: arm.outcomeEntropy,
+    regionCollapseVariance: arm.regionCollapseVariance,
+  });
 }
 
 export function getTargetRange(metric: OptimizerTargetScore['metric']) {
   return TARGET_RANGES[metric];
 }
 
-export function choosePrimaryMetricForGate(score: OptimizerScoreBreakdown): 'successRate' | 'publicVictoryRate' {
-  const winGap = score.targets.successRate.distanceFromRange;
-  const publicGap = score.targets.publicVictoryRate.distanceFromRange;
-  return winGap >= publicGap ? 'successRate' : 'publicVictoryRate';
+export function choosePrimaryMetricForGate(): 'successRate' {
+  return 'successRate';
 }
 
 export function directionTowardRange(value: number, range: TargetRange): 'increase' | 'decrease' | 'inside' {

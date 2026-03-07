@@ -68,11 +68,14 @@ export interface PlayerCountSummary {
 }
 
 export interface ExperimentArmSummary {
-
   arm: ExperimentArm;
   n: number;
   successes: number;
   successRate: number;
+  earlyLossRate: number;
+  lateGameRate: number;
+  outcomeEntropy: number;
+  regionCollapseVariance: number;
   publicVictories: number;
   publicVictoryRate: number;
   successRateGivenPublicVictory: number;

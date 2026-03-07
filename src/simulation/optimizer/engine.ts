@@ -300,10 +300,10 @@ function getSignificanceThresholds(mode: OptimizerSignificanceMode): OptimizerSi
 
 function analyzeBaselineMetrics(arm: ExperimentArmSummary, score: OptimizerScoreBreakdown): OptimizerAnalysis {
   const outOfRange = {
-    publicVictoryRate: !score.targets.publicVictoryRate.inRange,
-    successRate: !score.targets.successRate.inRange,
-    mandateFailRateGivenPublic: !score.targets.mandateFailRateGivenPublic.inRange,
-    averageTurns: !score.targets.averageTurns.inRange,
+    winRate: !score.targets.winRate.inRange,
+    avgRounds: !score.targets.avgRounds.inRange,
+    earlyLossRate: !score.targets.earlyLossRate.inRange,
+    lateGameRate: !score.targets.lateGameRate.inRange,
   };
 
   const defeatPressure = {
@@ -316,28 +316,24 @@ function analyzeBaselineMetrics(arm: ExperimentArmSummary, score: OptimizerScore
   };
 
   const insights: string[] = [];
-  if (arm.publicVictoryRate < score.targets.publicVictoryRate.min) {
-    insights.push('Public victory rate is below target range.');
-  } else if (arm.publicVictoryRate > score.targets.publicVictoryRate.max) {
-    insights.push('Public victory rate is above target range.');
+  if (arm.successRate < score.targets.winRate.min) {
+    insights.push('Coalition win rate is below the target challenge band.');
+  } else if (arm.successRate > score.targets.winRate.max) {
+    insights.push('Coalition win rate is above the target challenge band.');
   }
 
-  if (arm.successRate < score.targets.successRate.min) {
-    insights.push('Score success rate is below target range.');
-  } else if (arm.successRate > score.targets.successRate.max) {
-    insights.push('Score success rate is above target range.');
-  }
-
-  if (arm.mandateFailRateGivenPublic > score.targets.mandateFailRateGivenPublic.max) {
-    insights.push('Mandate failures among public victories are high.');
-  } else if (arm.mandateFailRateGivenPublic < score.targets.mandateFailRateGivenPublic.min) {
-    insights.push('Mandate failure conversion is below target risk band.');
-  }
-
-  if (arm.turns.average < score.targets.averageTurns.min) {
-    insights.push('Average turns are short and may indicate early collapse.');
-  } else if (arm.turns.average > score.targets.averageTurns.max) {
+  if (arm.turns.average < score.targets.avgRounds.min) {
+    insights.push('Average rounds are short and may indicate early collapse.');
+  } else if (arm.turns.average > score.targets.avgRounds.max) {
     insights.push('Average turns are long and pacing is slow.');
+  }
+
+  if (arm.earlyLossRate > score.targets.earlyLossRate.max) {
+    insights.push('Too many games collapse before round 5.');
+  }
+
+  if (arm.lateGameRate > score.targets.lateGameRate.max) {
+    insights.push('Too many games drift beyond round 14.');
   }
 
   if (arm.turnOnePublicVictoryRate > 0.05) {
@@ -408,14 +404,10 @@ function evaluateGate(input: {
   significance: OptimizerSignificanceMode;
 }): OptimizerGateDecision {
   const thresholds = getSignificanceThresholds(input.significance);
-  const primaryMetric = choosePrimaryMetricForGate(input.baselineScore);
-  const range = getTargetRange(primaryMetric);
-  const baselineValue = primaryMetric === 'successRate'
-    ? input.baselineMetrics.successRate
-    : input.baselineMetrics.publicVictoryRate;
-  const candidateValue = primaryMetric === 'successRate'
-    ? input.candidateMetrics.successRate
-    : input.candidateMetrics.publicVictoryRate;
+  const primaryMetric = choosePrimaryMetricForGate();
+  const range = getTargetRange('winRate');
+  const baselineValue = input.baselineMetrics.successRate;
+  const candidateValue = input.candidateMetrics.successRate;
   const direction = directionTowardRange(baselineValue, range);
   const metricDelta = input.comparison.metrics[primaryMetric];
   const stats = metricDelta.proportionStats;
@@ -853,7 +845,7 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
             runsPerArm: config.candidateRuns,
             seed: mixSeed(config.seed, stableHash(`candidate:${iteration}:${candidate.candidateId}`)),
             confidence: getSignificanceThresholds(config.significance).confidence,
-            primary: choosePrimaryMetricForGate(baselineScore),
+            primary: choosePrimaryMetricForGate(),
             victoryModes: config.victoryModes,
             playerCounts: config.playerCounts,
           });

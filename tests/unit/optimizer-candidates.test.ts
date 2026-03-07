@@ -41,10 +41,10 @@ test('candidate generator builds deterministic candidate count with dedup', asyn
     strategyMode: 'full_optimizer',
     analysis: {
       outOfRange: {
-        publicVictoryRate: true,
-        successRate: true,
-        mandateFailRateGivenPublic: true,
-        averageTurns: false,
+        winRate: true,
+        avgRounds: false,
+        earlyLossRate: true,
+        lateGameRate: false,
       },
       defeatPressure: {
         extractionBreachRate: 0.4,
@@ -59,7 +59,7 @@ test('candidate generator builds deterministic candidate count with dedup', asyn
         noGameplayDetected: false,
         impossibleMandates: [],
       },
-      topMandateFailures: [],
+      topMandateFailures: [{ mandateId: 'protect_workers', failureRate: 0.7, attempts: 25 }],
       insights: ['Average turns are short and may indicate early collapse.'],
     },
     trajectorySummary,
@@ -117,10 +117,10 @@ test('victory gating exploration mode emits victory gate strategies', async () =
     strategyMode: 'victory_gating_exploration',
     analysis: {
       outOfRange: {
-        publicVictoryRate: true,
-        successRate: true,
-        mandateFailRateGivenPublic: true,
-        averageTurns: true,
+        winRate: true,
+        avgRounds: true,
+        earlyLossRate: true,
+        lateGameRate: false,
       },
       defeatPressure: {
         extractionBreachRate: 0.2,
@@ -135,7 +135,7 @@ test('victory gating exploration mode emits victory gate strategies', async () =
         noGameplayDetected: true,
         impossibleMandates: [],
       },
-      topMandateFailures: [],
+      topMandateFailures: [{ mandateId: 'protect_workers', failureRate: 0.65, attempts: 20 }],
       insights: ['Turn-1 public victories are structurally high; victory gating should be explored.'],
     },
     trajectorySummary: null,
@@ -160,10 +160,10 @@ test('candidate generator filters unsupported pressure mutations per scenario', 
     strategyMode: 'full_optimizer',
     analysis: {
       outOfRange: {
-        publicVictoryRate: true,
-        successRate: true,
-        mandateFailRateGivenPublic: false,
-        averageTurns: true,
+        winRate: true,
+        avgRounds: true,
+        earlyLossRate: true,
+        lateGameRate: false,
       },
       defeatPressure: {
         extractionBreachRate: 0.5,

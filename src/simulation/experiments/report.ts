@@ -42,6 +42,13 @@ interface Reservoir {
   state: number;
 }
 
+interface CollapseVarianceState {
+  runs: number;
+  total: number;
+  totalSquared: number;
+  maxObserved: number;
+}
+
 export interface ArmAccumulator {
   arm: ExperimentArm;
   n: number;
@@ -50,6 +57,8 @@ export interface ArmAccumulator {
   publicVictoriesByRoundOne: number;
   victoriesBeforeAllowedRound: number;
   earlyTerminations: number;
+  earlyLosses: number;
+  lateGames: number;
   mandateFailuresAmongPublic: number;
   totalTurns: number;
   totalVictoryScore: number;
@@ -64,6 +73,8 @@ export interface ArmAccumulator {
   campaignSuccess: number;
   mandateFailuresById: Record<string, number>;
   mandateSuccessesById: Record<string, number>;
+  outcomeBuckets: Record<string, number>;
+  collapseVariance: CollapseVarianceState;
   reservoir: Reservoir;
   scoreReservoir: Reservoir;
   mandateFailureAsCostlyWin: boolean;
@@ -153,6 +164,10 @@ function ratio(numerator: number, denominator: number) {
   return roundTo(numerator / denominator);
 }
 
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
 function mergeCountMaps(target: Record<string, number>, source: Record<string, number>) {
   for (const [key, value] of Object.entries(source)) {
     target[key] = (target[key] ?? 0) + value;
@@ -222,6 +237,53 @@ function percentile(values: number[], p: number) {
 
   const weight = rank - lower;
   return sorted[lower] + (sorted[upper] - sorted[lower]) * weight;
+}
+
+function recordOutcomeBucket(record: SimulationRecord) {
+  const roundBucket = record.turnsPlayed < 5
+    ? 'early'
+    : (record.turnsPlayed <= 9 ? 'mid' : (record.turnsPlayed <= 14 ? 'late' : 'extended'));
+  return `${record.result.type}:${record.result.reason}:${roundBucket}`;
+}
+
+function normalizedEntropy(buckets: Record<string, number>) {
+  const counts = Object.values(buckets).filter((value) => value > 0);
+  const total = counts.reduce((sum, value) => sum + value, 0);
+  if (total <= 0 || counts.length <= 1) {
+    return 0;
+  }
+
+  let entropy = 0;
+  for (const count of counts) {
+    const probability = count / total;
+    entropy -= probability * Math.log2(probability);
+  }
+
+  const maxEntropy = Math.log2(counts.length);
+  if (maxEntropy <= 0) {
+    return 0;
+  }
+  return roundTo(clamp(entropy / maxEntropy, 0, 1));
+}
+
+function normalizedCollapseVariance(state: CollapseVarianceState) {
+  if (state.runs <= 1 || state.maxObserved <= 0) {
+    return 0;
+  }
+
+  const mean = state.total / state.runs;
+  const variance = Math.max(0, (state.totalSquared / state.runs) - (mean * mean));
+  const maxVariance = (state.maxObserved * state.maxObserved) / 4;
+  if (maxVariance <= 0) {
+    return 0;
+  }
+  return roundTo(clamp(variance / maxVariance, 0, 1));
+}
+
+function countCollapsedFronts(record: SimulationRecord) {
+  return Object.values(record.finalState.fronts)
+    .filter((extraction) => extraction >= 6)
+    .length;
 }
 
 function metricValue(summary: ExperimentArmSummary, metric: ExperimentMetricKey): number {
@@ -328,6 +390,8 @@ export function createArmAccumulator(
     publicVictoriesByRoundOne: 0,
     victoriesBeforeAllowedRound: 0,
     earlyTerminations: 0,
+    earlyLosses: 0,
+    lateGames: 0,
     mandateFailuresAmongPublic: 0,
     totalTurns: 0,
     totalVictoryScore: 0,
@@ -342,6 +406,13 @@ export function createArmAccumulator(
     campaignSuccess: 0,
     mandateFailuresById: {},
     mandateSuccessesById: {},
+    outcomeBuckets: {},
+    collapseVariance: {
+      runs: 0,
+      total: 0,
+      totalSquared: 0,
+      maxObserved: 0,
+    },
     reservoir: {
       capacity: Math.max(256, options?.reservoirSize ?? DEFAULT_RESERVOIR_SIZE),
       seen: 0,
@@ -370,6 +441,19 @@ export function ingestArmRecord(accumulator: ArmAccumulator, record: SimulationR
   if (record.turnsPlayed < 3) {
     accumulator.earlyTerminations += 1;
   }
+  if (record.turnsPlayed < 5) {
+    accumulator.earlyLosses += 1;
+  }
+  if (record.turnsPlayed > 14) {
+    accumulator.lateGames += 1;
+  }
+  const outcomeBucket = recordOutcomeBucket(record);
+  accumulator.outcomeBuckets[outcomeBucket] = (accumulator.outcomeBuckets[outcomeBucket] ?? 0) + 1;
+  const collapsedFronts = countCollapsedFronts(record);
+  accumulator.collapseVariance.runs += 1;
+  accumulator.collapseVariance.total += collapsedFronts;
+  accumulator.collapseVariance.totalSquared += collapsedFronts * collapsedFronts;
+  accumulator.collapseVariance.maxObserved = Math.max(accumulator.collapseVariance.maxObserved, collapsedFronts);
 
   const isMandateFailure = record.result.reason === 'mandate_failure';
   const scoreSuccess = record.successByScore ?? false;
@@ -471,6 +555,10 @@ export function finalizeArmSummary(accumulator: ArmAccumulator): ExperimentArmSu
     n: accumulator.n,
     successes: accumulator.successes,
     successRate: ratio(accumulator.successes, accumulator.n),
+    earlyLossRate: ratio(accumulator.earlyLosses, accumulator.n),
+    lateGameRate: ratio(accumulator.lateGames, accumulator.n),
+    outcomeEntropy: normalizedEntropy(accumulator.outcomeBuckets),
+    regionCollapseVariance: normalizedCollapseVariance(accumulator.collapseVariance),
     publicVictories: accumulator.publicVictories,
     publicVictoryRate: ratio(accumulator.publicVictories, accumulator.n),
     successRateGivenPublicVictory: ratio(accumulator.successes, accumulator.publicVictories),

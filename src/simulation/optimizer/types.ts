@@ -56,7 +56,7 @@ export interface OptimizerConfig {
 }
 
 export interface OptimizerTargetScore {
-  metric: 'publicVictoryRate' | 'successRate' | 'mandateFailRateGivenPublic' | 'averageTurns';
+  metric: 'winRate' | 'avgRounds' | 'earlyLossRate' | 'lateGameRate';
   value: number;
   min: number;
   max: number;
@@ -65,24 +65,42 @@ export interface OptimizerTargetScore {
   normalizedScore: number;
 }
 
+export interface OptimizerFitnessComponents {
+  balanceScore: number;
+  pacingScore: number;
+  tensionScore: number;
+  varianceScore: number;
+}
+
+export interface OptimizerFitnessMetrics {
+  winRate: number;
+  avgRounds: number;
+  earlyLossRate: number;
+  lateGameRate: number;
+  outcomeEntropy: number;
+  regionCollapseVariance: number;
+}
+
 export interface OptimizerScoreBreakdown {
   score: number;
-  catastrophePenalty: number;
+  failSafeTriggered: boolean;
+  components: OptimizerFitnessComponents;
+  metrics: OptimizerFitnessMetrics;
   targets: {
-    publicVictoryRate: OptimizerTargetScore;
-    successRate: OptimizerTargetScore;
-    mandateFailRateGivenPublic: OptimizerTargetScore;
-    averageTurns: OptimizerTargetScore;
+    winRate: OptimizerTargetScore;
+    avgRounds: OptimizerTargetScore;
+    earlyLossRate: OptimizerTargetScore;
+    lateGameRate: OptimizerTargetScore;
   };
   allTargetsInRange: boolean;
 }
 
 export interface OptimizerAnalysis {
   outOfRange: {
-    publicVictoryRate: boolean;
-    successRate: boolean;
-    mandateFailRateGivenPublic: boolean;
-    averageTurns: boolean;
+    winRate: boolean;
+    avgRounds: boolean;
+    earlyLossRate: boolean;
+    lateGameRate: boolean;
   };
   defeatPressure: {
     extractionBreachRate: number;

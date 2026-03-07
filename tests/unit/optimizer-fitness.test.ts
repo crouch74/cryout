@@ -1,30 +1,34 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { ExperimentArmSummary } from '../../src/simulation/experiments/types.ts';
-import { choosePrimaryMetricForGate, scoreArmSummary } from '../../src/simulation/optimizer/fitness.ts';
+import { choosePrimaryMetricForGate, computeFitness, scoreArmSummary } from '../../src/simulation/optimizer/fitness.ts';
 
 function makeArmSummary(input?: Partial<ExperimentArmSummary>): ExperimentArmSummary {
   return {
     arm: input?.arm ?? 'A',
     n: input?.n ?? 1000,
-    successes: input?.successes ?? 300,
-    successRate: input?.successRate ?? 0.3,
+    successes: input?.successes ?? 400,
+    successRate: input?.successRate ?? 0.4,
+    earlyLossRate: input?.earlyLossRate ?? 0.03,
+    lateGameRate: input?.lateGameRate ?? 0.06,
+    outcomeEntropy: input?.outcomeEntropy ?? 0.88,
+    regionCollapseVariance: input?.regionCollapseVariance ?? 0.44,
     publicVictories: input?.publicVictories ?? 500,
     publicVictoryRate: input?.publicVictoryRate ?? 0.5,
-    successRateGivenPublicVictory: input?.successRateGivenPublicVictory ?? 0.6,
+    successRateGivenPublicVictory: input?.successRateGivenPublicVictory ?? 0.8,
     victoryScoreMean: input?.victoryScoreMean ?? 72,
     victoryScoreMedian: input?.victoryScoreMedian ?? 73,
     victoryScoreP90: input?.victoryScoreP90 ?? 88,
     componentContributionAverages: input?.componentContributionAverages ?? {},
     publicVictoriesByRoundOne: input?.publicVictoriesByRoundOne ?? 20,
     turnOnePublicVictoryRate: input?.turnOnePublicVictoryRate ?? 0.02,
-    mandateFailuresAmongPublic: input?.mandateFailuresAmongPublic ?? 175,
-    mandateFailRateGivenPublic: input?.mandateFailRateGivenPublic ?? 0.35,
+    mandateFailuresAmongPublic: input?.mandateFailuresAmongPublic ?? 100,
+    mandateFailRateGivenPublic: input?.mandateFailRateGivenPublic ?? 0.2,
     mandateFailureDistribution: input?.mandateFailureDistribution ?? [],
     turns: input?.turns ?? {
-      average: 8,
-      median: 8,
-      p90: 12,
+      average: 10.8,
+      median: 10,
+      p90: 13,
     },
     victoryBeforeAllowedRoundRate: input?.victoryBeforeAllowedRoundRate ?? 0,
     earlyTerminationRate: input?.earlyTerminationRate ?? 0.01,
@@ -46,58 +50,106 @@ function makeArmSummary(input?: Partial<ExperimentArmSummary>): ExperimentArmSum
       successRate: 0.52,
     },
     reservoirSampleSize: input?.reservoirSampleSize ?? 1000,
+    byPlayerCount: input?.byPlayerCount ?? {},
   };
 }
 
-test('fitness score rewards metrics in target ranges', () => {
-  const balanced = makeArmSummary();
-  const imbalanced = makeArmSummary({
-    successRate: 0.05,
-    publicVictoryRate: 0.2,
-    mandateFailRateGivenPublic: 0.8,
+test('fitness score is high for near-target balanced scenarios', () => {
+  const score = scoreArmSummary(makeArmSummary());
+
+  assert.equal(score.allTargetsInRange, true);
+  assert.equal(score.failSafeTriggered, false);
+  assert.equal(score.score > 0.85, true);
+  assert.equal(score.components.balanceScore > 0.95, true);
+});
+
+test('fitness loses pacing and tension when scenarios collapse early', () => {
+  const earlyCollapse = scoreArmSummary(makeArmSummary({
+    successRate: 0.18,
+    earlyLossRate: 0.42,
+    lateGameRate: 0.01,
+    outcomeEntropy: 0.35,
     turns: {
-      average: 3,
-      median: 3,
-      p90: 5,
+      average: 4.3,
+      median: 4,
+      p90: 6,
     },
-  });
-
-  const balancedScore = scoreArmSummary(balanced);
-  const imbalancedScore = scoreArmSummary(imbalanced);
-
-  assert.equal(balancedScore.allTargetsInRange, true);
-  assert.equal(imbalancedScore.allTargetsInRange, false);
-  assert.equal(balancedScore.score > imbalancedScore.score, true);
-});
-
-test('fitness applies catastrophe penalties when defeat pressure is high', () => {
-  const safe = makeArmSummary();
-  const catastrophic = makeArmSummary({
-    defeatRates: {
-      extraction_breach: 0.62,
-      comrades_exhausted: 0.31,
-      mandate_failure: 0.05,
-      sudden_death: 0.24,
-    },
-  });
-
-  const safeScore = scoreArmSummary(safe);
-  const catastrophicScore = scoreArmSummary(catastrophic);
-
-  assert.equal(catastrophicScore.catastrophePenalty > safeScore.catastrophePenalty, true);
-  assert.equal(catastrophicScore.score < safeScore.score, true);
-});
-
-test('primary gate metric is chosen from larger win/public target gap', () => {
-  const lowWin = scoreArmSummary(makeArmSummary({
-    successRate: 0.1,
-    publicVictoryRate: 0.5,
-  }));
-  const lowPublic = scoreArmSummary(makeArmSummary({
-    successRate: 0.3,
-    publicVictoryRate: 0.2,
   }));
 
-  assert.equal(choosePrimaryMetricForGate(lowWin), 'successRate');
-  assert.equal(choosePrimaryMetricForGate(lowPublic), 'publicVictoryRate');
+  assert.equal(earlyCollapse.allTargetsInRange, false);
+  assert.equal(earlyCollapse.components.pacingScore < 0.5, true);
+  assert.equal(earlyCollapse.components.tensionScore < 0.75, true);
+});
+
+test('fitness loses pacing and tension when scenarios drag too long', () => {
+  const overlong = scoreArmSummary(makeArmSummary({
+    successRate: 0.41,
+    earlyLossRate: 0.01,
+    lateGameRate: 0.28,
+    outcomeEntropy: 0.72,
+    turns: {
+      average: 16,
+      median: 15,
+      p90: 19,
+    },
+  }));
+
+  assert.equal(overlong.allTargetsInRange, false);
+  assert.equal(overlong.components.pacingScore, 0.75);
+  assert.equal(overlong.components.tensionScore < 0.95, true);
+});
+
+test('fitness prefers diverse outcomes over deterministic ones', () => {
+  const deterministic = scoreArmSummary(makeArmSummary({
+    outcomeEntropy: 0.04,
+    regionCollapseVariance: 0.08,
+  }));
+  const varied = scoreArmSummary(makeArmSummary({
+    outcomeEntropy: 0.81,
+    regionCollapseVariance: 0.44,
+  }));
+
+  assert.equal(varied.components.varianceScore > deterministic.components.varianceScore, true);
+  assert.equal(varied.score > deterministic.score, true);
+});
+
+test('fitness falls back to region collapse variance when entropy is unavailable', () => {
+  const score = computeFitness({
+    winRate: 0.4,
+    avgRounds: 10,
+    earlyLossRate: 0.02,
+    lateGameRate: 0.04,
+    outcomeEntropy: 0,
+    regionCollapseVariance: 0.67,
+  });
+
+  assert.equal(score.components.varianceScore, 0.67);
+});
+
+test('fitness fail-safe rejects clearly broken win rates', () => {
+  const unwinnable = computeFitness({
+    winRate: 0.08,
+    avgRounds: 10,
+    earlyLossRate: 0.02,
+    lateGameRate: 0.03,
+    outcomeEntropy: 0.9,
+    regionCollapseVariance: 0.7,
+  });
+  const trivial = computeFitness({
+    winRate: 0.82,
+    avgRounds: 10,
+    earlyLossRate: 0.02,
+    lateGameRate: 0.03,
+    outcomeEntropy: 0.9,
+    regionCollapseVariance: 0.7,
+  });
+
+  assert.equal(unwinnable.failSafeTriggered, true);
+  assert.equal(unwinnable.score, 0);
+  assert.equal(trivial.failSafeTriggered, true);
+  assert.equal(trivial.score, 0);
+});
+
+test('primary gate metric remains success rate', () => {
+  assert.equal(choosePrimaryMetricForGate(), 'successRate');
 });

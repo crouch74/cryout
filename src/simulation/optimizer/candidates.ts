@@ -382,7 +382,7 @@ function buildParameterSweepCandidates(
   const canMutateCrisisSpike = hasMutationPath(config, 'pressure.crisisSpikeExtractionDelta');
   const canMutateExtractionCap = hasMutationPath(config, 'pressure.maxExtractionAddedPerRound');
 
-  if (analysis.outOfRange.successRate || analysis.outOfRange.publicVictoryRate) {
+  if (analysis.outOfRange.winRate) {
     candidates.push({
       note: '🧠 Sweep: ease opening pressure',
       setup: {
@@ -398,7 +398,7 @@ function buildParameterSweepCandidates(
     });
   }
 
-  if (analysis.outOfRange.successRate) {
+  if (analysis.outOfRange.winRate) {
     for (const threshold of [65, 70, 75]) {
       candidates.push({
         note: `🧠 Sweep: scoring threshold=${threshold}`,
@@ -449,7 +449,7 @@ function buildParameterSweepCandidates(
     }
   }
 
-  if (analysis.outOfRange.mandateFailRateGivenPublic) {
+  if ((analysis.topMandateFailures[0]?.failureRate ?? 0) >= 0.55) {
     candidates.push({
       note: '🧠 Sweep: soften mandate thresholds',
       mandates: {
@@ -464,7 +464,7 @@ function buildParameterSweepCandidates(
     });
   }
 
-  if (analysis.outOfRange.averageTurns) {
+  if (analysis.outOfRange.avgRounds) {
     if (analysis.insights.some((line) => line.includes('short'))) {
       candidates.push({
         note: '🧠 Sweep: reduce collapse tempo',
@@ -514,21 +514,21 @@ function buildTrajectoryGuidedPatch(summary: TrajectorySummary | null, analysis:
     note: '🧭 Trajectory-guided mutation',
   };
 
-  if (summary.averageExtractionRemovedBeforeVictory < 1.5 && analysis.outOfRange.successRate) {
+  if (summary.averageExtractionRemovedBeforeVictory < 1.5 && analysis.outOfRange.winRate) {
     patch.setup = {
       ...(patch.setup ?? {}),
       seededExtractionTotalDelta: -1,
     };
   }
 
-  if (summary.averageTurnsToVictory > 8.5 && analysis.outOfRange.averageTurns) {
+  if (summary.averageTurnsToVictory > 8.5 && analysis.outOfRange.avgRounds) {
     patch.victory = {
       ...(patch.victory ?? {}),
       liberationThresholdDelta: 1,
     };
   }
 
-  if (summary.averageTurnsToVictory < 6.0 && analysis.outOfRange.averageTurns) {
+  if (summary.averageTurnsToVictory < 6.0 && analysis.outOfRange.avgRounds) {
     patch.setup = {
       ...(patch.setup ?? {}),
       globalGazeDelta: 1,
@@ -536,7 +536,8 @@ function buildTrajectoryGuidedPatch(summary: TrajectorySummary | null, analysis:
     };
   }
 
-  if (analysis.outOfRange.mandateFailRateGivenPublic && summary.mostCommonFirstAction?.action.toLowerCase().includes('investigate')) {
+  if ((analysis.topMandateFailures[0]?.failureRate ?? 0) >= 0.55
+    && summary.mostCommonFirstAction?.action.toLowerCase().includes('investigate')) {
     patch.mandates = {
       ...(patch.mandates ?? {}),
       relaxAllThresholdsBy: 1,
