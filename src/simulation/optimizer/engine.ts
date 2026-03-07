@@ -1072,6 +1072,7 @@ async function runScenarioOptimizerInternal(
         trajectorySummary,
         candidateCount: 0,
         rankings: [],
+        preConfirmationCandidate: null,
         selectedCandidate: null,
         acceptedCandidate: null,
         noImprovementStreak,
@@ -1278,7 +1279,8 @@ async function runScenarioOptimizerInternal(
       logInfo(rankingLeadersLine);
     }
 
-    let selectedCandidate = rankings[0] ?? null;
+    const preConfirmationCandidate = rankings[0] ?? null;
+    let selectedCandidate = preConfirmationCandidate;
     let acceptedCandidate: OptimizerCandidateEvaluation | null = null;
     if (selectedCandidate) {
       logInfo(buildSuccessRateComparisonLine({
@@ -1390,6 +1392,7 @@ async function runScenarioOptimizerInternal(
 
     await writeJson(join(iterationDir, 'candidate_rankings.json'), rankings);
     await writeJson(join(iterationDir, 'selected_candidate.json'), {
+      preConfirmationCandidate,
       selectedCandidate,
       acceptedCandidate,
       noImprovementStreak,
@@ -1406,6 +1409,7 @@ async function runScenarioOptimizerInternal(
       trajectorySummary,
       candidateCount: candidates.length,
       rankings,
+      preConfirmationCandidate,
       selectedCandidate,
       acceptedCandidate,
       noImprovementStreak,

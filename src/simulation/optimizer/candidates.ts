@@ -655,20 +655,59 @@ function buildActionDiversityCandidates(
   const pressureDetected = analysis.defeatPressure.pressureDetected || analysis.structural.earlyTerminationRate > 0.05;
   const heavyMandateFailure = (analysis.topMandateFailures[0]?.failureRate ?? 0) >= 0.45;
   const investigateOpening = trajectorySummary?.mostCommonFirstAction?.action?.toLowerCase().includes('investigate') ?? false;
+  const launchSpamDetected = (trajectorySummary?.mostCommonFirstAction?.action?.toLowerCase().includes('launch') ?? false)
+    || analysis.insights.some((line) => line.toLowerCase().includes('collapse'));
 
   candidates.push(normalizeScenarioPatch({
-    note: '🧭 Action-diversity seed: targeted setup incentives',
+    note: '🧭 Action-diversity seed: prepared campaigns over raw campaign spam',
+    simulator: {
+      actionBias: {
+        build_solidarity: 6,
+        investigate: investigateOpening ? -5 : -3,
+        international_outreach: 6,
+        smuggle_evidence: 6,
+        ...(pressureDetected ? { defend: 6 } : {}),
+        ...(launchSpamDetected ? { launch_campaign: -4 } : {}),
+      },
+      launchCampaignWithoutSetupPenalty: 12,
+      launchCampaignWithSetupBonus: 8,
+    },
+  }));
+
+  candidates.push(normalizeScenarioPatch({
+    note: '🧭 Action-diversity seed: S2-style setup gating',
     simulator: {
       actionBias: {
         build_solidarity: 6,
         international_outreach: 6,
         smuggle_evidence: 6,
-        ...(pressureDetected ? { defend: 6 } : {}),
+        investigate: -4,
+        ...(launchSpamDetected ? { launch_campaign: -3 } : {}),
       },
-      launchCampaignWithoutSetupPenalty: 10,
-      launchCampaignWithSetupBonus: 6,
+      launchCampaignWithoutSetupPenalty: 14,
+      launchCampaignWithSetupBonus: 8,
+      ...(analysis.structural.earlyTerminationRate > 0.05 ? { highPressureDefendBonus: 8 } : {}),
     },
   }));
+
+  if (heavyMandateFailure || investigateOpening) {
+    candidates.push(normalizeScenarioPatch({
+      note: '🧭 Action-diversity seed: S4-style outreach and evidence preparation',
+      simulator: {
+        actionBias: {
+          build_solidarity: 6,
+          defend: pressureDetected ? 6 : 4,
+          investigate: -5,
+          ...(launchSpamDetected ? { launch_campaign: -4 } : {}),
+          international_outreach: 8,
+          smuggle_evidence: 8,
+        },
+        lowGazeOutreachBonus: 12,
+        evidenceScarcitySmuggleBonus: 12,
+        launchCampaignWithoutSetupPenalty: 10,
+      },
+    }));
+  }
 
   if (pressureDetected) {
     candidates.push(normalizeScenarioPatch({
@@ -677,25 +716,11 @@ function buildActionDiversityCandidates(
         actionBias: {
           build_solidarity: 4,
           defend: 8,
+          investigate: -3,
+          ...(launchSpamDetected ? { launch_campaign: -2 } : {}),
         },
         highPressureDefendBonus: 12,
         launchCampaignWithoutSetupPenalty: 8,
-      },
-    }));
-  }
-
-  if (heavyMandateFailure || investigateOpening) {
-    candidates.push(normalizeScenarioPatch({
-      note: '🧭 Action-diversity seed: attention and evidence preparation',
-      simulator: {
-        actionBias: {
-          international_outreach: 8,
-          smuggle_evidence: 8,
-          ...(investigateOpening ? { build_solidarity: 5 } : {}),
-        },
-        lowGazeOutreachBonus: 12,
-        evidenceScarcitySmuggleBonus: 12,
-        launchCampaignWithoutSetupPenalty: 10,
       },
     }));
   }
@@ -706,8 +731,10 @@ function buildActionDiversityCandidates(
       actionBias: {
         build_solidarity: 6,
         defend: pressureDetected ? 6 : 4,
+        investigate: -4,
         international_outreach: 8,
         smuggle_evidence: 8,
+        ...(launchSpamDetected ? { launch_campaign: -3 } : {}),
       },
       launchCampaignWithoutSetupPenalty: 10,
       launchCampaignWithSetupBonus: 8,
@@ -729,7 +756,9 @@ function buildRandomActionDiversityPatch(rng: () => number, analysis: OptimizerA
     simulator: {
       actionBias: {
         build_solidarity: pick([4, 6, 8, 10]),
+        investigate: pick([-6, -5, -4, -3, -2]),
         international_outreach: pick([4, 6, 8, 10]),
+        launch_campaign: pick([-5, -4, -3, -2, 0]),
         smuggle_evidence: pick([4, 6, 8, 10]),
         ...(pressureDetected ? { defend: pick([6, 8, 10, 12]) } : { defend: pick([2, 4, 6]) }),
       },

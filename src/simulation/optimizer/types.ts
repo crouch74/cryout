@@ -217,6 +217,7 @@ export interface OptimizerIterationResult {
   trajectorySummary: TrajectorySummary | null;
   candidateCount: number;
   rankings: OptimizerCandidateEvaluation[];
+  preConfirmationCandidate: OptimizerCandidateEvaluation | null;
   selectedCandidate: OptimizerCandidateEvaluation | null;
   acceptedCandidate: OptimizerCandidateEvaluation | null;
   noImprovementStreak: number;
