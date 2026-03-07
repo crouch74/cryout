@@ -67,6 +67,33 @@ export interface PlayerCountSummary {
   };
 }
 
+export type CoreActionKey =
+  | 'organize'
+  | 'investigate'
+  | 'launchCampaign'
+  | 'buildSolidarity'
+  | 'smuggleEvidence'
+  | 'internationalOutreach'
+  | 'defend';
+
+export interface ActionBalanceSummary {
+  entropy: number;
+  concentration: number;
+  dominantAction: CoreActionKey | null;
+  targetedShare: number;
+  winningTargetedShare: number;
+  setupDependentCampaignRate: number;
+  failurePathPenalty: number;
+  regimeWeightedTargetedShare: number;
+  actionShare: Record<CoreActionKey, number>;
+  actionAverageCounts: Record<CoreActionKey, number>;
+  actionShareByOutcome: {
+    victory: Record<CoreActionKey, number>;
+    defeat: Record<CoreActionKey, number>;
+  };
+  actionShareByPlayerCount: Record<string, Record<CoreActionKey, number>>;
+}
+
 export interface ExperimentArmSummary {
   arm: ExperimentArm;
   n: number;
@@ -112,6 +139,7 @@ export interface ExperimentArmSummary {
     success: number;
     successRate: number;
   };
+  actionBalance: ActionBalanceSummary;
   reservoirSampleSize: number;
   /** Per-player-count breakdowns (keyed by player count as a string, e.g. "2", "3", "4"). */
   byPlayerCount: Record<string, PlayerCountSummary>;

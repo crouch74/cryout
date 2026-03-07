@@ -67,6 +67,41 @@ function computeVarianceScore(outcomeEntropy: number, regionCollapseVariance: nu
   return roundTo(clamp(regionCollapseVariance, 0, 1));
 }
 
+function computeActionBalanceScore(
+  actionEntropy: number,
+  actionConcentration: number,
+  targetedActionShare: number,
+  winningTargetedActionShare: number,
+) {
+  const entropyScore = clamp(actionEntropy, 0, 1);
+  const concentrationScore = clamp(1 - Math.max(0, actionConcentration - 0.26) / 0.5, 0, 1);
+  const targetedShareScore = clamp(targetedActionShare / 0.42, 0, 1);
+  const winningShareScore = clamp(winningTargetedActionShare / 0.38, 0, 1);
+
+  return roundTo(
+    (0.30 * entropyScore)
+    + (0.30 * concentrationScore)
+    + (0.25 * targetedShareScore)
+    + (0.15 * winningShareScore),
+  );
+}
+
+function computeTrajectoryPathScore(
+  setupDependentCampaignRate: number,
+  failurePathPenalty: number,
+  regimeWeightedTargetedShare: number,
+) {
+  const setupScore = clamp(setupDependentCampaignRate / 0.65, 0, 1);
+  const failureAvoidanceScore = clamp(1 - failurePathPenalty, 0, 1);
+  const regimeScore = clamp(regimeWeightedTargetedShare / 0.40, 0, 1);
+
+  return roundTo(
+    (0.35 * setupScore)
+    + (0.40 * failureAvoidanceScore)
+    + (0.25 * regimeScore),
+  );
+}
+
 export function computeFitness(simulationResults: OptimizerFitnessMetrics): OptimizerScoreBreakdown {
   const metrics = {
     winRate: roundTo(simulationResults.winRate),
@@ -75,6 +110,13 @@ export function computeFitness(simulationResults: OptimizerFitnessMetrics): Opti
     lateGameRate: roundTo(simulationResults.lateGameRate),
     outcomeEntropy: roundTo(simulationResults.outcomeEntropy),
     regionCollapseVariance: roundTo(simulationResults.regionCollapseVariance),
+    actionEntropy: roundTo(simulationResults.actionEntropy),
+    actionConcentration: roundTo(simulationResults.actionConcentration),
+    targetedActionShare: roundTo(simulationResults.targetedActionShare),
+    winningTargetedActionShare: roundTo(simulationResults.winningTargetedActionShare),
+    setupDependentCampaignRate: roundTo(simulationResults.setupDependentCampaignRate),
+    failurePathPenalty: roundTo(simulationResults.failurePathPenalty),
+    regimeWeightedTargetedShare: roundTo(simulationResults.regimeWeightedTargetedShare),
   };
 
   const failSafeTriggered = metrics.winRate < 0.10 || metrics.winRate > 0.80;
@@ -82,6 +124,21 @@ export function computeFitness(simulationResults: OptimizerFitnessMetrics): Opti
   const pacingScore = failSafeTriggered ? 0 : computePacingScore(metrics.avgRounds);
   const tensionScore = failSafeTriggered ? 0 : computeTensionScore(metrics.earlyLossRate, metrics.lateGameRate);
   const varianceScore = failSafeTriggered ? 0 : computeVarianceScore(metrics.outcomeEntropy, metrics.regionCollapseVariance);
+  const actionBalanceScore = failSafeTriggered
+    ? 0
+    : computeActionBalanceScore(
+      metrics.actionEntropy,
+      metrics.actionConcentration,
+      metrics.targetedActionShare,
+      metrics.winningTargetedActionShare,
+    );
+  const trajectoryPathScore = failSafeTriggered
+    ? 0
+    : computeTrajectoryPathScore(
+      metrics.setupDependentCampaignRate,
+      metrics.failurePathPenalty,
+      metrics.regimeWeightedTargetedShare,
+    );
 
   const targets = {
     winRate: evaluateTarget('winRate', metrics.winRate, TARGET_RANGES.winRate),
@@ -93,10 +150,12 @@ export function computeFitness(simulationResults: OptimizerFitnessMetrics): Opti
   const score = failSafeTriggered
     ? 0
     : roundTo(
-      (0.35 * balanceScore)
-      + (0.25 * pacingScore)
-      + (0.20 * tensionScore)
-      + (0.20 * varianceScore),
+      (0.33 * balanceScore)
+      + (0.24 * pacingScore)
+      + (0.18 * tensionScore)
+      + (0.15 * varianceScore)
+      + (0.06 * actionBalanceScore)
+      + (0.04 * trajectoryPathScore),
     );
 
   return {
@@ -107,6 +166,8 @@ export function computeFitness(simulationResults: OptimizerFitnessMetrics): Opti
       pacingScore,
       tensionScore,
       varianceScore,
+      actionBalanceScore,
+      trajectoryPathScore,
     },
     metrics,
     targets,
@@ -125,6 +186,13 @@ export function scoreArmSummary(arm: ExperimentArmSummary): OptimizerScoreBreakd
     lateGameRate: arm.lateGameRate,
     outcomeEntropy: arm.outcomeEntropy,
     regionCollapseVariance: arm.regionCollapseVariance,
+    actionEntropy: arm.actionBalance.entropy,
+    actionConcentration: arm.actionBalance.concentration,
+    targetedActionShare: arm.actionBalance.targetedShare,
+    winningTargetedActionShare: arm.actionBalance.winningTargetedShare,
+    setupDependentCampaignRate: arm.actionBalance.setupDependentCampaignRate,
+    failurePathPenalty: arm.actionBalance.failurePathPenalty,
+    regimeWeightedTargetedShare: arm.actionBalance.regimeWeightedTargetedShare,
   });
 }
 

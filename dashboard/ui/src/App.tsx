@@ -58,6 +58,7 @@ type ComparisonPayload = {
   rightRun: any;
   metricDiff: any;
   defeatDiff: any[];
+  actionDiff: any[];
   recommendedPatchDiff: any[];
 };
 
@@ -88,6 +89,26 @@ const LEVELS = [
   { id: 'recommendations', label: 'Recommendations', icon: BookMarked },
 ] as const;
 
+const CORE_ACTION_KEYS = [
+  'organize',
+  'investigate',
+  'launchCampaign',
+  'buildSolidarity',
+  'smuggleEvidence',
+  'internationalOutreach',
+  'defend',
+] as const;
+
+const ACTION_LABELS: Record<(typeof CORE_ACTION_KEYS)[number], string> = {
+  organize: 'Organize',
+  investigate: 'Investigate',
+  launchCampaign: 'Launch Campaign',
+  buildSolidarity: 'Build Solidarity',
+  smuggleEvidence: 'Smuggle Evidence',
+  internationalOutreach: 'International Outreach',
+  defend: 'Defend',
+};
+
 const COLORS = {
   ink: '#0f172a',
   slate: '#475569',
@@ -114,10 +135,17 @@ const titleCase = (value: string) =>
 
 function compactRunLabel(label?: string): string {
   if (!label) return 'Run';
-  return label
-    .replace(/^Parallel /, 'P ')
-    .replace(/^Single /, 'S ')
-    .replace(/^(.{16}).+(_\d{2,})$/, '$1…$2');
+  const compact = label.replace(/^Parallel /, 'P ').replace(/^Single /, 'S ');
+  const matched = compact.match(/^([PS]) (\d{8}T\d{6}Z)_.*?(\d{4,})$/);
+  if (matched) {
+    return `${matched[1]} ${matched[2]}…${matched[3].slice(-4)}`;
+  }
+  return compact.length > 22 ? `${compact.slice(0, 14)}…${compact.slice(-6)}` : compact;
+}
+
+function compactIdentifier(value?: string): string {
+  if (!value) return 'n/a';
+  return value.length > 22 ? `${value.slice(0, 12)}…${value.slice(-6)}` : value;
 }
 
 function readUrlState(): {
@@ -148,6 +176,8 @@ function App() {
   const [runScope, setRunScope] = useState<RunScope>(initialUrlState.scope || 'latest_single');
   const [selectedRunKey, setSelectedRunKey] = useState(initialUrlState.runKey || '');
   const [selectedOptimizerIteration, setSelectedOptimizerIteration] = useState<number | 'all'>('all');
+  const [trajectoryOutcomeFilter, setTrajectoryOutcomeFilter] = useState<'all' | 'victory' | 'defeat'>('all');
+  const [trajectoryPlayerCountFilter, setTrajectoryPlayerCountFilter] = useState<'all' | number>('all');
   const [scenarioData, setScenarioData] = useState<ScenarioPayload | null>(null);
   const [comparisonData, setComparisonData] = useState<ComparisonPayload | null>(null);
   const [comparisonLeftRunKey, setComparisonLeftRunKey] = useState('');
@@ -226,6 +256,8 @@ function App() {
     setSelectedRunKey('');
     setScenarioData(null);
     setSelectedOptimizerIteration('all');
+    setTrajectoryOutcomeFilter('all');
+    setTrajectoryPlayerCountFilter('all');
     setComparisonData(null);
     setComparisonLeftRunKey('');
     setComparisonRightRunKey('');
@@ -365,7 +397,7 @@ function App() {
           iteration: item.iteration,
           label: `${compactRunLabel(item.runLabel)} · I${item.iteration}`,
           runLabel: item.runLabel,
-          candidateId: candidate.candidateId,
+          candidateId: compactIdentifier(candidate.candidateId),
           strategy: titleCase(candidate.strategy || 'unknown'),
           fitness: +(candidate.score || 0).toFixed(3),
           successLift: +((candidate.successLift || 0) * 100).toFixed(2),
@@ -416,7 +448,52 @@ function App() {
   const domainPressureRows = trajectory?.domainPressure || [];
   const trackPressureRows = trajectory?.trackPressure || [];
   const actionMixRows = trajectory?.actionMix || [];
+  const actionShareByRoundRows = trajectory?.actionShareByRound || [];
+  const actionTimingRows = trajectory?.actionTimingByOutcome || [];
+  const actionMixByPlayerCountRows = trajectory?.actionMixByPlayerCount || [];
+  const actionOpportunityRows = trajectory?.actionOpportunity || [];
+  const actionDiversity = trajectory?.actionDiversity || {};
+  const trajectoryTuningRows = trajectory?.trajectoryToTuning || [];
   const frontPressureRows = trajectory?.frontPressure || [];
+  const actionRunDiagnostics = optimizer?.actionRunDiagnostics || [];
+  const actionMixDeltaRows = optimizer?.actionMixDelta || [];
+  const scenarioRecommendations = optimizer?.scenarioRecommendations || [];
+
+  const trajectoryPlayerCountOptions = useMemo(
+    () =>
+      Array.from(
+        new Set((trajectory?.playerCounts || []).map((item: any) => Number(item.playerCount)).filter(Boolean)),
+      ).sort((a, b) => a - b),
+    [trajectory],
+  );
+
+  const filteredActionShareByRoundRows = useMemo(() => {
+    const filtered = actionShareByRoundRows.filter((row: any) => (
+      (trajectoryOutcomeFilter === 'all' || row.outcome === trajectoryOutcomeFilter)
+      && (trajectoryPlayerCountFilter === 'all' || row.playerCount === trajectoryPlayerCountFilter)
+    ));
+
+    const byRound = new Map<number, any[]>();
+    filtered.forEach((row: any) => {
+      const bucket = byRound.get(row.round) || [];
+      bucket.push(row);
+      byRound.set(row.round, bucket);
+    });
+
+    return Array.from(byRound.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([round, rows]) => {
+        const totalWeight = rows.reduce((sum, row) => sum + (row.sampleCount || 1), 0) || 1;
+        const aggregate: Record<string, any> = { round };
+        CORE_ACTION_KEYS.forEach((action) => {
+          aggregate[action] = rows.reduce(
+            (sum, row) => sum + ((row[action] || 0) * (row.sampleCount || 1)),
+            0,
+          ) / totalWeight;
+        });
+        return aggregate;
+      });
+  }, [actionShareByRoundRows, trajectoryOutcomeFilter, trajectoryPlayerCountFilter]);
 
   const optimizerIterationOptions = useMemo(
     () =>
@@ -527,6 +604,7 @@ function App() {
   const showIterationFilter = activeLevel === 'parameters' && optimizerIterationOptions.length > 0;
   const showComparisonFilters = activeLevel === 'comparison';
   const showRecommendationFilter = activeLevel === 'recommendations';
+  const showTrajectoryFilters = activeLevel === 'trajectories';
 
   return (
     <div className="app-shell">
@@ -590,7 +668,7 @@ function App() {
           </div>
         </header>
 
-        {(showScenarioFilter || showRunScopeFilter || showIterationFilter || showComparisonFilters || showRecommendationFilter) ? (
+        {(showScenarioFilter || showRunScopeFilter || showIterationFilter || showComparisonFilters || showRecommendationFilter || showTrajectoryFilters) ? (
           <section className="filter-toolbar">
             {showScenarioFilter ? (
               <div className="filter-card">
@@ -755,6 +833,46 @@ function App() {
                     <div className="filter-caption">Pinned run for the recommended config shelf.</div>
                   </div>
                 ) : null}
+              </>
+            ) : null}
+
+            {showTrajectoryFilters ? (
+              <>
+                <div className="filter-card">
+                  <label className="eyebrow" htmlFor="trajectory-outcome-filter">Outcome Slice</label>
+                  <select
+                    id="trajectory-outcome-filter"
+                    value={trajectoryOutcomeFilter}
+                    onChange={(event) => setTrajectoryOutcomeFilter(event.target.value as 'all' | 'victory' | 'defeat')}
+                    className="scenario-select"
+                  >
+                    <option value="all">All Outcomes</option>
+                    <option value="victory">Victories Only</option>
+                    <option value="defeat">Defeats Only</option>
+                  </select>
+                  <div className="filter-caption">Filters action timing and share-by-round charts.</div>
+                </div>
+                <div className="filter-card">
+                  <label className="eyebrow" htmlFor="trajectory-player-filter">Player Count</label>
+                  <select
+                    id="trajectory-player-filter"
+                    value={String(trajectoryPlayerCountFilter)}
+                    onChange={(event) =>
+                      setTrajectoryPlayerCountFilter(
+                        event.target.value === 'all' ? 'all' : Number(event.target.value),
+                      )
+                    }
+                    className="scenario-select"
+                  >
+                    <option value="all">All Player Counts</option>
+                    {trajectoryPlayerCountOptions.map((playerCount) => (
+                      <option key={playerCount} value={playerCount}>
+                        {playerCount} Players
+                      </option>
+                    ))}
+                  </select>
+                  <div className="filter-caption">Use to isolate 2P, 3P, or 4P action lines.</div>
+                </div>
               </>
             ) : null}
           </section>
@@ -1061,6 +1179,58 @@ function App() {
             </Card>
 
             <Card
+              title="Action Mix Delta"
+              subtitle="Selected run or run-scope action share versus the earliest available baseline."
+              className="span-6"
+            >
+              {actionMixDeltaRows.length ? (
+                <ResponsiveContainer width="100%" height={320}>
+                  <BarChart data={actionMixDeltaRows.slice(0, 7)}>
+                    <CartesianGrid stroke={COLORS.line} strokeDasharray="2 4" vertical={false} />
+                    <XAxis dataKey="label" tick={{ fill: COLORS.slate, fontSize: 11 }} interval={0} angle={-18} textAnchor="end" height={72} />
+                    <YAxis tick={{ fill: COLORS.slate, fontSize: 12 }} />
+                    <Tooltip formatter={(value: any) => `${(Number(value) * 100).toFixed(1)}%`} />
+                    <Legend />
+                    <Bar dataKey="baselineShare" fill={COLORS.red} name="Baseline share" />
+                    <Bar dataKey="selectedShare" fill={COLORS.green} name="Selected share" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <EmptyState
+                  title="No action delta yet"
+                  body="Historical optimizer runs in this scope do not expose action-balance summaries."
+                />
+              )}
+            </Card>
+
+            <Card
+              title="Action Diversity by Run"
+              subtitle="Run-level entropy, dominant action pressure, and targeted-action lift."
+              className="span-6"
+            >
+              {actionRunDiagnostics.length ? (
+                <DataTable
+                  columns={['Run', 'Entropy', 'Dominant', 'Targeted', 'Lift']}
+                  rows={actionRunDiagnostics.map((row: any) => [
+                    row.compactLabel,
+                    num(row.actionEntropy),
+                    row.dominantLabel,
+                    pct(row.targetedShare),
+                    pct(row.underusedActionLift),
+                  ])}
+                />
+              ) : (
+                <MetricList
+                  items={[
+                    ['Scenario entropy', num(actionDiversity?.entropy)],
+                    ['Dominant action', titleCase(actionDiversity?.dominantAction || 'n/a')],
+                    ['Targeted share', pct(actionDiversity?.targetedShare)],
+                  ]}
+                />
+              )}
+            </Card>
+
+            <Card
               title="Recommended Config"
               subtitle="Exact run-level recommendation for the current selection."
               className="span-12"
@@ -1071,7 +1241,7 @@ function App() {
                     <p className="eyebrow">Run Summary</p>
                     <MetricList
                       items={[
-                        ['Run', recommendedConfig.label],
+                        ['Run', recommendedConfig.compactLabel || compactRunLabel(recommendedConfig.label)],
                         ['Generated', recommendedConfig.generatedAt || 'n/a'],
                         ['Stop reason', titleCase(recommendedConfig.stopReason || 'unknown')],
                         ['Success', pct(recommendedConfig.finalMetrics?.successRate)],
@@ -1239,7 +1409,7 @@ function App() {
             <Card
               title="Outcome Flow"
               subtitle="Victory and defeat mix in raw simulation runs."
-              className="span-4"
+              className="span-3"
             >
               <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
@@ -1264,19 +1434,136 @@ function App() {
             </Card>
 
             <Card
+              title="Action Diversity"
+              subtitle="Overall entropy, dominant action pressure, and targeted-action share."
+              className="span-3"
+            >
+              <MetricList
+                items={[
+                  ['Entropy', num(actionDiversity?.entropy)],
+                  ['Dominant action', titleCase(actionDiversity?.dominantAction || 'n/a')],
+                  ['Dominant share', pct(actionDiversity?.concentration)],
+                  ['Targeted share', pct(actionDiversity?.targetedShare)],
+                ]}
+              />
+            </Card>
+
+            <Card
               title="Action Mix by Outcome"
               subtitle="Average action counts in wins versus defeats."
-              className="span-8"
+              className="span-6"
             >
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={actionMixRows}>
                   <CartesianGrid stroke={COLORS.line} strokeDasharray="2 4" vertical={false} />
-                  <XAxis dataKey="action" tick={{ fill: COLORS.slate, fontSize: 12 }} />
+                  <XAxis dataKey="label" tick={{ fill: COLORS.slate, fontSize: 11 }} interval={0} angle={-18} textAnchor="end" height={72} />
                   <YAxis tick={{ fill: COLORS.slate, fontSize: 12 }} />
                   <Tooltip />
                   <Legend />
                   <Bar dataKey="victory" fill={COLORS.green} name="Victory avg" />
                   <Bar dataKey="defeat" fill={COLORS.red} name="Defeat avg" />
+                </BarChart>
+              </ResponsiveContainer>
+            </Card>
+
+            <Card
+              title="Action Share by Round"
+              subtitle="Normalized action share over time for the selected outcome and player-count slice."
+              className="span-8"
+            >
+              <ResponsiveContainer width="100%" height={320}>
+                <LineChart data={filteredActionShareByRoundRows}>
+                  <CartesianGrid stroke={COLORS.line} strokeDasharray="2 4" vertical={false} />
+                  <XAxis dataKey="round" tick={{ fill: COLORS.slate, fontSize: 12 }} />
+                  <YAxis tick={{ fill: COLORS.slate, fontSize: 12 }} domain={[0, 'auto']} />
+                  <Tooltip formatter={(value: any) => `${(Number(value) * 100).toFixed(1)}%`} />
+                  <Legend />
+                  {CORE_ACTION_KEYS.map((action, index) => (
+                    <Line
+                      key={action}
+                      dataKey={action}
+                      name={ACTION_LABELS[action]}
+                      stroke={[
+                        COLORS.green,
+                        COLORS.accent,
+                        COLORS.red,
+                        COLORS.blue,
+                        COLORS.gold,
+                        COLORS.brown,
+                        COLORS.muted,
+                      ][index % 7]}
+                      strokeWidth={action === 'launchCampaign' || action === 'investigate' ? 3 : 2}
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </Card>
+
+            <Card
+              title="Terminal Timing by Outcome"
+              subtitle="Action share in the final three rounds before victory versus defeat."
+              className="span-4"
+            >
+              <ResponsiveContainer width="100%" height={320}>
+                <BarChart data={actionTimingRows}>
+                  <CartesianGrid stroke={COLORS.line} strokeDasharray="2 4" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fill: COLORS.slate, fontSize: 11 }} interval={0} angle={-18} textAnchor="end" height={72} />
+                  <YAxis tick={{ fill: COLORS.slate, fontSize: 12 }} />
+                  <Tooltip formatter={(value: any) => `${(Number(value) * 100).toFixed(1)}%`} />
+                  <Legend />
+                  <Bar dataKey="victory" fill={COLORS.green} name="Before victory" />
+                  <Bar dataKey="defeat" fill={COLORS.red} name="Before defeat" />
+                </BarChart>
+              </ResponsiveContainer>
+            </Card>
+
+            <Card
+              title="Action Mix by Player Count"
+              subtitle="Which actions survive or collapse across 2P, 3P, and 4P balance profiles."
+              className="span-6"
+            >
+              <ResponsiveContainer width="100%" height={320}>
+                <LineChart data={actionMixByPlayerCountRows}>
+                  <CartesianGrid stroke={COLORS.line} strokeDasharray="2 4" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fill: COLORS.slate, fontSize: 12 }} />
+                  <YAxis tick={{ fill: COLORS.slate, fontSize: 12 }} />
+                  <Tooltip formatter={(value: any) => `${(Number(value) * 100).toFixed(1)}%`} />
+                  <Legend />
+                  {CORE_ACTION_KEYS.map((action, index) => (
+                    <Line
+                      key={action}
+                      dataKey={action}
+                      name={ACTION_LABELS[action]}
+                      stroke={[
+                        COLORS.green,
+                        COLORS.accent,
+                        COLORS.red,
+                        COLORS.blue,
+                        COLORS.gold,
+                        COLORS.brown,
+                        COLORS.muted,
+                      ][index % 7]}
+                      strokeWidth={action === 'launchCampaign' || action === 'investigate' ? 3 : 2}
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </Card>
+
+            <Card
+              title="Action Opportunity vs Selection"
+              subtitle="Heuristic opportunity windows versus observed action share."
+              className="span-6"
+            >
+              <ResponsiveContainer width="100%" height={320}>
+                <BarChart data={actionOpportunityRows}>
+                  <CartesianGrid stroke={COLORS.line} strokeDasharray="2 4" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fill: COLORS.slate, fontSize: 11 }} interval={0} angle={-18} textAnchor="end" height={72} />
+                  <YAxis tick={{ fill: COLORS.slate, fontSize: 12 }} />
+                  <Tooltip formatter={(value: any) => `${(Number(value) * 100).toFixed(1)}%`} />
+                  <Legend />
+                  <Bar dataKey="opportunityRate" fill={COLORS.gold} name="Opportunity rate" />
+                  <Bar dataKey="selectionRate" fill={COLORS.accent} name="Selection rate" />
                 </BarChart>
               </ResponsiveContainer>
             </Card>
@@ -1335,7 +1622,7 @@ function App() {
             <Card
               title="Front Pressure"
               subtitle="Average extraction and comrades presence by front across trajectories."
-              className="span-12"
+              className="span-6"
             >
               <ResponsiveContainer width="100%" height={300}>
                 <RadarChart data={frontPressureRows}>
@@ -1360,6 +1647,22 @@ function App() {
                   />
                 </RadarChart>
               </ResponsiveContainer>
+            </Card>
+
+            <Card
+              title="Trajectory-to-Tuning Workflow"
+              subtitle="Failure-path reading converted into concrete scenario levers."
+              className="span-6"
+            >
+              <DataTable
+                columns={['Pattern', 'Missing action', 'Likely lever', 'Candidate patch']}
+                rows={trajectoryTuningRows.map((row: any) => [
+                  row.pattern,
+                  row.missingAction,
+                  row.likelyLever,
+                  row.candidatePatch,
+                ])}
+              />
             </Card>
           </section>
         ) : null}
@@ -1399,14 +1702,14 @@ function App() {
                   rows={[
                     [
                       'Left',
-                      comparisonData.leftRun?.label,
+                      comparisonData.leftRun?.compactLabel || compactRunLabel(comparisonData.leftRun?.label),
                       pct(comparisonData.leftRun?.finalMetrics?.successRate),
                       pct(comparisonData.leftRun?.finalMetrics?.publicVictoryRate),
                       num(comparisonData.leftRun?.finalMetrics?.averageTurns),
                     ],
                     [
                       'Right',
-                      comparisonData.rightRun?.label,
+                      comparisonData.rightRun?.compactLabel || compactRunLabel(comparisonData.rightRun?.label),
                       pct(comparisonData.rightRun?.finalMetrics?.successRate),
                       pct(comparisonData.rightRun?.finalMetrics?.publicVictoryRate),
                       num(comparisonData.rightRun?.finalMetrics?.averageTurns),
@@ -1458,6 +1761,28 @@ function App() {
                 <EmptyState title="No patch diff" body="Pick two runs with available recommendations." />
               )}
             </Card>
+
+            <Card
+              title="Action Share Shift"
+              subtitle="Run-vs-run action mix change where action-balance summaries are available."
+              className="span-12"
+            >
+              {comparisonData?.actionDiff?.length ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={comparisonData.actionDiff}>
+                    <CartesianGrid stroke={COLORS.line} strokeDasharray="2 4" vertical={false} />
+                    <XAxis dataKey="label" tick={{ fill: COLORS.slate, fontSize: 11 }} interval={0} angle={-18} textAnchor="end" height={72} />
+                    <YAxis tick={{ fill: COLORS.slate, fontSize: 12 }} />
+                    <Tooltip formatter={(value: any) => `${(Number(value) * 100).toFixed(1)}%`} />
+                    <Legend />
+                    <Bar dataKey="left" fill={COLORS.red} name="Left share" />
+                    <Bar dataKey="right" fill={COLORS.green} name="Right share" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <EmptyState title="No action diff" body="These runs do not expose run-level action-balance summaries yet." />
+              )}
+            </Card>
           </section>
         ) : null}
 
@@ -1474,7 +1799,7 @@ function App() {
                     <p className="eyebrow">Run Summary</p>
                     <MetricList
                       items={[
-                        ['Run', recommendedConfig.label],
+                        ['Run', recommendedConfig.compactLabel || compactRunLabel(recommendedConfig.label)],
                         ['Generated', recommendedConfig.generatedAt || 'n/a'],
                         ['Stop reason', titleCase(recommendedConfig.stopReason || 'unknown')],
                         ['Success', pct(recommendedConfig.finalMetrics?.successRate)],
@@ -1528,7 +1853,7 @@ function App() {
                     <DataTable
                       columns={['Run', 'Success', 'Public', 'Avg turns', 'Patch fields']}
                       rows={allRunRecommendations.map((item: any) => [
-                        item.label,
+                        item.compactLabel || compactRunLabel(item.label),
                         pct(item.finalMetrics?.successRate),
                         pct(item.finalMetrics?.publicVictoryRate),
                         num(item.finalMetrics?.averageTurns),
@@ -1541,7 +1866,7 @@ function App() {
                 <DataTable
                   columns={['Run', 'Success', 'Public', 'Avg turns', 'Accepted patches']}
                   rows={recommendedConfigs.map((item: any) => [
-                    item.label,
+                    item.compactLabel || compactRunLabel(item.label),
                     pct(item.finalMetrics?.successRate),
                     pct(item.finalMetrics?.publicVictoryRate),
                     num(item.finalMetrics?.averageTurns),
@@ -1551,6 +1876,52 @@ function App() {
               ) : (
                 <EmptyState title="No recommendation data" body="No available run for this scenario produced a recommended patch." />
               )}
+            </Card>
+
+            <Card
+              title="Scenario Edit Plan"
+              subtitle="Scenario-specific changes intended to raise underused action importance by 20-30%."
+              className="span-8"
+            >
+              <DataTable
+                columns={['Action', 'Current', 'Target', 'Lever', 'Patch hypothesis']}
+                rows={scenarioRecommendations.map((item: any) => [
+                  item.label,
+                  pct(item.currentShare),
+                  pct(item.targetShare),
+                  item.lever,
+                  item.patchHypothesis,
+                ])}
+              />
+            </Card>
+
+            <Card
+              title="Balance Risks"
+              subtitle="What could regress while lifting neglected actions."
+              className="span-4"
+            >
+              <MetricList
+                items={scenarioRecommendations.map((item: any) => [
+                  item.label,
+                  item.risk,
+                ])}
+              />
+            </Card>
+
+            <Card
+              title="Trajectory Guidance"
+              subtitle="How to use path analysis to validate that action importance is truly improving."
+              className="span-12"
+            >
+              <DataTable
+                columns={['Pattern', 'Missing action', 'Likely lever', 'Candidate patch']}
+                rows={trajectoryTuningRows.map((row: any) => [
+                  row.pattern,
+                  row.missingAction,
+                  row.likelyLever,
+                  row.candidatePatch,
+                ])}
+              />
             </Card>
           </section>
         ) : null}
@@ -1638,17 +2009,20 @@ function DataTable({
   columns: string[];
   rows: string[][];
 }) {
+  const gridTemplate = `repeat(${Math.max(columns.length, 1)}, minmax(0, 1fr))`;
   return (
     <div className="data-table">
-      <div className="data-table-head">
+      <div className="data-table-head" style={{ gridTemplateColumns: gridTemplate }}>
         {columns.map((column) => (
           <span key={column}>{column}</span>
         ))}
       </div>
       {rows.map((row, index) => (
-        <div key={`${row.join('-')}-${index}`} className="data-table-row">
+        <div key={`${row.join('-')}-${index}`} className="data-table-row" style={{ gridTemplateColumns: gridTemplate }}>
           {row.map((cell, cellIndex) => (
-            <span key={`${cell}-${cellIndex}`}>{cell}</span>
+            <span key={`${cell}-${cellIndex}`} title={cell}>
+              {cell}
+            </span>
           ))}
         </div>
       ))}

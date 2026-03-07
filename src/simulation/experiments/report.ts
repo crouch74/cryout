@@ -1,6 +1,8 @@
 import type { SimulationRecord } from '../types.ts';
 import type { MandateFailureDistribution } from '../metrics/types.ts';
 import type {
+  ActionBalanceSummary,
+  CoreActionKey,
   Decision,
   ExperimentArm,
   ExperimentArmSummary,
@@ -16,6 +18,21 @@ import type {
 const EPSILON = 1e-9;
 const DEFAULT_CONFIDENCE: 0.9 | 0.95 | 0.99 = 0.95;
 const DEFAULT_RESERVOIR_SIZE = 8192;
+const CORE_ACTIONS: CoreActionKey[] = [
+  'organize',
+  'investigate',
+  'launchCampaign',
+  'buildSolidarity',
+  'smuggleEvidence',
+  'internationalOutreach',
+  'defend',
+];
+const TARGETED_ACTIONS = new Set<CoreActionKey>([
+  'buildSolidarity',
+  'internationalOutreach',
+  'smuggleEvidence',
+  'defend',
+]);
 
 const METRIC_KEYS: ExperimentMetricKey[] = [
   'successRate',
@@ -49,6 +66,8 @@ interface CollapseVarianceState {
   maxObserved: number;
 }
 
+type ActionTotals = Record<CoreActionKey, number>;
+
 export interface ArmAccumulator {
   arm: ExperimentArm;
   n: number;
@@ -75,6 +94,16 @@ export interface ArmAccumulator {
   mandateSuccessesById: Record<string, number>;
   outcomeBuckets: Record<string, number>;
   collapseVariance: CollapseVarianceState;
+  actionTotals: ActionTotals;
+  actionTotalsByOutcome: {
+    victory: ActionTotals;
+    defeat: ActionTotals;
+  };
+  setupPreparedCampaigns: number;
+  launchCampaigns: number;
+  failurePathPenaltyTotal: number;
+  regimeWeightedTargetedShareTotal: number;
+  regimeWeightTotal: number;
   reservoir: Reservoir;
   scoreReservoir: Reservoir;
   mandateFailureAsCostlyWin: boolean;
@@ -101,6 +130,7 @@ interface PlayerCountAccumulator {
   earlyTerminations: number;
   totalTurns: number;
   turnsReservoir: Reservoir;
+  actionTotals: ActionTotals;
   defeatReasons: {
     extraction_breach: number;
     comrades_exhausted: number;
@@ -123,6 +153,7 @@ function createPlayerCountAccumulator(playerCount: number, seed: number): Player
       values: [],
       state: (seed ^ (playerCount * 0x9e3779b9)) >>> 0,
     },
+    actionTotals: createZeroActionTotals(),
     defeatReasons: {
       extraction_breach: 0,
       comrades_exhausted: 0,
@@ -155,6 +186,222 @@ function finalizePlayerCountSummary(acc: PlayerCountAccumulator): PlayerCountSum
 function roundTo(value: number, digits = 6) {
   const factor = 10 ** digits;
   return Math.round(value * factor) / factor;
+}
+
+function createZeroActionTotals(): ActionTotals {
+  return {
+    organize: 0,
+    investigate: 0,
+    launchCampaign: 0,
+    buildSolidarity: 0,
+    smuggleEvidence: 0,
+    internationalOutreach: 0,
+    defend: 0,
+  };
+}
+
+function sumActionTotals(totals: ActionTotals) {
+  return CORE_ACTIONS.reduce((sum, action) => sum + (totals[action] ?? 0), 0);
+}
+
+function actionShares(totals: ActionTotals): Record<CoreActionKey, number> {
+  const total = sumActionTotals(totals);
+  return Object.fromEntries(
+    CORE_ACTIONS.map((action) => [action, total > 0 ? roundTo((totals[action] ?? 0) / total) : 0]),
+  ) as Record<CoreActionKey, number>;
+}
+
+function actionAverageCounts(totals: ActionTotals, runs: number): Record<CoreActionKey, number> {
+  return Object.fromEntries(
+    CORE_ACTIONS.map((action) => [action, ratio(totals[action] ?? 0, runs)]),
+  ) as Record<CoreActionKey, number>;
+}
+
+function actionEntropy(totals: ActionTotals) {
+  return normalizedEntropy(Object.fromEntries(CORE_ACTIONS.map((action) => [action, totals[action] ?? 0])));
+}
+
+function actionConcentration(totals: ActionTotals) {
+  const total = sumActionTotals(totals);
+  if (total <= 0) {
+    return 0;
+  }
+  return roundTo(
+    CORE_ACTIONS.reduce((best, action) => Math.max(best, (totals[action] ?? 0) / total), 0),
+  );
+}
+
+function dominantAction(totals: ActionTotals): CoreActionKey | null {
+  const total = sumActionTotals(totals);
+  if (total <= 0) {
+    return null;
+  }
+  return CORE_ACTIONS.reduce<CoreActionKey | null>((best, action) => {
+    if (!best) {
+      return action;
+    }
+    return (totals[action] ?? 0) > (totals[best] ?? 0) ? action : best;
+  }, null);
+}
+
+function targetedActionShare(totals: ActionTotals) {
+  const shares = actionShares(totals);
+  return roundTo(
+    CORE_ACTIONS.reduce((sum, action) => sum + (TARGETED_ACTIONS.has(action) ? shares[action] : 0), 0),
+  );
+}
+
+function buildActionBalanceSummary(
+  overallTotals: ActionTotals,
+  outcomeTotals: { victory: ActionTotals; defeat: ActionTotals },
+  byPlayerCount: Record<string, PlayerCountAccumulator>,
+  runs: number,
+  pathSignals: {
+    setupPreparedCampaigns: number;
+    launchCampaigns: number;
+    failurePathPenaltyTotal: number;
+    regimeWeightedTargetedShareTotal: number;
+    regimeWeightTotal: number;
+  },
+): ActionBalanceSummary {
+  return {
+    entropy: actionEntropy(overallTotals),
+    concentration: actionConcentration(overallTotals),
+    dominantAction: dominantAction(overallTotals),
+    targetedShare: targetedActionShare(overallTotals),
+    winningTargetedShare: targetedActionShare(outcomeTotals.victory),
+    setupDependentCampaignRate: ratio(pathSignals.setupPreparedCampaigns, pathSignals.launchCampaigns),
+    failurePathPenalty: ratio(pathSignals.failurePathPenaltyTotal, runs),
+    regimeWeightedTargetedShare: ratio(
+      pathSignals.regimeWeightedTargetedShareTotal,
+      pathSignals.regimeWeightTotal,
+    ),
+    actionShare: actionShares(overallTotals),
+    actionAverageCounts: actionAverageCounts(overallTotals, runs),
+    actionShareByOutcome: {
+      victory: actionShares(outcomeTotals.victory),
+      defeat: actionShares(outcomeTotals.defeat),
+    },
+    actionShareByPlayerCount: Object.fromEntries(
+      Object.entries(byPlayerCount)
+        .filter(([, acc]) => acc.n > 0)
+        .map(([key, acc]) => [key, actionShares(acc.actionTotals)]),
+    ) as Record<string, Record<CoreActionKey, number>>,
+  };
+}
+
+function mergeActionTotals(target: ActionTotals, source: Partial<Record<CoreActionKey, number>> | undefined) {
+  if (!source) {
+    return;
+  }
+  for (const action of CORE_ACTIONS) {
+    target[action] += source[action] ?? 0;
+  }
+}
+
+function buildActionDeltaTimeline(record: SimulationRecord): ActionTotals[] {
+  const previous = createZeroActionTotals();
+  return (record.roundSnapshots ?? []).map((snapshot) => {
+    const current = snapshot.actions ?? {};
+    const delta = createZeroActionTotals();
+    for (const action of CORE_ACTIONS) {
+      const next = current[action] ?? 0;
+      delta[action] = Math.max(0, next - previous[action]);
+      previous[action] = next;
+    }
+    return delta;
+  });
+}
+
+function computeSetupPreparedCampaigns(deltas: ActionTotals[]) {
+  const seenSetup = createZeroActionTotals();
+  let preparedCampaigns = 0;
+  let launchCampaigns = 0;
+
+  for (const delta of deltas) {
+    const launches = delta.launchCampaign;
+    if (launches > 0) {
+      launchCampaigns += launches;
+      const setupAvailable = seenSetup.buildSolidarity > 0
+        || seenSetup.internationalOutreach > 0
+        || seenSetup.smuggleEvidence > 0;
+      if (setupAvailable) {
+        preparedCampaigns += launches;
+      }
+    }
+
+    seenSetup.buildSolidarity += delta.buildSolidarity;
+    seenSetup.internationalOutreach += delta.internationalOutreach;
+    seenSetup.smuggleEvidence += delta.smuggleEvidence;
+  }
+
+  return { preparedCampaigns, launchCampaigns };
+}
+
+function computeFailurePathPenalty(record: SimulationRecord, deltas: ActionTotals[]) {
+  if (record.result.type !== 'defeat') {
+    return 0;
+  }
+
+  const terminalSnapshots = (record.roundSnapshots ?? []).slice(-2);
+  const terminalDeltas = deltas.slice(-2);
+  const highestExtraction = Math.max(
+    0,
+    ...terminalSnapshots.flatMap((snapshot) =>
+      Object.values(snapshot.fronts ?? {}).map((front) => front.extraction ?? 0)),
+  );
+  const warMachine = Math.max(0, ...terminalSnapshots.map((snapshot) => snapshot.globalTracks.warMachine ?? 0));
+  const comradesFloor = Math.min(
+    ...terminalSnapshots.map((snapshot) => snapshot.resources.totalComrades ?? Infinity),
+  );
+  const highPressure = highestExtraction >= 4
+    || warMachine >= 7
+    || comradesFloor <= Math.max(3, record.playerCount * 2);
+
+  const defensiveWindow = terminalDeltas.reduce(
+    (sum, delta) => sum + delta.defend + delta.buildSolidarity + delta.internationalOutreach + delta.smuggleEvidence,
+    0,
+  );
+  const dominantLoopWindow = terminalDeltas.reduce(
+    (sum, delta) => sum + delta.launchCampaign + delta.investigate,
+    0,
+  );
+
+  let penalty = 0;
+  if (highPressure) {
+    penalty += 0.5;
+  }
+  if (highPressure && defensiveWindow === 0) {
+    penalty += 0.3;
+  }
+  if (dominantLoopWindow > defensiveWindow) {
+    penalty += 0.2;
+  }
+
+  return roundTo(clamp(penalty, 0, 1));
+}
+
+function classifyRegimeWeight(record: SimulationRecord) {
+  if (record.result.type === 'defeat' && record.turnsPlayed < 5) {
+    return 1.4;
+  }
+  if (record.result.type === 'victory' && record.turnsPlayed <= 9) {
+    return 1.2;
+  }
+  if (record.result.type === 'defeat' && record.turnsPlayed >= 10) {
+    return 1.1;
+  }
+  return 1;
+}
+
+function computeRecordTargetedShare(record: SimulationRecord) {
+  const totalActions = CORE_ACTIONS.reduce((sum, action) => sum + (record.actionCounts[action] ?? 0), 0);
+  if (totalActions <= 0) {
+    return 0;
+  }
+  const targetedActions = Array.from(TARGETED_ACTIONS)
+    .reduce((sum, action) => sum + (record.actionCounts[action] ?? 0), 0);
+  return roundTo(targetedActions / totalActions);
 }
 
 function ratio(numerator: number, denominator: number) {
@@ -413,6 +660,16 @@ export function createArmAccumulator(
       totalSquared: 0,
       maxObserved: 0,
     },
+    actionTotals: createZeroActionTotals(),
+    actionTotalsByOutcome: {
+      victory: createZeroActionTotals(),
+      defeat: createZeroActionTotals(),
+    },
+    setupPreparedCampaigns: 0,
+    launchCampaigns: 0,
+    failurePathPenaltyTotal: 0,
+    regimeWeightedTargetedShareTotal: 0,
+    regimeWeightTotal: 0,
     reservoir: {
       capacity: Math.max(256, options?.reservoirSize ?? DEFAULT_RESERVOIR_SIZE),
       seen: 0,
@@ -499,6 +756,16 @@ export function ingestArmRecord(accumulator: ArmAccumulator, record: SimulationR
   accumulator.campaignSuccess += record.campaignStats.campaignSuccess;
   mergeCountMaps(accumulator.mandateFailuresById, record.mandateOutcomeById.failuresByMandate);
   mergeCountMaps(accumulator.mandateSuccessesById, record.mandateOutcomeById.successesByMandate);
+  mergeActionTotals(accumulator.actionTotals, record.actionCounts);
+  mergeActionTotals(accumulator.actionTotalsByOutcome[record.result.type], record.actionCounts);
+  const actionDeltas = buildActionDeltaTimeline(record);
+  const campaignPath = computeSetupPreparedCampaigns(actionDeltas);
+  accumulator.setupPreparedCampaigns += campaignPath.preparedCampaigns;
+  accumulator.launchCampaigns += campaignPath.launchCampaigns;
+  accumulator.failurePathPenaltyTotal += computeFailurePathPenalty(record, actionDeltas);
+  const regimeWeight = classifyRegimeWeight(record);
+  accumulator.regimeWeightTotal += regimeWeight;
+  accumulator.regimeWeightedTargetedShareTotal += computeRecordTargetedShare(record) * regimeWeight;
 
   // 🎲 Route into per-player-count sub-accumulator
   const pcKey = String(record.playerCount);
@@ -513,6 +780,7 @@ export function ingestArmRecord(accumulator: ArmAccumulator, record: SimulationR
   if (record.turnsPlayed < 3) {
     pc.earlyTerminations += 1;
   }
+  mergeActionTotals(pc.actionTotals, record.actionCounts);
   if (success) {
     pc.successes += 1;
   }
@@ -548,6 +816,19 @@ export function finalizeArmSummary(accumulator: ArmAccumulator): ExperimentArmSu
       .filter(([, acc]) => acc.n > 0)
       .sort(([a], [b]) => Number(a) - Number(b))
       .map(([key, acc]) => [key, finalizePlayerCountSummary(acc)]),
+  );
+  const actionBalance = buildActionBalanceSummary(
+    accumulator.actionTotals,
+    accumulator.actionTotalsByOutcome,
+    accumulator.byPlayerCount,
+    accumulator.n,
+    {
+      setupPreparedCampaigns: accumulator.setupPreparedCampaigns,
+      launchCampaigns: accumulator.launchCampaigns,
+      failurePathPenaltyTotal: accumulator.failurePathPenaltyTotal,
+      regimeWeightedTargetedShareTotal: accumulator.regimeWeightedTargetedShareTotal,
+      regimeWeightTotal: accumulator.regimeWeightTotal,
+    },
   );
 
   return {
@@ -598,6 +879,7 @@ export function finalizeArmSummary(accumulator: ArmAccumulator): ExperimentArmSu
       success: accumulator.campaignSuccess,
       successRate: ratio(accumulator.campaignSuccess, accumulator.campaignAttempts),
     },
+    actionBalance,
     reservoirSampleSize: accumulator.reservoir.values.length,
     byPlayerCount,
   };

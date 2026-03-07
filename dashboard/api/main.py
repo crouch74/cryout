@@ -1,5 +1,6 @@
 import json
 import logging
+import math
 import os
 from collections import defaultdict
 from statistics import mean
@@ -43,6 +44,30 @@ SCOPE_VALUES = {
     "all_runs",
     "specific_run",
 }
+CORE_ACTIONS = [
+    "organize",
+    "investigate",
+    "launchCampaign",
+    "buildSolidarity",
+    "smuggleEvidence",
+    "internationalOutreach",
+    "defend",
+]
+TARGETED_ACTIONS = {
+    "buildSolidarity",
+    "internationalOutreach",
+    "smuggleEvidence",
+    "defend",
+}
+ACTION_LABELS = {
+    "organize": "Organize",
+    "investigate": "Investigate",
+    "launchCampaign": "Launch Campaign",
+    "buildSolidarity": "Build Solidarity",
+    "smuggleEvidence": "Smuggle Evidence",
+    "internationalOutreach": "International Outreach",
+    "defend": "Defend",
+}
 
 
 @app.on_event("startup")
@@ -60,6 +85,52 @@ def load_json(path: str, default: Any = None) -> Any:
 def safe_mean(values: Iterable[float]) -> float:
     values_list = list(values)
     return mean(values_list) if values_list else 0.0
+
+
+def clamp(value: float, minimum: float, maximum: float) -> float:
+    return max(minimum, min(maximum, value))
+
+
+def safe_ratio(numerator: float, denominator: float) -> float:
+    return (numerator / denominator) if denominator else 0.0
+
+
+def action_template() -> Dict[str, float]:
+    return {action: 0.0 for action in CORE_ACTIONS}
+
+
+def entropy_from_counts(counts: Dict[str, float]) -> float:
+    total = sum(max(0.0, value) for value in counts.values())
+    positive = [value for value in counts.values() if value > 0]
+    if total <= 0 or len(positive) <= 1:
+        return 0.0
+    entropy = 0.0
+    for value in positive:
+        probability = value / total
+        entropy -= probability * math.log2(probability)
+    return clamp(entropy / math.log2(len(positive)), 0.0, 1.0)
+
+
+def share_map(counts: Dict[str, float]) -> Dict[str, float]:
+    total = sum(max(0.0, counts.get(action, 0.0)) for action in CORE_ACTIONS)
+    return {
+        action: safe_ratio(max(0.0, counts.get(action, 0.0)), total)
+        for action in CORE_ACTIONS
+    }
+
+
+def targeted_share(counts: Dict[str, float]) -> float:
+    shares = share_map(counts)
+    return sum(shares[action] for action in TARGETED_ACTIONS)
+
+
+def compact_run_label(label: Optional[str]) -> str:
+    if not label:
+        return "Run"
+    compact = label.replace("Parallel ", "P ").replace("Single ", "S ")
+    if len(compact) <= 24:
+        return compact
+    return f"{compact[:14]}...{compact[-7:]}"
 
 
 def list_subdirs(path: str) -> List[str]:
@@ -458,6 +529,147 @@ def build_generation_progress(run: Dict[str, Any]) -> Tuple[List[Dict[str, Any]]
     return progress, genome_rows
 
 
+def action_deltas_for_snapshots(round_snapshots: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    previous = action_template()
+    deltas: List[Dict[str, Any]] = []
+    for snapshot in sorted(round_snapshots, key=lambda item: int(item.get("round") or 0)):
+        current = snapshot.get("actions") or {}
+        row = {"round": int(snapshot.get("round") or 0)}
+        for action in CORE_ACTIONS:
+            delta = max(0.0, float(current.get(action, 0) or 0) - previous[action])
+            row[action] = delta
+            previous[action] = float(current.get(action, 0) or 0)
+        deltas.append(row)
+    return deltas
+
+
+def infer_action_opportunities(snapshot: Dict[str, Any], player_count: int) -> Dict[str, bool]:
+    fronts = snapshot.get("fronts") or {}
+    resources = snapshot.get("resources") or {}
+    tracks = snapshot.get("globalTracks") or {}
+    domains = snapshot.get("domains") or {}
+    highest_extraction = max(
+        ((front or {}).get("extraction", 0) or 0)
+        for front in fronts.values()
+    ) if fronts else 0
+    total_comrades = resources.get("totalComrades", 0) or 0
+    total_evidence = resources.get("totalEvidence", 0) or 0
+    global_gaze = tracks.get("globalGaze", 0) or 0
+    war_machine = tracks.get("warMachine", 0) or 0
+    silenced_truth = domains.get("SilencedTruth", 0) or 0
+
+    return {
+        "organize": total_comrades <= max(6, player_count * 3) or highest_extraction >= 4,
+        "investigate": silenced_truth >= 4 or total_evidence <= max(2, player_count),
+        "launchCampaign": global_gaze >= 8 and total_comrades >= max(4, player_count * 2),
+        "buildSolidarity": total_comrades <= max(7, player_count * 3) or war_machine >= 7,
+        "smuggleEvidence": total_evidence >= max(2, player_count - 1) and silenced_truth >= 3,
+        "internationalOutreach": global_gaze <= 8 or war_machine >= 8,
+        "defend": highest_extraction >= 4 or war_machine >= 7,
+    }
+
+
+def build_action_recommendations(
+    scenario_id: str,
+    trajectory: Dict[str, Any],
+    scenario_summary: Optional[Dict[str, Any]],
+    selected_runs: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    action_share = (trajectory.get("actionDiversity") or {}).get("actionShare") or {}
+    defeat_rows = trajectory.get("defeatReasons") or []
+    dominant_defeat = defeat_rows[0]["reason"] if defeat_rows else "unknown"
+    early_collapse = any(
+        "early" in (item.get("pattern") or "").lower() for item in (trajectory.get("trajectoryToTuning") or [])
+    ) or ((scenario_summary or {}).get("averageTurns", 0) or 0) < 6
+    global_gaze_tail = (trajectory.get("trackPressure") or [{}])[-1].get("globalGaze", 0)
+    underused = sorted(
+        (
+            {
+                "action": action,
+                "share": action_share.get(action, 0),
+            }
+            for action in TARGETED_ACTIONS
+        ),
+        key=lambda item: item["share"],
+    )
+    recommendations: List[Dict[str, Any]] = []
+
+    def append(action: str, lever: str, rationale: str, patch_hypothesis: str, risk: str) -> None:
+        current_share = action_share.get(action, 0)
+        recommendations.append(
+            {
+                "action": action,
+                "label": ACTION_LABELS.get(action, action),
+                "currentShare": current_share,
+                "targetShare": current_share * 1.25 if current_share > 0 else 0.05,
+                "lever": lever,
+                "rationale": rationale,
+                "patchHypothesis": patch_hypothesis,
+                "risk": risk,
+            }
+        )
+
+    if (underused and underused[0]["action"] == "buildSolidarity") or early_collapse:
+        append(
+            "buildSolidarity",
+            "Opening resilience",
+            "Early collapse and comrades pressure indicate solidarity setup is not carrying enough survival value.",
+            "Raise the payoff of early solidarity by tying low-solidarity openings to higher collapse risk or by improving later campaign readiness when solidarity is built.",
+            "Over-buffing solidarity can slow pacing and reduce tension if it becomes a mandatory opener.",
+        )
+    if dominant_defeat in {"extraction_breach", "sudden_death", "comrades_exhausted"} or action_share.get("defend", 0) < 0.08:
+        append(
+            "defend",
+            "Pressure spikes",
+            "Failure paths show pressure resolving faster than defensive responses, so defend is rarely the stabilizing best move.",
+            "Increase extraction or war-machine consequences when defense is ignored, and add scenario states where defend prevents terminal cascades.",
+            "Too much defensive value can create stall loops and flatten offensive decision pressure.",
+        )
+    if global_gaze_tail <= 8 or action_share.get("internationalOutreach", 0) < 0.08:
+        append(
+            "internationalOutreach",
+            "Gaze dependency",
+            "International attention is not exerting enough structural force, so outreach is optional rather than enabling.",
+            "Tie low Global Gaze to harsher campaign thresholds, extraction acceleration, or mandate fragility so outreach becomes a setup action.",
+            "If gaze pressure becomes too central, campaigns can feel scripted around a single preparatory loop.",
+        )
+    if dominant_defeat == "mandate_failure" or action_share.get("smuggleEvidence", 0) < 0.08:
+        append(
+            "smuggleEvidence",
+            "Evidence bottlenecks",
+            "Mandate and proof-related outcomes imply evidence handling is not converting into enough board-level leverage.",
+            "Increase mandate progress, pressure relief, or scoring value unlocked by smuggled evidence so it matters before the endgame.",
+            "Evidence-heavy wins can become too deterministic if proof conversion is overtuned.",
+        )
+    if action_share.get("launchCampaign", 0) > 0.28:
+        append(
+            "launchCampaign",
+            "Setup gating",
+            "Campaign is absorbing too much of the action economy, which suggests it is too universally correct without prior preparation.",
+            "Gate strong campaign outcomes behind prior solidarity, gaze, or evidence conditions so campaign becomes a payoff action rather than the default loop.",
+            "Over-gating campaign can make victories unreachable if supporting actions are not strengthened in the same patch set.",
+        )
+    if action_share.get("investigate", 0) > 0.22:
+        append(
+            "investigate",
+            "Narrow generic utility",
+            "Investigate appears to be a safe filler action across too many states instead of a context-specific tool.",
+            "Shift some investigative payoff into scenarios with high Silenced Truth or evidence scarcity, and reduce generic baseline value outside those states.",
+            "If investigate becomes too weak, evidence-starved scenarios may lose strategic recovery options.",
+        )
+
+    if not recommendations:
+        append(
+            "buildSolidarity",
+            "Baseline resilience",
+            "No single action is severely suppressed, but targeted actions still need more visibility in successful paths.",
+            "Create small scenario hooks that reward solidarity, outreach, defense, or evidence play before campaign payoffs resolve.",
+            "Too many small incentives can muddy scenario identity if they are not tied to existing structural pressures.",
+        )
+
+    return recommendations[:5]
+
+
 def build_trajectory_analytics(scenario_id: str) -> Dict[str, Any]:
     ndjson_path = os.path.join(SIM_DIR, "simulations.ndjson")
     if not os.path.exists(ndjson_path):
@@ -468,6 +680,12 @@ def build_trajectory_analytics(scenario_id: str) -> Dict[str, Any]:
             "defeatReasons": [],
             "playerCounts": [],
             "actionMix": [],
+            "actionShareByRound": [],
+            "actionTimingByOutcome": [],
+            "actionMixByPlayerCount": [],
+            "actionOpportunity": [],
+            "actionDiversity": {},
+            "trajectoryToTuning": [],
             "domainPressure": [],
             "trackPressure": [],
             "frontPressure": [],
@@ -480,10 +698,25 @@ def build_trajectory_analytics(scenario_id: str) -> Dict[str, Any]:
     player_counts: Dict[int, Dict[str, Any]] = {}
     action_sums: Dict[str, Dict[str, float]] = defaultdict(lambda: defaultdict(float))
     action_denominators = defaultdict(int)
+    overall_action_totals = action_template()
+    action_share_by_round_counts: Dict[Tuple[int, str, int], Dict[str, float]] = defaultdict(action_template)
+    action_share_by_round_totals = defaultdict(float)
+    action_share_by_round_samples = defaultdict(int)
+    timing_totals = {
+        "victory": action_template(),
+        "defeat": action_template(),
+    }
+    timing_denominators = {"victory": 0, "defeat": 0}
+    action_mix_by_player_count: Dict[int, Dict[str, float]] = defaultdict(action_template)
+    action_mix_by_player_count_totals = defaultdict(float)
+    opportunity_counts = action_template()
+    selection_counts = action_template()
+    opportunity_samples = 0
     round_domain_sums: Dict[int, Dict[str, float]] = defaultdict(lambda: defaultdict(float))
     round_track_sums: Dict[int, Dict[str, float]] = defaultdict(lambda: defaultdict(float))
     round_counts = defaultdict(int)
     front_sums: Dict[str, Dict[str, float]] = defaultdict(lambda: defaultdict(float))
+    tuning_rows: List[Dict[str, Any]] = []
 
     with open(ndjson_path, "r", encoding="utf-8") as handle:
         for line in handle:
@@ -525,6 +758,42 @@ def build_trajectory_analytics(scenario_id: str) -> Dict[str, Any]:
             action_denominators[result_type] += 1
             for action, count in action_counts.items():
                 action_sums[result_type][action] += count
+                if action in overall_action_totals:
+                    overall_action_totals[action] += count
+
+            per_player_bucket = action_mix_by_player_count[player_count]
+            player_action_total = 0.0
+            for action in CORE_ACTIONS:
+                count = float(action_counts.get(action, 0) or 0)
+                per_player_bucket[action] += count
+                player_action_total += count
+            action_mix_by_player_count_totals[player_count] += player_action_total
+
+            action_deltas = action_deltas_for_snapshots(record.get("roundSnapshots") or [])
+            if action_deltas:
+                terminal_window = action_deltas[-3:]
+                timing_denominators[result_type] += 1
+                for item in terminal_window:
+                    for action in CORE_ACTIONS:
+                        timing_totals[result_type][action] += item.get(action, 0) or 0
+
+            for snapshot, delta_row in zip(record.get("roundSnapshots") or [], action_deltas):
+                round_number = int(delta_row.get("round") or 0)
+                round_key = (round_number, result_type, player_count)
+                round_total = 0.0
+                for action in CORE_ACTIONS:
+                    amount = float(delta_row.get(action, 0) or 0)
+                    action_share_by_round_counts[round_key][action] += amount
+                    round_total += amount
+                    selection_counts[action] += amount
+                action_share_by_round_totals[round_key] += round_total
+                action_share_by_round_samples[round_key] += 1
+
+                opportunities = infer_action_opportunities(snapshot, player_count)
+                opportunity_samples += 1
+                for action, available in opportunities.items():
+                    if available:
+                        opportunity_counts[action] += 1
 
             for snapshot in record.get("roundSnapshots") or []:
                 round_number = int(snapshot.get("round") or 0)
@@ -555,11 +824,120 @@ def build_trajectory_analytics(scenario_id: str) -> Dict[str, Any]:
     action_rows = []
     action_names = sorted(set(action for result in action_sums.values() for action in result.keys()))
     for action in action_names:
+        victory_avg = action_sums["victory"].get(action, 0) / action_denominators["victory"] if action_denominators["victory"] else 0
+        defeat_avg = action_sums["defeat"].get(action, 0) / action_denominators["defeat"] if action_denominators["defeat"] else 0
+        total_action_usage = (action_sums["victory"].get(action, 0) + action_sums["defeat"].get(action, 0))
+        total_action_pool = (
+            sum(action_sums["victory"].values()) + sum(action_sums["defeat"].values())
+        )
         action_rows.append(
             {
                 "action": action,
-                "victory": action_sums["victory"].get(action, 0) / action_denominators["victory"] if action_denominators["victory"] else 0,
-                "defeat": action_sums["defeat"].get(action, 0) / action_denominators["defeat"] if action_denominators["defeat"] else 0,
+                "label": ACTION_LABELS.get(action, action),
+                "victory": victory_avg,
+                "defeat": defeat_avg,
+                "share": safe_ratio(total_action_usage, total_action_pool),
+            }
+        )
+    action_rows.sort(key=lambda row: row["share"], reverse=True)
+
+    action_round_rows = []
+    for (round_number, outcome, player_count), counts in sorted(
+        action_share_by_round_counts.items(),
+        key=lambda item: (item[0][0], item[0][1], item[0][2]),
+    ):
+        total = action_share_by_round_totals[(round_number, outcome, player_count)] or 1
+        row: Dict[str, Any] = {
+            "round": round_number,
+            "outcome": outcome,
+            "playerCount": player_count,
+            "sampleCount": action_share_by_round_samples[(round_number, outcome, player_count)],
+        }
+        for action in CORE_ACTIONS:
+            row[action] = counts[action] / total
+        action_round_rows.append(row)
+
+    timing_rows = []
+    for action in CORE_ACTIONS:
+        victory_total = sum(timing_totals["victory"].values()) or 1
+        defeat_total = sum(timing_totals["defeat"].values()) or 1
+        timing_rows.append(
+            {
+                "action": action,
+                "label": ACTION_LABELS.get(action, action),
+                "victory": timing_totals["victory"][action] / victory_total,
+                "defeat": timing_totals["defeat"][action] / defeat_total,
+            }
+        )
+    timing_rows.sort(key=lambda row: max(row["victory"], row["defeat"]), reverse=True)
+
+    player_action_rows = []
+    for player_count, counts in sorted(action_mix_by_player_count.items()):
+        total = action_mix_by_player_count_totals[player_count] or 1
+        row: Dict[str, Any] = {
+            "playerCount": player_count,
+            "label": f"{player_count}P",
+        }
+        for action in CORE_ACTIONS:
+            row[action] = counts[action] / total
+        player_action_rows.append(row)
+
+    overall_shares = share_map(overall_action_totals)
+    overall_entropy = entropy_from_counts(overall_action_totals)
+    dominant_action = max(CORE_ACTIONS, key=lambda action: overall_shares[action], default=None)
+    opportunity_rows = []
+    selection_total = sum(selection_counts.values()) or 1
+    for action in CORE_ACTIONS:
+        opportunity_rows.append(
+            {
+                "action": action,
+                "label": ACTION_LABELS.get(action, action),
+                "opportunityRate": safe_ratio(opportunity_counts[action], opportunity_samples),
+                "selectionRate": safe_ratio(selection_counts[action], selection_total),
+            }
+        )
+
+    if defeat_reasons:
+        reason = sorted(defeat_reasons.items(), key=lambda pair: (-pair[1], pair[0]))[0][0]
+        missing_action = min(
+            TARGETED_ACTIONS,
+            key=lambda action: overall_shares.get(action, 0),
+        )
+        tuning_rows.append(
+            {
+                "pattern": f"{reason.replace('_', ' ').title()} collapse path",
+                "missingAction": ACTION_LABELS.get(missing_action, missing_action),
+                "likelyLever": (
+                    "Raise defensive value before pressure spikes"
+                    if reason in {"extraction_breach", "sudden_death"}
+                    else "Increase evidence or mandate support"
+                ),
+                "candidatePatch": (
+                    "Increase defend urgency around high-extraction fronts"
+                    if reason in {"extraction_breach", "sudden_death"}
+                    else "Bind evidence handling more tightly to mandate progress"
+                ),
+            }
+        )
+    if action_rows:
+        dominant = action_rows[0]
+        if dominant["action"] in {"launchCampaign", "investigate"}:
+            tuning_rows.append(
+                {
+                    "pattern": f"{dominant['label']} dominates both wins and losses",
+                    "missingAction": "Preparation actions",
+                    "likelyLever": "Gate payoff behind setup",
+                    "candidatePatch": f"Reduce generic {dominant['label'].lower()} value unless solidarity, gaze, or evidence are already established",
+                }
+            )
+    if (player_rows and any(row["successRate"] < 0.25 for row in player_rows)):
+        weakest = sorted(player_rows, key=lambda row: row["successRate"])[0]
+        tuning_rows.append(
+            {
+                "pattern": f"{weakest['playerCount']}P stress pocket",
+                "missingAction": "Resilience actions",
+                "likelyLever": "Player-count-sensitive setup support",
+                "candidatePatch": "Increase defend/build solidarity payoff in low-success player-count buckets",
             }
         )
 
@@ -598,6 +976,18 @@ def build_trajectory_analytics(scenario_id: str) -> Dict[str, Any]:
         "defeatReasons": [{"reason": reason, "count": count} for reason, count in sorted(defeat_reasons.items(), key=lambda pair: (-pair[1], pair[0]))],
         "playerCounts": player_rows,
         "actionMix": action_rows,
+        "actionShareByRound": action_round_rows,
+        "actionTimingByOutcome": timing_rows,
+        "actionMixByPlayerCount": player_action_rows,
+        "actionOpportunity": opportunity_rows,
+        "actionDiversity": {
+            "entropy": overall_entropy,
+            "concentration": max(overall_shares.values(), default=0),
+            "dominantAction": dominant_action,
+            "targetedShare": sum(overall_shares[action] for action in TARGETED_ACTIONS),
+            "actionShare": overall_shares,
+        },
+        "trajectoryToTuning": tuning_rows,
         "domainPressure": domain_rows,
         "trackPressure": track_rows,
         "frontPressure": front_rows[:8],
@@ -606,12 +996,19 @@ def build_trajectory_analytics(scenario_id: str) -> Dict[str, Any]:
 
 def aggregate_final_metrics(runs: List[Dict[str, Any]]) -> Dict[str, Any]:
     if not runs:
-        return {"metrics": {"byPlayerCount": {}}, "score": None}
+        return {"metrics": {"byPlayerCount": {}, "actionBalance": None}, "score": None}
 
     total_weight = 0
     success_sum = public_sum = early_term_sum = turns_sum = 0.0
     accepted_patches = 0
     by_player_count: Dict[str, Dict[str, float]] = defaultdict(lambda: defaultdict(float))
+    action_totals = action_template()
+    action_counts = action_template()
+    action_outcome_totals = {
+        "victory": action_template(),
+        "defeat": action_template(),
+    }
+    action_outcome_weights = {"victory": 0.0, "defeat": 0.0}
 
     for run in runs:
         final_metrics = (run["result"].get("finalMetrics") or {}).get("metrics") or {}
@@ -622,6 +1019,18 @@ def aggregate_final_metrics(runs: List[Dict[str, Any]]) -> Dict[str, Any]:
         early_term_sum += final_metrics.get("earlyTerminationRate", 0) * weight
         turns_sum += ((final_metrics.get("turns") or {}).get("average", 0)) * weight
         accepted_patches += len(run["result"].get("acceptedPatches") or [])
+        action_balance = final_metrics.get("actionBalance") or {}
+        for action, share in (action_balance.get("actionShare") or {}).items():
+            if action in action_totals:
+                action_totals[action] += (share or 0) * weight
+        for action, avg_count in (action_balance.get("actionAverageCounts") or {}).items():
+            if action in action_counts:
+                action_counts[action] += (avg_count or 0) * weight
+        for outcome in ("victory", "defeat"):
+            action_outcome_weights[outcome] += weight
+            for action, share in ((action_balance.get("actionShareByOutcome") or {}).get(outcome) or {}).items():
+                if action in action_outcome_totals[outcome]:
+                    action_outcome_totals[outcome][action] += (share or 0) * weight
 
         for key, bucket in (final_metrics.get("byPlayerCount") or {}).items():
             bucket_weight = bucket.get("n", 0) or 1
@@ -654,6 +1063,24 @@ def aggregate_final_metrics(runs: List[Dict[str, Any]]) -> Dict[str, Any]:
         }
 
     total_weight = total_weight or 1
+    normalized_action_share = {
+        action: action_totals[action] / total_weight for action in CORE_ACTIONS
+    }
+    normalized_action_counts = {
+        action: action_counts[action] / total_weight for action in CORE_ACTIONS
+    }
+    normalized_action_outcomes = {
+        outcome: {
+            action: safe_ratio(action_outcome_totals[outcome][action], action_outcome_weights[outcome] or total_weight)
+            for action in CORE_ACTIONS
+        }
+        for outcome in ("victory", "defeat")
+    }
+    dominant_action = max(
+        CORE_ACTIONS,
+        key=lambda action: normalized_action_share[action],
+        default=None,
+    )
     return {
         "metrics": {
             "n": total_weight,
@@ -661,6 +1088,17 @@ def aggregate_final_metrics(runs: List[Dict[str, Any]]) -> Dict[str, Any]:
             "publicVictoryRate": public_sum / total_weight,
             "earlyTerminationRate": early_term_sum / total_weight,
             "turns": {"average": turns_sum / total_weight},
+            "actionBalance": {
+                "entropy": entropy_from_counts(normalized_action_share),
+                "concentration": max(normalized_action_share.values(), default=0),
+                "dominantAction": dominant_action,
+                "targetedShare": sum(normalized_action_share[action] for action in TARGETED_ACTIONS),
+                "winningTargetedShare": sum(normalized_action_outcomes["victory"][action] for action in TARGETED_ACTIONS),
+                "actionShare": normalized_action_share,
+                "actionAverageCounts": normalized_action_counts,
+                "actionShareByOutcome": normalized_action_outcomes,
+                "actionShareByPlayerCount": {},
+            },
             "byPlayerCount": normalized_player_counts,
         },
         "acceptedPatches": accepted_patches,
@@ -748,6 +1186,7 @@ def build_recommended_config(run: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "runKey": run["runKey"],
         "label": run["label"],
+        "compactLabel": compact_run_label(run["label"]),
         "runType": run["runType"],
         "generatedAt": run["generatedAt"],
         "stopReason": result.get("stopReason"),
@@ -772,8 +1211,103 @@ def build_recommended_config(run: Dict[str, Any]) -> Dict[str, Any]:
             "earlyTerminationRate": final_metrics.get("earlyTerminationRate", 0),
             "averageTurns": ((final_metrics.get("turns") or {}).get("average", 0)),
             "defeatRates": final_metrics.get("defeatRates", {}),
+            "actionBalance": final_metrics.get("actionBalance"),
         },
     }
+
+
+def action_balance_for_run(run: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    final_metrics = (run["result"].get("finalMetrics") or {}).get("metrics") or {}
+    return final_metrics.get("actionBalance")
+
+
+def build_action_run_diagnostics(
+    selected_runs: List[Dict[str, Any]],
+    all_runs: List[Dict[str, Any]],
+    fallback_trajectory: Dict[str, Any],
+) -> List[Dict[str, Any]]:
+    baseline_run = next((run for run in reversed(all_runs) if action_balance_for_run(run)), None)
+    baseline_share = (
+        ((action_balance_for_run(baseline_run) or {}).get("actionShare"))
+        if baseline_run
+        else ((fallback_trajectory.get("actionDiversity") or {}).get("actionShare") or {})
+    )
+    rows = []
+    for run in selected_runs:
+        action_balance = action_balance_for_run(run)
+        if not action_balance:
+            continue
+        action_share = action_balance.get("actionShare") or {}
+        underused_lift = safe_mean(
+            [
+                safe_ratio(
+                    action_share.get(action, 0) - baseline_share.get(action, 0),
+                    baseline_share.get(action, 0) or 1,
+                )
+                for action in TARGETED_ACTIONS
+            ]
+        )
+        rows.append(
+            {
+                "runKey": run["runKey"],
+                "label": run["label"],
+                "compactLabel": compact_run_label(run["label"]),
+                "actionEntropy": action_balance.get("entropy", 0),
+                "actionConcentration": action_balance.get("concentration", 0),
+                "targetedShare": action_balance.get("targetedShare", 0),
+                "winningTargetedShare": action_balance.get("winningTargetedShare", 0),
+                "dominantAction": action_balance.get("dominantAction"),
+                "dominantLabel": ACTION_LABELS.get(action_balance.get("dominantAction"), "n/a"),
+                "underusedActionLift": underused_lift,
+            }
+        )
+    return rows
+
+
+def build_action_mix_delta(
+    selected_runs: List[Dict[str, Any]],
+    all_runs: List[Dict[str, Any]],
+    trajectory: Dict[str, Any],
+) -> List[Dict[str, Any]]:
+    selected_balance = None
+    if len(selected_runs) == 1:
+        selected_balance = action_balance_for_run(selected_runs[0])
+    elif selected_runs:
+        selected_balance = (aggregate_final_metrics(selected_runs).get("metrics") or {}).get("actionBalance")
+
+    if not selected_balance:
+        return []
+
+    baseline_run = next((run for run in reversed(all_runs) if action_balance_for_run(run)), None)
+    baseline_balance = (
+        action_balance_for_run(baseline_run)
+        if baseline_run
+        else {
+            "actionShare": ((trajectory.get("actionDiversity") or {}).get("actionShare") or {}),
+        }
+    )
+
+    selected_share = selected_balance.get("actionShare") or {}
+    baseline_share = baseline_balance.get("actionShare") or {}
+
+    rows = []
+    for action in CORE_ACTIONS:
+        rows.append(
+            {
+                "action": action,
+                "label": ACTION_LABELS.get(action, action),
+                "selectedShare": selected_share.get(action, 0),
+                "baselineShare": baseline_share.get(action, 0),
+                "delta": selected_share.get(action, 0) - baseline_share.get(action, 0),
+                "targetShare": (
+                    selected_share.get(action, 0)
+                    if action not in TARGETED_ACTIONS
+                    else baseline_share.get(action, 0) * 1.25
+                ),
+            }
+        )
+    rows.sort(key=lambda item: abs(item["delta"]), reverse=True)
+    return rows
 
 
 def diff_flat_maps(left: Dict[str, Any], right: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -832,6 +1366,15 @@ def build_run_comparison(scenario_id: str, left_run_key: str, right_run_key: str
         "rightRun": right_config,
         "metricDiff": metric_diff,
         "defeatDiff": defeat_diff,
+        "actionDiff": [
+            {
+                "action": action,
+                "label": ACTION_LABELS.get(action, action),
+                "left": ((left_metrics.get("actionBalance") or {}).get("actionShare") or {}).get(action, 0),
+                "right": ((right_metrics.get("actionBalance") or {}).get("actionShare") or {}).get(action, 0),
+            }
+            for action in CORE_ACTIONS
+        ],
         "recommendedPatchDiff": diff_flat_maps(
             left_config["flattenedPatch"],
             right_config["flattenedPatch"],
@@ -852,6 +1395,14 @@ def build_scenario_analysis(scenario_id: str, scope: str, run_key: Optional[str]
     generation_progress = [row for run in selected_runs for row in build_generation_progress(run)[0]]
     genome_drift = [row for run in selected_runs for row in build_generation_progress(run)[1]]
     final_metrics_aggregate = aggregate_final_metrics(selected_runs)
+    action_run_diagnostics = build_action_run_diagnostics(selected_runs, all_runs, trajectory)
+    action_mix_delta = build_action_mix_delta(selected_runs, all_runs, trajectory)
+    scenario_recommendations = build_action_recommendations(
+        scenario_id,
+        trajectory,
+        scenario_summary,
+        selected_runs,
+    )
 
     optimizer_payload: Dict[str, Any] = {
         "selection": {
@@ -903,6 +1454,9 @@ def build_scenario_analysis(scenario_id: str, scope: str, run_key: Optional[str]
         "candidateCloud": build_candidate_cloud(histories),
         "generationProgress": generation_progress,
         "genomeDrift": genome_drift,
+        "actionRunDiagnostics": action_run_diagnostics,
+        "actionMixDelta": action_mix_delta,
+        "scenarioRecommendations": scenario_recommendations,
     }
 
     return {

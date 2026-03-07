@@ -72,6 +72,8 @@ export interface OptimizerFitnessComponents {
   pacingScore: number;
   tensionScore: number;
   varianceScore: number;
+  actionBalanceScore: number;
+  trajectoryPathScore: number;
 }
 
 export interface OptimizerFitnessMetrics {
@@ -81,6 +83,13 @@ export interface OptimizerFitnessMetrics {
   lateGameRate: number;
   outcomeEntropy: number;
   regionCollapseVariance: number;
+  actionEntropy: number;
+  actionConcentration: number;
+  targetedActionShare: number;
+  winningTargetedActionShare: number;
+  setupDependentCampaignRate: number;
+  failurePathPenalty: number;
+  regimeWeightedTargetedShare: number;
 }
 
 export interface OptimizerScoreBreakdown {
