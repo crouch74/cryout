@@ -1383,6 +1383,36 @@
         "description": "The Saharan south, where long distances, desert routes, and reprisal test rural organizing.",
         "strapline": "Organizing survives across great distance."
       },
+      "GazaWestBank": {
+        "name": "Gaza-West Bank",
+        "description": "Siege, bombardment, displacement, prison raids, and survival organizing from Gaza to the fragmented West Bank.",
+        "strapline": "The moral center bleeds under managed erasure."
+      },
+      "LebanonNorthernFront": {
+        "name": "Lebanon-Northern Front",
+        "description": "Cross-border escalation, displacement, and the risk that northern war becomes the pretext for wider regional rupture.",
+        "strapline": "The frontier expands whenever the war-state needs another horizon."
+      },
+      "GulfHormuzCorridor": {
+        "name": "Gulf-Hormuz Corridor",
+        "description": "Basing states, insurance markets, oil logistics, and retaliatory fire along the narrowest energy corridor in the theatre.",
+        "strapline": "The shipping lane is also a trigger line."
+      },
+      "RedSeaSuezCorridor": {
+        "name": "Red Sea-Suez Corridor",
+        "description": "Port labor, Suez choke pressure, Yemeni retaliation, and the supply chain that keeps war materially alive.",
+        "strapline": "Every container route hides a battlefield."
+      },
+      "CaribbeanSiege": {
+        "name": "Caribbean Siege",
+        "description": "Pressure on Cuba and Venezuela through sanctions, banking restrictions, oil coercion, platform narratives, and Monroe-style threats.",
+        "strapline": "The blockade line moves through ports, banks, and screens."
+      },
+      "BlackSeaEasternFurnace": {
+        "name": "Black Sea-Eastern Furnace",
+        "description": "Russia's continuing war on Ukraine, grain disruption, and the way overextension abroad still feeds the Atlantic war tempo.",
+        "strapline": "Another war keeps feeding this one."
+      },
       "TunisianBorder": {
         "name": "Tunisian Border",
         "description": "The eastern frontier toward Tunisia, a corridor for supplies, testimony, and strategic passage.",
@@ -1436,6 +1466,24 @@
       },
       "RuralVillages": {
         "name": "Rural Villages"
+      },
+      "GazaWestBank": {
+        "name": "Gaza-West Bank"
+      },
+      "LebanonNorthernFront": {
+        "name": "Lebanon-Northern Front"
+      },
+      "GulfHormuzCorridor": {
+        "name": "Gulf-Hormuz Corridor"
+      },
+      "RedSeaSuezCorridor": {
+        "name": "Red Sea-Suez Corridor"
+      },
+      "CaribbeanSiege": {
+        "name": "Caribbean Siege"
+      },
+      "BlackSeaEasternFurnace": {
+        "name": "Black Sea-Eastern Furnace"
       },
       "Tehran": {
         "name": "Tehran"
@@ -2167,163 +2215,163 @@
       },
       "res_corr_egyptian_medic_convoy": {
         "name": "Egyptian Medic Convoy",
-        "text": "A hard-won convoy clears one narrow opening. Move witness, medicine, and pressure before the gate closes again."
+        "text": "A narrow convoy window gets wounded people, medicine, and witness lists through before the gate is sealed again."
       },
       "res_corr_qatari_mediation_channel": {
         "name": "Qatari Mediation Channel",
-        "text": "Negotiation space opens just long enough to move names, survivors, and demands."
+        "text": "A mediation pause moves detainee names, casualty lists, and negotiation demands before the bombing cycle resumes."
       },
       "res_corr_turkish_port_delay": {
         "name": "Turkish Port Delay",
-        "text": "Logistics slow, paperwork piles up, and another military timetable slips."
+        "text": "Customs friction and port delay slow military cargo long enough to document routes and buy time."
       },
       "res_corr_jordanian_hospital_witness": {
         "name": "Jordanian Hospital Witness",
-        "text": "Medical testimony crosses a brittle border and forces the war back into public view."
+        "text": "Wounded evacuees and hospital records cross the border, forcing massacre evidence back into public view."
       },
       "res_corr_venezuelan_communal_kitchens": {
         "name": "Venezuelan Communal Kitchens",
-        "text": "The commune keeps people alive, and survival itself becomes a political refusal."
+        "text": "Communal kitchens blunt sanctions hunger and keep neighborhoods politically present."
       },
       "res_corr_cuban_radio_brigade": {
         "name": "Cuban Radio Brigade",
-        "text": "Memory and signal travel together. The blockade line is breached by persistence, not permission."
+        "text": "Neighborhood radio carries memory, alerts, and anti-blockade coordination when platforms and banks choke movement."
       },
       "res_corr_street_to_strait_coordination": {
         "name": "Street-to-Strait Coordination",
-        "text": "Dockworkers, medics, communes, and witness networks synchronize one brief counter-current."
+        "text": "Dockworkers, medics, communes, and witness networks line up one brief corridor that delays war logistics and opens organizing space."
       },
       "sup_corr_spain_breaks_ranks": {
         "name": "Spain Breaks Ranks",
-        "text": "Public refusal from Madrid opens anti-war space and weakens the claim that escalation speaks for all of Europe."
+        "text": "Acting faction gets +2 on a War Machine campaign. Madrid's public refusal punctures Atlantic unanimity and gives anti-war organizers usable political cover."
       },
       "sup_corr_gaza_archive_stream": {
         "name": "Gaza Archive Stream",
-        "text": "Phones, lists, names, and moving testimony hold the line against planned disappearance."
+        "text": "Acting faction gets +2 on a Witness Corridors campaign. Phones, martyr lists, clinic logs, and burial records keep evidence moving against erasure."
       },
       "sup_corr_prisoner_letter_chain": {
         "name": "Prisoner Letter Chain",
-        "text": "Detention routes become testimony routes and the carceral line starts to fray."
+        "text": "Acting faction gets +2 on a Sanctions Breach campaign. Letters from prison turn disappearance into public testimony and weaken the state's monopoly on narrative."
       },
       "sup_corr_red_sea_dock_strike": {
         "name": "Red Sea Dock Strike",
-        "text": "Port labor turns logistics into leverage and forces shipping power to feel delay as cost."
+        "text": "Acting faction gets +2 on a Chokepoint Breakage campaign. A port stoppage turns delay into cost for shippers, insurers, and war logistics."
       },
       "sup_corr_black_sea_grain_solidarity": {
         "name": "Black Sea Grain Solidarity",
-        "text": "Grain, convoy information, and food politics are reclaimed from war planners and insurers."
+        "text": "Acting faction gets +2 on a Bread Under Siege campaign. Grain routes and convoy information are reclaimed for food survival instead of war planning."
       },
       "sup_corr_cuban_memory_brigade": {
         "name": "Cuban Memory Brigade",
-        "text": "Songs, schools, and neighborhood recall make erasure expensive and unfinished."
+        "text": "Acting faction gets +2 on a Stolen Voice campaign. Songs, classrooms, and neighborhood memory keep blockade trauma politically legible and hard to erase."
       },
       "sup_corr_communal_defense_assembly": {
         "name": "Communal Defense Assembly",
-        "text": "The coalition regains coherence through assembly, discipline, and shared sacrifice."
+        "text": "Acting faction gets +2 on a Revolutionary Wave campaign. An assembly redistributes risk, restores discipline, and turns survival into coordinated strategy."
       },
       "crs_corr_rafah_gate_choked": {
         "name": "Rafah Gate Choked Again",
-        "text": "Border control and siege discipline close another passage. Gaza tightens and Egypt is pushed back toward containment."
+        "text": "Crossing restrictions and inspection delays trap the wounded, squeeze medicine, and close another exit from Gaza."
       },
       "crs_corr_west_bank_mass_raids": {
         "name": "West Bank Mass Raids",
-        "text": "Raids, checkpoints, and prison sweeps spread the siege architecture beyond Gaza."
+        "text": "Night raids, checkpoints, and prison sweeps widen the siege and push testimony back under armed control."
       },
       "crs_corr_beirut_suburbs_hit": {
         "name": "Beirut Suburbs Hit",
-        "text": "The northern front is forced wider through bombardment and displacement."
+        "text": "Bombardment drives displacement through Beirut's southern suburbs and widens the northern front."
       },
       "crs_corr_ansar_allah_shipping_shock": {
         "name": "Ansar Allah Shipping Shock",
-        "text": "Missiles, reroutes, and naval fear scramble the Red Sea script. Shipping slows, attention rises, and the corridor still burns."
+        "text": "Missile risk and naval retaliation scramble shipping schedules, reroute cargo, and raise attention to the corridor war."
       },
       "crs_corr_suez_queue_stalls": {
         "name": "Suez Queue Stalls",
-        "text": "Containers stack, grain slows, and food discipline sharpens through the canal economy."
+        "text": "Canal delays stack containers, slow grain, and sharpen food pressure far beyond the canal itself."
       },
       "crs_corr_hormuz_insurance_panic": {
         "name": "Hormuz Insurance Panic",
-        "text": "Underwriters and shippers price the strait as a war zone. Gulf exposure deepens even before the next strike lands."
+        "text": "Insurers reprice passage, tankers hesitate, and Gulf households are dragged deeper into war exposure."
       },
       "crs_corr_gulf_base_alarm": {
         "name": "Gulf Base Alarm",
-        "text": "Retaliatory fire and basing panic spread through the host-state lattice."
+        "text": "Retaliatory fire puts host-state bases on alert and spreads fear through workers, ports, and civilian infrastructure."
       },
       "crs_corr_cuba_banking_freeze": {
         "name": "Cuba Banking Freeze",
-        "text": "Payments, medicine procurement, and shipping guarantees seize up under financial discipline."
+        "text": "Banking restrictions freeze payments for medicine, shipping, and basic imports."
       },
       "crs_corr_venezuela_oil_waiver_reversed": {
         "name": "Venezuela Oil Waiver Reversed",
-        "text": "Pressure on Caracas intensifies through energy policy and sanctions messaging."
+        "text": "Waiver reversal tightens fuel pressure, foreign-exchange pressure, and sanctions discipline on daily life."
       },
       "crs_corr_black_sea_grain_fire": {
         "name": "Black Sea Grain Fire",
-        "text": "Port attacks and grain disruption fold another theatre back into hunger politics."
+        "text": "Port strikes burn grain capacity and fold another front into hunger politics."
       },
       "crs_corr_karoline_leavitt_press_discipline": {
         "name": "Karoline Leavitt Press Discipline",
-        "text": "The briefing room narrows what counts as legitimate witness. Narrative management squeezes Gaza again."
+        "text": "Official talking points narrow what counts as credible witness and push Gaza testimony off the agenda."
       },
       "crs_corr_monroe_message_to_caracas": {
         "name": "Monroe Message to Caracas and Havana",
-        "text": "Overextension abroad still leaves room for pressure in the western hemisphere. The blockade line hardens through threat and message discipline."
+        "text": "Threats to Caracas and Havana harden the blockade line and warn the hemisphere that disobedient sovereignty will be punished."
       },
       "sys_corr_trump_operation_epic_fury": {
         "name": "Trump Orders Operation Epic Fury",
-        "text": "Direct U.S. bombardment widens the corridor war. Gaza and Hormuz both tighten while the coalition faces a harder campaign threshold next round."
+        "text": "Direct U.S. strikes widen the war, tighten Gaza and Hormuz, and make every coalition campaign harder to land."
       },
       "sys_corr_hegseth_forward_posture": {
         "name": "Pete Hegseth Announces Forward Posture",
-        "text": "Basing, carriers, and rhetoric move ahead of restraint. Gulf pressure rises and every campaign faces worse modifier conditions."
+        "text": "Forward-posture rhetoric normalizes more basing, more carriers, and a higher cost for stopping escalation."
       },
       "sys_corr_ratcliffe_threat_brief": {
         "name": "Ratcliffe Threat Brief",
-        "text": "Intelligence inflation widens the escalation envelope. The Black Sea theatre feeds the same war tempo and future campaigns become harder to land cleanly."
+        "text": "Threat inflation turns intelligence into escalation cover and makes de-escalation politically harder to defend."
       },
       "sys_corr_centcom_basing_web": {
         "name": "U.S. Central Command Basing Web",
-        "text": "Basing architecture across the Gulf reinforces the operational tempo. More crisis pressure is coming through the logistics lattice."
+        "text": "The Gulf basing lattice keeps sorties, refueling, and coercive logistics moving across the region."
       },
       "sys_corr_ofac_secondary_squeeze": {
         "name": "OFAC Secondary Squeeze",
-        "text": "Treasury pressure extends sanctions through correspondent banks and insurer fear. Caribbean siege deepens and every new crisis hits harder."
+        "text": "Secondary sanctions spread fear through banks and insurers, making Caribbean trade, medicine, and outreach harder."
       },
       "sys_corr_doj_extraterritorial_casework": {
         "name": "DOJ Extraterritorial Casework",
-        "text": "Legal coercion and sealed dockets expand the blockade line. Caribbean organizers spend more time surviving than drawing new openings."
+        "text": "Casework and sealed dockets turn sanctions into daily legal siege for Cuba- and Venezuela-linked networks."
       },
       "sys_corr_netanyahu_widens_front": {
         "name": "Netanyahu Widens the Front",
-        "text": "The Israeli war-state refuses compartmentalization. Gaza and Lebanon burn together, and the coalition's campaign tempo slows under heavier fire."
+        "text": "The war-state expands bombardment and displacement across Gaza and Lebanon rather than let the fronts separate."
       },
       "sys_corr_israel_katz_corridor_threats": {
         "name": "Israel Katz Corridor Threats",
-        "text": "Expulsion talk and corridor control politics shrink civilian space. Outreach gets more expensive and Gaza tightens again."
+        "text": "Expulsion threats and corridor-control language shrink civilian space and punish any opening at Rafah."
       },
       "sys_corr_uk_atlantic_alignment": {
         "name": "UK Atlantic Alignment",
-        "text": "London moves closer to the escalation bloc. The Black Sea theatre hardens and the next campaigns face a steeper target."
+        "text": "London's alignment lends diplomatic cover to escalation and hardens the wider war atmosphere."
       },
       "sys_corr_palantir_target_stack": {
         "name": "Palantir Target Stack",
-        "text": "Data fusion shortens the distance between surveillance and strike. Gaza absorbs another hit and future campaigns lose room to maneuver."
+        "text": "Data fusion compresses the path from surveillance to strike and makes witness networks easier to hunt."
       },
       "sys_corr_murdoch_bollore_war_line": {
         "name": "Murdoch and Bollore Set the War Line",
-        "text": "Platform and broadcast consensus narrow what counts as legitimate speech. Global witness recedes and the next global appeal costs more."
+        "text": "Broadcast empires narrow public language, delegitimize anti-war speech, and lower the cost of further escalation."
       },
       "sys_corr_meta_visibility_drop": {
         "name": "Meta Visibility Drop",
-        "text": "Testimony is throttled under policy language and moderation delay. Witness shrinks and coalition draws thin out."
+        "text": "Platform throttling buries testimony, slows organizing, and makes witness harder to circulate."
       },
       "sys_corr_blackrock_risk_pricing": {
         "name": "BlackRock Risk Pricing",
-        "text": "War and sanctions are repriced as portfolio risk rather than public ruin. Gulf and Red Sea instability now feeds the same extraction spiral."
+        "text": "Finance treats war as volatility to price rather than ruin to stop, tightening extraction around the Gulf."
       },
       "sys_corr_trafigura_glencore_insurance_surge": {
         "name": "Trafigura / Glencore Insurance Surge",
-        "text": "Commodity traders and shippers pass corridor panic straight into food and fuel discipline. Crisis pressure accelerates across Red Sea routes."
+        "text": "Commodity traders pass maritime panic straight into fuel and food costs across corridor economies."
       }
     },
     "scenarios": {
@@ -2453,12 +2501,50 @@
       },
       "when_the_corridors_burn": {
         "name": "2026 — When the Corridors Burn",
-        "description": "Corridors burn from Gaza to the Caribbean. The coalition survives by opening passages the system needs sealed.",
+        "description": "A corridor-war scenario where crossings, ports, banks, and hospitals become weapons against the people who need them.",
         "introduction": "Lead a five-seat coalition through a connected war of siege, sanctions, shipping disruption, basing pressure, and public erasure.",
-        "story": "What is called escalation is really a corridor order revealing itself. Gaza remains the moral center while Lebanon burns wider, Hormuz and Suez seize up, and the blockade line stretches toward Cuba and Venezuela.",
+        "story": "What is called escalation is a corridor order that turns crossings, ports, hospitals, banks, and grain routes into pressure points. Gaza remains the moral center while Lebanon burns wider, Hormuz and Suez choke, and the blockade line stretches toward Cuba and Venezuela.",
         "dramatization": "Hospitals count the wounded and the missing, dockworkers count delays, communes count remaining fuel, and every new missile path threatens another population already living under discipline.",
-        "gameplay": "Hold the most exposed theatres, then fracture the shipping, sanctions, and basing system before the War Machine outruns the coalition’s witness and survival networks.",
+        "gameplay": "Hold the fronts where people are being trapped, displaced, or starved, then fracture the shipping, sanctions, and basing system before the War Machine outruns the coalition's witness and survival networks.",
         "moralCenter": "No northern savior arrives. The table lives or dies by movement endurance, witness, and survival structures built by the people under attack.",
+        "customTracks": {
+          "egypt_corridor": {
+            "name": "Egyptian Corridor Posture",
+            "description": "0-6 track: from sealed containment to pressured opening and mediated passage."
+          },
+          "turkey_corridor": {
+            "name": "Turkish Corridor Posture",
+            "description": "0-6 track: from NATO contradiction under management to more visible rupture and corridor pressure."
+          },
+          "jordan_corridor": {
+            "name": "Jordanian Corridor Posture",
+            "description": "0-6 track: from containment priority to fragile opening under Palestine-adjacent pressure."
+          },
+          "qatar_corridor": {
+            "name": "Qatari Mediation Posture",
+            "description": "0-6 track: mediation capacity under pressure, useful when witness and negotiation both still move."
+          },
+          "gulf_blowback": {
+            "name": "Gulf Blowback",
+            "description": "Shared host-state exposure to retaliatory fire, insurance panic, and basing instability."
+          },
+          "saudi_posture": {
+            "name": "Saudi Posture",
+            "description": "0-2 track: 0 host, 1 hedge, 2 distance."
+          },
+          "uae_posture": {
+            "name": "UAE Posture",
+            "description": "0-2 track: 0 host, 1 hedge, 2 distance."
+          },
+          "bahrain_posture": {
+            "name": "Bahrain Posture",
+            "description": "0-2 track: 0 host, 1 hedge, 2 distance."
+          },
+          "kuwait_posture": {
+            "name": "Kuwait Posture",
+            "description": "0-2 track: 0 host, 1 hedge, 2 distance."
+          }
+        },
         "specialRules": {
           "regional_powers_layer": {
             "label": "Regional Powers / Corridor States",

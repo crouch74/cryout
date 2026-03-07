@@ -23,6 +23,9 @@ Use this checklist to keep task delivery consistent with project rules, mechanic
 - For shell UI work, preserve Home-aligned visual language across sibling screens.
 - Reuse shared tokens/components rather than introducing one-off patterns.
 - For code changes, include meaningful emoji-prefixed logs and clear rule comments where needed.
+- For card-writing work, make the gameplay effect explicit in player-facing text when the card adds a campaign modifier, grants resources, removes resources, or applies persistent pressure.
+- For crisis and system cards, state the direct track / Extraction / persistent effect in the card text instead of implying it through flavor.
+- Do not leave support cards mechanically ambiguous; a player should not need the modal chrome or source code to understand the card's direct effect.
 
 ## 4. Validation Checklist
 

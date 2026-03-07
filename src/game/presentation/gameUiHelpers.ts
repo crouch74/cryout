@@ -24,6 +24,7 @@ import {
   localizeFactionField,
   localizeRegionField,
   localizeRulesetField,
+  localizeScenarioTrackField,
   t,
 } from '../../i18n/index.ts';
 import { getEventSourceLabel, localizeDisabledReason } from './historyPresentation.ts';
@@ -614,13 +615,13 @@ export function getStatusRibbonItems(state: EngineState, content: CompiledConten
 export function getFrontTrackRows(state: EngineState, content: CompiledContent): FrontTrackRow[] {
   const customTrackRows = (content.ruleset.customTracks ?? []).map((track) => ({
     id: track.id,
-    label: track.name,
-    shortLabel: track.name,
+    label: localizeScenarioTrackField(content.id, track.id, 'name', track.name),
+    shortLabel: localizeScenarioTrackField(content.id, track.id, 'name', track.name),
     icon: 'frontJustice' as const,
     color: 'var(--color-domain-justice)',
     value: state.customTracks[track.id]?.value ?? track.initialValue,
     max: track.max,
-    tooltip: track.description,
+    tooltip: localizeScenarioTrackField(content.id, track.id, 'description', track.description),
     severity: getSeverityByBands(state.customTracks[track.id]?.value ?? track.initialValue, {
       watch: track.thresholds[0] ?? Math.ceil(track.max * 0.4),
       danger: track.thresholds[1] ?? Math.ceil(track.max * 0.7),

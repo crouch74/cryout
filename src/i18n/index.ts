@@ -222,6 +222,15 @@ export function localizeScenarioRuleField(
   return t(`content.scenarios.${scenarioId}.specialRules.${ruleId}.${field}`, fallback);
 }
 
+export function localizeScenarioTrackField(
+  scenarioId: string,
+  trackId: string,
+  field: 'name' | 'description',
+  fallback: string,
+) {
+  return t(`content.scenarios.${scenarioId}.customTracks.${trackId}.${field}`, fallback);
+}
+
 const FRONT_FALLBACKS: Record<string, string> = {
   WAR: 'War & Conflict',
   CLIMATE: 'Climate Crisis',

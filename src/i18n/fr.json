@@ -1373,6 +1373,36 @@
         "description": "The Saharan south, where long distances, desert routes, and reprisal test rural organizing.",
         "strapline": "Organizing survives across great distance."
       },
+      "GazaWestBank": {
+        "name": "Gaza-Cisjordanie",
+        "description": "Siege, bombardements, deplacements, raids carceraux et organisation de survie de Gaza a la Cisjordanie fragmente.",
+        "strapline": "Le centre moral saigne sous un effacement organise."
+      },
+      "LebanonNorthernFront": {
+        "name": "Liban-Front nord",
+        "description": "Escalade transfrontaliere, deplacements et risque que la guerre du nord serve de pretexte a une rupture regionale plus large.",
+        "strapline": "La frontiere s'etend chaque fois que l'Etat de guerre a besoin d'un nouvel horizon."
+      },
+      "GulfHormuzCorridor": {
+        "name": "Golfe-Corridor d'Ormuz",
+        "description": "Etats-hotes de bases, marches d'assurance, logistique petroliere et tirs de riposte le long du corridor energetique le plus etroit du theatre.",
+        "strapline": "La voie maritime est aussi une ligne de declenchement."
+      },
+      "RedSeaSuezCorridor": {
+        "name": "Mer Rouge-Corridor de Suez",
+        "description": "Travail portuaire, pression sur Suez, riposte yemenite et chaine logistique qui maintient materiellement la guerre.",
+        "strapline": "Chaque route de conteneurs cache un champ de bataille."
+      },
+      "CaribbeanSiege": {
+        "name": "Siege caribeen",
+        "description": "Pression sur Cuba et le Venezuela par les sanctions, les restrictions bancaires, la coercition petroliere, les recits de plateforme et les menaces de type Monroe.",
+        "strapline": "La ligne de blocus traverse ports, banques et ecrans."
+      },
+      "BlackSeaEasternFurnace": {
+        "name": "Mer Noire-Fournaise orientale",
+        "description": "Poursuite de la guerre russe contre l'Ukraine, disruption cerealiere et maniere dont la surextension continue d'alimenter le tempo de guerre atlantique.",
+        "strapline": "Une autre guerre continue d'alimenter celle-ci."
+      },
       "TunisianBorder": {
         "name": "Tunisian Border",
         "description": "The eastern frontier toward Tunisia, a corridor for supplies, testimony, and strategic passage.",
@@ -1426,6 +1456,24 @@
       },
       "RuralVillages": {
         "name": "Villages ruraux"
+      },
+      "GazaWestBank": {
+        "name": "Gaza-Cisjordanie"
+      },
+      "LebanonNorthernFront": {
+        "name": "Liban-Front nord"
+      },
+      "GulfHormuzCorridor": {
+        "name": "Golfe-Corridor d'Ormuz"
+      },
+      "RedSeaSuezCorridor": {
+        "name": "Mer Rouge-Corridor de Suez"
+      },
+      "CaribbeanSiege": {
+        "name": "Siege caribeen"
+      },
+      "BlackSeaEasternFurnace": {
+        "name": "Mer Noire-Fournaise orientale"
       },
       "Tehran": {
         "name": "Tehran"
@@ -1624,6 +1672,46 @@
         "weakness": "Border Closure effects hit this seat first when multiple seats are valid.",
         "mandateTitle": "Prevent Internal Purge",
         "mandateDescription": "End with Torture & Detention Network at 4 or less and French Metropole Influence at 2 or fewer Extraction Tokens."
+      },
+      "palestinian_sumud_committees": {
+        "name": "Palestinian Sumud Committees",
+        "shortName": "Sumud",
+        "passive": "Organize gains +2 Comrades in Gaza-West Bank and Launch Campaign gains +1 there.",
+        "weakness": "Global Appeal costs +1 Evidence.",
+        "mandateTitle": "Hold the Ground of Return",
+        "mandateDescription": "End with Gaza-West Bank at 2 or fewer Extraction Tokens, Popular Refusal at 4 or more, and Egyptian Corridor Posture at 3 or more."
+      },
+      "gaza_west_bank_witness_medics": {
+        "name": "Gaza / West Bank Witness and Medics Network",
+        "shortName": "Witness",
+        "passive": "Investigate gains +1 Evidence in Gaza-West Bank and campaigns on Witness Corridors gain +1.",
+        "weakness": "Defend actions gain no home-region bonus.",
+        "mandateTitle": "Nothing Must Vanish",
+        "mandateDescription": "End with Witness Corridors at 5 or more, Gaza-West Bank at 2 or fewer Extraction Tokens, and Global Gaze at 10 or more."
+      },
+      "venezuelan_communal_councils": {
+        "name": "Venezuelan Communal Councils",
+        "shortName": "Communes",
+        "passive": "Organize gains +2 Comrades in Caribbean Siege and campaigns on Bread Under Siege gain +1 there.",
+        "weakness": "Global Appeal costs +1 Evidence.",
+        "mandateTitle": "Keep the Communes Breathing",
+        "mandateDescription": "End with Caribbean Siege at 2 or fewer Extraction Tokens, Bread Under Siege at 4 or more, and Saudi Posture at least Hedge."
+      },
+      "cuban_cdr_neighborhood_defense": {
+        "name": "Cuban CDR and Neighborhood Defense Networks",
+        "shortName": "CDRs",
+        "passive": "Investigate gains +1 Evidence in Caribbean Siege and Defend gains +1 there.",
+        "weakness": "Organize outside Caribbean Siege gains no home bonus.",
+        "mandateTitle": "Protect the Blockaded Memory",
+        "mandateDescription": "End with Stolen Voice at 3 or more, Gilded Cage at 3 or more, and Caribbean Siege at 2 or fewer Extraction Tokens."
+      },
+      "corridor_workers_refuge_networks": {
+        "name": "Corridor Workers and Refuge Networks",
+        "shortName": "Corridors",
+        "passive": "Investigate gains +1 Evidence in Red Sea-Suez Corridor and campaigns on Chokepoint Breakage gain +1.",
+        "weakness": "Global Appeal costs +1 Evidence when Gulf Blowback is 4 or higher.",
+        "mandateTitle": "Open the Passage, Not the War",
+        "mandateDescription": "End with Red Sea-Suez Corridor at 2 or fewer Extraction Tokens, Gulf-Hormuz Corridor at 2 or fewer, and Chokepoint Breakage at 4 or more."
       }
     },
     "actions": {
@@ -2114,7 +2202,47 @@
       "system_egy_1919_allenby_ultimatum": {
         "name": "Ultimatum de Lord Allenby",
         "text": "Ajoutez 2 jetons d'extraction au Caire."
-      }
+      },
+      "res_corr_egyptian_medic_convoy": { "name": "Egyptian Medic Convoy", "text": "A narrow convoy window gets wounded people, medicine, and witness lists through before the gate is sealed again." },
+      "res_corr_qatari_mediation_channel": { "name": "Qatari Mediation Channel", "text": "A mediation pause moves detainee names, casualty lists, and negotiation demands before the bombing cycle resumes." },
+      "res_corr_turkish_port_delay": { "name": "Turkish Port Delay", "text": "Customs friction and port delay slow military cargo long enough to document routes and buy time." },
+      "res_corr_jordanian_hospital_witness": { "name": "Jordanian Hospital Witness", "text": "Wounded evacuees and hospital records cross the border, forcing massacre evidence back into public view." },
+      "res_corr_venezuelan_communal_kitchens": { "name": "Venezuelan Communal Kitchens", "text": "Communal kitchens blunt sanctions hunger and keep neighborhoods politically present." },
+      "res_corr_cuban_radio_brigade": { "name": "Cuban Radio Brigade", "text": "Neighborhood radio carries memory, alerts, and anti-blockade coordination when platforms and banks choke movement." },
+      "res_corr_street_to_strait_coordination": { "name": "Street-to-Strait Coordination", "text": "Dockworkers, medics, communes, and witness networks line up one brief corridor that delays war logistics and opens organizing space." },
+      "sup_corr_spain_breaks_ranks": { "name": "Spain Breaks Ranks", "text": "Acting faction gets +2 on a War Machine campaign. Madrid's public refusal punctures Atlantic unanimity and gives anti-war organizers usable political cover." },
+      "sup_corr_gaza_archive_stream": { "name": "Gaza Archive Stream", "text": "Acting faction gets +2 on a Witness Corridors campaign. Phones, martyr lists, clinic logs, and burial records keep evidence moving against erasure." },
+      "sup_corr_prisoner_letter_chain": { "name": "Prisoner Letter Chain", "text": "Acting faction gets +2 on a Sanctions Breach campaign. Letters from prison turn disappearance into public testimony and weaken the state's monopoly on narrative." },
+      "sup_corr_red_sea_dock_strike": { "name": "Red Sea Dock Strike", "text": "Acting faction gets +2 on a Chokepoint Breakage campaign. A port stoppage turns delay into cost for shippers, insurers, and war logistics." },
+      "sup_corr_black_sea_grain_solidarity": { "name": "Black Sea Grain Solidarity", "text": "Acting faction gets +2 on a Bread Under Siege campaign. Grain routes and convoy information are reclaimed for food survival instead of war planning." },
+      "sup_corr_cuban_memory_brigade": { "name": "Cuban Memory Brigade", "text": "Acting faction gets +2 on a Stolen Voice campaign. Songs, classrooms, and neighborhood memory keep blockade trauma politically legible and hard to erase." },
+      "sup_corr_communal_defense_assembly": { "name": "Communal Defense Assembly", "text": "Acting faction gets +2 on a Revolutionary Wave campaign. An assembly redistributes risk, restores discipline, and turns survival into coordinated strategy." },
+      "crs_corr_rafah_gate_choked": { "name": "Rafah Gate Choked Again", "text": "Add 1 Extraction to Gaza-West Bank and lower Egypt Corridor by 1. Crossing restrictions and inspection delays trap the wounded, squeeze medicine, and close another exit from Gaza." },
+      "crs_corr_west_bank_mass_raids": { "name": "West Bank Mass Raids", "text": "Lower Global Gaze by 1 and add 1 Extraction to Gaza-West Bank. Night raids, checkpoints, and prison sweeps widen the siege and push testimony back under armed control." },
+      "crs_corr_beirut_suburbs_hit": { "name": "Beirut Suburbs Hit", "text": "Raise War Machine by 1 and add 1 Extraction to Lebanon-Northern Front. Bombardment drives displacement through Beirut's southern suburbs and widens the northern front." },
+      "crs_corr_ansar_allah_shipping_shock": { "name": "Ansar Allah Shipping Shock", "text": "Raise Global Gaze by 1 and add 1 Extraction to both Red Sea-Suez and Gulf-Hormuz. Missile risk and naval retaliation scramble shipping schedules, reroute cargo, and raise attention to the corridor war." },
+      "crs_corr_suez_queue_stalls": { "name": "Suez Queue Stalls", "text": "Add 1 Extraction to Red Sea-Suez and lower Bread Under Siege by 1. Canal delays stack containers, slow grain, and sharpen food pressure far beyond the canal itself." },
+      "crs_corr_hormuz_insurance_panic": { "name": "Hormuz Insurance Panic", "text": "Lower Global Gaze by 1, add 1 Extraction to Gulf-Hormuz, and raise Gulf Blowback by 1. Insurers reprice passage, tankers hesitate, and Gulf households are dragged deeper into war exposure." },
+      "crs_corr_gulf_base_alarm": { "name": "Gulf Base Alarm", "text": "Raise War Machine by 1, add 1 Extraction to Gulf-Hormuz, and raise Gulf Blowback by 1. Retaliatory fire puts host-state bases on alert and spreads fear through workers, ports, and civilian infrastructure." },
+      "crs_corr_cuba_banking_freeze": { "name": "Cuba Banking Freeze", "text": "Add 1 Extraction to Caribbean Siege and lower Sanctions Breach by 1. Banking restrictions freeze payments for medicine, shipping, and basic imports." },
+      "crs_corr_venezuela_oil_waiver_reversed": { "name": "Venezuela Oil Waiver Reversed", "text": "Add 1 Extraction to Caribbean Siege and lower Chokepoint Breakage by 1. Waiver reversal tightens fuel pressure, foreign-exchange pressure, and sanctions discipline on daily life." },
+      "crs_corr_black_sea_grain_fire": { "name": "Black Sea Grain Fire", "text": "Raise Global Gaze by 1, add 1 Extraction to Black Sea-Eastern Furnace, and lower Bread Under Siege by 1. Port strikes burn grain capacity and fold another front into hunger politics." },
+      "crs_corr_karoline_leavitt_press_discipline": { "name": "Karoline Leavitt Press Discipline", "text": "Lower Global Gaze by 1, add 1 Extraction to Gaza-West Bank, and lower Witness Corridors by 1. Official talking points narrow what counts as credible witness and push Gaza testimony off the agenda." },
+      "crs_corr_monroe_message_to_caracas": { "name": "Monroe Message to Caracas and Havana", "text": "Raise War Machine by 1, add 1 Extraction to Caribbean Siege, and lower Stolen Voice by 1. Threats to Caracas and Havana harden the blockade line and warn the hemisphere that disobedient sovereignty will be punished." },
+      "sys_corr_trump_operation_epic_fury": { "name": "Trump Orders Operation Epic Fury", "text": "Raise War Machine by 1, add 1 Extraction to Gaza-West Bank and Gulf-Hormuz, and increase future campaign targets by 1. Direct U.S. strikes widen the war and tighten both fronts." },
+      "sys_corr_hegseth_forward_posture": { "name": "Pete Hegseth Announces Forward Posture", "text": "Raise War Machine by 1, add 1 Extraction to Gulf-Hormuz, and raise Gulf Blowback by 1. Forward-posture rhetoric normalizes more basing and more carriers." },
+      "sys_corr_ratcliffe_threat_brief": { "name": "Ratcliffe Threat Brief", "text": "Lower Global Gaze by 1. Threat inflation turns intelligence into escalation cover and makes de-escalation politically harder to defend." },
+      "sys_corr_centcom_basing_web": { "name": "U.S. Central Command Basing Web", "text": "Raise War Machine by 1, add 1 Extraction to Gulf-Hormuz, and raise Gulf Blowback by 1. The Gulf basing lattice keeps sorties, refueling, and coercive logistics moving." },
+      "sys_corr_ofac_secondary_squeeze": { "name": "OFAC Secondary Squeeze", "text": "Lower Global Gaze by 1, add 1 Extraction to Caribbean Siege, and increase future outreach costs by 1. Secondary sanctions spread fear through banks and insurers." },
+      "sys_corr_doj_extraterritorial_casework": { "name": "DOJ Extraterritorial Casework", "text": "Lower Global Gaze by 1 and lower Sanctions Breach by 1. Casework and sealed dockets turn sanctions into daily legal siege for Cuba- and Venezuela-linked networks." },
+      "sys_corr_netanyahu_widens_front": { "name": "Netanyahu Widens the Front", "text": "Raise War Machine by 1, add 1 Extraction to Gaza-West Bank and Lebanon-Northern Front, and give future campaigns -1 total modifier. The war-state expands bombardment and displacement rather than let the fronts separate." },
+      "sys_corr_israel_katz_corridor_threats": { "name": "Israel Katz Corridor Threats", "text": "Lower Global Gaze by 1, reduce Egypt Corridor by 1, and increase future outreach costs by 1. Expulsion threats and corridor-control language punish any opening at Rafah." },
+      "sys_corr_uk_atlantic_alignment": { "name": "UK Atlantic Alignment", "text": "Raise War Machine by 1, add 1 Extraction to Black Sea-Eastern Furnace, and harden UK alignment. London's alignment lends diplomatic cover to escalation." },
+      "sys_corr_palantir_target_stack": { "name": "Palantir Target Stack", "text": "Raise War Machine by 1, add 1 Extraction to Gaza-West Bank, lower Witness Corridors by 1, and give future campaigns -1 total modifier. Data fusion compresses the path from surveillance to strike." },
+      "sys_corr_murdoch_bollore_war_line": { "name": "Murdoch and Bollore Set the War Line", "text": "Lower Global Gaze by 1. Broadcast empires narrow public language, delegitimize anti-war speech, and lower the cost of further escalation." },
+      "sys_corr_meta_visibility_drop": { "name": "Meta Visibility Drop", "text": "Lower Global Gaze by 1, lower Witness Corridors by 1, and reduce future resistance draws by 1. Platform throttling buries testimony and slows organizing." },
+      "sys_corr_blackrock_risk_pricing": { "name": "BlackRock Risk Pricing", "text": "Lower Global Gaze by 1 and add 1 Extraction to Gulf-Hormuz. Finance treats war as volatility to price rather than ruin to stop." },
+      "sys_corr_trafigura_glencore_insurance_surge": { "name": "Trafigura / Glencore Insurance Surge", "text": "Add 1 Extraction to Red Sea-Suez and Gulf-Hormuz, then raise Gulf Blowback by 1. Commodity traders pass maritime panic straight into fuel and food costs." }
     },
     "scenarios": {
       "tahrir_square": {
@@ -2243,12 +2371,50 @@
       },
       "when_the_corridors_burn": {
         "name": "2026 — Quand les Corridors Brulent",
-        "description": "Les corridors brulent de Gaza jusqu'aux Caraibes. La coalition survit en ouvrant les passages que le systeme veut maintenir fermes.",
+        "description": "Un scenario de guerre des corridors ou crossings, ports, banques et hopitaux deviennent des armes contre celles et ceux qui en ont besoin.",
         "introduction": "Dirigez une coalition de cinq sieges a travers une guerre connectee de siege, de sanctions, de perturbation maritime, de pression des bases et d'effacement public.",
-        "story": "Ce qui est appele escalade est en realite un ordre des corridors qui se revele. Gaza reste le centre moral, tandis que le Liban brule plus largement, qu'Ormuz et Suez se grippent, et que la ligne de blocus s'etend vers Cuba et le Venezuela.",
+        "story": "Ce qui est appele escalade est un ordre des corridors qui transforme les passages, les ports, les hopitaux, les banques et les routes du grain en points de pression. Gaza reste le centre moral, tandis que le Liban brule plus largement, qu'Ormuz et Suez s'etranglent, et que la ligne de blocus s'etend vers Cuba et le Venezuela.",
         "dramatization": "Les hopitaux comptent les blesses et les disparus, les dockers comptent les retards, les communes comptent le carburant restant, et chaque nouvelle trajectoire de missile menace une population deja placee sous discipline et coercition.",
-        "gameplay": "Tenez les theatres les plus exposes, puis fracturez le systeme de transport maritime, de sanctions et de bases avant que la War Machine ne depasse les reseaux de temoignage et de survie de la coalition.",
+        "gameplay": "Tenez les fronts ou les gens sont pieges, deplaces ou affames, puis fracturez le systeme de transport maritime, de sanctions et de bases avant que la War Machine ne depasse les reseaux de temoignage et de survie de la coalition.",
         "moralCenter": "Aucun sauveur du Nord n'arrive. La table vit ou tombe selon l'endurance des mouvements, les structures de temoignage et les reseaux de survie construits par les peuples attaques.",
+        "customTracks": {
+          "egypt_corridor": {
+            "name": "Posture du corridor egyptien",
+            "description": "Piste 0-6 : du confinement scelle a une ouverture sous pression et a un passage negocie."
+          },
+          "turkey_corridor": {
+            "name": "Posture du corridor turc",
+            "description": "Piste 0-6 : d'une contradiction de l'OTAN sous controle a une rupture plus visible et a une pression accrue sur les corridors."
+          },
+          "jordan_corridor": {
+            "name": "Posture du corridor jordanien",
+            "description": "Piste 0-6 : de la priorite au confinement a une ouverture fragile sous pression au voisinage de la Palestine."
+          },
+          "qatar_corridor": {
+            "name": "Posture de mediation qatarie",
+            "description": "Piste 0-6 : capacite de mediation sous pression, utile quand temoignage et negociation circulent encore."
+          },
+          "gulf_blowback": {
+            "name": "Contrecoup du Golfe",
+            "description": "Exposition commune des Etats-hotes aux tirs de riposte, a la panique assurantielle et a l'instabilite du dispositif de bases."
+          },
+          "saudi_posture": {
+            "name": "Posture saoudienne",
+            "description": "Piste 0-2 : 0 heberge, 1 temporise, 2 prend ses distances."
+          },
+          "uae_posture": {
+            "name": "Posture des EAU",
+            "description": "Piste 0-2 : 0 heberge, 1 temporise, 2 prend ses distances."
+          },
+          "bahrain_posture": {
+            "name": "Posture de Bahrein",
+            "description": "Piste 0-2 : 0 heberge, 1 temporise, 2 prend ses distances."
+          },
+          "kuwait_posture": {
+            "name": "Posture du Koweit",
+            "description": "Piste 0-2 : 0 heberge, 1 temporise, 2 prend ses distances."
+          }
+        },
         "specialRules": {
           "regional_powers_layer": {
             "label": "Puissances regionales / Etats-corridors",

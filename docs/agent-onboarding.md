@@ -48,6 +48,16 @@ Do not ship output that violates these rules:
 
 If uncertain, ask or escalate for confirmation instead of assuming.
 
+## Card Phrasing Rule
+
+When writing or revising card text:
+
+- State the mechanical impact plainly in the card text when the card grants a campaign modifier, direct resource gain/loss, or a persistent penalty.
+- State the mechanical impact plainly in crisis and system cards as well. If the card raises War Machine, lowers Global Gaze, adds Extraction, or imposes a persistent modifier, say that in the text.
+- Do not rely on flavor alone for support cards. If a card gives `+2` on a specific campaign, say that explicitly in the text.
+- Flavor should explain political meaning and material consequence, not hide the playable effect.
+- Match the stronger shipped standard used in scenarios like `stones_cry_out` and `algerian_war_of_independence`: mechanic first or mechanic clearly embedded, then narrative context.
+
 ## Start in 5 Minutes
 
 Use this sequence for a fast, safe start:
