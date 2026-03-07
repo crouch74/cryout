@@ -21,6 +21,21 @@ const TOP_BAND_DELTA = 5;
 
 const HIGH_PRESSURE_EXTRACTION = 4;
 
+type StrategyAdjustment = (candidate: StrategyCandidate, context: StrategyEvaluationContext) => void;
+
+interface StrategyEvaluationContext {
+  strategyId: StrategyId;
+  state: EngineState;
+  content: CompiledContent;
+  seat: number;
+  highestExtraction: number;
+  factionHomeRegion?: RegionId;
+  factionCampaignDomainBonus?: string;
+  homeRegionExtraction: number;
+  outreachCost: number;
+  pressure: ReturnType<typeof getSystemPressure>;
+}
+
 function stableHash(value: string) {
   let hash = 2166136261 >>> 0;
   for (let index = 0; index < value.length; index += 1) {
@@ -37,10 +52,6 @@ function deterministicIndex(state: EngineState, seat: number, strategyId: Strate
   const salt = stableHash(`${strategyId}:${seat}`);
   const mixed = (state.rng.state ^ state.rng.calls ^ state.round ^ ((seat + 1) * 97) ^ salt) >>> 0;
   return mixed % length;
-}
-
-function buildIntentKey(intent: Omit<QueuedIntent, 'slot'>) {
-  return `${intent.actionId}|${intent.regionId ?? '_'}|${intent.domainId ?? '_'}|${intent.targetSeat ?? '_'}|${intent.comradesCommitted ?? '_'}|${intent.evidenceCommitted ?? '_'}|${intent.cardId ?? '_'}`;
 }
 
 function compareOptionalStrings(left: string | undefined, right: string | undefined) {
@@ -139,14 +150,13 @@ function getSystemPressure(state: EngineState, content: CompiledContent) {
   return totals;
 }
 
-function getOutreachCost(state: EngineState, content: CompiledContent, seat: number) {
+function getOutreachCost(state: EngineState, content: CompiledContent, seat: number, pressure = getSystemPressure(state, content)) {
   const factionId = state.players[seat]?.factionId;
   const faction = factionId ? content.factions[factionId] : null;
-  const pressure = getSystemPressure(state, content);
   return Math.max(0, 2 + (faction?.outreachPenalty ?? 0) + pressure.outreachCostDelta);
 }
 
-function getResourceSpend(state: EngineState, content: CompiledContent, seat: number, action: Omit<QueuedIntent, 'slot'>) {
+function getResourceSpend(context: StrategyEvaluationContext, action: Omit<QueuedIntent, 'slot'>) {
   let comrades = 0;
   let evidence = 0;
 
@@ -165,7 +175,7 @@ function getResourceSpend(state: EngineState, content: CompiledContent, seat: nu
       comrades += action.comradesCommitted ?? 0;
       break;
     case 'international_outreach':
-      evidence += getOutreachCost(state, content, seat);
+      evidence += context.outreachCost;
       break;
     case 'go_viral':
     case 'burn_veil':
@@ -210,14 +220,14 @@ function getSupportBonus(state: EngineState, content: CompiledContent, seat: num
   return bonus;
 }
 
-function estimateCampaignMargin(state: EngineState, content: CompiledContent, seat: number, action: Omit<QueuedIntent, 'slot'>) {
+function estimateCampaignMargin(context: StrategyEvaluationContext, action: Omit<QueuedIntent, 'slot'>) {
   if (action.actionId !== 'launch_campaign') {
     return 0;
   }
 
-  const player = state.players[seat];
-  const faction = player ? content.factions[player.factionId] : null;
-  const pressure = getSystemPressure(state, content);
+  const player = context.state.players[context.seat];
+  const faction = player ? context.content.factions[player.factionId] : null;
+  const pressure = context.pressure;
 
   const committedComrades = action.comradesCommitted ?? 0;
   const committedEvidence = action.evidenceCommitted ?? 0;
@@ -225,8 +235,8 @@ function estimateCampaignMargin(state: EngineState, content: CompiledContent, se
   let modifier = 0;
   modifier += Math.floor(committedComrades / 2);
   modifier += committedEvidence;
-  modifier += Math.floor(state.globalGaze / 5);
-  modifier -= Math.floor(state.northernWarMachine / 4);
+  modifier += Math.floor(context.state.globalGaze / 5);
+  modifier -= Math.floor(context.state.northernWarMachine / 4);
   modifier += pressure.campaignModifierDelta;
 
   if (faction && action.regionId === faction.homeRegion) {
@@ -235,11 +245,38 @@ function estimateCampaignMargin(state: EngineState, content: CompiledContent, se
   if (faction?.campaignDomainBonus && action.domainId === faction.campaignDomainBonus) {
     modifier += 1;
   }
-  modifier += getSupportBonus(state, content, seat, action);
+  modifier += getSupportBonus(context.state, context.content, context.seat, action);
 
   const expectedTotal = 7 + modifier;
   const target = 8 + pressure.campaignTargetDelta;
   return expectedTotal - target;
+}
+
+function createStrategyEvaluationContext(
+  state: EngineState,
+  content: CompiledContent,
+  seat: number,
+  strategyId: StrategyId,
+): StrategyEvaluationContext {
+  const player = state.players[seat];
+  const faction = player ? content.factions[player.factionId] : null;
+  const pressure = getSystemPressure(state, content);
+  const highestExtraction = Object.values(state.regions)
+    .reduce((highest, region) => Math.max(highest, region.extractionTokens), 0);
+  const factionHomeRegion = faction?.homeRegion;
+
+  return {
+    strategyId,
+    state,
+    content,
+    seat,
+    highestExtraction,
+    factionHomeRegion,
+    factionCampaignDomainBonus: faction?.campaignDomainBonus,
+    homeRegionExtraction: factionHomeRegion ? (state.regions[factionHomeRegion]?.extractionTokens ?? 0) : 0,
+    outreachCost: getOutreachCost(state, content, seat, pressure),
+    pressure,
+  };
 }
 
 function topBandSelection(
@@ -253,25 +290,21 @@ function topBandSelection(
   }
 
   let bestScore = Number.NEGATIVE_INFINITY;
-  const keyedCandidates = candidates.map((candidate) => ({
-    candidate,
-    key: buildIntentKey(candidate.action),
-  }));
-  for (const entry of keyedCandidates) {
-    if (entry.candidate.score > bestScore) {
-      bestScore = entry.candidate.score;
+  for (const candidate of candidates) {
+    if (candidate.score > bestScore) {
+      bestScore = candidate.score;
     }
   }
 
-  const topBand = keyedCandidates
-    .filter((entry) => entry.candidate.score >= bestScore - TOP_BAND_DELTA)
+  const topBand = candidates
+    .filter((candidate) => candidate.score >= bestScore - TOP_BAND_DELTA)
     .sort((left, right) => {
-      if (right.candidate.score !== left.candidate.score) {
-        return right.candidate.score - left.candidate.score;
+      if (right.score !== left.score) {
+        return right.score - left.score;
       }
-      return compareIntent(left.candidate.action, right.candidate.action);
+      return compareIntent(left.action, right.action);
     });
-  const pick = topBand[deterministicIndex(state, seat, strategyId, topBand.length)]?.candidate ?? topBand[0]?.candidate;
+  const pick = topBand[deterministicIndex(state, seat, strategyId, topBand.length)] ?? topBand[0];
   if (!pick) {
     return null;
   }
@@ -285,7 +318,7 @@ function topBandSelection(
   };
 }
 
-function applyExtractionDefender(candidate: StrategyCandidate, context: StrategyContext) {
+function applyExtractionDefender(candidate: StrategyCandidate, context: StrategyEvaluationContext) {
   const extraction = getRegionExtraction(context.state, candidate.action.regionId);
   if (extraction >= HIGH_PRESSURE_EXTRACTION) {
     if (candidate.action.actionId === 'launch_campaign' || candidate.action.actionId === 'build_solidarity' || candidate.action.actionId === 'defend') {
@@ -299,14 +332,13 @@ function applyExtractionDefender(candidate: StrategyCandidate, context: Strategy
   }
 
   if (!candidate.action.regionId && extraction === 0) {
-    const highestExtraction = Math.max(...Object.values(context.state.regions).map((region) => region.extractionTokens));
-    if (highestExtraction >= HIGH_PRESSURE_EXTRACTION) {
+    if (context.highestExtraction >= HIGH_PRESSURE_EXTRACTION) {
       candidate.score -= 14;
     }
   }
 }
 
-function applyDomainBuilder(candidate: StrategyCandidate, context: StrategyContext) {
+function applyDomainBuilder(candidate: StrategyCandidate, context: StrategyEvaluationContext) {
   if (candidate.action.actionId === 'build_solidarity' || candidate.action.actionId === 'launch_campaign') {
     candidate.score += 18;
     candidate.reasons.push('domain progression');
@@ -320,8 +352,8 @@ function applyDomainBuilder(candidate: StrategyCandidate, context: StrategyConte
   }
 }
 
-function applyEvidenceHoarder(candidate: StrategyCandidate, context: StrategyContext) {
-  const spend = getResourceSpend(context.state, context.content, context.seat, candidate.action);
+function applyEvidenceHoarder(candidate: StrategyCandidate, context: StrategyEvaluationContext) {
+  const spend = getResourceSpend(context, candidate.action);
 
   if (candidate.action.actionId === 'investigate' || candidate.action.actionId === 'schoolgirl_network') {
     candidate.score += 24;
@@ -348,35 +380,31 @@ function applyGlobalAttention(candidate: StrategyCandidate) {
   }
 }
 
-function applyMandateHunter(candidate: StrategyCandidate, context: StrategyContext) {
-  const player = context.state.players[context.seat];
-  const faction = player ? context.content.factions[player.factionId] : null;
-  if (!faction) {
+function applyMandateHunter(candidate: StrategyCandidate, context: StrategyEvaluationContext) {
+  if (!context.factionHomeRegion) {
     return;
   }
 
-  const homeExtraction = context.state.regions[faction.homeRegion]?.extractionTokens ?? 0;
-
-  if (candidate.action.regionId === faction.homeRegion) {
+  if (candidate.action.regionId === context.factionHomeRegion) {
     candidate.score += 16;
     candidate.reasons.push('home-region mandate pressure');
   }
 
-  if (candidate.action.domainId && candidate.action.domainId === faction.campaignDomainBonus) {
+  if (candidate.action.domainId && candidate.action.domainId === context.factionCampaignDomainBonus) {
     candidate.score += 14;
     candidate.reasons.push('faction mandate domain');
   }
 
-  if (candidate.action.actionId === 'defend' && homeExtraction >= HIGH_PRESSURE_EXTRACTION) {
+  if (candidate.action.actionId === 'defend' && context.homeRegionExtraction >= HIGH_PRESSURE_EXTRACTION) {
     candidate.score += 14;
   }
 
-  if (candidate.action.actionId === 'launch_campaign' && homeExtraction >= HIGH_PRESSURE_EXTRACTION) {
+  if (candidate.action.actionId === 'launch_campaign' && context.homeRegionExtraction >= HIGH_PRESSURE_EXTRACTION) {
     candidate.score += 18;
   }
 }
 
-function applyRiskTaker(candidate: StrategyCandidate, context: StrategyContext) {
+function applyRiskTaker(candidate: StrategyCandidate, context: StrategyEvaluationContext) {
   if (candidate.action.actionId === 'launch_campaign') {
     const committedComrades = candidate.action.comradesCommitted ?? 0;
     const committedEvidence = candidate.action.evidenceCommitted ?? 0;
@@ -392,15 +420,15 @@ function applyRiskTaker(candidate: StrategyCandidate, context: StrategyContext) 
     candidate.score -= 6;
   }
 
-  const margin = estimateCampaignMargin(context.state, context.content, context.seat, candidate.action);
+  const margin = estimateCampaignMargin(context, candidate.action);
   if (candidate.action.actionId === 'launch_campaign' && margin < 0) {
     candidate.score += 10;
   }
 }
 
-function applyRiskAvoider(candidate: StrategyCandidate, context: StrategyContext) {
+function applyRiskAvoider(candidate: StrategyCandidate, context: StrategyEvaluationContext) {
   if (candidate.action.actionId === 'launch_campaign') {
-    const margin = estimateCampaignMargin(context.state, context.content, context.seat, candidate.action);
+    const margin = estimateCampaignMargin(context, candidate.action);
     if (margin >= 2) {
       candidate.score += 14;
       candidate.reasons.push('safe campaign window');
@@ -417,7 +445,8 @@ function applyRiskAvoider(candidate: StrategyCandidate, context: StrategyContext
   }
 }
 
-function chooseByProfile(context: StrategyContext, applyAdjustments: (candidate: StrategyCandidate, context: StrategyContext) => void) {
+function chooseByProfile(context: StrategyContext, applyAdjustments: StrategyAdjustment) {
+  const evaluationContext = createStrategyEvaluationContext(context.state, context.content, context.seat, context.strategyId);
   const adjusted: StrategyCandidate[] = [];
   for (const candidate of context.candidates) {
     const next: StrategyCandidate = {
@@ -427,11 +456,120 @@ function chooseByProfile(context: StrategyContext, applyAdjustments: (candidate:
       score: candidate.baseScore,
       reasons: [...candidate.reasons],
     };
-    applyAdjustments(next, context);
+    applyAdjustments(next, evaluationContext);
     adjusted.push(next);
   }
 
   return topBandSelection(context.state, context.seat, context.strategyId, adjusted);
+}
+
+function pickFromTopBand(
+  state: EngineState,
+  seat: number,
+  strategyId: StrategyId,
+  topBand: StrategyCandidate[],
+): StrategyDecision | null {
+  if (topBand.length === 0) {
+    return null;
+  }
+
+  topBand.sort((left, right) => {
+    if (right.score !== left.score) {
+      return right.score - left.score;
+    }
+    return compareIntent(left.action, right.action);
+  });
+
+  const pick = topBand[deterministicIndex(state, seat, strategyId, topBand.length)] ?? topBand[0];
+  if (!pick) {
+    return null;
+  }
+
+  return {
+    seat,
+    action: pick.action,
+    baseScore: pick.baseScore,
+    score: pick.score,
+    reasons: [...new Set([...pick.reasons, `strategy:${strategyId}`])],
+  };
+}
+
+function chooseByProfileForSeat(
+  state: EngineState,
+  content: CompiledContent,
+  seat: number,
+  strategyId: StrategyId,
+  applyAdjustments: StrategyAdjustment,
+) {
+  if (!state.players[seat] || state.players[seat].actionsRemaining <= 0) {
+    return null;
+  }
+
+  const context = createStrategyEvaluationContext(state, content, seat, strategyId);
+  const topBand: StrategyCandidate[] = [];
+  let bestScore = Number.NEGATIVE_INFINITY;
+
+  for (const intent of listAutoPlayIntentsForSeat(state, content, seat, { includeDisabledReasons: false })) {
+    const candidate = toStrategyCandidate(scoreAutoPlayCandidate(state, content, {
+      seat,
+      action: intent,
+      score: 0,
+      reasons: [],
+    }));
+    applyAdjustments(candidate, context);
+
+    if (candidate.score > bestScore) {
+      bestScore = candidate.score;
+      const threshold = bestScore - TOP_BAND_DELTA;
+      let writeIndex = 0;
+      for (let index = 0; index < topBand.length; index += 1) {
+        if (topBand[index]!.score >= threshold) {
+          topBand[writeIndex] = topBand[index]!;
+          writeIndex += 1;
+        }
+      }
+      topBand.length = writeIndex;
+      topBand.push(candidate);
+      continue;
+    }
+
+    if (candidate.score >= bestScore - TOP_BAND_DELTA) {
+      topBand.push(candidate);
+    }
+  }
+
+  return pickFromTopBand(state, seat, strategyId, topBand);
+}
+
+function chooseRandomForSeat(
+  state: EngineState,
+  content: CompiledContent,
+  seat: number,
+  strategyId: StrategyId,
+) {
+  const intents = listAutoPlayIntentsForSeat(state, content, seat, { includeDisabledReasons: false });
+  if (intents.length === 0) {
+    return null;
+  }
+
+  const selected = intents[deterministicIndex(state, seat, strategyId, intents.length)] ?? intents[0];
+  if (!selected) {
+    return null;
+  }
+
+  const candidate = toStrategyCandidate(scoreAutoPlayCandidate(state, content, {
+    seat,
+    action: selected,
+    score: 0,
+    reasons: [],
+  }));
+  return {
+    seat,
+    action: candidate.action,
+    baseScore: candidate.baseScore,
+    score: candidate.baseScore,
+    reasons: [...candidate.reasons, 'strategy:random'],
+  } satisfies StrategyDecision;
 }
 
 function chooseRandom(context: StrategyContext) {
@@ -471,6 +609,38 @@ export function buildStrategyCandidatesForSeat(
     .map(toStrategyCandidate);
 
   return candidates;
+}
+
+export function chooseStrategyActionForSeat(
+  state: EngineState,
+  content: CompiledContent,
+  seat: number,
+  strategyId: StrategyId,
+): StrategyDecision | null {
+  switch (strategyId) {
+    case 'random':
+      return chooseRandomForSeat(state, content, seat, strategyId);
+    case 'extraction_defender':
+      return chooseByProfileForSeat(state, content, seat, strategyId, applyExtractionDefender);
+    case 'domain_builder':
+      return chooseByProfileForSeat(state, content, seat, strategyId, applyDomainBuilder);
+    case 'evidence_hoarder':
+      return chooseByProfileForSeat(state, content, seat, strategyId, applyEvidenceHoarder);
+    case 'global_attention':
+      return chooseByProfileForSeat(state, content, seat, strategyId, applyGlobalAttention);
+    case 'mandate_hunter':
+      return chooseByProfileForSeat(state, content, seat, strategyId, applyMandateHunter);
+    case 'risk_taker':
+      return chooseByProfileForSeat(state, content, seat, strategyId, applyRiskTaker);
+    case 'risk_avoider':
+      return chooseByProfileForSeat(state, content, seat, strategyId, applyRiskAvoider);
+    case 'balanced':
+      return chooseByProfileForSeat(state, content, seat, strategyId, () => {
+        // Balanced profile intentionally keeps base autoplay weighting intact.
+      });
+    default:
+      return null;
+  }
 }
 
 const PROFILES: StrategyProfile[] = [

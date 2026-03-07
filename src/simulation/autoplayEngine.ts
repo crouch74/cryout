@@ -18,7 +18,7 @@ import {
   type FactionId,
   type StateDelta,
 } from '../engine/index.ts';
-import { buildStrategyCandidatesForSeat, getStrategyProfile, listStrategyProfiles } from './strategies.ts';
+import { chooseStrategyActionForSeat, getStrategyProfile, listStrategyProfiles } from './strategies.ts';
 import { captureRoundSnapshot, convertRoundSnapshotsToTimeline } from './captureRoundSnapshot.ts';
 import { capturePreDefeatSnapshot } from './capturePreDefeatSnapshot.ts';
 import { seatComrades, totalComrades, validateResourceInvariants } from './invariants.ts';
@@ -335,25 +335,18 @@ function selectSimulationCommand(
   }
 
   if (state.phase === 'COALITION') {
-    const activeSeats = state.players.filter((player) => player.actionsRemaining > 0).map((player) => player.seat);
+    const activeSeats: number[] = [];
+    for (const player of state.players) {
+      if (player.actionsRemaining > 0) {
+        activeSeats.push(player.seat);
+      }
+    }
     if (activeSeats.length > 0) {
       const decisions: StrategyDecision[] = [];
 
       for (const seat of activeSeats) {
         const strategyId = run.strategyIds[seat] ?? 'balanced';
-        const profile = getStrategyProfile(strategyId);
-        if (!profile) {
-          continue;
-        }
-
-        const candidates = buildStrategyCandidatesForSeat(state, content, seat);
-        const decision = profile.chooseAction({
-          strategyId,
-          state,
-          content,
-          seat,
-          candidates,
-        });
+        const decision = chooseStrategyActionForSeat(state, content, seat, strategyId);
         if (decision) {
           decisions.push(decision);
         }
