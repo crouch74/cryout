@@ -381,6 +381,20 @@ function computeFailurePathPenalty(record: SimulationRecord, deltas: ActionTotal
   return roundTo(clamp(penalty, 0, 1));
 }
 
+function computeTerminalWindowActionTotals(record: SimulationRecord, deltas: ActionTotals[], rounds = 3) {
+  const window = deltas.slice(-rounds);
+  if (window.length === 0) {
+    const fallback = createZeroActionTotals();
+    mergeActionTotals(fallback, record.actionCounts);
+    return fallback;
+  }
+
+  return window.reduce((totals, delta) => {
+    mergeActionTotals(totals, delta);
+    return totals;
+  }, createZeroActionTotals());
+}
+
 function classifyRegimeWeight(record: SimulationRecord) {
   if (record.result.type === 'defeat' && record.turnsPlayed < 5) {
     return 1.4;
@@ -394,13 +408,13 @@ function classifyRegimeWeight(record: SimulationRecord) {
   return 1;
 }
 
-function computeRecordTargetedShare(record: SimulationRecord) {
-  const totalActions = CORE_ACTIONS.reduce((sum, action) => sum + (record.actionCounts[action] ?? 0), 0);
+function computeRecordTargetedShareFromTotals(totals: ActionTotals) {
+  const totalActions = CORE_ACTIONS.reduce((sum, action) => sum + (totals[action] ?? 0), 0);
   if (totalActions <= 0) {
     return 0;
   }
   const targetedActions = Array.from(TARGETED_ACTIONS)
-    .reduce((sum, action) => sum + (record.actionCounts[action] ?? 0), 0);
+    .reduce((sum, action) => sum + (totals[action] ?? 0), 0);
   return roundTo(targetedActions / totalActions);
 }
 
@@ -760,12 +774,13 @@ export function ingestArmRecord(accumulator: ArmAccumulator, record: SimulationR
   mergeActionTotals(accumulator.actionTotalsByOutcome[record.result.type], record.actionCounts);
   const actionDeltas = buildActionDeltaTimeline(record);
   const campaignPath = computeSetupPreparedCampaigns(actionDeltas);
+  const terminalWindowTotals = computeTerminalWindowActionTotals(record, actionDeltas, 3);
   accumulator.setupPreparedCampaigns += campaignPath.preparedCampaigns;
   accumulator.launchCampaigns += campaignPath.launchCampaigns;
   accumulator.failurePathPenaltyTotal += computeFailurePathPenalty(record, actionDeltas);
   const regimeWeight = classifyRegimeWeight(record);
   accumulator.regimeWeightTotal += regimeWeight;
-  accumulator.regimeWeightedTargetedShareTotal += computeRecordTargetedShare(record) * regimeWeight;
+  accumulator.regimeWeightedTargetedShareTotal += computeRecordTargetedShareFromTotals(terminalWindowTotals) * regimeWeight;
 
   // 🎲 Route into per-player-count sub-accumulator
   const pcKey = String(record.playerCount);

@@ -576,6 +576,10 @@ function includeTrajectoryStrategies(mode: OptimizerStrategyMode) {
   return mode === 'trajectory_discovery' || mode === 'full_optimizer';
 }
 
+function includeActionDiversityStrategies(mode: OptimizerStrategyMode) {
+  return mode === 'action_diversity' || mode === 'full_optimizer';
+}
+
 function includeVictoryGateStrategies(mode: OptimizerStrategyMode, analysis: OptimizerAnalysis) {
   if (mode === 'victory_gating_exploration' || mode === 'full_optimizer') {
     return true;
@@ -643,6 +647,101 @@ function buildVictoryGatingCandidates(mode: OptimizerStrategyMode, analysis: Opt
   }));
 }
 
+function buildActionDiversityCandidates(
+  analysis: OptimizerAnalysis,
+  trajectorySummary: TrajectorySummary | null,
+): ScenarioPatch[] {
+  const candidates: ScenarioPatch[] = [];
+  const pressureDetected = analysis.defeatPressure.pressureDetected || analysis.structural.earlyTerminationRate > 0.05;
+  const heavyMandateFailure = (analysis.topMandateFailures[0]?.failureRate ?? 0) >= 0.45;
+  const investigateOpening = trajectorySummary?.mostCommonFirstAction?.action?.toLowerCase().includes('investigate') ?? false;
+
+  candidates.push(normalizeScenarioPatch({
+    note: '🧭 Action-diversity seed: targeted setup incentives',
+    simulator: {
+      actionBias: {
+        build_solidarity: 6,
+        international_outreach: 6,
+        smuggle_evidence: 6,
+        ...(pressureDetected ? { defend: 6 } : {}),
+      },
+      launchCampaignWithoutSetupPenalty: 10,
+      launchCampaignWithSetupBonus: 6,
+    },
+  }));
+
+  if (pressureDetected) {
+    candidates.push(normalizeScenarioPatch({
+      note: '🧭 Action-diversity seed: defend stressed fronts before collapse',
+      simulator: {
+        actionBias: {
+          build_solidarity: 4,
+          defend: 8,
+        },
+        highPressureDefendBonus: 12,
+        launchCampaignWithoutSetupPenalty: 8,
+      },
+    }));
+  }
+
+  if (heavyMandateFailure || investigateOpening) {
+    candidates.push(normalizeScenarioPatch({
+      note: '🧭 Action-diversity seed: attention and evidence preparation',
+      simulator: {
+        actionBias: {
+          international_outreach: 8,
+          smuggle_evidence: 8,
+          ...(investigateOpening ? { build_solidarity: 5 } : {}),
+        },
+        lowGazeOutreachBonus: 12,
+        evidenceScarcitySmuggleBonus: 12,
+        launchCampaignWithoutSetupPenalty: 10,
+      },
+    }));
+  }
+
+  candidates.push(normalizeScenarioPatch({
+    note: '🧭 Action-diversity seed: moderate combined simulator rebalance',
+    simulator: {
+      actionBias: {
+        build_solidarity: 6,
+        defend: pressureDetected ? 6 : 4,
+        international_outreach: 8,
+        smuggle_evidence: 8,
+      },
+      launchCampaignWithoutSetupPenalty: 10,
+      launchCampaignWithSetupBonus: 8,
+      ...(pressureDetected ? { highPressureDefendBonus: 12 } : {}),
+      lowGazeOutreachBonus: 12,
+      evidenceScarcitySmuggleBonus: 10,
+    },
+  }));
+
+  return candidates;
+}
+
+function buildRandomActionDiversityPatch(rng: () => number, analysis: OptimizerAnalysis): ScenarioPatch {
+  const pressureDetected = analysis.defeatPressure.pressureDetected || analysis.structural.earlyTerminationRate > 0.05;
+  const pick = (values: number[]) => values[rng() % values.length] ?? values[0] ?? 0;
+
+  return normalizeScenarioPatch({
+    note: '🎲 Action-diversity simulator mutation',
+    simulator: {
+      actionBias: {
+        build_solidarity: pick([4, 6, 8, 10]),
+        international_outreach: pick([4, 6, 8, 10]),
+        smuggle_evidence: pick([4, 6, 8, 10]),
+        ...(pressureDetected ? { defend: pick([6, 8, 10, 12]) } : { defend: pick([2, 4, 6]) }),
+      },
+      launchCampaignWithoutSetupPenalty: pick([8, 10, 12, 14]),
+      launchCampaignWithSetupBonus: pick([4, 6, 8, 10]),
+      ...(pressureDetected ? { highPressureDefendBonus: pick([10, 12, 14, 16]) } : {}),
+      evidenceScarcitySmuggleBonus: pick([0, 8, 10, 12, 14]),
+      lowGazeOutreachBonus: pick([0, 8, 10, 12, 14]),
+    },
+  });
+}
+
 export async function generateCandidatePatches(input: CandidateGenerationInput): Promise<OptimizerCandidate[]> {
   const rng = createRng(mixSeed(input.seed, stableHash(`optimizer-candidates:${input.iteration}`)));
   const mutationConfig = createScenarioMutationConfig(input.scenarioId);
@@ -683,6 +782,12 @@ export async function generateCandidatePatches(input: CandidateGenerationInput):
     }
   }
 
+  if (includeActionDiversityStrategies(input.strategyMode)) {
+    for (const patch of buildActionDiversityCandidates(input.analysis, input.trajectorySummary)) {
+      addCandidate('action_diversity_seed', patch);
+    }
+  }
+
   for (const entry of buildVictoryGatingCandidates(input.strategyMode, input.analysis)) {
     addCandidate(entry.strategy, entry.patch);
   }
@@ -717,6 +822,11 @@ export async function generateCandidatePatches(input: CandidateGenerationInput):
   }
 
   while (dedup.size < input.targetCount) {
+    if (input.strategyMode === 'action_diversity') {
+      addCandidate('action_diversity_seed', buildRandomActionDiversityPatch(rng, input.analysis));
+      continue;
+    }
+
     if (input.strategyMode === 'victory_gating_exploration') {
       const roundGate = [2, 3, 4][rng() % 3];
       const progressGate = [2, 3, 4][rng() % 3];

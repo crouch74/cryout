@@ -34,6 +34,7 @@ interface StrategyEvaluationContext {
   homeRegionExtraction: number;
   outreachCost: number;
   pressure: ReturnType<typeof getSystemPressure>;
+  simulatorOverrides?: CompiledContent['ruleset']['simulatorOverrides'];
 }
 
 function stableHash(value: string) {
@@ -276,7 +277,67 @@ function createStrategyEvaluationContext(
     homeRegionExtraction: factionHomeRegion ? (state.regions[factionHomeRegion]?.extractionTokens ?? 0) : 0,
     outreachCost: getOutreachCost(state, content, seat, pressure),
     pressure,
+    simulatorOverrides: content.ruleset.simulatorOverrides,
   };
+}
+
+function hasSetupPreparation(state: EngineState) {
+  const actions = state.victoryProgress?.actionsById ?? {};
+  return (actions.build_solidarity ?? 0) > 0
+    || (actions.international_outreach ?? 0) > 0
+    || (actions.smuggle_evidence ?? 0) > 0;
+}
+
+function applySimulatorOverrides(candidate: StrategyCandidate, context: StrategyEvaluationContext) {
+  const overrides = context.simulatorOverrides;
+  if (!overrides) {
+    return;
+  }
+
+  const directBias = overrides.actionBias?.[candidate.action.actionId];
+  if (directBias) {
+    candidate.score += directBias;
+    candidate.reasons.push(`sim:bias:${candidate.action.actionId}`);
+  }
+
+  if (candidate.action.actionId === 'launch_campaign') {
+    if (hasSetupPreparation(context.state)) {
+      if (overrides.launchCampaignWithSetupBonus) {
+        candidate.score += overrides.launchCampaignWithSetupBonus;
+        candidate.reasons.push('sim:campaign-with-setup');
+      }
+    } else if (overrides.launchCampaignWithoutSetupPenalty) {
+      candidate.score -= overrides.launchCampaignWithoutSetupPenalty;
+      candidate.reasons.push('sim:campaign-without-setup');
+    }
+  }
+
+  if (
+    candidate.action.actionId === 'defend'
+    && context.highestExtraction >= HIGH_PRESSURE_EXTRACTION
+    && overrides.highPressureDefendBonus
+  ) {
+    candidate.score += overrides.highPressureDefendBonus;
+    candidate.reasons.push('sim:defend-high-pressure');
+  }
+
+  if (
+    candidate.action.actionId === 'smuggle_evidence'
+    && (context.state.players[context.seat]?.evidence ?? 0) <= 1
+    && overrides.evidenceScarcitySmuggleBonus
+  ) {
+    candidate.score += overrides.evidenceScarcitySmuggleBonus;
+    candidate.reasons.push('sim:smuggle-evidence-scarcity');
+  }
+
+  if (
+    candidate.action.actionId === 'international_outreach'
+    && context.state.globalGaze <= 8
+    && overrides.lowGazeOutreachBonus
+  ) {
+    candidate.score += overrides.lowGazeOutreachBonus;
+    candidate.reasons.push('sim:outreach-low-gaze');
+  }
 }
 
 function topBandSelection(
@@ -457,6 +518,7 @@ function chooseByProfile(context: StrategyContext, applyAdjustments: StrategyAdj
       reasons: [...candidate.reasons],
     };
     applyAdjustments(next, evaluationContext);
+    applySimulatorOverrides(next, evaluationContext);
     adjusted.push(next);
   }
 
@@ -517,6 +579,7 @@ function chooseByProfileForSeat(
       reasons: [],
     }));
     applyAdjustments(candidate, context);
+    applySimulatorOverrides(candidate, context);
 
     if (candidate.score > bestScore) {
       bestScore = candidate.score;

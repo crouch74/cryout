@@ -557,6 +557,9 @@ function buildRunRecord(
       || terminalReason === 'mandate_failure'
       || state.victoryProgress?.lastVictoryScore !== undefined,
     victoryPredicateSatisfiedBeforeAllowedRound: Boolean(state.victoryProgress?.victoryPredicateSatisfiedBeforeAllowedRound),
+    publicVictoryBlockedByRoundGate: Boolean(state.victoryProgress?.blockedPublicVictoryByRoundGate),
+    publicVictoryBlockedByActionGate: Boolean(state.victoryProgress?.blockedPublicVictoryByActionGate),
+    publicVictoryBlockedByProgressGate: Boolean(state.victoryProgress?.blockedPublicVictoryByProgressGate),
     victoryScore: state.terminalOutcome?.victoryScore ?? state.victoryProgress?.lastVictoryScore,
     victoryThreshold: state.terminalOutcome?.victoryThreshold ?? state.victoryProgress?.lastVictoryThreshold,
     successByScore: state.terminalOutcome?.victoryScore !== undefined

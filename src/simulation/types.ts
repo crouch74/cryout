@@ -178,6 +178,9 @@ export interface SimulationRecord {
   };
   publicVictoryAchieved: boolean;
   victoryPredicateSatisfiedBeforeAllowedRound: boolean;
+  publicVictoryBlockedByRoundGate?: boolean;
+  publicVictoryBlockedByActionGate?: boolean;
+  publicVictoryBlockedByProgressGate?: boolean;
   victoryScore?: number;
   victoryThreshold?: number;
   successByScore?: boolean;

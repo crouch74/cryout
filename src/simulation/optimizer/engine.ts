@@ -257,6 +257,31 @@ export function mergeScenarioPatches(base: ScenarioPatch, incoming: ScenarioPatc
     merged.note = incoming.note;
   }
 
+  if (incoming.simulator) {
+    merged.simulator = { ...(merged.simulator ?? {}) };
+    if (incoming.simulator.actionBias) {
+      merged.simulator.actionBias = {
+        ...(merged.simulator.actionBias ?? {}),
+        ...incoming.simulator.actionBias,
+      };
+    }
+    if (incoming.simulator.launchCampaignWithoutSetupPenalty !== undefined) {
+      merged.simulator.launchCampaignWithoutSetupPenalty = incoming.simulator.launchCampaignWithoutSetupPenalty;
+    }
+    if (incoming.simulator.launchCampaignWithSetupBonus !== undefined) {
+      merged.simulator.launchCampaignWithSetupBonus = incoming.simulator.launchCampaignWithSetupBonus;
+    }
+    if (incoming.simulator.highPressureDefendBonus !== undefined) {
+      merged.simulator.highPressureDefendBonus = incoming.simulator.highPressureDefendBonus;
+    }
+    if (incoming.simulator.evidenceScarcitySmuggleBonus !== undefined) {
+      merged.simulator.evidenceScarcitySmuggleBonus = incoming.simulator.evidenceScarcitySmuggleBonus;
+    }
+    if (incoming.simulator.lowGazeOutreachBonus !== undefined) {
+      merged.simulator.lowGazeOutreachBonus = incoming.simulator.lowGazeOutreachBonus;
+    }
+  }
+
   if (incoming.setup) {
     merged.setup = { ...(merged.setup ?? {}) };
     merged.setup.globalGazeDelta = addNumeric(merged.setup.globalGazeDelta, incoming.setup.globalGazeDelta);

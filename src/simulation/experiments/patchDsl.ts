@@ -1,5 +1,22 @@
 export type ScenarioPatch = {
   note?: string;
+  simulator?: {
+    actionBias?: Partial<Record<
+      'organize'
+      | 'investigate'
+      | 'launch_campaign'
+      | 'build_solidarity'
+      | 'smuggle_evidence'
+      | 'international_outreach'
+      | 'defend',
+      number
+    >>;
+    launchCampaignWithoutSetupPenalty?: number;
+    launchCampaignWithSetupBonus?: number;
+    highPressureDefendBonus?: number;
+    evidenceScarcitySmuggleBonus?: number;
+    lowGazeOutreachBonus?: number;
+  };
   setup?: {
     globalGazeDelta?: number;
     northernWarMachineDelta?: number;

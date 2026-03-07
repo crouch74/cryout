@@ -232,6 +232,33 @@ function adjustConditionForRelaxation(condition: Condition, step: number): numbe
 }
 
 function applyPatchToRuleset(ruleset: RulesetDefinition, patch: ScenarioPatch) {
+  if (patch.simulator) {
+    ruleset.simulatorOverrides = {
+      ...(ruleset.simulatorOverrides ?? {}),
+      ...(patch.simulator.actionBias ? {
+        actionBias: {
+          ...(ruleset.simulatorOverrides?.actionBias ?? {}),
+          ...patch.simulator.actionBias,
+        },
+      } : {}),
+      ...(patch.simulator.launchCampaignWithoutSetupPenalty !== undefined
+        ? { launchCampaignWithoutSetupPenalty: patch.simulator.launchCampaignWithoutSetupPenalty }
+        : {}),
+      ...(patch.simulator.launchCampaignWithSetupBonus !== undefined
+        ? { launchCampaignWithSetupBonus: patch.simulator.launchCampaignWithSetupBonus }
+        : {}),
+      ...(patch.simulator.highPressureDefendBonus !== undefined
+        ? { highPressureDefendBonus: patch.simulator.highPressureDefendBonus }
+        : {}),
+      ...(patch.simulator.evidenceScarcitySmuggleBonus !== undefined
+        ? { evidenceScarcitySmuggleBonus: patch.simulator.evidenceScarcitySmuggleBonus }
+        : {}),
+      ...(patch.simulator.lowGazeOutreachBonus !== undefined
+        ? { lowGazeOutreachBonus: patch.simulator.lowGazeOutreachBonus }
+        : {}),
+    };
+  }
+
   if (patch.setup) {
     const setup = ensureSetup(ruleset);
 

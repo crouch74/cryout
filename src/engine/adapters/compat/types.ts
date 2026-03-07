@@ -447,6 +447,14 @@ export interface RulesetDefinition {
       extractionRemoved?: number;
     };
   };
+  simulatorOverrides?: {
+    actionBias?: Partial<Record<ActionId, number>>;
+    launchCampaignWithoutSetupPenalty?: number;
+    launchCampaignWithSetupBonus?: number;
+    highPressureDefendBonus?: number;
+    evidenceScarcitySmuggleBonus?: number;
+    lowGazeOutreachBonus?: number;
+  };
   victoryScoring?: VictoryScoringConfig;
 }
 
@@ -692,6 +700,9 @@ export interface EngineState {
     actionsById: Record<string, number>;
     lastResolvedActionId: string | null;
     victoryPredicateSatisfiedBeforeAllowedRound: boolean;
+    blockedPublicVictoryByRoundGate?: boolean;
+    blockedPublicVictoryByActionGate?: boolean;
+    blockedPublicVictoryByProgressGate?: boolean;
     lastVictoryScore?: number;
     lastVictoryThreshold?: number;
     lastScoreBreakdown?: Record<string, number>;

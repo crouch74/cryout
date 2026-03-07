@@ -661,6 +661,102 @@ function evaluateCondition(
   }
 }
 
+function readConditionLeftValue(
+  state: EngineState,
+  condition: Extract<Condition, { kind: 'compare' }>,
+  context: ResolveContext,
+) {
+  switch (condition.left.type) {
+    case 'global_gaze':
+      return state.globalGaze;
+    case 'northern_war_machine':
+      return state.northernWarMachine;
+    case 'round':
+      return state.round;
+    case 'domain_progress':
+      return state.domains[assertExists(condition.left.domain, 'Missing domain on compare ref.')].progress;
+    case 'region_extraction':
+      return state.regions[assertExists(condition.left.region, 'Missing region on compare ref.')].extractionTokens;
+    case 'player_evidence':
+      return state.players[resolveSeatSelector(condition.left.player ?? 'seat_owner', context)]?.evidence ?? 0;
+    case 'player_total_comrades':
+      return getSeatTotalComrades(state, resolveSeatSelector(condition.left.player ?? 'seat_owner', context));
+    case 'custom_track':
+      return getCustomTrackState(state, assertExists(condition.left.track, 'Missing track on compare ref.'))?.value ?? 0;
+    case 'scenario_flag':
+      return state.scenarioFlags[assertExists(condition.left.flag, 'Missing flag on compare ref.')] ? 1 : 0;
+  }
+}
+
+function compareProgressRatio(
+  left: number,
+  right: number,
+  op: Extract<Condition, { kind: 'compare' }>['op'],
+) {
+  const baseline = Math.max(Math.abs(right), 1);
+  switch (op) {
+    case '>=':
+      return clamp(left / baseline, { min: 0, max: 1 });
+    case '>':
+      return clamp(left / Math.max(right + 1, 1), { min: 0, max: 1 });
+    case '<=':
+      return left <= right ? 1 : clamp(right / Math.max(left, 1), { min: 0, max: 1 });
+    case '<':
+      return left < right ? 1 : clamp(Math.max(right - 1, 0) / Math.max(left, 1), { min: 0, max: 1 });
+    case '==':
+      return clamp(1 - (Math.abs(left - right) / baseline), { min: 0, max: 1 });
+    case '!=':
+      return left !== right ? 1 : 0;
+  }
+}
+
+function evaluateConditionProgress(
+  state: EngineState,
+  content: CompiledContent,
+  condition: Condition,
+  context: ResolveContext,
+): number {
+  switch (condition.kind) {
+    case 'compare': {
+      const left = readConditionLeftValue(state, condition, context);
+      return Number(compareProgressRatio(left, condition.right, condition.op).toFixed(6));
+    }
+    case 'all':
+      if (condition.conditions.length === 0) {
+        return 1;
+      }
+      return Number((
+        condition.conditions.reduce(
+          (sum, entry) => sum + evaluateConditionProgress(state, content, entry, context),
+          0,
+        ) / condition.conditions.length
+      ).toFixed(6));
+    case 'any':
+      if (condition.conditions.length === 0) {
+        return 0;
+      }
+      return Number(
+        Math.max(...condition.conditions.map((entry) => evaluateConditionProgress(state, content, entry, context))).toFixed(6),
+      );
+    case 'not':
+      return Number((1 - evaluateConditionProgress(state, content, condition.condition, context)).toFixed(6));
+    case 'every_region_extraction_at_most': {
+      const regions = Object.keys(state.regions) as RegionId[];
+      if (regions.length === 0) {
+        return 1;
+      }
+      return Number((
+        regions.reduce((sum, regionId) => {
+          const extraction = state.regions[regionId].extractionTokens;
+          return sum + (extraction <= condition.count ? 1 : clamp(condition.count / Math.max(extraction, 1), { min: 0, max: 1 }));
+        }, 0) / regions.length
+      ).toFixed(6));
+    }
+    case 'all_active_beacons_complete':
+      return computeActiveBeaconCompletionRatio(state);
+  }
+}
+
 function resolveRegionSelector(
   state: EngineState,
   _content: CompiledContent,
@@ -1033,10 +1129,19 @@ function ensureVictoryProgress(state: EngineState) {
       actionsById: {},
       lastResolvedActionId: null,
       victoryPredicateSatisfiedBeforeAllowedRound: false,
+      blockedPublicVictoryByRoundGate: false,
+      blockedPublicVictoryByActionGate: false,
+      blockedPublicVictoryByProgressGate: false,
     };
   }
   state.victoryProgress.victoryPredicateSatisfiedBeforeAllowedRound
     = state.victoryProgress.victoryPredicateSatisfiedBeforeAllowedRound ?? false;
+  state.victoryProgress.blockedPublicVictoryByRoundGate
+    = state.victoryProgress.blockedPublicVictoryByRoundGate ?? false;
+  state.victoryProgress.blockedPublicVictoryByActionGate
+    = state.victoryProgress.blockedPublicVictoryByActionGate ?? false;
+  state.victoryProgress.blockedPublicVictoryByProgressGate
+    = state.victoryProgress.blockedPublicVictoryByProgressGate ?? false;
   return state.victoryProgress;
 }
 
@@ -1116,22 +1221,27 @@ function getMinRoundBeforePublicVictory(content: CompiledContent) {
 
 function canResolvePublicVictory(state: EngineState, content: CompiledContent, context: VictoryCheckContext) {
   const gate = content.ruleset.victoryGate;
+  const progress = ensureVictoryProgress(state);
   if (state.round < getMinRoundBeforePublicVictory(content)) {
+    progress.blockedPublicVictoryByRoundGate = true;
     return false;
   }
 
   const requiredActionId = gate?.requiredAction?.actionId;
   if (requiredActionId) {
     if (context.trigger !== 'action') {
+      progress.blockedPublicVictoryByActionGate = true;
       return false;
     }
     if (context.actionId !== requiredActionId) {
+      progress.blockedPublicVictoryByActionGate = true;
       return false;
     }
   }
 
   const requiredExtractionRemoved = gate?.requiredProgress?.extractionRemoved;
-  if (requiredExtractionRemoved !== undefined && ensureVictoryProgress(state).extractionRemoved < requiredExtractionRemoved) {
+  if (requiredExtractionRemoved !== undefined && progress.extractionRemoved < requiredExtractionRemoved) {
+    progress.blockedPublicVictoryByProgressGate = true;
     return false;
   }
 
@@ -1163,6 +1273,28 @@ function computeMandateCompletionRatio(state: EngineState) {
   }
   const satisfied = state.players.filter((player) => player.mandateSatisfied).length;
   return Math.max(0, Math.min(1, satisfied / state.players.length));
+}
+
+function computeMandateProgressRatio(state: EngineState, content: CompiledContent) {
+  if (!state.secretMandatesEnabled || state.players.length === 0) {
+    return 1;
+  }
+
+  const totalProgress = state.players.reduce((sum, player) => {
+    if (player.mandateSatisfied) {
+      return sum + 1;
+    }
+
+    const faction = getFaction(content, player);
+    return sum + evaluateConditionProgress(
+      state,
+      content,
+      faction.mandate.condition,
+      { actingSeat: player.seat, causedBy: [faction.mandate.id, 'mandate_progress'] },
+    );
+  }, 0);
+
+  return Number(clamp(totalProgress / state.players.length, { min: 0, max: 1 }).toFixed(6));
 }
 
 function computeActiveBeaconCompletionRatio(state: EngineState) {
@@ -1289,10 +1421,9 @@ function computeVictoryScore(
 
   if (config.mandatesAsScore?.enabled) {
     const progressMode = config.mandatesAsScore.mandateProgressMode ?? 'binary';
-    if (progressMode === 'progress') {
-      console.log('⚠️ mandateProgressMode=progress has no native mandate progress signal yet. Falling back to binary mandate completion.');
-    }
-    const ratio = computeMandateCompletionRatio(state);
+    const ratio = progressMode === 'progress'
+      ? computeMandateProgressRatio(state, content)
+      : computeMandateCompletionRatio(state);
     const points = config.mandatesAsScore.weight * ratio;
     breakdown.mandates_bucket = Number(points.toFixed(6));
     score += points;
@@ -2163,6 +2294,9 @@ function createInitialState(command: StartGameCommand, content: CompiledContent)
       actionsById: {},
       lastResolvedActionId: null,
       victoryPredicateSatisfiedBeforeAllowedRound: false,
+      blockedPublicVictoryByRoundGate: false,
+      blockedPublicVictoryByActionGate: false,
+      blockedPublicVictoryByProgressGate: false,
     },
   };
 
@@ -2774,9 +2908,18 @@ export function normalizeEngineState(state: EngineState): EngineState {
     actionsById: {},
     lastResolvedActionId: null,
     victoryPredicateSatisfiedBeforeAllowedRound: false,
+    blockedPublicVictoryByRoundGate: false,
+    blockedPublicVictoryByActionGate: false,
+    blockedPublicVictoryByProgressGate: false,
   };
   next.victoryProgress.victoryPredicateSatisfiedBeforeAllowedRound
     = next.victoryProgress.victoryPredicateSatisfiedBeforeAllowedRound ?? false;
+  next.victoryProgress.blockedPublicVictoryByRoundGate
+    = next.victoryProgress.blockedPublicVictoryByRoundGate ?? false;
+  next.victoryProgress.blockedPublicVictoryByActionGate
+    = next.victoryProgress.blockedPublicVictoryByActionGate ?? false;
+  next.victoryProgress.blockedPublicVictoryByProgressGate
+    = next.victoryProgress.blockedPublicVictoryByProgressGate ?? false;
   next.eventLog = (next.eventLog ?? []).map((event) => ({
     ...event,
     ...(event.context

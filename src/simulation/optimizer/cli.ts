@@ -102,6 +102,7 @@ const STRATEGY_DESCRIPTIONS: Record<OptimizerStrategyMode, string> = {
   numeric_balancing: 'Prioritizes numeric pressure/threshold mutations (setup, pressure, victory, mandate numeric knobs).',
   victory_gating_exploration: 'Focuses on victory gate parameters (round/action/progress) to reduce structural early wins.',
   trajectory_discovery: 'Prioritizes trajectory-guided mutations based on sampled victory paths.',
+  action_diversity: 'Explores simulator-only action-balance overrides to reduce dominant loops and increase setup/action variety.',
   full_optimizer: 'Uses all candidate families (numeric, gating, trajectory, hill-climb, and random fallback).',
 };
 
@@ -262,13 +263,14 @@ ${scenarioOptions}
       lenient: ${SIGNIFICANCE_DESCRIPTIONS.lenient}
     Impact: Controls how hard it is for a patch to be accepted.
 
-  --strategy <numeric_balancing|victory_gating_exploration|trajectory_discovery|full_optimizer>
+  --strategy <numeric_balancing|victory_gating_exploration|trajectory_discovery|action_diversity|full_optimizer>
     Name: Candidate Strategy Mode
     Functionality: Chooses which candidate generators are active.
     Implementation:
       numeric_balancing: ${STRATEGY_DESCRIPTIONS.numeric_balancing}
       victory_gating_exploration: ${STRATEGY_DESCRIPTIONS.victory_gating_exploration}
       trajectory_discovery: ${STRATEGY_DESCRIPTIONS.trajectory_discovery}
+      action_diversity: ${STRATEGY_DESCRIPTIONS.action_diversity}
       full_optimizer: ${STRATEGY_DESCRIPTIONS.full_optimizer}
     Impact: Changes the search space and shape of proposed rule patches.
 
@@ -418,12 +420,13 @@ function parseStrategy(raw: string): OptimizerStrategyMode {
     value === 'numeric_balancing'
     || value === 'victory_gating_exploration'
     || value === 'trajectory_discovery'
+    || value === 'action_diversity'
     || value === 'full_optimizer'
   ) {
     return value;
   }
   throw new Error(
-    `Unsupported --strategy value "${raw}". Use numeric_balancing, victory_gating_exploration, trajectory_discovery, or full_optimizer.`,
+    `Unsupported --strategy value "${raw}". Use numeric_balancing, victory_gating_exploration, trajectory_discovery, action_diversity, or full_optimizer.`,
   );
 }
 
@@ -714,6 +717,7 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
           { name: 'numeric balancing - tune numeric pressure/threshold knobs', value: 'numeric_balancing' },
           { name: 'victory gating exploration - focus on round/action/progress gates', value: 'victory_gating_exploration' },
           { name: 'trajectory discovery - prioritize trajectory-guided mutations', value: 'trajectory_discovery' },
+          { name: 'action diversity - simulator-only setup/action ecology search', value: 'action_diversity' },
           { name: 'full optimizer (all methods) - widest search, longest runtime', value: 'full_optimizer' },
         ],
       },

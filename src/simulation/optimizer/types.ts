@@ -19,6 +19,7 @@ export type OptimizerStrategyMode =
   | 'numeric_balancing'
   | 'victory_gating_exploration'
   | 'trajectory_discovery'
+  | 'action_diversity'
   | 'full_optimizer';
 
 export type OptimizerCandidateStrategy =
@@ -26,6 +27,7 @@ export type OptimizerCandidateStrategy =
   | 'hill_climb'
   | 'trajectory_guided'
   | 'parameter_sweep'
+  | 'action_diversity_seed'
   | 'balance_seed'
   | 'victory_gating_round'
   | 'victory_gating_action'
