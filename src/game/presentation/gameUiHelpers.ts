@@ -541,9 +541,9 @@ export function getPlayerStripSummary(player: PlayerState, content: CompiledCont
     detailLines: secretMandatesEnabled
       ? getMandateLines(faction.id)
       : [
-          localizeFactionField(faction.id, 'passive', faction.passive),
-          `${t('ui.game.weakness', 'Weakness')}: ${localizeFactionField(faction.id, 'weakness', faction.weakness)}`,
-        ].filter(Boolean),
+        localizeFactionField(faction.id, 'passive', faction.passive),
+        `${t('ui.game.weakness', 'Weakness')}: ${localizeFactionField(faction.id, 'weakness', faction.weakness)}`,
+      ].filter(Boolean),
     detailKind: secretMandatesEnabled ? 'mandate' : 'open_role',
     ready: player.ready,
   };

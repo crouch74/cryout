@@ -517,3 +517,136 @@ select {
     grid-column: span 1;
   }
 }
+
+.alert-banner {
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  margin-bottom: 20px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.alert-banner.warning {
+  background: #fff9eb;
+  border-color: var(--gold);
+  color: #854d0e;
+}
+
+.alert-banner strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 15px;
+  color: var(--ink);
+}
+
+/* Tooltip Styles */
+.tooltip-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+}
+
+.help-icon, .info-icon, .warning-icon {
+  opacity: 0.6;
+  transition: opacity 0.2s, color 0.2s;
+}
+
+.help-icon:hover, .info-icon:hover, .warning-icon:hover {
+  opacity: 1;
+}
+
+.help-icon:hover { color: var(--blue); }
+.info-icon { color: var(--blue); }
+.warning-icon { color: var(--red); }
+
+.tooltip-content.insight {
+  border-left: 3px solid var(--blue);
+}
+
+.tooltip-content.warning {
+  border-left: 3px solid var(--red);
+}
+
+/* RTL Support */
+[dir="rtl"] {
+  text-align: right;
+}
+
+[dir="rtl"] .sidebar {
+  border-right: none;
+  border-left: 1px solid var(--border);
+}
+
+[dir="rtl"] .brand-mark {
+  margin-right: 0;
+  margin-left: 12px;
+}
+
+[dir="rtl"] .nav-button svg {
+  margin-right: 0;
+  margin-left: 10px;
+}
+
+[dir="rtl"] .tooltip-content {
+  left: auto;
+  right: 100%;
+  margin-left: 0;
+  margin-right: 10px;
+}
+
+[dir="rtl"] .metric-card {
+  text-align: right;
+}
+
+[dir="rtl"] .card-icons {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.tooltip-content {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 8px;
+  width: 280px;
+  padding: 16px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  z-index: 1000;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+.tooltip-container:hover .tooltip-content {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.tooltip-content strong {
+  display: block;
+  font-size: 14px;
+  color: var(--blue);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tooltip-content p {
+  font-size: 13px;
+  color: var(--slate);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.recommendation-block-inconclusive {
+  border: 1px dashed var(--gold);
+  background: #fffdf8;
+}

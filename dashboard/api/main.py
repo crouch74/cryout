@@ -330,6 +330,24 @@ def build_overview() -> Dict[str, Any]:
                 }
             )
 
+    parallel_runs: List[Dict[str, Any]] = []
+    parallel_root = os.path.join(SIM_DIR, "optimizer", "all_scenarios_parallel")
+    for parent_run_id in list_subdirs(parallel_root):
+        run_dir = os.path.join(parallel_root, parent_run_id)
+        report = load_json(os.path.join(run_dir, "all_scenarios_parallel_report.json"), default={})
+        results = load_json(os.path.join(run_dir, "scenario_results.json"), default=[])
+        config = load_json(os.path.join(run_dir, "optimizer_config.json"), default={})
+        parallel_runs.append({
+            "parentRunId": parent_run_id,
+            "generatedAt": config.get("generatedAt"),
+            "scenarioCount": len(results),
+            "totalRuns": sum(r.get("runs", 0) for r in results) if results else report.get("totalRuns", 0),
+            "successRate": report.get("averageSuccessRate", 0) if "averageSuccessRate" in report else report.get("successRate", 0),
+            "scenarios": [r.get("scenarioId") for r in results],
+            "childRuns": {r.get("scenarioId"): r.get("outputDir").split("/")[-1] for r in results if r.get("outputDir")}
+        })
+    parallel_runs.sort(key=lambda r: r.get("generatedAt") or "", reverse=True)
+
     strategies = [
         {
             "strategyId": strategy_id,
@@ -346,6 +364,7 @@ def build_overview() -> Dict[str, Any]:
         "scenarios": scenarios,
         "strategies": strategies,
         "optimizerStatus": optimizer_status,
+        "parallelRuns": parallel_runs,
     }
 
 
@@ -1382,15 +1401,57 @@ def build_run_comparison(scenario_id: str, left_run_key: str, right_run_key: str
     }
 
 
+def merge_dicts(a: Dict[str, Any], b: Dict[str, Any]) -> Dict[str, Any]:
+    merged = a.copy()
+    for k, v in b.items():
+        if k in merged:
+            if isinstance(v, dict) and isinstance(merged[k], dict):
+                merged[k] = merge_dicts(merged[k], v)
+            elif isinstance(v, list) and isinstance(merged[k], list):
+                merged[k] = merged[k] + v
+            elif isinstance(v, (int, float)) and isinstance(merged[k], (int, float)):
+                merged[k] = merged[k] + v
+        else:
+            merged[k] = v
+    return merged
+
+
 def build_scenario_analysis(scenario_id: str, scope: str, run_key: Optional[str]) -> Dict[str, Any]:
     overview = build_overview()
-    scenario_summary = next((item for item in overview["scenarios"] if item["scenarioId"] == scenario_id), None)
-    if not scenario_summary:
-        raise HTTPException(status_code=404, detail="Scenario not found")
+    if scenario_id == "all":
+        scenario_summary = {
+            "scenarioId": "all",
+            "runs": sum(item["runs"] for item in overview["scenarios"]),
+            "successRate": safe_mean(item["successRate"] for item in overview["scenarios"]) if overview["scenarios"] else 0,
+            "latestRunCount": sum(item.get("latestRunCount", 0) for item in overview["scenarios"]),
+        }
+        all_runs = []
+        for s in overview["scenarios"]:
+            all_runs.extend(list_optimizer_runs_for_scenario(s["scenarioId"]))
+            
+        selected_runs = []
+        selection = {"scope": scope, "runKey": run_key, "label": f"All ({scope})"}
+        for s in overview["scenarios"]:
+            try:
+                runs, _ = select_runs_for_scope(s["scenarioId"], scope, run_key)
+                selected_runs.extend(runs)
+            except HTTPException:
+                pass
+                
+        trajectory = {}
+        for s in overview["scenarios"]:
+            traj = build_trajectory_analytics(s["scenarioId"])
+            trajectory = merge_dicts(trajectory, dict(traj))
+            
+    else:
+        scenario_summary = next((item for item in overview["scenarios"] if item["scenarioId"] == scenario_id), None)
+        if not scenario_summary:
+            raise HTTPException(status_code=404, detail="Scenario not found")
 
-    all_runs = list_optimizer_runs_for_scenario(scenario_id)
-    selected_runs, selection = select_runs_for_scope(scenario_id, scope, run_key)
-    trajectory = build_trajectory_analytics(scenario_id)
+        all_runs = list_optimizer_runs_for_scenario(scenario_id)
+        selected_runs, selection = select_runs_for_scope(scenario_id, scope, run_key)
+        trajectory = build_trajectory_analytics(scenario_id)
+        
     histories = [item for run in selected_runs for item in normalize_history_for_run(run)]
     generation_progress = [row for run in selected_runs for row in build_generation_progress(run)[0]]
     genome_drift = [row for run in selected_runs for row in build_generation_progress(run)[1]]

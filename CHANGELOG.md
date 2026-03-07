@@ -11,6 +11,18 @@ All notable changes to this project will be documented in this file.
   - **TAHRIR SQUARE**: Optimized for 18-day pacing. Cairo/Alexandria start with lower extraction overhead. Total liberation extraction cap raised to 4. Thresholds tightened by 1 to maintain revolutionary tension.
   - **WHERE THE STONES CRY OUT**: Base world scenario stabilized. Global Gaze (8) and War Machine (4) adjusted for early survivability. Improved liberation threshold to 3.
 
+### Improved
+- 📊 **Dashboard Recommendation Fallback** — implemented a smart fallback in the Recommendations tab. If no strong production-ready patch is identified by the optimizer, the dashboard now surface the "Top Genome" (highest fitness individual) as a draft recommendation.
+  - Added **Inconclusive Analysis** status for draft recommendations.
+  - Detailed explanation of verification gaps (noise, sample size, convergence).
+  - Visual highlighting of draft status with gold-dashed borders and warning banners.
+
+- 🌍 **Dashboard Localization & Insights** — localized the entire analytical dashboard and added data-driven intelligence features.
+  - **Egyptian Arabic Support** — complete, formal Egyptian Arabic (ar-EG) localization with RTL layout support.
+  - **Dynamic Insights & Warnings** — every graph now features an Info (insight) and Warning icon that surfaces specific observations based on the current data instance.
+  - **Premium Tooltip System** — refined the glassmorphism tooltips to support mixed content (guide, insight, and warning) in a unified UI pattern.
+  - **Language Toggle** — added a seamless English/Arabic switcher in the sidebar.
+
 ## [0.11.0] - To Be Released
 ### Added
 - 🇪🇬 **Scenario Expansion: 1919 — EGYPT RISES** — added the full historical uprising scenario, featuring:

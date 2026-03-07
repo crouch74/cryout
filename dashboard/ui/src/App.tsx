@@ -3,15 +3,20 @@ import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import {
   Activity,
+  AlertTriangle,
   ArrowLeftRight,
   BookMarked,
   Gauge,
   GitBranch,
+  HelpCircle,
+  Info,
   Layers,
+  PieChart as PieChartIcon,
   Radar,
   Target,
   Workflow,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import {
   Bar,
   BarChart,
@@ -36,13 +41,14 @@ import {
   YAxis,
 } from 'recharts';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000';
 
 type OverviewPayload = {
   summary: any;
   scenarios: any[];
   strategies: any[];
   optimizerStatus: any[];
+  parallelRuns: any[];
 };
 
 type ScenarioPayload = {
@@ -84,6 +90,7 @@ const LEVELS = [
   { id: 'balance', label: 'Scenario Balance', icon: Target },
   { id: 'optimizer', label: 'Optimizer Progress', icon: GitBranch },
   { id: 'parameters', label: 'Parameter Effects', icon: Gauge },
+  { id: 'actions', label: 'Action Diversity', icon: PieChartIcon },
   { id: 'comparison', label: 'Run Comparison', icon: ArrowLeftRight },
   { id: 'trajectories', label: 'Gameplay Trajectories', icon: Workflow },
   { id: 'recommendations', label: 'Recommendations', icon: BookMarked },
@@ -169,6 +176,8 @@ function readUrlState(): {
 }
 
 function App() {
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language === 'ar-EG';
   const initialUrlState = readUrlState();
   const [activeLevel, setActiveLevel] = useState<(typeof LEVELS)[number]['id']>(initialUrlState.level || 'overview');
   const [overview, setOverview] = useState<OverviewPayload | null>(null);
@@ -213,6 +222,14 @@ function App() {
     };
     void fetchOverview();
   }, []);
+
+  useEffect(() => {
+    if (!scenarioOptions.length) return;
+    const validScenarioIds = new Set(scenarioOptions.map((scenario) => scenario.scenarioId));
+    if (!selectedScenario || (!validScenarioIds.has(selectedScenario) && selectedScenario !== 'all')) {
+      setSelectedScenario(scenarioOptions[0].scenarioId);
+    }
+  }, [scenarioOptions, selectedScenario]);
 
   useEffect(() => {
     if (!selectedScenario) return;
@@ -266,7 +283,7 @@ function App() {
   useEffect(() => {
     const availableIterations = Array.from(
       new Set((optimizer?.iterations || []).map((item: any) => item.iteration).filter(Boolean)),
-    ).sort((a, b) => a - b);
+    ).sort((a: any, b: any) => a - b);
 
     if (!availableIterations.length) {
       setSelectedOptimizerIteration('all');
@@ -277,11 +294,11 @@ function App() {
       selectedOptimizerIteration !== 'all' &&
       !availableIterations.includes(selectedOptimizerIteration)
     ) {
-      setSelectedOptimizerIteration(availableIterations[availableIterations.length - 1]);
+      setSelectedOptimizerIteration(availableIterations[availableIterations.length - 1] as any);
     }
 
     if (selectedOptimizerIteration === 'all' && availableIterations.length === 1) {
-      setSelectedOptimizerIteration(availableIterations[0]);
+      setSelectedOptimizerIteration(availableIterations[0] as any);
     }
   }, [optimizer, selectedOptimizerIteration]);
 
@@ -408,6 +425,23 @@ function App() {
     [iterations],
   );
 
+  const topGenomeCandidate = useMemo(() => {
+    if (!iterations.length) return null;
+    let best: any = null;
+    iterations.forEach((iter: any) => {
+      (iter.topCandidates || []).forEach((candidate: any) => {
+        if (!best || (candidate.score || 0) > (best.score || 0)) {
+          best = {
+            ...candidate,
+            iteration: iter.iteration,
+            runLabel: iter.runLabel,
+          };
+        }
+      });
+    });
+    return best;
+  }, [iterations]);
+
   const structuralAlerts = useMemo(() => {
     if (!iterations.length) {
       return [];
@@ -463,7 +497,7 @@ function App() {
     () =>
       Array.from(
         new Set((trajectory?.playerCounts || []).map((item: any) => Number(item.playerCount)).filter(Boolean)),
-      ).sort((a, b) => a - b),
+      ).sort((a: any, b: any) => a - b),
     [trajectory],
   );
 
@@ -499,7 +533,7 @@ function App() {
     () =>
       Array.from(
         new Set((optimizer?.iterations || []).map((item: any) => item.iteration).filter(Boolean)),
-      ).sort((a, b) => a - b),
+      ).sort((a: any, b: any) => a - b),
     [optimizer],
   );
 
@@ -593,29 +627,148 @@ function App() {
     },
   ];
 
-  if (loadingOverview) {
-    return <LoadingState label="Reading simulation intelligence" />;
+  const sortedFailures = [...globalScenarioRows].sort((a, b) => a.successRate - b.successRate).filter((r: any) => r.successRate < 25);
+  const overviewWarning = sortedFailures.slice(0, 3).map((r: any) => 
+    t('insights.global_overview_warning', { scenario: titleCase(r.scenario), rate: r.successRate, defaultValue: `Critical Imbalance: ${titleCase(r.scenario)} is failing at a success rate of ${r.successRate}%. A rate beneath 25% implies an overpowered System. Consider lowering starting War Machine.` })
+  );
+
+  const sortedSuccesses = [...globalScenarioRows].sort((a, b) => b.successRate - a.successRate).filter((r: any) => r.successRate > 50);
+  const overviewInsight = sortedSuccesses.slice(0, 3).map((r: any) =>
+    t('insights.global_overview_insight', { scenario: titleCase(r.scenario), rate: r.successRate, defaultValue: `Safe Convergence: ${titleCase(r.scenario)} reached a stable ${r.successRate}% baseline win rate.` })
+  );
+
+  const extCount = summary?.defeatReasons?.extraction || 0;
+  const comCount = summary?.defeatReasons?.comrade_exhaustion || 0;
+  const totalDefeats = Object.values(summary?.defeatReasons || {}).reduce((a: any, b: any) => a + b, 0) as number || 1;
+  const extPct = ((extCount / totalDefeats) * 100).toFixed(1);
+
+  const defeatWarning: string[] = [];
+  if (extCount > comCount * 1.5 && extCount > 0) {
+    defeatWarning.push(t('insights.defeat_composition_warning', { extCount, extPct, comCount, defaultValue: `Extraction Dominance: ${extCount} simulations (${extPct}%) ended via Extraction Overrun. The board is filling with System tokens too fast.` }));
+  }
+  if (comCount > extCount * 1.5 && comCount > 0) {
+    defeatWarning.push(t('insights.defeat_composition_warning_com', { count: comCount, pct: ((comCount / totalDefeats) * 100).toFixed(1), defaultValue: `Comrade Exhaustion: ${comCount} simulations (${((comCount / totalDefeats) * 100).toFixed(1)}%) ended via depletion. Players cannot recruit fast enough.` }));
   }
 
-  const showScenarioFilter = activeLevel !== 'overview';
+  const domAction = actionDiversity?.dominantAction ? titleCase(actionDiversity.dominantAction) : 'n/a';
+  const domShare = ((actionDiversity?.concentration || 0) * 100).toFixed(1);
+  const actionDiversityWarning: string[] = [];
+  if ((actionDiversity?.concentration || 0) > 0.5) {
+    actionDiversityWarning.push(t('insights.action_diversity_warning', { dominantAction: domAction, share: domShare, defaultValue: `Action Collapse: The action '${domAction}' accounts for ${domShare}% of all selections. Players rely on this single dominant line.` }));
+  }
+  if ((actionDiversity?.entropy || 10) < 1.0) {
+    actionDiversityWarning.push(t('insights.action_entropy_warning', { defaultValue: `Low Entropy: Overall strategic paths are deeply constrained. Diverse lines of play are failing or ignored.` }));
+  }
+
+  const sortedDeltas = [...actionMixDeltaRows].sort((a: any, b: any) => (b.selectedShare / (b.baselineShare || 1)) - (a.selectedShare / (a.baselineShare || 1)));
+  const actionMixInsight = sortedDeltas.slice(0, 3)
+    .filter((r: any) => r.selectedShare > r.baselineShare * 1.2)
+    .map((r: any) =>
+      t('insights.action_mix_insight', { action: r.label, baseline: (r.baselineShare * 100).toFixed(1), selected: (r.selectedShare * 100).toFixed(1), defaultValue: `Successful Shift: Usage of '${r.label}' increased from ${ (r.baselineShare * 100).toFixed(1) }% to ${ (r.selectedShare * 100).toFixed(1) }%.` })
+    );
+
+  const strategies = overview?.strategies || [];
+  const strategyWarning = [...strategies]
+    .filter((r: any) => r.successRate < 0.2)
+    .sort((a: any, b: any) => a.successRate - b.successRate)
+    .slice(0, 3)
+    .map((r: any) =>
+      t('insights.strategy_warning', { strategy: titleCase(r.strategy), rate: (r.successRate * 100).toFixed(1), defaultValue: `Strategy Imbalance: The '${titleCase(r.strategy)}' auto-player is failing at ${(r.successRate * 100).toFixed(1)}% win rate.` })
+    );
+
+  const maxNoImprovement = iterationTrendRows.length > 0 ? Math.max(...iterationTrendRows.map((r: any) => r.noImprovementStreak)) : 0;
+  const trendWarning: string[] = [];
+  if (maxNoImprovement >= 5) {
+    trendWarning.push(t('insights.trend_warning', { streak: maxNoImprovement, defaultValue: `Stagnation Alert: The optimizer has been stuck for ${maxNoImprovement} iterations without discovering a better fitness genome. Consider altering mutation rates or relaxing constraints.` }));
+  }
+
+  const editRecommendationInsight = (scenarioRecommendations || []).slice(0, 3).map((recom: any) =>
+    t('insights.edit_recommendation_insight', { action: recom.label, lever: recom.lever, defaultValue: `Target Identified: Recommend adjusting '${recom.lever}' to boost '${recom.label}'.` })
+  );
+
+  const gaConvergenceInsights: string[] = [];
+  if (gaRowsForIteration.length > 5) {
+    gaConvergenceInsights.push(`Steady Progress: The 'Best' fitness line (Green) has improved over ${gaRowsForIteration.length} generations. The 'Mean' fitness line (Pink) tracks behind it, proving the population isn't stuck.`);
+  }
+
+  const genomeDriftWarnings: string[] = [];
+  if (genomeRowsForIteration.length > 0) {
+    genomeDriftWarnings.push(`Parameter Volatility: Watch parameters like '${genomePreview[0] || 'Unknown'}' (Green or Pink line). Oscillations instead of flattening out means the optimizer struggles to find an optimal locus.`);
+  }
+
+  const actionDiversityRunWarnings: string[] = [];
+  const maxUnderusedLiftRun = actionRunDiagnostics.length ? [...actionRunDiagnostics].sort((a,b) => b.underusedActionLift - a.underusedActionLift)[0] : null;
+  if (maxUnderusedLiftRun && maxUnderusedLiftRun.underusedActionLift > 0.1) {
+    actionDiversityRunWarnings.push(`Varying Optimizer Success: Run '${maxUnderusedLiftRun.compactLabel}' shows huge targeted lift (Pink bar), but if its overall Entropy (Green bar) drops below 1.0, the AI only learned to exploit your buff instead of diversifying.`);
+  }
+
+  const actionMixByOutcomeInsights: string[] = [];
+  const victoryDriver = [...actionMixRows].sort((a,b) => (b.victory - b.defeat) - (a.victory - a.defeat))[0];
+  if (victoryDriver && (victoryDriver.victory - victoryDriver.defeat) > 0.5) {
+    actionMixByOutcomeInsights.push(`Victory Engine: '${victoryDriver.label}' is played significantly more in Victories (Green bar) than Defeats (Red bar). This action serves as the core engine for success.`);
+  }
+
+  const actionMixByOutcomeWarnings: string[] = [];
+  const defeatDriver = [...actionMixRows].sort((a,b) => (b.defeat - b.victory) - (a.defeat - a.victory))[0];
+  if (defeatDriver && (defeatDriver.defeat - defeatDriver.victory) > 1.0) {
+    actionMixByOutcomeWarnings.push(`Desperation Play: '${defeatDriver.label}' spikes in Defeats (Red bar). Players are forced to spam it defensively to survive rather than advancing their win condition.`);
+  }
+
+  const actionShareByRoundInsights: string[] = [`Opening vs Endgame: The thickness and color of lines show action priority shifts. Watch if 'heavy' actions dominate the final 3 rounds instead of early setup.`];
+  const terminalTimingWarnings: string[] = [`Panic Threshold: If a low-utility 'Clear' action dominates the 'Before defeat' (Red bar) distribution, the board's pressure scaling is too severe in the final rounds.`];
+
+  const turnHistogramWarnings: string[] = [];
+  if (turnHistogramRows.some((r: any) => r.turn < 5 && r.count > 0)) {
+     turnHistogramWarnings.push(`Premature Failure: Simulations are ending before round 5. The scenario's starting pressure triggers early defeat before establishing an engine.`);
+  }
+  const turnHistogramInsights: string[] = [`Expected Game Length: Compare peaks of Victory (Green) and Defeat (Red). An ideal scenario shows both distributions peaking between rounds 8 to 12.`];
+
+  const targetDistanceInsights: string[] = [];
+  const closestTarget = [...targetDistanceRows].sort((a: any, b: any) => a.distance - b.distance)[0];
+  if (closestTarget) {
+     targetDistanceInsights.push(`Closest Metric: '${closestTarget.metric}' (Green dot) is closest to target value. The optimizer found this balance vector easiest to solve.`);
+  }
+  const targetDistanceWarnings: string[] = [];
+  const furthestTarget = [...targetDistanceRows].sort((a: any, b: any) => b.distance - a.distance)[0];
+  if (furthestTarget && furthestTarget.distance > 0.2) {
+     targetDistanceWarnings.push(`Stubborn Metric: '${furthestTarget.metric}' (Red dot) remains furthest from its target. Review if the scenario rules allow its target to be reached at all.`);
+  }
+
+  const parameterImpactInsights: string[] = [];
+  if (parameterImpactRows.length > 0) {
+     parameterImpactInsights.push(`Highest Leverage: '${parameterImpactRows[0].parameter}' parameter (Green bar) causes the highest variance in success rate. This is your most sensitive balance dial.`);
+  }
+  const pressureWarnings: string[] = [`Runaway Tracks: If any domain line (e.g. War Machine - Red line) hits the ceiling early (~round 5), players lack efficient push-back mechanics.`];
+
+
+  if (loadingOverview) {
+    return <LoadingState label={t('common.loadingOverview')} />;
+  }
+
+  const showScenarioFilter = true;
   const showRunScopeFilter =
-    activeLevel === 'balance' || activeLevel === 'optimizer' || activeLevel === 'parameters';
+    activeLevel === 'balance'
+    || activeLevel === 'optimizer'
+    || activeLevel === 'parameters'
+    || activeLevel === 'actions'
+    || activeLevel === 'trajectories'
+    || activeLevel === 'recommendations';
   const showSpecificRunFilter = showRunScopeFilter && runScope === 'specific_run';
   const showIterationFilter = activeLevel === 'parameters' && optimizerIterationOptions.length > 0;
   const showComparisonFilters = activeLevel === 'comparison';
-  const showRecommendationFilter = activeLevel === 'recommendations';
-  const showTrajectoryFilters = activeLevel === 'trajectories';
+  const showTrajectoryFilters = activeLevel === 'trajectories' || activeLevel === 'actions';
+
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" dir={isRtl ? 'rtl' : 'ltr'}>
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark">
             <Radar size={20} />
           </div>
           <div>
-            <p className="eyebrow">Scenario Balance Lab</p>
-            <h1>Stones Analytics</h1>
+            <p className="eyebrow">{t('common.tagline')}</p>
+            <h1>{t('common.brand')}</h1>
           </div>
         </div>
 
@@ -627,13 +780,24 @@ function App() {
               onClick={() => setActiveLevel(id)}
             >
               <Icon size={16} />
-              <span>{label}</span>
+              <span>{t(`nav.${id}`, { defaultValue: label })}</span>
             </button>
           ))}
         </div>
 
+        <div className="sidebar-footer">
+          <button
+            className="nav-button lang-toggle"
+            style={{ marginTop: 'auto', borderTop: '1px solid var(--border)', paddingTop: '12px' }}
+            onClick={() => i18n.changeLanguage(i18n.language === 'en' ? 'ar-EG' : 'en')}
+          >
+            <Layers size={16} />
+            <span>{i18n.language === 'en' ? 'العربية' : 'English'}</span>
+          </button>
+        </div>
+
         <div className="sidebar-card">
-          <p className="eyebrow">Questions</p>
+          <p className="eyebrow">{t('common.questions')}</p>
           {balanceQuestions.map((item) => (
             <div key={item.label} className="question-row">
               <span>{item.label}</span>
@@ -646,8 +810,8 @@ function App() {
       <main className="main">
         <header className="page-header">
           <div>
-            <p className="eyebrow">Simulation analytics system</p>
-            <h2>{LEVELS.find((item) => item.id === activeLevel)?.label}</h2>
+            <p className="eyebrow">{t('common.simulationSystem')}</p>
+            <h2>{t(`nav.${activeLevel}`, { defaultValue: LEVELS.find((item) => item.id === activeLevel)?.label })}</h2>
             <p className="lede">
               Multi-level balance diagnostics for scenarios, optimizer behavior, parameter
               effects, and gameplay trajectories.
@@ -655,30 +819,37 @@ function App() {
           </div>
           <div className="header-summary">
             <MetricCard
-              label="Global Success Rate"
+              label={t('common.globalSuccess')}
               value={pct(summary?.successRate)}
               tone="accent"
             />
-            <MetricCard label="Scenarios" value={`${scenarioOptions.length}`} />
+            <MetricCard label={t('common.scenarios')} value={`${scenarioOptions.length}`} />
             <MetricCard
-              label="Run Scope"
+              label={t('common.runScope')}
               value={runSelectionLabel}
               tone="soft"
             />
           </div>
         </header>
 
-        {(showScenarioFilter || showRunScopeFilter || showIterationFilter || showComparisonFilters || showRecommendationFilter || showTrajectoryFilters) ? (
+        {(showScenarioFilter || showRunScopeFilter || showIterationFilter || showComparisonFilters || showTrajectoryFilters) ? (
           <section className="filter-toolbar">
             {showScenarioFilter ? (
               <div className="filter-card">
-                <label className="eyebrow" htmlFor="scenario-filter">Scenario</label>
+                <label className="eyebrow" htmlFor="scenario-filter">{t('common.scenario')}</label>
                 <select
                   id="scenario-filter"
                   value={selectedScenario}
-                  onChange={(event) => setSelectedScenario(event.target.value)}
+                  onChange={(event) => {
+                    const val = event.target.value;
+                    setSelectedScenario(val);
+                    if (val !== 'all' && activeLevel === 'overview') {
+                      setActiveLevel('balance');
+                    }
+                  }}
                   className="scenario-select"
                 >
+                  <option value="all">{t('common.allScenarios', { defaultValue: 'All Scenarios' })}</option>
                   {scenarioOptions.map((scenario) => (
                     <option key={scenario.scenarioId} value={scenario.scenarioId}>
                       {titleCase(scenario.scenarioId)}
@@ -686,15 +857,24 @@ function App() {
                   ))}
                 </select>
                 <div className="filter-meta">
-                  <MetricMini label="Runs" value={`${currentScenario?.runs || 0}`} />
-                  <MetricMini label="Success" value={pct(currentScenario?.successRate)} />
+                  {activeLevel === 'overview' ? (
+                    <>
+                      <MetricMini label={t('common.runs')} value={`${summary?.totalRuns || 0}`} />
+                      <MetricMini label={t('common.success')} value={pct(summary?.successRate)} />
+                    </>
+                  ) : (
+                    <>
+                      <MetricMini label={t('common.runs')} value={`${currentScenario?.runs || 0}`} />
+                      <MetricMini label={t('common.success')} value={pct(currentScenario?.successRate)} />
+                    </>
+                  )}
                 </div>
               </div>
             ) : null}
 
             {showRunScopeFilter ? (
               <div className="filter-card">
-                <label className="eyebrow" htmlFor="scope-filter">Run Scope</label>
+                <label className="eyebrow" htmlFor="scope-filter">{t('common.runScope')}</label>
                 <select
                   id="scope-filter"
                   value={runScope}
@@ -703,7 +883,7 @@ function App() {
                 >
                   {RUN_SCOPE_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
-                      {option.label}
+                      {t(`runScopes.${option.value}`, { defaultValue: option.label })}
                     </option>
                   ))}
                 </select>
@@ -713,7 +893,9 @@ function App() {
 
             {showSpecificRunFilter ? (
               <div className="filter-card">
-                <label className="eyebrow" htmlFor="run-filter">Specific Run</label>
+                <label className="eyebrow" htmlFor="run-filter">
+                  {activeLevel === 'recommendations' ? 'Recommended Run' : 'Specific Run'}
+                </label>
                 <select
                   id="run-filter"
                   value={selectedRunKey}
@@ -727,7 +909,13 @@ function App() {
                     </option>
                   ))}
                 </select>
-                <div className="filter-caption">Pinned permalink-ready run selection.</div>
+                <div className="filter-caption">
+                  {activeLevel === 'trajectories'
+                    ? 'Run selection scopes optimizer-backed diagnostics. Raw trajectory charts still read scenario-wide simulation history.'
+                    : activeLevel === 'recommendations'
+                      ? 'Pinned run for the recommended config shelf.'
+                      : 'Pinned permalink-ready run selection.'}
+                </div>
               </div>
             ) : null}
 
@@ -745,8 +933,8 @@ function App() {
                   className="scenario-select"
                 >
                   {optimizerIterationOptions.length > 1 ? <option value="all">All Iterations</option> : null}
-                  {optimizerIterationOptions.map((iteration) => (
-                    <option key={iteration} value={iteration}>
+                  {optimizerIterationOptions.map((iteration: any) => (
+                    <option key={String(iteration)} value={String(iteration)}>
                       Iteration {iteration}
                     </option>
                   ))}
@@ -769,14 +957,14 @@ function App() {
                     onChange={(event) => setComparisonLeftRunKey(event.target.value)}
                     className="scenario-select"
                   >
-                    <option value="">Select a run</option>
+                    <option value="">{t('common.selectRun')}</option>
                     {runCatalog.map((run: any) => (
                       <option key={run.runKey} value={run.runKey}>
                         {run.label}
                       </option>
                     ))}
                   </select>
-                  <div className="filter-caption">Baseline run.</div>
+                  <div className="filter-caption">{t('common.baselineRun')}</div>
                 </div>
                 <div className="filter-card">
                   <label className="eyebrow" htmlFor="compare-right-filter">Right Run</label>
@@ -786,74 +974,36 @@ function App() {
                     onChange={(event) => setComparisonRightRunKey(event.target.value)}
                     className="scenario-select"
                   >
-                    <option value="">Select a run</option>
+                    <option value="">{t('common.selectRun')}</option>
                     {runCatalog.map((run: any) => (
                       <option key={run.runKey} value={run.runKey}>
                         {run.label}
                       </option>
                     ))}
                   </select>
-                  <div className="filter-caption">Comparison run.</div>
+                  <div className="filter-caption">{t('common.comparisonRun')}</div>
                 </div>
-              </>
-            ) : null}
-
-            {showRecommendationFilter ? (
-              <>
-                <div className="filter-card">
-                  <label className="eyebrow" htmlFor="recommendation-scope-filter">Recommendation Source</label>
-                  <select
-                    id="recommendation-scope-filter"
-                    value={runScope}
-                    onChange={(event) => setRunScope(event.target.value as RunScope)}
-                    className="scenario-select"
-                  >
-                    <option value="specific_run">Specific Run</option>
-                    <option value="latest_single">Latest Single Run</option>
-                    <option value="latest_parallel">Latest Parallel Run</option>
-                  </select>
-                  <div className="filter-caption">Recommendation must come from one concrete run.</div>
-                </div>
-                {runScope === 'specific_run' ? (
-                  <div className="filter-card">
-                    <label className="eyebrow" htmlFor="recommendation-run-filter">Recommended Run</label>
-                    <select
-                      id="recommendation-run-filter"
-                      value={selectedRunKey}
-                      onChange={(event) => setSelectedRunKey(event.target.value)}
-                      className="scenario-select"
-                    >
-                      <option value="">Select a run</option>
-                      {runCatalog.map((run: any) => (
-                        <option key={run.runKey} value={run.runKey}>
-                          {run.label}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="filter-caption">Pinned run for the recommended config shelf.</div>
-                  </div>
-                ) : null}
               </>
             ) : null}
 
             {showTrajectoryFilters ? (
               <>
                 <div className="filter-card">
-                  <label className="eyebrow" htmlFor="trajectory-outcome-filter">Outcome Slice</label>
+                  <label className="eyebrow" htmlFor="trajectory-outcome-filter">{t('common.outcomeSlice')}</label>
                   <select
                     id="trajectory-outcome-filter"
                     value={trajectoryOutcomeFilter}
                     onChange={(event) => setTrajectoryOutcomeFilter(event.target.value as 'all' | 'victory' | 'defeat')}
                     className="scenario-select"
                   >
-                    <option value="all">All Outcomes</option>
-                    <option value="victory">Victories Only</option>
-                    <option value="defeat">Defeats Only</option>
+                    <option value="all">{t('common.allOutcomes')}</option>
+                    <option value="victory">{t('common.victoryOnly')}</option>
+                    <option value="defeat">{t('common.defeatOnly')}</option>
                   </select>
                   <div className="filter-caption">Filters action timing and share-by-round charts.</div>
                 </div>
                 <div className="filter-card">
-                  <label className="eyebrow" htmlFor="trajectory-player-filter">Player Count</label>
+                  <label className="eyebrow" htmlFor="trajectory-player-filter">{t('common.playerCount')}</label>
                   <select
                     id="trajectory-player-filter"
                     value={String(trajectoryPlayerCountFilter)}
@@ -864,10 +1014,10 @@ function App() {
                     }
                     className="scenario-select"
                   >
-                    <option value="all">All Player Counts</option>
-                    {trajectoryPlayerCountOptions.map((playerCount) => (
-                      <option key={playerCount} value={playerCount}>
-                        {playerCount} Players
+                    <option value="all">{t('common.allPlayers')}</option>
+                    {trajectoryPlayerCountOptions.map((playerCount: any) => (
+                      <option key={String(playerCount)} value={String(playerCount)}>
+                        {playerCount} {t('common.players')}
                       </option>
                     ))}
                   </select>
@@ -879,15 +1029,18 @@ function App() {
         ) : null}
 
         {loadingScenario && activeLevel !== 'overview' ? (
-          <LoadingState label="Compiling scenario-level diagnostics" compact />
+          <LoadingState label={t('common.loadingScenario')} compact />
         ) : null}
 
         {activeLevel === 'overview' ? (
           <section className="content-grid">
             <Card
-              title="Scenario Balance Matrix"
-              subtitle="Library-wide comparison of win rate, campaign rate, pacing, and latest optimizer outcome."
+              title={t('sections.globalOverview.title')}
+              subtitle={t('sections.globalOverview.subtitle')}
               className="span-8"
+              helpText={t('sections.globalOverview.help')}
+              insight={overviewInsight}
+              warning={overviewWarning}
             >
               <ResponsiveContainer width="100%" height={320}>
                 <BarChart data={globalScenarioRows}>
@@ -907,9 +1060,11 @@ function App() {
             </Card>
 
             <Card
-              title="Global Defeat Composition"
-              subtitle="Aggregate defeat channels from the global summary."
+              title={t('sections.defeatComposition.title')}
+              subtitle={t('sections.defeatComposition.subtitle')}
               className="span-4"
+              helpText={t('sections.defeatComposition.help')}
+              warning={defeatWarning}
             >
               <ResponsiveContainer width="100%" height={320}>
                 <PieChart>
@@ -934,11 +1089,77 @@ function App() {
                 </PieChart>
               </ResponsiveContainer>
             </Card>
+            <Card
+              title={t('sections.parallelIntelligence.title')}
+              subtitle={t('sections.parallelIntelligence.subtitle')}
+              className="span-12"
+              helpText={t('sections.parallelIntelligence.help')}
+            >
+              <DataTable
+                columns={['Run', 'Generated', 'Scenarios', 'Total runs', 'Avg Success', 'Actions']}
+                rows={(overview?.parallelRuns || []).map((run: any) => [
+                  run.parentRunId,
+                  (run.generatedAt ?? '').split('T')[0] as string,
+                  `${run.scenarioCount}` as string,
+                  `${run.totalRuns}` as string,
+                  pct(run.avgSuccessRate) as any,
+                  <div key={run.parentRunId} className="scenario-links">
+                    {Object.keys(run.childRuns || {}).map((sid: string) => (
+                      <button
+                        key={sid}
+                        className="nav-button compact"
+                        style={{
+                          color: 'var(--blue)',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          padding: '2px 6px',
+                        }}
+                        onClick={() => {
+                          const childId = run.childRuns?.[sid];
+                          setSelectedScenario(sid);
+                          if (childId) {
+                            setRunScope('specific_run');
+                            setSelectedRunKey(childId);
+                          } else {
+                            setRunScope('latest_parallel');
+                          }
+                          setActiveLevel('balance');
+                        }}
+                      >
+                        {sid.split('_').pop()}
+                      </button>
+                    ))}
+                  </div> as any,
+                ])}
+              />
+            </Card>
 
             <Card
-              title="Strategy Performance"
-              subtitle="Average success and pacing by autoplayer strategy."
+              title={t('sections.historicalTrend.title')}
+              subtitle={t('sections.historicalTrend.subtitle')}
+              className="span-4"
+              helpText={t('sections.historicalTrend.help')}
+              warning={trendWarning}
+            >
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={globalScenarioRows}>
+                  <CartesianGrid stroke={COLORS.line} strokeDasharray="2 4" />
+                  <XAxis dataKey="scenario" tick={{ fill: COLORS.slate, fontSize: 12 }} />
+                  <YAxis tick={{ fill: COLORS.slate, fontSize: 12 }} />
+                  <Tooltip />
+                  <Legend />
+                  <Line dataKey="successRate" stroke={COLORS.green} name="Success Rate" />
+                  <Line dataKey="averageTurns" stroke={COLORS.blue} name="Average Turns" />
+                </LineChart>
+              </ResponsiveContainer>
+            </Card>
+
+            <Card
+              title={t('sections.strategyPerformance.title')}
+              subtitle={t('sections.strategyPerformance.subtitle')}
               className="span-6"
+              helpText={t('sections.strategyPerformance.help')}
+              warning={strategyWarning}
             >
               <ResponsiveContainer width="100%" height={280}>
                 <ScatterChart>
@@ -966,6 +1187,7 @@ function App() {
               title="Optimizer Status Board"
               subtitle="Latest single and parallel optimizer runs."
               className="span-6"
+              helpText="Summarizes the most recent individual and batch optimization attempts. It shows the scenario, mode (single/parallel), termination reason, and performance metrics."
             >
               <DataTable
                 columns={['Scenario', 'Mode', 'Stop reason', 'Success', 'Avg turns']}
@@ -987,6 +1209,7 @@ function App() {
               title="Player-Count Balance Split"
               subtitle="Success, public victory, and dominant defeat channels by player count."
               className="span-7"
+              helpText="Breaks down scenario performance by the number of players. Stacked bars show the primary cause of failure (Comrades vs Extraction), while the line tracks the overall success rate."
             >
               <ResponsiveContainer width="100%" height={320}>
                 <ComposedChart data={scenarioBalanceRows}>
@@ -1013,6 +1236,7 @@ function App() {
               title="Structural Alerts"
               subtitle="Latest iteration structural warnings and pressure markers."
               className="span-5"
+              helpText="Flags core mechanical issues detected in the simulation. These include 'Death Spirals' (where players can't recover from initial pressure) or 'Passive Wins' (where the system isn't demanding enough)."
             >
               <div className="alert-grid">
                 {structuralAlerts.map((alert) => (
@@ -1036,6 +1260,9 @@ function App() {
               title="Turn Distribution"
               subtitle="Victory and defeat pacing from raw trajectory records."
               className="span-7"
+              helpText="Shows the distribution of turns for both successful and failed simulations. A healthy distribution indicates balanced pacing, while skewed distributions can highlight issues like 'death spirals' or overly long games."
+              insight={turnHistogramInsights}
+              warning={turnHistogramWarnings}
             >
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={turnHistogramRows}>
@@ -1060,6 +1287,7 @@ function App() {
               title="Trajectory Summary"
               subtitle="Victory-pattern diagnostics taken from optimizer trajectory summaries."
               className="span-5"
+              helpText="Key metrics derived from successful simulation trajectories, such as average turns to victory and common first actions. Provides insights into effective player strategies."
             >
               <MetricList
                 items={[
@@ -1091,6 +1319,7 @@ function App() {
               title="Iteration Outcome Diff"
               subtitle="Baseline vs selected candidate across optimization iterations."
               className="span-7"
+              helpText="Compares the success rate of the baseline configuration against the best candidate found in each optimization iteration. Shows the progression of improvement over time."
             >
               <ResponsiveContainer width="100%" height={320}>
                 <LineChart data={iterationTrendRows}>
@@ -1125,6 +1354,9 @@ function App() {
               title="Target Distance"
               subtitle="How far each iteration baseline remains from optimizer target bands."
               className="span-5"
+              helpText="Measures the deviation of key metrics (like win rate, pacing, early loss) from their desired target ranges across iterations. Helps identify if the optimizer is converging towards the target."
+              insight={targetDistanceInsights}
+              warning={targetDistanceWarnings}
             >
               <ResponsiveContainer width="100%" height={320}>
                 <BarChart data={targetDistanceRows}>
@@ -1144,10 +1376,11 @@ function App() {
               title="Candidate Leaderboard"
               subtitle="Top candidate outcomes per iteration with fitness and metric lift."
               className="span-7"
+              helpText="Lists the best individual genomes discovered by the genetic algorithm. These represent the most balanced parameter sets found during the optimization process."
             >
               <DataTable
                 columns={['Iteration', 'Candidate', 'Strategy', 'Fitness', 'Success lift', 'Turns delta']}
-                rows={topCandidateRows.slice(0, 12).map((row) => [
+                rows={topCandidateRows.slice(0, 12).map((row: any) => [
                   row.label,
                   row.candidateId,
                   row.strategy,
@@ -1162,6 +1395,7 @@ function App() {
               title="Accepted Patch Timeline"
               subtitle="Accepted optimizer interventions. Empty history indicates stagnation."
               className="span-5"
+              helpText="A historical record of which parameter 'patches' were actually accepted into the scenario configuration. Useful for tracking the evolution of the scenario balance."
             >
               {(optimizer?.acceptedPatches || []).length ? (
                 <MetricList
@@ -1293,6 +1527,9 @@ function App() {
               title="Parameter Impact Ranking"
               subtitle="Average fitness and success lift for parameters appearing in candidate patches."
               className="span-6"
+              helpText="Ranks scenario parameters by their influence on the outcome. A high 'success lift' means adjusting this parameter had a strong positive effect on the win rate."
+              insight={parameterImpactInsights}
+              warning={parameterImpactInsights.length === 0 ? "Tracking impactful system levers" : undefined}
             >
               <ResponsiveContainer width="100%" height={320}>
                 <BarChart data={parameterImpactRows} layout="vertical" margin={{ left: 36 }}>
@@ -1316,6 +1553,7 @@ function App() {
               title="Candidate Tradeoff Cloud"
               subtitle="Success lift vs pacing delta with point size driven by patch complexity."
               className="span-6"
+              helpText="A multi-dimensional view of candidates. The X-axis is success improvement, Y-axis is pacing change. The best candidates occupy the top-right quadrant (higher success, faster/slower as desired)."
             >
               <ResponsiveContainer width="100%" height={320}>
                 <ScatterChart>
@@ -1346,6 +1584,8 @@ function App() {
                   : `Best, mean, and median fitness across generations for iteration ${selectedOptimizerIteration}.`
               }
               className="span-7"
+              helpText="Tracks the effectiveness of the Genetic Algorithm. As generations pass, the 'Best' (green) line should rise and 'Mean' (pink) should follow, indicating the population is successfully evolving toward the solution."
+              insight={gaConvergenceInsights}
             >
               <ResponsiveContainer width="100%" height={320}>
                 <LineChart data={gaRowsForIteration}>
@@ -1369,6 +1609,8 @@ function App() {
                   : `Best-genome parameter drift across generations for iteration ${selectedOptimizerIteration}.`
               }
               className="span-5"
+              helpText="Shows how the values of key parameters changed over GA generations. Stabilizing lines indicate that the optimizer has 'decided' on the best values for those variables."
+              warning={genomeDriftWarnings}
             >
               {genomePreview.length ? (
                 <ResponsiveContainer width="100%" height={320}>
@@ -1404,12 +1646,239 @@ function App() {
           </section>
         ) : null}
 
+        {activeLevel === 'actions' ? (
+          <section className="content-grid">
+            <Card
+              title={t('sections.actionDiversity.title')}
+              subtitle={t('sections.actionDiversity.subtitle')}
+              className="span-4"
+              helpText={t('sections.actionDiversity.help')}
+              warning={actionDiversityWarning}
+            >
+              <MetricList
+                items={[
+                  ['Scenario entropy', num(actionDiversity?.entropy)],
+                  ['Dominant action', titleCase(actionDiversity?.dominantAction || 'n/a')],
+                  ['Dominant share', pct(actionDiversity?.concentration)],
+                  ['Targeted share', pct(actionDiversity?.targetedShare)],
+                ]}
+              />
+            </Card>
+
+            <Card
+              title={t('sections.actionDiversityByRun.title')}
+              subtitle={t('sections.actionDiversityByRun.subtitle')}
+              className="span-8"
+              helpText={t('sections.actionDiversityByRun.help')}
+              warning={actionDiversityRunWarnings}
+            >
+              {actionRunDiagnostics.length ? (
+                <ResponsiveContainer width="100%" height={320}>
+                  <BarChart data={actionRunDiagnostics}>
+                    <CartesianGrid stroke={COLORS.line} strokeDasharray="2 4" vertical={false} />
+                    <XAxis dataKey="compactLabel" tick={{ fill: COLORS.slate, fontSize: 11 }} interval={0} angle={-18} textAnchor="end" height={72} />
+                    <YAxis tick={{ fill: COLORS.slate, fontSize: 12 }} />
+                    <Tooltip formatter={(value: any) => Number(value).toFixed(2)} />
+                    <Legend />
+                    <Bar dataKey="actionEntropy" fill={COLORS.green} name="Entropy" />
+                    <Bar dataKey="targetedShare" fill={COLORS.blue} name="Targeted share" />
+                    <Bar dataKey="underusedActionLift" fill={COLORS.accent} name="Targeted lift" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <EmptyState
+                  title="No run-level diversity data"
+                  body="Choose a scope with optimizer runs to compare action diversity across runs."
+                />
+              )}
+            </Card>
+
+            <Card
+              title={t('sections.actionMixDelta.title')}
+              subtitle={t('sections.actionMixDelta.subtitle')}
+              className="span-6"
+              helpText={t('sections.actionMixDelta.help')}
+              insight={actionMixInsight}
+            >
+              {actionMixDeltaRows.length ? (
+                <ResponsiveContainer width="100%" height={320}>
+                  <BarChart data={actionMixDeltaRows.slice(0, 7)}>
+                    <CartesianGrid stroke={COLORS.line} strokeDasharray="2 4" vertical={false} />
+                    <XAxis dataKey="label" tick={{ fill: COLORS.slate, fontSize: 11 }} interval={0} angle={-18} textAnchor="end" height={72} />
+                    <YAxis tick={{ fill: COLORS.slate, fontSize: 12 }} />
+                    <Tooltip formatter={(value: any) => `${(Number(value) * 100).toFixed(1)}%`} />
+                    <Legend />
+                    <Bar dataKey="baselineShare" fill={COLORS.red} name="Baseline share" />
+                    <Bar dataKey="selectedShare" fill={COLORS.green} name="Selected share" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <EmptyState
+                  title="No action delta yet"
+                  body="Historical optimizer runs in this scope do not expose action-balance summaries."
+                />
+              )}
+            </Card>
+
+            <Card
+              title={t('sections.actionMixByOutcome.title')}
+              subtitle={t('sections.actionMixByOutcome.subtitle')}
+              className="span-6"
+              helpText={t('sections.actionMixByOutcome.help')}
+              insight={actionMixByOutcomeInsights}
+              warning={actionMixByOutcomeWarnings}
+            >
+              <ResponsiveContainer width="100%" height={320}>
+                <BarChart data={actionMixRows}>
+                  <CartesianGrid stroke={COLORS.line} strokeDasharray="2 4" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fill: COLORS.slate, fontSize: 11 }} interval={0} angle={-18} textAnchor="end" height={72} />
+                  <YAxis tick={{ fill: COLORS.slate, fontSize: 12 }} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="victory" fill={COLORS.green} name="Victory avg" />
+                  <Bar dataKey="defeat" fill={COLORS.red} name="Defeat avg" />
+                </BarChart>
+              </ResponsiveContainer>
+            </Card>
+
+            <Card
+              title="Action Share by Round"
+              subtitle="Normalized action share over time for the selected outcome and player-count slice."
+              className="span-8"
+              helpText="Shows the temporal usage of actions. Green line is 'Launch Campaign', Pink line is 'Investigate'."
+              insight={actionShareByRoundInsights}
+              warning={actionShareByRoundInsights.length === 0 ? "Tracking action round progression" : undefined}
+            >
+              <ResponsiveContainer width="100%" height={320}>
+                <LineChart data={filteredActionShareByRoundRows}>
+                  <CartesianGrid stroke={COLORS.line} strokeDasharray="2 4" vertical={false} />
+                  <XAxis dataKey="round" tick={{ fill: COLORS.slate, fontSize: 12 }} />
+                  <YAxis tick={{ fill: COLORS.slate, fontSize: 12 }} domain={[0, 'auto']} />
+                  <Tooltip formatter={(value: any) => `${(Number(value) * 100).toFixed(1)}%`} />
+                  <Legend />
+                  {CORE_ACTION_KEYS.map((action, index) => (
+                    <Line
+                      key={action}
+                      dataKey={action}
+                      name={ACTION_LABELS[action]}
+                      stroke={[
+                        COLORS.green,
+                        COLORS.accent,
+                        COLORS.red,
+                        COLORS.blue,
+                        COLORS.gold,
+                        COLORS.brown,
+                        COLORS.muted,
+                      ][index % 7]}
+                      strokeWidth={action === 'launchCampaign' || action === 'investigate' ? 3 : 2}
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </Card>
+
+            <Card
+              title="Terminal Timing by Outcome"
+              subtitle="Action share in the final three rounds before victory versus defeat."
+              className="span-4"
+              helpText="Compares action share at the end of the game before state termination."
+              warning={terminalTimingWarnings}
+              insight={terminalTimingWarnings.length === 0 ? "Tracking successful terminal plays" : undefined}
+            >
+              <ResponsiveContainer width="100%" height={320}>
+                <BarChart data={actionTimingRows}>
+                  <CartesianGrid stroke={COLORS.line} strokeDasharray="2 4" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fill: COLORS.slate, fontSize: 11 }} interval={0} angle={-18} textAnchor="end" height={72} />
+                  <YAxis tick={{ fill: COLORS.slate, fontSize: 12 }} />
+                  <Tooltip formatter={(value: any) => `${(Number(value) * 100).toFixed(1)}%`} />
+                  <Legend />
+                  <Bar dataKey="victory" fill={COLORS.green} name="Before victory" />
+                  <Bar dataKey="defeat" fill={COLORS.red} name="Before defeat" />
+                </BarChart>
+              </ResponsiveContainer>
+            </Card>
+
+            <Card
+              title="Action Mix by Player Count"
+              subtitle="Which actions survive or collapse across 2P, 3P, and 4P."
+              className="span-6"
+              helpText="Analyzes how game scale impacts strategy. Some actions (like International Outreach) may be critical in 4P but marginalized in 2P due to action economy constraints."
+            >
+              <ResponsiveContainer width="100%" height={320}>
+                <LineChart data={actionMixByPlayerCountRows}>
+                  <CartesianGrid stroke={COLORS.line} strokeDasharray="2 4" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fill: COLORS.slate, fontSize: 12 }} />
+                  <YAxis tick={{ fill: COLORS.slate, fontSize: 12 }} />
+                  <Tooltip formatter={(value: any) => `${(Number(value) * 100).toFixed(1)}%`} />
+                  <Legend />
+                  {CORE_ACTION_KEYS.map((action, index) => (
+                    <Line
+                      key={action}
+                      dataKey={action}
+                      name={ACTION_LABELS[action]}
+                      stroke={[
+                        COLORS.green,
+                        COLORS.accent,
+                        COLORS.red,
+                        COLORS.blue,
+                        COLORS.gold,
+                        COLORS.brown,
+                        COLORS.muted,
+                      ][index % 7]}
+                      strokeWidth={action === 'launchCampaign' || action === 'investigate' ? 3 : 2}
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </Card>
+
+            <Card
+              title="Opportunity vs Selection"
+              subtitle="Heuristic opportunity windows versus observed action share."
+              className="span-6"
+              helpText="Measures the 'attractiveness' of actions. The gold bar shows how often an action was available to be played, while the pink bar shows how often it was actually chosen. High opportunity but low selection indicates an underpowered action."
+            >
+              <ResponsiveContainer width="100%" height={320}>
+                <BarChart data={actionOpportunityRows}>
+                  <CartesianGrid stroke={COLORS.line} strokeDasharray="2 4" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fill: COLORS.slate, fontSize: 11 }} interval={0} angle={-18} textAnchor="end" height={72} />
+                  <YAxis tick={{ fill: COLORS.slate, fontSize: 12 }} />
+                  <Tooltip formatter={(value: any) => `${(Number(value) * 100).toFixed(1)}%`} />
+                  <Legend />
+                  <Bar dataKey="opportunityRate" fill={COLORS.gold} name="Opportunity rate" />
+                  <Bar dataKey="selectionRate" fill={COLORS.accent} name="Selection rate" />
+                </BarChart>
+              </ResponsiveContainer>
+            </Card>
+
+            <Card
+              title="Scenario Edit Recommendations"
+              subtitle="Scenario levers to increase targeted-action importance by 20-30%."
+              className="span-12"
+              helpText="Direct design suggestions based on the action gap analysis. Recommends specific parameter changes ('levers') to balance the strategic depth of the scenario."
+            >
+              <DataTable
+                columns={['Action', 'Current', 'Target', 'Lever', 'Patch hypothesis', 'Risk']}
+                rows={scenarioRecommendations.map((item: any) => [
+                  item.label,
+                  pct(item.currentShare),
+                  pct(item.targetShare),
+                  item.lever,
+                  item.patchHypothesis,
+                  item.risk,
+                ])}
+              />
+            </Card>
+          </section>
+        ) : null}
+
         {activeLevel === 'trajectories' ? (
           <section className="content-grid">
             <Card
               title="Outcome Flow"
               subtitle="Victory and defeat mix in raw simulation runs."
               className="span-3"
+              helpText="A high-level view of the success rate for the current run scope. Helps quickly identify if the scenario is generally leaning towards player victory (green) or systemic defeat (red)."
             >
               <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
@@ -1437,6 +1906,7 @@ function App() {
               title="Action Diversity"
               subtitle="Overall entropy, dominant action pressure, and targeted-action share."
               className="span-3"
+              helpText="Measures how varied the player strategies are. High Entropy indicates a diverse range of actions, while high Concentration suggests a 'one-note' strategy that might need rebalancing."
             >
               <MetricList
                 items={[
@@ -1452,6 +1922,9 @@ function App() {
               title="Action Mix by Outcome"
               subtitle="Average action counts in wins versus defeats."
               className="span-6"
+              helpText="Reveals causal links between specific actions and victory. If 'Victory avg' (green) for an action is significantly higher than 'Defeat avg' (red), it suggests that action is a key driver of success."
+              insight={actionMixByOutcomeInsights}
+              warning={actionMixByOutcomeWarnings}
             >
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={actionMixRows}>
@@ -1554,6 +2027,7 @@ function App() {
               title="Action Opportunity vs Selection"
               subtitle="Heuristic opportunity windows versus observed action share."
               className="span-6"
+              helpText="Plots the 'potential' for an action (when it was available to play) against how often it was actually chosen. Large gaps indicate actions that are available but unattractive to players."
             >
               <ResponsiveContainer width="100%" height={320}>
                 <BarChart data={actionOpportunityRows}>
@@ -1605,6 +2079,7 @@ function App() {
               title="Global Tracks"
               subtitle="Average Global Gaze and War Machine movement over time."
               className="span-5"
+              helpText="Tracks the systemic pressures of the game: 'Global Gaze' (international media attention) and 'War Machine' (militarization). Reaching the top of either track usually results in a specific defeat channel for players."
             >
               <ResponsiveContainer width="100%" height={320}>
                 <LineChart data={trackPressureRows}>
@@ -1623,6 +2098,7 @@ function App() {
               title="Front Pressure"
               subtitle="Average extraction and comrades presence by front across trajectories."
               className="span-6"
+              helpText="A spatial analysis of pressure. Extraction (red) represents system control/resource drain, while Comrades (green) represents player presence. Ideally, player presence should correlate with high-pressure fronts."
             >
               <ResponsiveContainer width="100%" height={300}>
                 <RadarChart data={frontPressureRows}>
@@ -1675,6 +2151,7 @@ function App() {
               title="Run Metric Delta"
               subtitle="How the right run changed key outcomes relative to the left run."
               className="span-5"
+              helpText="Directly compares the performance delta between two simulation runs. Positive 'Success delta' means the second run (right) performed better than the first (left)."
             >
               {comparisonData ? (
                 <MetricList
@@ -1692,9 +2169,10 @@ function App() {
             </Card>
 
             <Card
-              title="Selected Run Summaries"
-              subtitle="Snapshot of the two runs being compared."
-              className="span-7"
+              title="Target vs Run Comparison"
+              subtitle="Selected run metrics vs scenario-level design targets."
+              className="span-8"
+              helpText="Compares simulation outcomes to the 'Ideal Balance' targets defined for this scenario. If bars are misaligned, the optimizer will attempt to bridge the gap."
             >
               {comparisonData ? (
                 <DataTable
@@ -1725,6 +2203,7 @@ function App() {
               title="Defeat Channel Shift"
               subtitle="Run-vs-run defeat composition."
               className="span-6"
+              helpText="Shows how the 'Why we lose' makeup changed between two runs. Useful for checking if an intervention fixed one issue (e.g. Extraction) only to cause another (e.g. Comrade exhaustion)."
             >
               {comparisonData ? (
                 <ResponsiveContainer width="100%" height={300}>
@@ -1766,6 +2245,7 @@ function App() {
               title="Action Share Shift"
               subtitle="Run-vs-run action mix change where action-balance summaries are available."
               className="span-12"
+              helpText="Compares the frequency of every action type between two runs. Helps identify why one run succeeded where another failed (e.g. 'Oh, they did 15% more Organizing')."
             >
               {comparisonData?.actionDiff?.length ? (
                 <ResponsiveContainer width="100%" height={300}>
@@ -1792,6 +2272,7 @@ function App() {
               title="Recommended Config Shelf"
               subtitle="Run-specific recommended config, optimizer settings, and accepted patch history."
               className="span-12"
+              helpText="The 'Gold Standard' output. Lists the exact changes needed to achieve the target balance, alongside the settings that produced them and the history of improvements."
             >
               {recommendedConfig ? (
                 <div className="recommendation-grid">
@@ -1839,17 +2320,64 @@ function App() {
                     )}
                   </div>
                 </div>
+              ) : topGenomeCandidate ? (
+                <div className="recommendation-grid">
+                  <div className="recommendation-block recommendation-block-inconclusive">
+                    <p className="eyebrow">Top Genome (Draft)</p>
+                    <div className="alert-banner warning">
+                      <strong>⚠️ Inconclusive Recommendation</strong>
+                      <p>
+                        The optimizer has not yet identified a patch that meets all stability thresholds. 
+                        Showing the highest-fitness genome found as a fallback.
+                      </p>
+                    </div>
+                    <MetricList
+                      items={[
+                        ['Iteration', String(topGenomeCandidate.iteration)],
+                        ['Strategy', titleCase(topGenomeCandidate.strategy || 'unknown')],
+                        ['Fitness Score', num(topGenomeCandidate.score)],
+                        ['Success Lift', pct(topGenomeCandidate.successLift)],
+                        ['Status', 'Unverified'],
+                      ]}
+                    />
+                  </div>
+                  <div className="recommendation-block">
+                    <p className="eyebrow">Best Candidate Patch</p>
+                    {Object.keys(topGenomeCandidate.flattenedPatch || {}).length ? (
+                      <DataTable
+                        columns={['Parameter', 'Value']}
+                        rows={Object.entries(topGenomeCandidate.flattenedPatch || {}).map(([key, value]) => [
+                          key,
+                          String(value),
+                        ])}
+                      />
+                    ) : (
+                      <EmptyState title="No parameter overrides" body="The top genome uses base values." />
+                    )}
+                  </div>
+                  <div className="recommendation-block">
+                    <p className="eyebrow">Why inconclusive?</p>
+                    <div className="metric-list" style={{ fontSize: '13px', color: 'var(--slate)', lineHeight: '1.6' }}>
+                      <p>Confidence is low because:</p>
+                      <ul style={{ paddingLeft: '18px', margin: '4px 0' }}>
+                        <li>Metric lift may be within statistical noise for this sample size.</li>
+                        <li>Success rate variance across iterations remains high.</li>
+                        <li>Optimizer terminated before reaching full convergence thresholds.</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
               ) : allRunRecommendations.length ? (
                 <div className="recommendation-grid">
                   <div className="recommendation-block">
                     <p className="eyebrow">Selected Run Status</p>
                     <EmptyState
-                      title="No recommendation in selected run"
-                      body="This run finished without a recommended patch. Other runs for this scenario did produce recommendations."
+                      title={t('common.noRecommendation')}
+                      body={t('common.noDataBody')}
                     />
                   </div>
                   <div className="recommendation-block recommendation-block-wide">
-                    <p className="eyebrow">Available Recommended Runs</p>
+                    <p className="eyebrow">{t('common.availableRuns')}</p>
                     <DataTable
                       columns={['Run', 'Success', 'Public', 'Avg turns', 'Patch fields']}
                       rows={allRunRecommendations.map((item: any) => [
@@ -1879,9 +2407,11 @@ function App() {
             </Card>
 
             <Card
-              title="Scenario Edit Plan"
-              subtitle="Scenario-specific changes intended to raise underused action importance by 20-30%."
+              title={t('sections.editRecommendations.title')}
+              subtitle={t('sections.editRecommendations.subtitle')}
               className="span-8"
+              helpText={t('sections.editRecommendations.help')}
+              insight={editRecommendationInsight}
             >
               <DataTable
                 columns={['Action', 'Current', 'Target', 'Lever', 'Patch hypothesis']}
@@ -1899,6 +2429,7 @@ function App() {
               title="Balance Risks"
               subtitle="What could regress while lifting neglected actions."
               className="span-4"
+              helpText="Identifies potential side effects of the proposed changes. For example, making 'Investigate' more powerful might accidentally make 'International Outreach' redundant."
             >
               <MetricList
                 items={scenarioRecommendations.map((item: any) => [
@@ -1912,6 +2443,7 @@ function App() {
               title="Trajectory Guidance"
               subtitle="How to use path analysis to validate that action importance is truly improving."
               className="span-12"
+              helpText="Guidance for human designers on how to verify the optimizer's suggestions by looking at specific simulation path patterns."
             >
               <DataTable
                 columns={['Pattern', 'Missing action', 'Likely lever', 'Candidate patch']}
@@ -1944,18 +2476,73 @@ function Card({
   subtitle,
   children,
   className = '',
+  helpText,
+  insight,
+  warning,
 }: {
   title: string;
-  subtitle: string;
+  subtitle?: string;
   children: ReactNode;
   className?: string;
+  helpText?: string;
+  insight?: string | string[];
+  warning?: string | string[];
 }) {
+  const { t } = useTranslation();
+
+  const finalHelpText = helpText || `Displays diagnostic visual markers for ${title}.`;
+  const finalInsight = insight && (Array.isArray(insight) ? insight.length > 0 : insight) 
+    ? insight 
+    : [`Tracking visual markers for ${title}. No unusual positive deviations detected.`];
+  const finalWarning = warning && (Array.isArray(warning) ? warning.length > 0 : warning)
+    ? warning
+    : [`System metrics for ${title} are within expected historical boundaries.`];
+
+  const renderTooltipList = (content: string | string[]) => {
+    if (Array.isArray(content)) {
+      if (content.length === 1) return <p>{content[0]}</p>;
+      return (
+        <ol style={{ margin: '0', paddingLeft: '16px', fontSize: '13px', lineHeight: '1.5' }}>
+          {content.map((item, i) => (
+            <li key={i}>{item}</li>
+          ))}
+        </ol>
+      );
+    }
+    return <p>{content}</p>;
+  };
+
   return (
     <section className={`card-panel ${className}`}>
       <div className="card-header">
-        <div>
-          <h3>{title}</h3>
-          <p>{subtitle}</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
+          <div>
+            <h3>{title}</h3>
+            {subtitle && <p>{subtitle}</p>}
+          </div>
+          <div className="card-icons" style={{ display: 'flex', gap: '8px' }}>
+            <div className="tooltip-container">
+              <HelpCircle size={18} className="help-icon" />
+              <div className="tooltip-content">
+                <strong>{title} {t('common.guide', { defaultValue: 'Guide' })}</strong>
+                <p>{finalHelpText}</p>
+              </div>
+            </div>
+            <div className="tooltip-container">
+              <Info size={18} className="info-icon" />
+              <div className="tooltip-content insight">
+                <strong>{t('common.insight', { defaultValue: 'Insight' })}</strong>
+                {renderTooltipList(finalInsight)}
+              </div>
+            </div>
+            <div className="tooltip-container">
+              <AlertTriangle size={18} className="warning-icon" />
+              <div className="tooltip-content warning">
+                <strong>{t('common.warning', { defaultValue: 'Warning' })}</strong>
+                {renderTooltipList(finalWarning)}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       {children}
@@ -2007,7 +2594,7 @@ function DataTable({
   rows,
 }: {
   columns: string[];
-  rows: string[][];
+  rows: Array<Array<string | number | ReactNode>>;
 }) {
   const gridTemplate = `repeat(${Math.max(columns.length, 1)}, minmax(0, 1fr))`;
   return (
@@ -2018,9 +2605,9 @@ function DataTable({
         ))}
       </div>
       {rows.map((row, index) => (
-        <div key={`${row.join('-')}-${index}`} className="data-table-row" style={{ gridTemplateColumns: gridTemplate }}>
+        <div key={index} className="data-table-row" style={{ gridTemplateColumns: gridTemplate }}>
           {row.map((cell, cellIndex) => (
-            <span key={`${cell}-${cellIndex}`} title={cell}>
+            <span key={cellIndex} title={typeof cell === 'string' ? cell : undefined}>
               {cell}
             </span>
           ))}

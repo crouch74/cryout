@@ -10,6 +10,7 @@ Interactive analytics platform for exploring game simulation results and optimiz
 5. **Trajectory Analysis**: Battlefield flow and turn-by-turn pressure.
 6. **Configuration Benchmarking**: Side-by-side candidate comparison.
 7. **Component Sensitivity**: Domain, faction, and resource dynamics.
+8. **Recommendation Tuning**: Draft and verified scenario patches with statistical fallback.
 
 ## Setup & Running
 

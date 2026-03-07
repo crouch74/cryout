@@ -1,0 +1,136 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "loadingOverview": "Reading simulation intelligence",
+    "loadingScenario": "Compiling scenario-level diagnostics",
+    "error": "Error occurred",
+    "noData": "No data available",
+    "all": "All",
+    "victory": "Victory",
+    "defeat": "Defeat",
+    "target": "Target",
+    "current": "Current",
+    "risk": "Risk",
+    "lever": "Lever",
+    "hypothesis": "Patch hypothesis",
+    "actions": "Actions",
+    "generated": "Generated",
+    "run": "Run",
+    "guide": "Guide",
+    "insight": "Insight",
+    "warning": "Warning",
+    "brand": "Stones Analytics",
+    "tagline": "Scenario Balance Lab",
+    "questions": "Questions",
+    "noRecommendation": "No recommendation in selected run",
+    "availableRuns": "Available Recommended Runs",
+    "noDataBody": "No available run for this scenario produced a recommended patch.",
+    "iteration": "Iteration",
+    "selectRun": "Select a run",
+    "baselineRun": "Baseline run.",
+    "comparisonRun": "Comparison run.",
+    "allOutcomes": "All Outcomes",
+    "victoryOnly": "Victories Only",
+    "defeatOnly": "Defeats Only",
+    "allPlayers": "All Player Counts",
+    "players": "Players",
+    "outcomeSlice": "Outcome Slice",
+    "playerCount": "Player Count",
+    "selectedRunStatus": "Selected Run Status",
+    "optimizerStatus": "Optimizer Status",
+    "parameterEffects": "Parameter Effects",
+    "trajectoryResults": "Trajectory Results",
+    "simulationSystem": "Simulation analytics system",
+    "globalSuccess": "Global Success Rate",
+    "scenarios": "Scenarios",
+    "runScope": "Run Scope",
+    "scenario": "Scenario",
+    "runs": "Runs",
+    "success": "Success"
+  },
+  "runScopes": {
+    "latest_single": "Latest Single Run",
+    "latest_parallel": "Latest Parallel Run",
+    "all_single": "All Single Runs",
+    "all_parallel": "All Parallel Runs",
+    "all_runs": "All Runs",
+    "specific_run": "Specific Run"
+  },
+  "nav": {
+    "overview": "Global Overview",
+    "balance": "Scenario Balance",
+    "optimizer": "Optimizer Progress",
+    "parameters": "Parameter Effects",
+    "actions": "Action Diversity",
+    "comparison": "Run Comparison",
+    "trajectories": "Gameplay Trajectories",
+    "recommendations": "Recommendations"
+  },
+  "sections": {
+    "globalOverview": {
+      "title": "Scenario Balance Matrix",
+      "subtitle": "Library-wide comparison of win rate, campaign rate, pacing, and latest optimizer outcome.",
+      "help": "This matrix compares success rates across the entire scenario library. 'Current success %' represents the baseline performance, while 'Latest optimizer success %' shows the potential lift achievable via the GA optimizer."
+    },
+    "defeatComposition": {
+      "title": "Global Defeat Composition",
+      "subtitle": "Aggregate defeat channels from the global summary.",
+      "help": "A proportional breakdown of why simulations fail across all scenarios. Common channels include 'Extraction Overrun' (system wins) or 'Comrade Exhaustion' (resource depletion)."
+    },
+    "parallelIntelligence": {
+      "title": "Parallel Run Intelligence",
+      "subtitle": "Latest all-scenario parallel runs and their cross-scenario success rates.",
+      "help": "Tracks batches of simultaneous multi-scenario optimizations. Use scenario links to jump to specific results within a parallel batch."
+    },
+    "strategyPerformance": {
+      "title": "Strategy Performance",
+      "subtitle": "Average success and pacing by autoplayer strategy.",
+      "help": "Correlates game duration (turns) with success rate for different AI strategies. 'Balance' strategies typically aim for the sweet spot between safety and speed."
+    },
+    "historicalTrend": {
+      "title": "Historical Metric Trend",
+      "subtitle": "Optimizer success and turns progression across iterations.",
+      "help": "Visualization of how the optimizer has improved the scenario over time. Upward trends in success rate indicate effective parameter convergence."
+    },
+    "actionDiversity": {
+      "title": "Action Diversity Overview",
+      "subtitle": "Run-level diversity, dominance, and targeted-action share for the current scope.",
+      "help": "Measures the 'health' of the action distribution. High Entropy (green) means players are using a wide variety of actions. Targeted share (blue) tracks usage of specific high-leverage actions requested for this scenario."
+    },
+    "actionOpportunity": {
+      "title": "Opportunity vs Selection",
+      "subtitle": "Heuristic opportunity windows versus observed action share.",
+      "help": "Measures the 'attractiveness' of actions. The gold bar shows how often an action was available to be played, while the pink bar shows how often it was actually chosen. High opportunity but low selection indicates an underpowered action."
+    },
+    "editRecommendations": {
+      "title": "Scenario Edit Recommendations",
+      "subtitle": "Scenario levers to increase targeted-action importance by 20-30%.",
+      "help": "Direct design suggestions based on the action gap analysis. Recommends specific parameter changes ('levers') to balance the strategic depth of the scenario."
+    },
+    "actionDiversityByRun": {
+      "title": "Action Diversity by Run",
+      "subtitle": "How much each run relies on one dominant line versus a broader action mix.",
+      "help": "Compares strategy robustness across different simulator runs. Entropy (green) should stay high, while 'Targeted Lift' (pink) shows how much the optimizer improved usage of previously ignored actions."
+    },
+    "actionMixDelta": {
+      "title": "Action Mix Delta",
+      "subtitle": "Selected scope action share versus the earliest available baseline.",
+      "help": "Compares the current action distribution against the original baseline. Used to verify if optimizer interventions have successfully shifted player behavior toward the target mix."
+    },
+    "actionMixByOutcome": {
+      "title": "Action Mix by Outcome",
+      "subtitle": "Average action counts in wins versus defeats for the selected scenario.",
+      "help": "Reveals causal links between specific actions and victory. If 'Victory avg' (green) for an action is significantly higher than 'Defeat avg' (red), it suggests that action is a key driver of success."
+    }
+  },
+  "insights": {
+    "global_overview_warning": "Critical Imbalance: {{scenario}} is failing at a success rate of {{rate}}%. A rate beneath 25% means the System is consistently overrunning the board before players can assemble their engine. Consider lowering starting War Machine or Extraction thresholds.",
+    "global_overview_insight": "Safe Convergence: {{scenario}} reached a stable {{rate}}% baseline win rate, showing mature parameter tuning.",
+    "defeat_composition_warning": "Extraction Dominance: {{extCount}} simulations ({{extPct}}%) ended via Extraction Overrun compared to only {{comCount}} from Comrade Exhaustion. The board is filling with System tokens too fast. Gameplay relies too heavily on 'Clear' actions instead of building toward the objective.",
+    "action_diversity_warning": "Action Collapse: The action '{{dominantAction}}' accounts for {{share}}% of all selections. Players rely on this single dominant line, reducing strategic variety. Recommend nerfing its efficiency or buffing alternative paths.",
+    "action_mix_insight": "Successful Shift: Usage of '{{action}}' increased from {{baseline}}% to {{selected}}% in the selected scope. The optimizer successfully identified levers to make this action more relevant.",
+    "strategy_warning": "Strategy Imbalance: The '{{strategy}}' auto-player is failing at {{rate}}% win rate. This strategy is unviable under the current scenario rules.",
+    "trend_warning": "Stagnation Alert: The optimizer has been stuck for {{streak}} iterations without discovering a better fitness genome. Consider altering mutation rates or relaxing early termination restraints.",
+    "edit_recommendation_insight": "Target Identified: The optimizer recommends adjusting the '{{lever}}' lever to boost '{{action}}' utility."
+  }
+}
