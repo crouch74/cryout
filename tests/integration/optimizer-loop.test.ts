@@ -35,6 +35,7 @@ test('scenario optimizer writes iteration artifacts and final recommendation', a
   await stat(join(report.outputDir, 'optimizer_config.json'));
   await stat(join(report.outputDir, 'optimization_history.json'));
   await stat(join(report.outputDir, 'accepted_patch_history.json'));
+  await stat(join(report.outputDir, 'rejected_patch_memory.json'));
   await stat(join(report.outputDir, 'recommended_patch.json'));
   await stat(join(report.outputDir, 'final_metrics.json'));
   await stat(join(report.outputDir, 'final_report.md'));
@@ -57,6 +58,11 @@ test('scenario optimizer writes iteration artifacts and final recommendation', a
     await readFile(join(report.outputDir, 'final_metrics.json'), 'utf8'),
   ) as { score: { score: number } };
   assert.equal(typeof finalMetrics.score.score, 'number');
+
+  const finalReportMarkdown = await readFile(join(report.outputDir, 'final_report.md'), 'utf8');
+  assert.match(finalReportMarkdown, /## Previous vs Final/);
+  assert.match(finalReportMarkdown, /\| Success Rate \|/);
+  assert.match(finalReportMarkdown, /\| Fitness \|/);
 
   const selectedCandidate = JSON.parse(
     await readFile(join(report.outputDir, 'iteration_01', 'selected_candidate.json'), 'utf8'),

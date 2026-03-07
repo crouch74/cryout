@@ -21,6 +21,7 @@ import { chooseStrategyActionForSeat, getStrategyProfile, listStrategyProfiles }
 import { captureRoundSnapshot, convertRoundSnapshotsToTimeline } from './captureRoundSnapshot.ts';
 import { capturePreDefeatSnapshot } from './capturePreDefeatSnapshot.ts';
 import { seatComrades, totalComrades, validateResourceInvariants } from './invariants.ts';
+import { logDebug, logInfo, logSuccess, logVerbose, logWarn } from './logging.ts';
 import { TrajectoryRecorder, buildTrajectoryFileStem } from './trajectory/TrajectoryRecorder.ts';
 import type { TrajectoryStep, VictoryTrajectory } from './trajectory/types.ts';
 import type {
@@ -499,7 +500,7 @@ function buildMandateOutcomeById(
   const successesByMandate: Record<string, number> = {};
 
   if (debug) {
-    console.log('📊 Mandate evaluation complete');
+    logDebug('📊 Mandate evaluation complete');
   }
   for (const player of state.players) {
     const mandateId = player.mandateId;
@@ -510,14 +511,14 @@ function buildMandateOutcomeById(
     if (failedMandateIds.has(mandateId)) {
       failuresByMandate[mandateId] = (failuresByMandate[mandateId] ?? 0) + 1;
       if (debug) {
-        console.log(`❌ mandate_failed: ${mandateId}`);
+        logDebug(`❌ mandate_failed: ${mandateId}`);
       }
       continue;
     }
 
     successesByMandate[mandateId] = (successesByMandate[mandateId] ?? 0) + 1;
     if (debug) {
-      console.log(`✅ mandate_passed: ${mandateId}`);
+      logDebug(`✅ mandate_passed: ${mandateId}`);
     }
   }
 
@@ -594,13 +595,13 @@ function appendRoundSnapshot(
   if (roundSnapshots.length >= MAX_SNAPSHOTS_PER_GAME) {
     if (!snapshotLimitReached.value && debug) {
       snapshotLimitReached.value = true;
-      console.log('⚠️ Snapshot limit reached, truncating further rounds');
+      logWarn('⚠️ Snapshot limit reached, truncating further rounds');
     }
     return;
   }
 
   if (debug) {
-    console.log(`📸 Capturing round snapshot r=${state.round} sim=${run.simulationId}`);
+    logDebug(`📸 Capturing round snapshot r=${state.round} sim=${run.simulationId}`);
   }
   const snapshot = captureRoundSnapshot(state);
   roundSnapshots.push({
@@ -647,7 +648,7 @@ function appendPreDefeatSnapshot(
   const snapshot = capturePreDefeatSnapshot(state, phase);
   preDefeatSnapshots.push(snapshot);
   if (debug) {
-    console.log(`🧠 Pre-defeat snapshot captured round=${snapshot.round} phase=${phase}`);
+    logDebug(`🧠 Pre-defeat snapshot captured round=${snapshot.round} phase=${phase}`);
   }
 }
 
@@ -668,14 +669,14 @@ function logPhaseHeader(state: EngineState, command: SimulationCommand, debug: b
 
   switch (command.type) {
     case 'ResolveSystemPhase':
-      console.log(`🎲 Round ${state.round} start`);
-      console.log(`👥 Comrades total = ${totalComrades(state)}`);
+      logDebug(`🎲 Round ${state.round} start`);
+      logDebug(`👥 Comrades total = ${totalComrades(state)}`);
       break;
     case 'CommitCoalitionIntent':
-      console.log('⚙️ Player actions');
+      logDebug('⚙️ Player actions');
       break;
     case 'ResolveResolutionPhase':
-      console.log('🔍 Round resolution');
+      logDebug('🔍 Round resolution');
       break;
     default:
       break;
@@ -691,7 +692,7 @@ function logBodySpend(before: Map<number, number>, afterState: EngineState, debu
     const afterComrades = seatComrades(afterState, seat);
     if (afterComrades < beforeComrades) {
       const cost = beforeComrades - afterComrades;
-      console.log('🔻 Comrades spent', `seat${seat + 1}`, cost);
+      logDebug(`🔻 Comrades spent seat${seat + 1} ${cost}`);
     }
   }
 }
@@ -711,7 +712,7 @@ function logPhaseEffects(
     && event.sourceId === 'launch_campaign'
     && Boolean(event.context?.roll));
   if (hasCampaignAttempt) {
-    console.log('🎯 Campaign attempt');
+    logDebug('🎯 Campaign attempt');
   }
 
   const warMachineIncreased = newEvents.some((event) => event.deltas.some((delta) => {
@@ -722,15 +723,15 @@ function logPhaseEffects(
       && delta.after > delta.before;
   }));
   if (warMachineIncreased) {
-    console.log('📉 War machine increased');
+    logDebug('📉 War machine increased');
   }
 
   if (isPhaseCommand(command)) {
-    console.log('🧠 Resource state', state.round, totalComrades(state));
+    logDebug(`🧠 Resource state ${state.round} ${totalComrades(state)}`);
   }
 
   if (command.type === 'ResolveResolutionPhase') {
-    console.log('💀 Defeat check');
+    logDebug('💀 Defeat check');
   }
 }
 
@@ -913,7 +914,7 @@ function appendTrajectorySteps(
     recorder.record(trajectoryStep);
 
     if (debug) {
-      console.log(`🧭 Recording trajectory step round=${trajectoryStep.round} phase=${trajectoryStep.phase} action=${trajectoryStep.action}`);
+      logDebug(`🧭 Recording trajectory step round=${trajectoryStep.round} phase=${trajectoryStep.phase} action=${trajectoryStep.action}`);
     }
   }
 }
@@ -1006,7 +1007,7 @@ export function runSingleSimulation(
     const fallback = capturePreDefeatSnapshot(state, 'simulation_end');
     preDefeatSnapshots.push(fallback);
     if (debug) {
-      console.log(`🧠 Pre-defeat snapshot captured round=${fallback.round} phase=simulation_end`);
+      logDebug(`🧠 Pre-defeat snapshot captured round=${fallback.round} phase=simulation_end`);
     }
   }
 
@@ -1341,7 +1342,7 @@ export async function executeRunChunk(
       if (run.scenario !== activeScenario) {
         activeScenario = run.scenario;
         if (chunk.debugSingle) {
-          console.log(`🧪 Worker ${chunk.workerId} running scenario ${run.scenario}`);
+          logVerbose(`🧪 Worker ${chunk.workerId} running scenario ${run.scenario}`);
         }
       }
 
@@ -1350,7 +1351,7 @@ export async function executeRunChunk(
         trajectoryRecording: chunk.trajectoryRecording,
       });
       if (record.turnsPlayed < 2 && !chunk.suppressSanityWarnings) {
-        console.warn(`⚠️ Simulation ended before round 2 (${run.simulationId})`);
+        logWarn(`⚠️ Simulation ended before round 2 (${run.simulationId})`);
       }
       stream.write(`${JSON.stringify(record)}\n`);
       updateSummaryAccumulator(summary, record);
@@ -1360,11 +1361,11 @@ export async function executeRunChunk(
         if (capturedTrajectories < 50) {
           capturedTrajectories += 1;
           if (capturedTrajectories <= 5 || capturedTrajectories % 50 === 0) {
-            console.log(`🏁 Public victory trajectory captured sim=${run.simulationId} count=${capturedTrajectories}`);
+            logVerbose(`🏁 Public victory trajectory captured sim=${run.simulationId} count=${capturedTrajectories}`);
           }
           const writtenPath = await writeTrajectoryToDirectory(chunk.trajectoryDir, trajectory);
           if (capturedTrajectories <= 5 || capturedTrajectories % 50 === 0) {
-            console.log(`💾 Trajectory written to disk ${writtenPath}`);
+            logVerbose(`💾 Trajectory written to disk ${writtenPath}`);
           }
         }
       }
@@ -1521,7 +1522,7 @@ async function runWorkerChunk(
         return;
       }
       lastProgressLogAt = now;
-      console.log(`📊 ${logPrefix}: ${totalComplete} / ${totalRuns}`);
+      logVerbose(`📊 ${logPrefix}: ${totalComplete} / ${totalRuns}`);
     };
 
     worker.on('message', (message: WorkerMessage) => {
@@ -1631,7 +1632,7 @@ export async function executePlannedRunsWithWorkers(
         return;
       }
       lastProgressLogAt = now;
-      console.log(`📊 ${label}: ${completed} / ${totalRuns}`);
+      logVerbose(`📊 ${label}: ${completed} / ${totalRuns}`);
     });
     results.push(result);
   } else {
@@ -1641,7 +1642,7 @@ export async function executePlannedRunsWithWorkers(
     })));
     results.push(...workerResults);
     const totalComplete = Array.from(progressByWorker.values()).reduce((sum, value) => sum + value, 0);
-    console.log(`📊 ${label}: ${totalComplete} / ${totalRuns}`);
+    logVerbose(`📊 ${label}: ${totalComplete} / ${totalRuns}`);
   }
 
   const orderedResults = results.slice().sort((left, right) => left.chunkIndex - right.chunkIndex);
@@ -1663,8 +1664,8 @@ export async function runSimulationBatch(config: SimulationBatchConfig): Promise
   const startedAt = Date.now();
   const normalized = normalizeBatchConfig(config);
 
-  console.log('🎲 Starting simulation batch');
-  console.log(`🧠 Strategy profiles loaded (${normalized.strategyIds.join(', ')})`);
+  logInfo('🎲 Starting simulation batch');
+  logVerbose(`🧠 Strategy profiles loaded (${normalized.strategyIds.join(', ')})`);
 
   const outputPath = join(normalized.outputDir, 'simulations.ndjson');
   const outputShardGlob = join(normalized.outputDir, 'simulations_*.ndjson');
@@ -1696,7 +1697,7 @@ export async function runSimulationBatch(config: SimulationBatchConfig): Promise
     undefined,
   );
 
-  console.log('⚙️ Running workers');
+  logVerbose('⚙️ Running workers');
 
   const progressByWorker = new Map<number, number>();
   const results: WorkerResultMessage[] = [];
@@ -1714,7 +1715,7 @@ export async function runSimulationBatch(config: SimulationBatchConfig): Promise
 
     const result = await executeRunChunk(singleChunk, (completed) => {
       progressByWorker.set(singleChunk.workerId, completed);
-      console.log(`📊 Simulation progress: ${completed} / ${totalRuns}`);
+      logVerbose(`📊 Simulation progress: ${completed} / ${totalRuns}`);
     });
     results.push(result);
   } else {
@@ -1722,7 +1723,7 @@ export async function runSimulationBatch(config: SimulationBatchConfig): Promise
     results.push(...workerResults);
   }
 
-  console.log('📈 Aggregating results');
+  logVerbose('📈 Aggregating results');
 
   const aggregate = createSummaryAccumulator();
   const orderedResults = results.slice().sort((left, right) => left.chunkIndex - right.chunkIndex);
@@ -1732,7 +1733,7 @@ export async function runSimulationBatch(config: SimulationBatchConfig): Promise
     mergeSummaryAccumulators(aggregate, result.summary);
   }
 
-  console.log('💾 Writing NDJSON output');
+  logVerbose('💾 Writing NDJSON output');
   if (normalized.splitOutputShards) {
     await writeOutputAsShards(shardPaths, normalized.outputDir);
   } else {
@@ -1741,13 +1742,13 @@ export async function runSimulationBatch(config: SimulationBatchConfig): Promise
 
   const summary = finalizeSummary(aggregate);
   if (summary.sanity.endedBeforeRound2 > 0) {
-    console.warn(`⚠️ Simulation sanity check: ${summary.sanity.endedBeforeRound2} run(s) ended before round 2.`);
+    logWarn(`⚠️ Simulation sanity check: ${summary.sanity.endedBeforeRound2} run(s) ended before round 2.`);
   }
   await writeFile(summaryPath, JSON.stringify(summary, null, 2), 'utf8');
 
   await rm(shardDir, { recursive: true, force: true });
 
-  console.log('✅ Simulation batch complete');
+  logSuccess('✅ Simulation batch complete');
 
   return {
     runs: summary.runs,

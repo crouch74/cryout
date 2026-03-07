@@ -3,6 +3,8 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { cpus } from 'node:os';
 import { listRulesets } from '../../engine/index.ts';
+import type { LogLevel } from '../logging.ts';
+import { logError, logInfo } from '../logging.ts';
 import { runAllScenariosParallelDiagnostics, runScenarioOptimizer } from './engine.ts';
 import { GA_DEFAULT_CONFIG } from './ga/types.ts';
 import type {
@@ -25,6 +27,7 @@ interface CliArgs {
   patience?: number;
   seed?: number;
   parallelWorkers?: number;
+  logLevel?: LogLevel;
   outDir?: string;
   executionMode?: OptimizerExecutionMode;
   mode?: OptimizerMode;
@@ -58,6 +61,7 @@ interface InteractiveConfigAnswers {
   patience: number;
   seed: number;
   parallelWorkers: number;
+  logLevel: LogLevel;
   outDir: string;
   playerCounts: number[];
   gaPopulation?: number;
@@ -123,6 +127,8 @@ const EXECUTION_MODE_DESCRIPTIONS: Record<OptimizerExecutionMode, string> = {
   single_scenario: 'Optimize one scenario using iterative candidate search.',
   all_scenarios_parallel: 'Optimize every scenario in parallel; each scenario runs its own multi-iteration candidate search.',
 };
+
+const LOG_LEVELS: LogLevel[] = ['debug', 'verbose', 'info', 'success', 'warn', 'error'];
 
 export function getInteractivePlayerCountsDefault(playerCounts?: number[]) {
   return playerCounts ?? [];
@@ -208,6 +214,12 @@ ${scenarioOptions}
     Functionality: Number of worker threads for experiment execution.
     Implementation: Positive integer; default ${workersDefault} (CPU cores - 1, min 1).
     Impact: Higher throughput with increased CPU pressure and log concurrency.
+
+  --log-level <debug|verbose|info|success|warn|error>
+    Name: Console Log Threshold
+    Functionality: Sets the minimum console log level for optimizer output.
+    Implementation: Passed to the shared simulation logger; file logging still retains debug detail in optimizer.log.
+    Impact: Higher thresholds reduce console noise during long optimizer runs.
 
   --out <path>
     Name: Output Directory
@@ -423,6 +435,14 @@ function parseSearchMode(raw: string): OptimizerSearchMode {
   throw new Error(`Unsupported --search-mode value "${raw}". Use local, evolutionary, or hybrid.`);
 }
 
+function parseLogLevel(raw: string): LogLevel {
+  const value = raw.toLowerCase() as LogLevel;
+  if (LOG_LEVELS.includes(value)) {
+    return value;
+  }
+  throw new Error(`Unsupported --log-level value "${raw}". Use ${LOG_LEVELS.join(', ')}.`);
+}
+
 function toFloat(value: string, label: string) {
   const parsed = Number.parseFloat(value);
   if (!Number.isFinite(parsed) || parsed < 0 || parsed > 1) {
@@ -449,6 +469,7 @@ export function renderResolvedOptimizerCommand(config: OptimizerConfig) {
     '--patience', String(config.patience),
     '--seed', String(config.seed),
     '--parallel-workers', String(config.parallelWorkers),
+    '--log-level', config.logLevel,
     '--out', config.outDir,
     '--optimizer-mode', config.executionMode,
     '--mode', config.mode,
@@ -528,6 +549,10 @@ export function parseArgs(argv: string[]): CliArgs {
     }
     if (arg === '--parallel-workers') {
       args.parallelWorkers = toPositiveInteger(readValue(), '--parallel-workers');
+      continue;
+    }
+    if (arg === '--log-level') {
+      args.logLevel = parseLogLevel(readValue());
       continue;
     }
     if (arg === '--out') {
@@ -613,16 +638,16 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
   };
 
   const promptInteractiveConfig = async (prefill: CliArgs): Promise<InteractiveConfigAnswers> => {
-    console.log('🧠 Scenario Optimizer');
-    console.log('');
-    console.log('No scenario specified.');
-    console.log('');
-    console.log('Available scenarios:');
-    console.log('');
+    logInfo('🧠 Scenario Optimizer');
+    logInfo('');
+    logInfo('No scenario specified.');
+    logInfo('');
+    logInfo('Available scenarios:');
+    logInfo('');
     for (const scenarioId of scenarioIds) {
-      console.log(scenarioId);
+      logInfo(scenarioId);
     }
-    console.log('');
+    logInfo('');
 
     if (!process.stdin.isTTY || !process.stdout.isTTY) {
       throw new Error('No scenario specified and interactive prompt is unavailable (TTY required). Re-run with --scenario <id>.');
@@ -729,7 +754,7 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
 
     const runtimeDefaults = RUNTIME_DEFAULTS[firstPass.runtime];
 
-    const secondPass = await prompt<Pick<InteractiveConfigAnswers, 'iterations' | 'baselineRuns' | 'candidateRuns' | 'candidates' | 'patience' | 'seed' | 'parallelWorkers' | 'outDir'>>([
+    const secondPass = await prompt<Pick<InteractiveConfigAnswers, 'iterations' | 'baselineRuns' | 'candidateRuns' | 'candidates' | 'patience' | 'seed' | 'parallelWorkers' | 'logLevel' | 'outDir'>>([
       {
         type: 'input',
         name: 'iterations',
@@ -778,6 +803,13 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
         message: 'Parallel workers (higher = faster experiments, higher CPU usage)',
         default: prefill.parallelWorkers ?? defaultParallelWorkers(),
         filter: (value: unknown) => toPositiveInteger(String(value), 'parallelWorkers'),
+      },
+      {
+        type: 'list',
+        name: 'logLevel',
+        message: 'Console log level',
+        default: prefill.logLevel ?? 'info',
+        choices: LOG_LEVELS.map((level) => ({ name: level, value: level })),
       },
       {
         type: 'input',
@@ -907,6 +939,7 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
     patience: args.patience ?? 3,
     seed: args.seed ?? 42,
     parallelWorkers: args.parallelWorkers ?? defaultParallelWorkers(),
+    logLevel: args.logLevel ?? 'info',
     outDir: args.outDir ?? DEFAULT_OUT_DIR,
     executionMode: executionModeResolved,
     runtime,
@@ -932,11 +965,11 @@ export async function runCli(argv: string[]) {
   const executionMode = parsed.executionMode ?? 'single_scenario';
   const usedInteractivePrompt = !parsed.scenarioId && executionMode !== 'all_scenarios_parallel';
   if (usedInteractivePrompt) {
-    console.log('🧾 Equivalent command:');
-    console.log(renderResolvedOptimizerCommand(config));
+    logInfo('🧾 Equivalent command:');
+    logInfo(renderResolvedOptimizerCommand(config));
   }
-  console.log('🧠 Optimizer configuration resolved');
-  console.log(JSON.stringify({
+  logInfo('🧠 Optimizer configuration resolved');
+  logInfo(JSON.stringify({
     scenarioId: config.scenarioId,
     executionMode: config.executionMode,
     iterations: config.iterations,
@@ -946,6 +979,7 @@ export async function runCli(argv: string[]) {
     patience: config.patience,
     seed: config.seed,
     parallelWorkers: config.parallelWorkers,
+    logLevel: config.logLevel,
     playerCounts: config.playerCounts,
     runtime: config.runtime,
     significance: config.significance,
@@ -956,7 +990,7 @@ export async function runCli(argv: string[]) {
 
   if (config.executionMode === 'all_scenarios_parallel') {
     const report = await runAllScenariosParallelDiagnostics(config);
-    console.log(JSON.stringify({
+    logInfo(JSON.stringify({
       outputDir: report.outputDir,
       scenariosEvaluated: report.scenarios.length,
       failedScenarioCount: report.failedScenarios.length,
@@ -966,7 +1000,7 @@ export async function runCli(argv: string[]) {
   }
 
   const report = await runScenarioOptimizer(config);
-  console.log(JSON.stringify({
+  logInfo(JSON.stringify({
     scenarioId: report.scenarioId,
     outputDir: report.outputDir,
     stopReason: report.stopReason,
@@ -983,8 +1017,8 @@ if (isMainModule) {
     await runCli(process.argv.slice(2));
   } catch (error) {
     const err = error as Error;
-    console.error('❌ Scenario optimizer failed');
-    console.error(err.message);
+    logError('❌ Scenario optimizer failed');
+    logError(err.message);
     process.exitCode = 1;
   }
 }

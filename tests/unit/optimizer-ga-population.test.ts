@@ -9,6 +9,7 @@ import {
   randomGenome,
   tournamentSelect,
 } from '../../src/simulation/optimizer/ga/population.ts';
+import { genomeToCandidate } from '../../src/simulation/optimizer/ga/genome.ts';
 import {
   buildMutationSpaceFromScenario,
   validateScenarioPatch,
@@ -196,4 +197,17 @@ test('scenario patch validation rejects unsupported crisis spike extraction delt
     ),
     true,
   );
+});
+
+test('genomeToCandidate omits catastrophic cap value when the cap is disabled', () => {
+  const patch = genomeToCandidate({
+    scoreThreshold: 65,
+    publicVictoryWeight: 40,
+    mandatesWeight: 60,
+    catastrophicCapEnabled: false,
+    catastrophicCapValue: 72,
+  });
+
+  assert.equal(patch.victoryScoring?.catastrophicCapEnabled, false);
+  assert.equal(patch.victoryScoring?.catastrophicCapValue, undefined);
 });

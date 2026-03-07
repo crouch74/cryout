@@ -19,6 +19,7 @@ test('optimizer CLI parser reads all explicit flags', () => {
     '--patience', '4',
     '--seed', '777',
     '--parallel-workers', '6',
+    '--log-level', 'warn',
     '--out', 'simulation_output/custom_optimizer',
     '--optimizer-mode', 'all_scenarios_parallel',
     '--mode', 'both',
@@ -35,6 +36,7 @@ test('optimizer CLI parser reads all explicit flags', () => {
   assert.equal(parsed.patience, 4);
   assert.equal(parsed.seed, 777);
   assert.equal(parsed.parallelWorkers, 6);
+  assert.equal(parsed.logLevel, 'warn');
   assert.equal(parsed.executionMode, 'all_scenarios_parallel');
   assert.equal(parsed.mode, 'both');
   assert.equal(parsed.runtime, 'thorough');
@@ -59,6 +61,7 @@ test('optimizer config applies balanced defaults when optional flags are omitted
   assert.equal(config.patience, 3);
   assert.equal(config.seed, 42);
   assert.equal(config.parallelWorkers >= 1, true);
+  assert.equal(config.logLevel, 'info');
 });
 
 test('optimizer config maps mode=both to liberation and symbolic', async () => {
@@ -99,6 +102,7 @@ test('optimizer help manual documents all primary input flags and impacts', () =
   assert.match(manual, /--patience <n>/);
   assert.match(manual, /--seed <n>/);
   assert.match(manual, /--parallel-workers <n>/);
+  assert.match(manual, /--log-level <debug\|verbose\|info\|success\|warn\|error>/);
   assert.match(manual, /--out <path>/);
   assert.match(manual, /--optimizer-mode <single_scenario\|all_scenarios_parallel>/);
   assert.match(manual, /--mode <liberation\|symbolic\|both>/);
@@ -187,6 +191,11 @@ test('optimizer CLI parser reads --players flag', () => {
   assert.deepStrictEqual(argsSolo.playerCounts, [3]);
 });
 
+test('optimizer CLI parser reads --log-level flag', () => {
+  const args = parseArgs(['--log-level', 'verbose']);
+  assert.equal(args.logLevel, 'verbose');
+});
+
 test('optimizer buildConfig applies player counts from CLI', async () => {
   const config = await buildConfig(['--scenario', 'tahrir_square', '--players', '2,4']);
   assert.deepStrictEqual(config.playerCounts, [2, 4]);
@@ -238,6 +247,7 @@ test('renderResolvedOptimizerCommand includes resolved GA parameters when GA sea
     '--patience', '2',
     '--seed', '2026',
     '--parallel-workers', '3',
+    '--log-level', 'verbose',
     '--out', '/tmp/stones-opt',
     '--mode', 'liberation',
     '--runtime', 'fast',
@@ -257,6 +267,7 @@ test('renderResolvedOptimizerCommand includes resolved GA parameters when GA sea
   const command = renderResolvedOptimizerCommand(config);
   assert.match(command, /^npm run optimize -- --scenario stones_cry_out /);
   assert.match(command, /--players 2,4/);
+  assert.match(command, /--log-level verbose/);
   assert.match(command, /--search-mode evolutionary/);
   assert.match(command, /--population 12/);
   assert.match(command, /--generations 4/);

@@ -14,6 +14,7 @@ import { listStrategyProfiles } from '../strategies.ts';
 import { buildTrajectoryFileStem } from '../trajectory/TrajectoryRecorder.ts';
 import type { VictoryTrajectory } from '../trajectory/types.ts';
 import type { PlannedSimulationRun, StrategyId } from '../types.ts';
+import { logDebug, logVerbose, logWarn } from '../logging.ts';
 import { applyScenarioPatch } from './applyScenarioPatch.ts';
 import {
   buildRecommendation,
@@ -320,11 +321,11 @@ async function sampleTrajectoriesFromDir(
 function createExperimentLoggers(aggregatedLogs: boolean) {
   return {
     logInfo: (line: string) => {
-      console.log(line);
+      logVerbose(line);
     },
     logVerbose: (line: string) => {
       if (!aggregatedLogs) {
-        console.log(line);
+        logVerbose(line);
       }
     },
   };
@@ -428,7 +429,7 @@ async function executeArmRuns(input: {
     }
     ingestArmRecord(input.accumulator, outcome.record);
     if ((runIndex + 1) % sequentialProgressInterval === 0 || runIndex + 1 === input.plannedRuns.length) {
-      input.logInfo(`🧮 Progress ${runIndex + 1}/${input.plannedRuns.length} ${input.arm === 'A' ? 'pairs' : 'runs'} complete`);
+      logVerbose(`📊 Experiment ${input.definition.id} arm ${input.arm} progress: ${runIndex + 1} / ${input.plannedRuns.length}`);
     }
   }
 }
@@ -754,11 +755,11 @@ export async function runSingleArmExperiment(
         const suffix = count === 0 ? '' : `_${count}`;
         await writeJson(join(trajectoryDir, `${stem}${suffix}.json`), trajectory);
       }
-      logInfo(`📊 Trajectory sampling kept ${trajectories.length}/${trajectoryReservoir.totalSeen()} captures (max ${MAX_TRAJECTORIES_PER_EXPERIMENT}).`);
+      logVerbose(`📊 Trajectory sampling kept ${trajectories.length}/${trajectoryReservoir.totalSeen()} captures (max ${MAX_TRAJECTORIES_PER_EXPERIMENT}).`);
     }
 
-    logInfo(`💾 Wrote single-arm report to ${outputDir}`);
-    logInfo(`✅ Single-arm experiment complete: ${definition.id}`);
+    logVerbose(`💾 Wrote single-arm report to ${outputDir}`);
+    logVerbose(`✅ Single-arm experiment complete: ${definition.id}`);
     return result;
   } finally {
     if (aggregatedLogs) {
@@ -872,7 +873,7 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
       logVerbose,
     });
 
-    logInfo('📈 Aggregating metrics...');
+    logVerbose('📈 Aggregating metrics...');
 
     const armA = finalizeArmSummary(armAAccumulator);
     const armB = finalizeArmSummary(armBAccumulator);
@@ -883,35 +884,35 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
     const structuralDiagnostics = detectStructuralDiagnostics(armA, armB);
 
     const successRate = comparison.metrics.successRate;
-    logInfo(
+    logVerbose(
       `📊 successRate A=${formatMetric(successRate.armA)} B=${formatMetric(successRate.armB)} lift=${successRate.absoluteLift >= 0 ? '+' : ''}${formatMetric(successRate.absoluteLift)} p=${successRate.proportionStats?.pValue ?? 'n/a'}`,
     );
-    logInfo(`🧠 Decision=${recommendation.decision} reason=${recommendation.rationale.join(' | ')}`);
+    logVerbose(`🧠 Decision=${recommendation.decision} reason=${recommendation.rationale.join(' | ')}`);
     if (structuralDiagnostics.turnOneVictoryWarning) {
-      console.log('🚨 Structural Warning: Victory condition satisfied during setup or turn 1. This indicates victory predicate is reachable before gameplay.');
+      logWarn('🚨 Structural Warning: Victory condition satisfied during setup or turn 1. This indicates victory predicate is reachable before gameplay.');
     }
     if (structuralDiagnostics.victoryPredicateSatisfiedBeforeAllowedRoundWarning) {
-      console.log('🚨 Structural Warning: victoryPredicateSatisfiedBeforeAllowedRound detected during experiments.');
+      logWarn('🚨 Structural Warning: victoryPredicateSatisfiedBeforeAllowedRound detected during experiments.');
     }
     if (structuralDiagnostics.earlyTerminationWarning) {
-      console.log('🚨 Structural Warning: earlyTerminationRate exceeded 5% (games ending before round 3).');
+      logWarn('🚨 Structural Warning: earlyTerminationRate exceeded 5% (games ending before round 3).');
     }
     if (structuralDiagnostics.noGameplayWarning) {
-      console.log('🚨 Structural Warning: Simulation ends before meaningful gameplay occurs. Victory gating likely required.');
+      logWarn('🚨 Structural Warning: Simulation ends before meaningful gameplay occurs. Victory gating likely required.');
     }
     if (structuralDiagnostics.publicVictoryHighButSuccessLowWarning) {
-      console.log('🚨 Structural Warning: publicVictoryRate is high while successRate remains near zero. Score composition likely over-constrained.');
+      logWarn('🚨 Structural Warning: publicVictoryRate is high while successRate remains near zero. Score composition likely over-constrained.');
     }
     if (structuralDiagnostics.unreachableThresholdWarning) {
-      console.log('🚨 Structural Warning: observed victory scores indicate threshold may be unreachable under current configuration.');
+      logWarn('🚨 Structural Warning: observed victory scores indicate threshold may be unreachable under current configuration.');
     }
     for (const mandate of structuralDiagnostics.impossibleMandates) {
       if (!aggregatedLogs) {
-        console.log(`⚠️ Mandate appears structurally impossible under current rules. arm=${mandate.arm} mandate=${mandate.mandateId} failureRate=${mandate.failureRate.toFixed(6)} attempts=${mandate.attempts}`);
+        logWarn(`⚠️ Mandate appears structurally impossible under current rules. arm=${mandate.arm} mandate=${mandate.mandateId} failureRate=${mandate.failureRate.toFixed(6)} attempts=${mandate.attempts}`);
       }
     }
     if (aggregatedLogs && structuralDiagnostics.impossibleMandates.length > 0) {
-      logInfo(`⚠️ Mandates structurally impossible count=${structuralDiagnostics.impossibleMandates.length}`);
+      logVerbose(`⚠️ Mandates structurally impossible count=${structuralDiagnostics.impossibleMandates.length}`);
     }
 
     const finishedAtMs = Date.now();
@@ -975,11 +976,11 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
         logVerbose(`💾 Trajectory written to disk ${filePath}`);
       }
 
-      logInfo(`📊 Trajectory sampling kept ${trajectories.length}/${trajectoryReservoir.totalSeen()} captures (max ${MAX_TRAJECTORIES_PER_EXPERIMENT}).`);
+      logVerbose(`📊 Trajectory sampling kept ${trajectories.length}/${trajectoryReservoir.totalSeen()} captures (max ${MAX_TRAJECTORIES_PER_EXPERIMENT}).`);
     }
 
-    logInfo(`💾 Wrote report to ${outputDir}`);
-    logInfo(`✅ Experiment complete: ${definition.id}`);
+    logVerbose(`💾 Wrote report to ${outputDir}`);
+    logVerbose(`✅ Experiment complete: ${definition.id}`);
 
     return result;
   } finally {

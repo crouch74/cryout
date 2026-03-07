@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import type { TrajectorySummary } from '../../src/simulation/trajectory/types.ts';
 import {
   generateCandidatePatches,
+  getScenarioPatchKey,
   isScenarioPatchEmpty,
   normalizeScenarioPatch,
 } from '../../src/simulation/optimizer/candidates.ts';
@@ -198,5 +199,62 @@ test('candidate generator filters unsupported pressure mutations per scenario', 
   assert.equal(
     candidates.some((entry) => entry.patch.pressure?.maxExtractionAddedPerRound !== undefined),
     true,
+  );
+});
+
+test('candidate generator skips exact rejected patches for the current context', async () => {
+  const rejectedKey = getScenarioPatchKey(normalizeScenarioPatch({
+    note: 'ignored',
+    victoryScoring: {
+      mode: 'score',
+      threshold: 65,
+      publicVictoryWeight: 45,
+      mandatesWeight: 55,
+      catastrophicCapEnabled: true,
+      catastrophicCapValue: 69,
+    },
+  }));
+
+  const candidates = await generateCandidatePatches({
+    scenarioId: 'stones_cry_out',
+    iteration: 1,
+    seed: 42,
+    targetCount: 12,
+    candidateRuns: 200,
+    runtime: 'balanced',
+    strategyMode: 'full_optimizer',
+    analysis: {
+      outOfRange: {
+        winRate: true,
+        avgRounds: false,
+        earlyLossRate: true,
+        lateGameRate: false,
+      },
+      defeatPressure: {
+        extractionBreachRate: 0.4,
+        comradesExhaustedRate: 0.2,
+        suddenDeathRate: 0.1,
+        pressureDetected: true,
+      },
+      structural: {
+        turnOnePublicVictoryRate: 0,
+        victoryBeforeAllowedRoundRate: 0,
+        earlyTerminationRate: 0,
+        noGameplayDetected: false,
+        impossibleMandates: [],
+      },
+      topMandateFailures: [{ mandateId: 'protect_workers', failureRate: 0.7, attempts: 25 }],
+      insights: ['Average turns are short and may indicate early collapse.'],
+    },
+    trajectorySummary: null,
+    hillClimbSourcePatch: null,
+    rejectedPatchKeys: new Set([rejectedKey]),
+    balanceSeedOutputDir: '/tmp/optimizer-candidate-tests',
+    useBalanceSearchSeeding: false,
+  });
+
+  assert.equal(
+    candidates.some((entry) => getScenarioPatchKey(entry.patch) === rejectedKey),
+    false,
   );
 });

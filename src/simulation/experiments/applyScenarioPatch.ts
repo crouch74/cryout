@@ -4,6 +4,7 @@ import {
   type RegionId,
   type RulesetDefinition,
 } from '../../engine/index.ts';
+import { logVerbose } from '../logging.ts';
 import type { Condition } from '../../engine/adapters/compat/types.ts';
 import { CONTENT_PACKS } from '../../scenarios/content-packs/index.ts';
 import type { ScenarioPatch } from './patchDsl.ts';
@@ -526,7 +527,7 @@ export function applyScenarioPatch(input: ApplyScenarioPatchInput): AppliedScena
   }
 
   if (process.env.SIMULATION_WORKER !== '1') {
-    console.log(`🧪 Applying patch arm=B scenario=${input.scenarioId} experiment=${input.experimentId}`);
+    logVerbose(`🧪 Applying patch arm=B scenario=${input.scenarioId} experiment=${input.experimentId}`);
   }
 
   const treatment = deepClone(baseline);

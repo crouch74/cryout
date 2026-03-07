@@ -2,6 +2,7 @@ import type { ScenarioPatch } from '../experiments/patchDsl.ts';
 import type { ExperimentArmSummary, MetricComparison } from '../experiments/types.ts';
 import type { TrajectorySummary } from '../trajectory/types.ts';
 import type { VictoryMode } from '../experiments/types.ts';
+import type { LogLevel } from '../logging.ts';
 import type { GaConfig } from './ga/types.ts';
 
 export type OptimizerRuntimeProfile = 'fast' | 'balanced' | 'thorough';
@@ -40,6 +41,7 @@ export interface OptimizerConfig {
   patience: number;
   seed: number;
   parallelWorkers: number;
+  logLevel: LogLevel;
   outDir: string;
   executionMode: OptimizerExecutionMode;
   runtime: OptimizerRuntimeProfile;
@@ -165,10 +167,33 @@ export interface OptimizerCandidateEvaluationCacheEntry {
   evaluation: OptimizerCandidateEvaluation;
 }
 
+export interface OptimizerBaselineCacheEntry {
+  contextKey: string;
+  baselinePatchKey: string;
+  outputDir: string;
+  metrics: ExperimentArmSummary;
+  score: OptimizerScoreBreakdown;
+}
+
+export interface OptimizerRejectedPatchRecord {
+  contextKey: string;
+  patchKey: string;
+  count: number;
+  firstSeenIteration: number;
+  lastSeenIteration: number;
+  reasons: string[];
+}
+
 export interface OptimizerIterationCache {
   baselineMetrics: ExperimentArmSummary;
   baselineScore: OptimizerScoreBreakdown;
   candidateEvaluationsByPatchKey: Record<string, OptimizerCandidateEvaluationCacheEntry>;
+}
+
+export interface OptimizerRunCache {
+  baselineByContextKey: Record<string, OptimizerBaselineCacheEntry>;
+  candidateEvaluationsByContextKey: Record<string, OptimizerCandidateEvaluationCacheEntry>;
+  rejectedPatchesByContextKey: Record<string, Record<string, OptimizerRejectedPatchRecord>>;
 }
 
 export interface OptimizerIterationResult {
@@ -199,6 +224,14 @@ export interface OptimizerFinalMetrics {
   score: OptimizerScoreBreakdown;
 }
 
+export interface OptimizerMetricSnapshot {
+  successRate: number;
+  publicVictoryRate: number;
+  mandateFailureGivenPublic: number;
+  averageTurns: number;
+  fitness: number;
+}
+
 export interface OptimizerFinalReport {
   scenarioId: string;
   outputDir: string;
@@ -210,6 +243,8 @@ export interface OptimizerFinalReport {
     strategy: OptimizerCandidateStrategy;
     score: number;
     scoreDeltaFromBaseline: number;
+    previous: OptimizerMetricSnapshot;
+    current: OptimizerMetricSnapshot;
     patch: ScenarioPatch;
   }>;
   recommendedPatch: ScenarioPatch;

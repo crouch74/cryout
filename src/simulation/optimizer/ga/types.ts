@@ -5,6 +5,9 @@
  * is always delegated to the existing A/B experiment engine.
  */
 
+import type { ScenarioPatch } from '../../experiments/patchDsl.ts';
+import type { ExperimentArmSummary } from '../../experiments/types.ts';
+import type { OptimizerScoreBreakdown } from '../types.ts';
 import type { OptimizerCandidate } from '../types.ts';
 
 // ---------------------------------------------------------------------------
@@ -130,6 +133,16 @@ export interface GaSearchInput {
   iteration: number;
   seed: number;
   config: GaConfig;
+  /** Accepted optimizer patch stack applied before evaluating GA deltas. */
+  baselinePatch?: ScenarioPatch;
+  /** Normalized key for the accepted optimizer patch stack. */
+  baselinePatchKey?: string;
+  /** Baseline metrics for the current accepted optimizer context. */
+  baselineMetrics?: ExperimentArmSummary;
+  /** Baseline fitness score for the current accepted optimizer context. */
+  baselineScore?: OptimizerScoreBreakdown;
+  /** Optional external cache reused across optimizer iterations. */
+  scoreCache?: Map<string, number>;
   /** Parallel workers forwarded to the simulation step. */
   parallelWorkers: number;
   /** Victory modes passed to individual simulations. */

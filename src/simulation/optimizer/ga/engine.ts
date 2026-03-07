@@ -14,6 +14,7 @@
 import { join } from 'node:path';
 import { runSingleArmExperiment } from '../../experiments/runner.ts';
 import type { ExperimentDefinition } from '../../experiments/types.ts';
+import { logDebug, logInfo, logSuccess, logWarn } from '../../logging.ts';
 import { getScenarioPatchKey } from '../candidates.ts';
 import { scoreArmSummary } from '../fitness.ts';
 import { ensureDir } from '../io.ts';
@@ -99,7 +100,7 @@ async function scoreIndividual(
   
   const ruleset = getRulesetDefinition(input.scenarioId);
   if (ruleset && !validateScenarioPatch(patch, ruleset)) {
-      console.log(`⚠️ Rejecting invalid scenario patch for ${individual.id}`);
+      logWarn(`⚠️ Rejecting invalid scenario patch for ${individual.id}`);
       return {
           ...individual,
           fitness: 0,
@@ -131,6 +132,7 @@ async function scoreIndividual(
     recordTrajectories: false,
     parallelWorkers,
     logMode: 'aggregated',
+    baselinePatch: input.baselinePatch ?? {},
     armLabel: 'B',
     tempRootDir: join(input.outDir, 'ga_search', '.tmp'),
   });
@@ -191,39 +193,52 @@ export async function runGaSearch(input: GaSearchInput): Promise<GaSearchResult>
 
   const mutationSpace = buildMutationSpaceFromScenario(ruleset);
 
-  console.log(`🧬 Building mutation space for scenario=${input.scenarioId}`);
-  console.log(`🧬 Mutation parameters discovered: ${mutationSpace.length}`);
-  console.log(`🧬 GA search start scenario=${input.scenarioId} population=${config.populationSize} generations=${config.generations}`);
-  console.log(`🧬 GA config mutation=${config.mutationRate} crossover=${config.crossoverRate} elitism=${config.elitism} runsPerIndividual=${config.runsPerIndividual}`);
+  logInfo(`🧬 Building mutation space for scenario=${input.scenarioId}`);
+  logInfo(`🧬 Mutation parameters discovered: ${mutationSpace.length}`);
+  logInfo(`🧬 GA search start scenario=${input.scenarioId} population=${config.populationSize} generations=${config.generations}`);
+  logInfo(`🧬 GA config mutation=${config.mutationRate} crossover=${config.crossoverRate} elitism=${config.elitism} runsPerIndividual=${config.runsPerIndividual}`);
+  if (input.baselineScore && input.baselineMetrics) {
+    logInfo(
+      `🧬 GA baseline fitness=${input.baselineScore.score.toFixed(6)} successRate=${input.baselineMetrics.successRate.toFixed(4)} avgRounds=${input.baselineMetrics.turns.average.toFixed(2)}`,
+    );
+  }
 
   let population = initPopulation(config.populationSize, rng, mutationSpace);
   const generationReports: GaGenerationReport[] = [];
-  const scoreCache = new Map<string, number>();
+  const scoreCache = input.scoreCache ?? new Map<string, number>();
 
   for (let gen = 1; gen <= config.generations; gen += 1) {
-    console.log(`🧬 Generation ${gen}/${config.generations} simulating ${population.length} individuals`);
+    logInfo(`🧬 Generation ${gen}/${config.generations} simulating ${population.length} individuals`);
 
     const experimentDir = join(gaDir, `generation_${pad2(gen)}`, 'experiments');
     await ensureDir(experimentDir);
 
     const workerPlan = planWorkerAllocation(input.parallelWorkers, population.length);
-    console.log(`🧬 Generation worker plan concurrency=${workerPlan.concurrency} workers/score=${workerPlan.workersPerJob}`);
+    logInfo(`🧬 Generation worker plan concurrency=${workerPlan.concurrency} workers/score=${workerPlan.workersPerJob}`);
     const scored = await mapWithConcurrency(
       population,
       workerPlan.concurrency,
       async (individual) => {
         try {
           const patchKey = getScenarioPatchKey(genomeToCandidate(individual.genome));
-          const cachedFitness = scoreCache.get(patchKey);
+          const cacheKey = JSON.stringify({
+            scenarioId: input.scenarioId,
+            baselinePatchKey: input.baselinePatchKey ?? '{}',
+            candidatePatchKey: patchKey,
+            runsPerIndividual: input.config.runsPerIndividual,
+            playerCounts: input.playerCounts,
+            victoryModes: input.victoryModes,
+          });
+          const cachedFitness = scoreCache.get(cacheKey);
           if (cachedFitness !== undefined) {
             return { ...individual, fitness: cachedFitness, simulated: true };
           }
           const scoredIndividual = await scoreIndividual(individual, input, gen, experimentDir, workerPlan.workersPerJob);
-          scoreCache.set(patchKey, scoredIndividual.fitness ?? 0);
+          scoreCache.set(cacheKey, scoredIndividual.fitness ?? 0);
           return scoredIndividual;
         } catch (error) {
           const err = error as Error;
-          console.log(`⚠️ GA individual ${individual.id} scoring failed: ${err.message}`);
+          logWarn(`⚠️ GA individual ${individual.id} scoring failed: ${err.message}`);
           return { ...individual, fitness: 0, simulated: true };
         }
       },
@@ -234,11 +249,11 @@ export async function runGaSearch(input: GaSearchInput): Promise<GaSearchResult>
     const best = scored[0];
     const stats = computePopulationStats(scored);
 
-    console.log(`🧬 Generation ${gen}/${config.generations} complete`);
-    console.log(`📊 Best fitness: ${stats.bestFitness.toFixed(6)} mean: ${stats.meanFitness.toFixed(6)}`);
+    logSuccess(`🧬 Generation ${gen}/${config.generations} complete`);
+    logInfo(`📊 Best fitness: ${stats.bestFitness.toFixed(6)} mean: ${stats.meanFitness.toFixed(6)}`);
 
     if (best) {
-      console.log(`🏆 Best individual: ${best.id} fitness=${(best.fitness ?? 0).toFixed(6)}`);
+      logSuccess(`🏆 Best individual: ${best.id} fitness=${(best.fitness ?? 0).toFixed(6)}`);
     }
 
     const report: GaGenerationReport = {
@@ -290,7 +305,7 @@ export async function runGaSearch(input: GaSearchInput): Promise<GaSearchResult>
 
   const bestFitness = finalSorted[0]?.fitness ?? 0;
 
-  console.log(`🧬 GA search complete bestFitness=${bestFitness.toFixed(6)} topCandidates=${topCandidates.length}`);
+  logSuccess(`🧬 GA search complete bestFitness=${bestFitness.toFixed(6)} topCandidates=${topCandidates.length}`);
 
   const result: GaSearchResult = {
     scenarioId: input.scenarioId,

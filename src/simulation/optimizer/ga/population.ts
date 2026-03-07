@@ -8,6 +8,7 @@
 
 import type { GaConfig, GaIndividual, PatchGenome } from './types.ts';
 import type { MutationDescriptor } from './mutationSpace.ts';
+import { logDebug, logWarn } from '../../logging.ts';
 
 // ---------------------------------------------------------------------------
 // Genome parameter limits (mirrored from candidates.ts; kept here to
@@ -118,7 +119,7 @@ export function mutateGenome(genome: PatchGenome, mutationRate: number, rng: () 
              const current = (mutableNext.publicVictoryWeight as number) || 45;
              mutableNext.publicVictoryWeight = clamp(current + step, 30, 50);
              mutableNext.mandatesWeight = 100 - (mutableNext.publicVictoryWeight as number);
-             console.log(`🧪 Applying mutation path=${m.path} value=${mutableNext.publicVictoryWeight}`);
+             logDebug(`🧪 Applying mutation path=${m.path} value=${mutableNext.publicVictoryWeight}`);
              mutationApplied = true;
           }
           continue;
@@ -129,7 +130,7 @@ export function mutateGenome(genome: PatchGenome, mutationRate: number, rng: () 
         const minBound = m.min ?? -10;
         const maxBound = m.max ?? 10;
         mutableNext[key] = clamp(current + step, minBound, maxBound);
-        console.log(`🧪 Applying mutation path=${m.path} value=${mutableNext[key]}`);
+        logDebug(`🧪 Applying mutation path=${m.path} value=${mutableNext[key]}`);
         mutationApplied = true;
       } else if (m.type === 'nullableInt') {
         if (mutableNext[key] === null || mutableNext[key] === undefined) {
@@ -139,18 +140,18 @@ export function mutateGenome(genome: PatchGenome, mutationRate: number, rng: () 
         } else {
           mutableNext[key] = clamp((mutableNext[key] as number) + (rng() % 2 === 0 ? -1 : 1), m.min ?? 1, m.max ?? 4);
         }
-        console.log(`🧪 Applying mutation path=${m.path} value=${mutableNext[key]}`);
+        logDebug(`🧪 Applying mutation path=${m.path} value=${mutableNext[key]}`);
         mutationApplied = true;
       } else if (m.type === 'boolean') {
         mutableNext[key] = !(mutableNext[key] ?? true);
-        console.log(`🧪 Applying mutation path=${m.path} value=${mutableNext[key]}`);
+        logDebug(`🧪 Applying mutation path=${m.path} value=${mutableNext[key]}`);
         mutationApplied = true;
       }
     }
 
     if (!mutationSpace.some(m => m.path === 'victoryScoring.catastrophicCapEnabled')) {
        if ((rng() / 0xFFFFFFFF) < mutationRate) {
-          console.log(`⚠️ Mutation skipped path=victoryScoring.catastrophicCapEnabled (not present)`);
+          logDebug(`⚠️ Mutation skipped path=victoryScoring.catastrophicCapEnabled (not present)`);
        }
     }
   } else {

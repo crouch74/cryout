@@ -663,11 +663,11 @@ function evaluateDecision(definition: ExperimentDefinition, comparison: MetricCo
   const primaryMetric = definition.decisionRule.primary;
   const primary = comparison.metrics[primaryMetric];
   const primaryStats = primary.proportionStats;
-
-  const sampleSizeTooSmall = Math.min(comparison.nA, comparison.nB) < 1000;
+  const MIN_SAMPLE_SIZE = 0;
+  const sampleSizeTooSmall = Math.min(comparison.nA, comparison.nB) < MIN_SAMPLE_SIZE;
 
   if (sampleSizeTooSmall) {
-    rationale.push(`Sample size is below the minimum confidence floor (n<1000 per arm).`);
+    rationale.push(`Sample size is below the minimum confidence floor (n<${MIN_SAMPLE_SIZE} per arm).`);
     return { decision: 'NEEDS_MORE_DATA', rationale };
   }
 

@@ -38,6 +38,10 @@ export function genomeToCandidate(genome: PatchGenome): ScenarioPatch {
   const patch: ScenarioPatch = {
     note: '🧬 GA evolutionary candidate',
   };
+  const catastrophicCapEnabled = genome.catastrophicCapEnabled;
+  const catastrophicCapValue = catastrophicCapEnabled === false
+    ? undefined
+    : genome.catastrophicCapValue;
 
   if (genome.globalGazeDelta !== 0 || genome.northernWarMachineDelta !== 0 || genome.seededExtractionTotalDelta !== 0) {
     patch.setup = {};
@@ -77,8 +81,8 @@ export function genomeToCandidate(genome: PatchGenome): ScenarioPatch {
   const isDefaultScoring = genome.scoreThreshold === 70
     && genome.publicVictoryWeight === 45
     && genome.mandatesWeight === 55
-    && genome.catastrophicCapEnabled === true
-    && genome.catastrophicCapValue === 69;
+    && catastrophicCapEnabled === true
+    && catastrophicCapValue === 69;
 
   if (!isDefaultScoring) {
     patch.victoryScoring = {
@@ -87,8 +91,8 @@ export function genomeToCandidate(genome: PatchGenome): ScenarioPatch {
       publicVictoryWeight: genome.publicVictoryWeight,
       mandatesWeight: genome.mandatesWeight,
       mandateProgressMode: 'binary',
-      catastrophicCapEnabled: genome.catastrophicCapEnabled,
-      catastrophicCapValue: genome.catastrophicCapValue,
+      catastrophicCapEnabled,
+      catastrophicCapValue,
     };
   }
 

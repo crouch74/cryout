@@ -1,8 +1,24 @@
 import { join } from 'node:path';
 import { getRulesetDefinition, listRulesets } from '../../engine/index.ts';
+import {
+  createSimulationLogger,
+  getActiveSimulationLogger,
+  getSimulationLogger,
+  logDebug,
+  logInfo,
+  logSuccess,
+  logVerbose,
+  logWarn,
+  withSimulationLogger,
+} from '../logging.ts';
 import type { ScenarioPatch } from '../experiments/patchDsl.ts';
 import { runExperiment, runSingleArmExperiment } from '../experiments/runner.ts';
-import type { ExperimentArmSummary, ExperimentDefinition, MetricComparison } from '../experiments/types.ts';
+import type {
+  ExperimentArmSummary,
+  ExperimentDefinition,
+  ExperimentResult,
+  MetricComparison,
+} from '../experiments/types.ts';
 import { summarizeTrajectories } from '../trajectory/analyzeTrajectories.ts';
 import type { TrajectorySummary } from '../trajectory/types.ts';
 import { generateCandidatePatches, getScenarioPatchKey, normalizeScenarioPatch } from './candidates.ts';
@@ -29,12 +45,16 @@ import type {
   OptimizerAnalysis,
   OptimizerCandidateEvaluation,
   OptimizerCandidateEvaluationCacheEntry,
+  OptimizerBaselineCacheEntry,
   OptimizerConfig,
   OptimizerFinalReport,
   OptimizerFinalMetrics,
+  OptimizerMetricSnapshot,
   OptimizerGateDecision,
   OptimizerIterationCache,
   OptimizerIterationResult,
+  OptimizerRejectedPatchRecord,
+  OptimizerRunCache,
   OptimizerScoreBreakdown,
   OptimizerSignificanceMode,
   OptimizerSignificanceThresholds,
@@ -48,6 +68,46 @@ function roundTo(value: number, digits = 6) {
 
 function percent(value: number) {
   return `${(value * 100).toFixed(2)}%`;
+}
+
+function buildSuccessRateComparisonLine(input: {
+  label: string;
+  baselineMetrics: ExperimentArmSummary;
+  baselineScore: OptimizerScoreBreakdown;
+  candidateMetrics: ExperimentArmSummary;
+  candidateScore: OptimizerScoreBreakdown;
+}) {
+  return `${input.label} baseline=${percent(input.baselineMetrics.successRate)} fitness=${input.baselineScore.score.toFixed(6)} | candidate=${percent(input.candidateMetrics.successRate)} fitness=${input.candidateScore.score.toFixed(6)}`;
+}
+
+function buildRankingLeadersLine(rankings: OptimizerCandidateEvaluation[]) {
+  if (rankings.length === 0) {
+    return null;
+  }
+  const bestByFitness = rankings[0];
+  const bestBySuccessRate = rankings
+    .slice()
+    .sort((left, right) => {
+      if (right.metrics.successRate !== left.metrics.successRate) {
+        return right.metrics.successRate - left.metrics.successRate;
+      }
+      if (right.scoreBreakdown.score !== left.scoreBreakdown.score) {
+        return right.scoreBreakdown.score - left.scoreBreakdown.score;
+      }
+      return left.candidateId.localeCompare(right.candidateId);
+    })[0];
+
+  return `📊 Ranking leaders bestFitness=${bestByFitness.candidateId} successRate=${percent(bestByFitness.metrics.successRate)} fitness=${bestByFitness.scoreBreakdown.score.toFixed(6)} | bestSuccessRate=${bestBySuccessRate.candidateId} successRate=${percent(bestBySuccessRate.metrics.successRate)} fitness=${bestBySuccessRate.scoreBreakdown.score.toFixed(6)}`;
+}
+
+function buildMetricSnapshot(metrics: ExperimentArmSummary, score: OptimizerScoreBreakdown): OptimizerMetricSnapshot {
+  return {
+    successRate: metrics.successRate,
+    publicVictoryRate: metrics.publicVictoryRate,
+    mandateFailureGivenPublic: metrics.mandateFailRateGivenPublic,
+    averageTurns: metrics.turns.average,
+    fitness: score.score,
+  };
 }
 
 function pad2(value: number) {
@@ -73,6 +133,63 @@ function planWorkerAllocation(totalWorkers: number, jobCount: number, minWorkers
     concurrency,
     workersPerJob: Math.max(1, Math.floor(cappedWorkers / concurrency)),
   };
+}
+
+function buildOptimizerContextKey(input: {
+  scenarioId: string;
+  baselinePatchKey: string;
+  runsPerArm: number;
+  playerCounts: number[];
+  victoryModes: string[];
+}) {
+  return JSON.stringify({
+    scenarioId: input.scenarioId,
+    baselinePatchKey: input.baselinePatchKey,
+    runsPerArm: input.runsPerArm,
+    playerCounts: input.playerCounts,
+    victoryModes: input.victoryModes,
+  });
+}
+
+function buildCandidateContextKey(input: {
+  contextKey: string;
+  candidatePatchKey: string;
+}) {
+  return JSON.stringify({
+    contextKey: input.contextKey,
+    candidatePatchKey: input.candidatePatchKey,
+  });
+}
+
+function getRejectedPatchKeysForContext(runCache: OptimizerRunCache, contextKey: string) {
+  return new Set(Object.keys(runCache.rejectedPatchesByContextKey[contextKey] ?? {}));
+}
+
+function recordRejectedPatch(
+  runCache: OptimizerRunCache,
+  contextKey: string,
+  patchKey: string,
+  iteration: number,
+  reason: string,
+) {
+  const contextRecords = runCache.rejectedPatchesByContextKey[contextKey] ?? {};
+  const existing = contextRecords[patchKey];
+  contextRecords[patchKey] = existing
+    ? {
+      ...existing,
+      count: existing.count + 1,
+      lastSeenIteration: iteration,
+      reasons: existing.reasons.includes(reason) ? existing.reasons : [...existing.reasons, reason],
+    }
+    : {
+      contextKey,
+      patchKey,
+      count: 1,
+      firstSeenIteration: iteration,
+      lastSeenIteration: iteration,
+      reasons: [reason],
+    } satisfies OptimizerRejectedPatchRecord;
+  runCache.rejectedPatchesByContextKey[contextKey] = contextRecords;
 }
 
 async function mapWithConcurrency<T, R>(
@@ -522,6 +639,11 @@ function evaluateGate(input: {
 
 function renderFinalReportMarkdown(report: OptimizerFinalReport) {
   const final = report.finalMetrics;
+  const initialBaseline = report.history[0];
+  const previousSnapshot = initialBaseline
+    ? buildMetricSnapshot(initialBaseline.baselineMetrics, initialBaseline.baselineScore)
+    : buildMetricSnapshot(final.metrics, final.score);
+  const finalSnapshot = buildMetricSnapshot(final.metrics, final.score);
   
   const playerCountRows = Object.entries(final.metrics.byPlayerCount)
     .sort(([a], [b]) => Number(a) - Number(b))
@@ -539,12 +661,38 @@ ${playerCountRows}
 `
     : '';
 
+  const acceptedPatchRows = report.acceptedPatches.length > 0
+    ? report.acceptedPatches
+      .map((entry) => {
+        return `| ${entry.iteration} | ${entry.candidateId} | ${entry.strategy} | ${percent(entry.previous.successRate)} | ${percent(entry.current.successRate)} | ${entry.previous.fitness.toFixed(6)} | ${entry.current.fitness.toFixed(6)} | ${entry.scoreDeltaFromBaseline >= 0 ? '+' : ''}${entry.scoreDeltaFromBaseline.toFixed(6)} |`;
+      })
+      .join('\n')
+    : '';
+
+  const acceptedPatchSection = acceptedPatchRows
+    ? `
+## Accepted Patch History
+| Iteration | Candidate | Strategy | Previous Success | Current Success | Previous Fitness | Current Fitness | Fitness Delta |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
+${acceptedPatchRows}
+`
+    : '';
+
   return `# Scenario Optimization Report
 
 - Scenario: ${report.scenarioId}
 - Stop reason: ${report.stopReason}
 - Iterations completed: ${report.iterationsCompleted}
 - Accepted patches: ${report.acceptedPatches.length}
+
+## Previous vs Final
+| Metric | Previous | Final |
+| --- | ---: | ---: |
+| Success Rate | ${percent(previousSnapshot.successRate)} | ${percent(finalSnapshot.successRate)} |
+| Public Victory Rate | ${percent(previousSnapshot.publicVictoryRate)} | ${percent(finalSnapshot.publicVictoryRate)} |
+| Mandate Failure Given Public | ${percent(previousSnapshot.mandateFailureGivenPublic)} | ${percent(finalSnapshot.mandateFailureGivenPublic)} |
+| Average Turns | ${previousSnapshot.averageTurns.toFixed(2)} | ${finalSnapshot.averageTurns.toFixed(2)} |
+| Fitness | ${previousSnapshot.fitness.toFixed(6)} | ${finalSnapshot.fitness.toFixed(6)} |
 
 ## Final Metrics
 - Success Rate: ${percent(final.metrics.successRate)}
@@ -553,6 +701,7 @@ ${playerCountRows}
 - Average Turns: ${final.metrics.turns.average.toFixed(2)}
 - Balance Score: ${final.score.score.toFixed(6)}
 ${playerCountBreakdown}
+${acceptedPatchSection}
 ## Recommended Patch
 \`\`\`json
 ${JSON.stringify(report.recommendedPatch, null, 2)}
@@ -592,7 +741,26 @@ export async function runAllScenariosParallelDiagnostics(config: OptimizerConfig
   const runStamp = buildRunStamp();
   const outputDir = join(config.outDir, 'all_scenarios_parallel', `${runStamp}_${config.seed}`);
   await ensureDir(outputDir);
+  const logFilePath = join(outputDir, 'optimizer.log');
+  const logger = await createSimulationLogger({
+    scope: 'optimizer/all-scenarios',
+    logFilePath,
+    consoleMinLevel: config.logLevel,
+  });
+  return withSimulationLogger(logger, async () => {
+    try {
+      logInfo(`🗂️ Optimizer log file=${logFilePath}`);
+      return await runAllScenariosParallelDiagnosticsInternal(config, outputDir);
+    } finally {
+      await logger.close();
+    }
+  });
+}
 
+async function runAllScenariosParallelDiagnosticsInternal(
+  config: OptimizerConfig,
+  outputDir: string,
+): Promise<AllScenariosParallelReport> {
   const rulesets = listRulesets().sort((left, right) => left.id.localeCompare(right.id));
   if (rulesets.length === 0) {
     throw new Error('No scenarios available for all-scenarios optimization.');
@@ -607,8 +775,8 @@ export async function runAllScenariosParallelDiagnostics(config: OptimizerConfig
   const scenarioPlan = planWorkerAllocation(config.parallelWorkers, rulesets.length, 2);
   const scenarioConcurrency = scenarioPlan.concurrency;
   const workersPerScenarioOptimizer = scenarioPlan.workersPerJob;
-  console.log(`🧠 All-scenarios parallel optimization start scenarios=${rulesets.length} concurrency=${scenarioConcurrency}`);
-  console.log(`🧠 Worker budget per scenario optimizer=${workersPerScenarioOptimizer}`);
+  logInfo(`🧠 All-scenarios parallel optimization start scenarios=${rulesets.length} concurrency=${scenarioConcurrency}`);
+  logInfo(`🧠 Worker budget per scenario optimizer=${workersPerScenarioOptimizer}`);
 
   const scenarioResults = await mapWithConcurrency(
     rulesets,
@@ -617,14 +785,17 @@ export async function runAllScenariosParallelDiagnostics(config: OptimizerConfig
       const scenarioRoot = join(outputDir, 'scenarios');
       await ensureDir(scenarioRoot);
       try {
-        console.log(`🧠 Starting scenario optimizer scenario=${ruleset.id}`);
-        const report = await runScenarioOptimizer({
-          ...config,
-          scenarioId: ruleset.id,
-          seed: mixSeed(config.seed, stableHash(`all-scenarios:${ruleset.id}`)),
-          parallelWorkers: workersPerScenarioOptimizer,
-          outDir: scenarioRoot,
-        });
+        logInfo(`🧠 Starting scenario optimizer scenario=${ruleset.id}`);
+        const report = await withSimulationLogger(
+          getSimulationLogger().child(`scenario:${ruleset.id}`),
+          () => runScenarioOptimizerInternal({
+            ...config,
+            scenarioId: ruleset.id,
+            seed: mixSeed(config.seed, stableHash(`all-scenarios:${ruleset.id}`)),
+            parallelWorkers: workersPerScenarioOptimizer,
+            outDir: scenarioRoot,
+          }),
+        );
         const summary: AllScenariosParallelScenarioSummary = {
           scenarioId: ruleset.id,
           scenarioName: ruleset.name,
@@ -634,11 +805,11 @@ export async function runAllScenariosParallelDiagnostics(config: OptimizerConfig
           acceptedPatches: report.acceptedPatches.length,
           finalScore: report.finalMetrics.score.score,
         };
-        console.log(`🏁 Scenario optimizer complete scenario=${ruleset.id} iterations=${report.iterationsCompleted} stop=${report.stopReason}`);
+        logSuccess(`🏁 Scenario optimizer complete scenario=${ruleset.id} iterations=${report.iterationsCompleted} stop=${report.stopReason}`);
         return summary;
       } catch (error) {
         const err = error as Error;
-        console.log(`⚠️ All-scenarios optimizer skipped scenario=${ruleset.id} reason=${err.message}`);
+        logWarn(`⚠️ All-scenarios optimizer skipped scenario=${ruleset.id} reason=${err.message}`);
         await writeJson(join(outputDir, 'scenario_errors', `${ruleset.id}.json`), {
           scenarioId: ruleset.id,
           scenarioName: ruleset.name,
@@ -677,19 +848,48 @@ export async function runAllScenariosParallelDiagnostics(config: OptimizerConfig
   await writeJson(join(outputDir, 'scenario_failures.json'), failedScenarios);
   await writeMarkdown(join(outputDir, 'final_report.md'), renderAllScenariosParallelReportMarkdown(report));
 
-  console.log('🏆 All-scenarios parallel optimization complete');
-  console.log(`🏆 Scenarios completed=${scenarios.length} failed=${failedScenarios.length}`);
+  logSuccess('🏆 All-scenarios parallel optimization complete');
+  logSuccess(`🏆 Scenarios completed=${scenarios.length} failed=${failedScenarios.length}`);
   return report;
 }
 
 export async function runScenarioOptimizer(config: OptimizerConfig): Promise<OptimizerFinalReport> {
+  const activeLogger = getActiveSimulationLogger();
+  if (activeLogger) {
+    return runScenarioOptimizerInternal(config);
+  }
+
+  const runStamp = buildRunStamp();
+  const outputDir = resolveOptimizerOutputRoot(config.outDir, config.scenarioId, config.seed, runStamp);
+  await ensureDir(outputDir);
+  const logFilePath = join(outputDir, 'optimizer.log');
+  const logger = await createSimulationLogger({
+    scope: `optimizer/${config.scenarioId}`,
+    logFilePath,
+    consoleMinLevel: config.logLevel,
+  });
+  return withSimulationLogger(logger, async () => {
+    try {
+      logInfo(`🗂️ Optimizer log file=${logFilePath}`);
+      return await runScenarioOptimizerInternal(config, outputDir, runStamp);
+    } finally {
+      await logger.close();
+    }
+  });
+}
+
+async function runScenarioOptimizerInternal(
+  config: OptimizerConfig,
+  precomputedOutputDir?: string,
+  precomputedRunStamp?: string,
+): Promise<OptimizerFinalReport> {
   const scenario = getRulesetDefinition(config.scenarioId);
   if (!scenario) {
     throw new Error(`Unknown scenario: ${config.scenarioId}`);
   }
 
-  const runStamp = buildRunStamp();
-  const outputDir = resolveOptimizerOutputRoot(config.outDir, config.scenarioId, config.seed, runStamp);
+  const runStamp = precomputedRunStamp ?? buildRunStamp();
+  const outputDir = precomputedOutputDir ?? resolveOptimizerOutputRoot(config.outDir, config.scenarioId, config.seed, runStamp);
   await ensureDir(outputDir);
   await writeJson(join(outputDir, 'optimizer_config.json'), {
     ...config,
@@ -706,15 +906,21 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
   let iterationsCompleted = 0;
   const estimatedTotalExperiments = config.iterations * (2 + config.candidates);
   let completedExperiments = 0;
+  const runCache: OptimizerRunCache = {
+    baselineByContextKey: {},
+    candidateEvaluationsByContextKey: {},
+    rejectedPatchesByContextKey: {},
+  };
+  const gaScoreCache = new Map<string, number>();
 
-  console.log(`🧠 Run start scenario=${config.scenarioId} strategy=${config.strategy} runtime=${config.runtime}`);
-  console.log(`🧠 Parallel workers configured=${config.parallelWorkers}`);
-  console.log(`🧠 Estimated experiment workload=${estimatedTotalExperiments} (baselines + candidate scoring + selected confirmations)`);
+  logInfo(`🧠 Run start scenario=${config.scenarioId} strategy=${config.strategy} runtime=${config.runtime}`);
+  logInfo(`🧠 Parallel workers configured=${config.parallelWorkers}`);
+  logInfo(`🧠 Estimated experiment workload=${estimatedTotalExperiments} (baselines + candidate scoring + selected confirmations)`);
 
   for (let iteration = 1; iteration <= config.iterations; iteration += 1) {
     iterationsCompleted = iteration;
     const iterationPercent = formatProgressPercent(iteration - 1, config.iterations);
-    console.log(`🧠 Optimization iteration=${iteration}/${config.iterations} scenario=${config.scenarioId} overall=${iterationPercent}%`);
+    logInfo(`🧠 Optimization iteration=${iteration}/${config.iterations} scenario=${config.scenarioId} overall=${iterationPercent}%`);
 
     const iterationDir = join(outputDir, `iteration_${pad2(iteration)}`);
     const experimentsDir = join(iterationDir, 'experiments');
@@ -723,6 +929,14 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
     await ensureDir(tempRootDir);
 
     const baselineExperimentId = `optimizer_${config.scenarioId}_iter_${pad2(iteration)}_baseline`;
+    const baselinePatchKey = getScenarioPatchKey(normalizeScenarioPatch(accumulatedPatch));
+    const baselineContextKey = buildOptimizerContextKey({
+      scenarioId: config.scenarioId,
+      baselinePatchKey,
+      runsPerArm: config.baselineRuns,
+      playerCounts: config.playerCounts,
+      victoryModes: config.victoryModes,
+    });
     const baselineDefinition = createExperimentDefinition({
       id: baselineExperimentId,
       title: `Optimizer baseline iteration ${iteration}`,
@@ -736,21 +950,55 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
       playerCounts: config.playerCounts,
     });
 
-    console.log('📊 Running baseline simulation');
-    const baselineResult = await runExperiment(baselineDefinition, {
-      outDir: experimentsDir,
-      recordTrajectories: true,
-      parallelWorkers: config.parallelWorkers,
-      logMode: 'aggregated',
-      baselinePatch: accumulatedPatch,
-      tempRootDir,
-    });
-    completedExperiments += 1;
-    console.log(`🔁 Overall run progress ${completedExperiments}/${estimatedTotalExperiments} (${formatProgressPercent(completedExperiments, estimatedTotalExperiments)}%) after baseline`);
-    console.log('📊 Baseline metrics computed');
+    let baselineResult: ExperimentResult;
+    const cachedBaseline = runCache.baselineByContextKey[baselineContextKey];
+    if (cachedBaseline) {
+      baselineResult = {
+        definition: baselineDefinition,
+        outputDir: cachedBaseline.outputDir,
+        startedAt: '',
+        finishedAt: '',
+        durationMs: 0,
+        armA: cachedBaseline.metrics,
+        armB: cachedBaseline.metrics,
+        comparison: {
+          confidence: getSignificanceThresholds(config.significance).confidence,
+          nA: 0,
+          nB: 0,
+          metrics: {},
+        } as MetricComparison,
+        recommendation: {
+          decision: 'NEEDS_MORE_DATA',
+          rationale: ['Baseline metrics were reused from an equivalent accepted-patch context.'],
+          primaryMetric: 'successRate',
+        },
+      };
+      logInfo('📊 Reusing baseline metrics from previous iteration context');
+    } else {
+      logInfo('📊 Running baseline simulation');
+      baselineResult = await runExperiment(baselineDefinition, {
+        outDir: experimentsDir,
+        recordTrajectories: true,
+        parallelWorkers: config.parallelWorkers,
+        logMode: 'aggregated',
+        baselinePatch: accumulatedPatch,
+        tempRootDir,
+      });
+      completedExperiments += 1;
+      logVerbose(`🔁 Overall run progress ${completedExperiments}/${estimatedTotalExperiments} (${formatProgressPercent(completedExperiments, estimatedTotalExperiments)}%) after baseline`);
+      const baselineMetricsForCache = baselineResult.armA;
+      runCache.baselineByContextKey[baselineContextKey] = {
+        contextKey: baselineContextKey,
+        baselinePatchKey,
+        outputDir: baselineResult.outputDir,
+        metrics: baselineMetricsForCache,
+        score: scoreArmSummary(baselineMetricsForCache),
+      } satisfies OptimizerBaselineCacheEntry;
+    }
+    logInfo('📊 Baseline metrics computed');
 
     const baselineMetrics = baselineResult.armA;
-    const baselineScore = scoreArmSummary(baselineMetrics);
+    const baselineScore = runCache.baselineByContextKey[baselineContextKey]?.score ?? scoreArmSummary(baselineMetrics);
     const iterationCache: OptimizerIterationCache = {
       baselineMetrics,
       baselineScore,
@@ -764,9 +1012,9 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
 
     const analysis = analyzeBaselineMetrics(baselineMetrics, baselineScore);
     await writeJson(join(iterationDir, 'analysis.json'), analysis);
-    console.log(`📊 Analysis summary: ${analysis.insights.join(' | ') || 'No major imbalances detected'}`);
+    logInfo(`📊 Analysis summary: ${analysis.insights.join(' | ') || 'No major imbalances detected'}`);
 
-    console.log('🧭 Exploring victory trajectories');
+    logVerbose('🧭 Exploring victory trajectories');
     const trajectorySummary = await summarizeBaselineTrajectories(baselineResult.outputDir, config.scenarioId);
     await writeJson(join(iterationDir, 'trajectory_summary.json'), trajectorySummary);
     await writeJson(join(iterationDir, 'victory_trajectory_analysis.json'), trajectorySummary
@@ -778,9 +1026,9 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
       }
       : null);
     if (trajectorySummary?.mostCommonActionSequence) {
-      console.log(`🧭 Most common sequence: ${trajectorySummary.mostCommonActionSequence.sequence}`);
+      logVerbose(`🧭 Most common sequence: ${trajectorySummary.mostCommonActionSequence.sequence}`);
     } else {
-      console.log('🧭 No baseline trajectories captured in this iteration');
+      logVerbose('🧭 No baseline trajectories captured in this iteration');
     }
 
     if (baselineScore.allTargetsInRange) {
@@ -799,11 +1047,11 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
         acceptedCandidate: null,
         noImprovementStreak,
       });
-      console.log('🏆 Baseline already satisfies all target ranges');
+      logSuccess('🏆 Baseline already satisfies all target ranges');
       break;
     }
 
-    console.log('🧠 Generating candidate rule patches');
+    logInfo('🧠 Generating candidate rule patches');
     let candidates = await generateCandidatePatches({
       scenarioId: config.scenarioId,
       iteration,
@@ -815,6 +1063,16 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
       analysis,
       trajectorySummary,
       hillClimbSourcePatch,
+      rejectedPatchKeys: getRejectedPatchKeysForContext(
+        runCache,
+        buildOptimizerContextKey({
+          scenarioId: config.scenarioId,
+          baselinePatchKey,
+          runsPerArm: config.candidateRuns,
+          playerCounts: config.playerCounts,
+          victoryModes: config.victoryModes,
+        }),
+      ),
       balanceSeedOutputDir: join(iterationDir, 'balance_seed'),
       useBalanceSearchSeeding: config.useBalanceSearchSeeding ?? true,
     });
@@ -822,13 +1080,18 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
     const activeSearchMode = config.searchMode ?? 'local';
     if (activeSearchMode === 'evolutionary' || activeSearchMode === 'hybrid') {
       const gaConfig = { ...GA_DEFAULT_CONFIG, ...(config.gaConfig ?? {}) };
-      console.log(`🧬 GA search starting searchMode=${activeSearchMode} population=${gaConfig.populationSize} generations=${gaConfig.generations}`);
+      logInfo(`🧬 GA search starting searchMode=${activeSearchMode} population=${gaConfig.populationSize} generations=${gaConfig.generations}`);
       try {
         const gaResult = await runGaSearch({
           scenarioId: config.scenarioId,
           iteration,
           seed: mixSeed(config.seed, stableHash(`ga-search:${iteration}`)),
           config: gaConfig,
+          baselinePatch: accumulatedPatch,
+          baselinePatchKey,
+          baselineMetrics,
+          baselineScore,
+          scoreCache: gaScoreCache,
           parallelWorkers: config.parallelWorkers,
           victoryModes: config.victoryModes as string[],
           playerCounts: config.playerCounts,
@@ -838,14 +1101,14 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
 
         if (activeSearchMode === 'evolutionary') {
           candidates = gaResult.topCandidates;
-          console.log(`🧬 GA search complete: replaced candidate pool with ${candidates.length} GA-promoted candidates`);
+          logSuccess(`🧬 GA search complete: replaced candidate pool with ${candidates.length} GA-promoted candidates}`);
         } else {
           candidates = [...candidates, ...gaResult.topCandidates];
-          console.log(`🧬 GA search complete: merged GA candidates before dedup (total=${candidates.length})`);
+          logInfo(`🧬 GA search complete: merged GA candidates before dedup (total=${candidates.length})`);
         }
       } catch (error) {
         const err = error as Error;
-        console.log(`⚠️ GA search failed iteration=${iteration}: ${err.message}`);
+        logWarn(`⚠️ GA search failed iteration=${iteration}: ${err.message}`);
       }
     }
 
@@ -858,10 +1121,17 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
     }
     candidates = Array.from(dedupedCandidates.values());
     await writeJson(join(iterationDir, 'candidate_patches.json'), candidates);
-    console.log(`🧠 ${candidates.length} candidates created after dedup`);
+    logInfo(`🧠 ${candidates.length} candidates created after dedup`);
 
     const workerPlan = planWorkerAllocation(config.parallelWorkers, candidates.length, 2);
-    console.log(`🧪 Candidate pool concurrency=${workerPlan.concurrency} workers/score=${workerPlan.workersPerJob}`);
+    logVerbose(`🧪 Candidate pool concurrency=${workerPlan.concurrency} workers/score=${workerPlan.workersPerJob}`);
+    const candidateContextKey = buildOptimizerContextKey({
+      scenarioId: config.scenarioId,
+      baselinePatchKey,
+      runsPerArm: config.candidateRuns,
+      playerCounts: config.playerCounts,
+      victoryModes: config.victoryModes,
+    });
     let completedCandidateExperiments = 0;
     const candidateProgressInterval = Math.max(1, Math.floor(Math.max(1, candidates.length) / 5));
     const candidateEvaluationResults = await mapWithConcurrency(
@@ -874,10 +1144,25 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
           completedCandidateExperiments += 1;
           return { ...cachedEntry.evaluation, candidateId: candidate.candidateId, strategy: candidate.strategy, cached: true };
         }
+        const runCacheKey = buildCandidateContextKey({
+          contextKey: candidateContextKey,
+          candidatePatchKey: patchKey,
+        });
+        const runCachedEntry = runCache.candidateEvaluationsByContextKey[runCacheKey];
+        if (runCachedEntry) {
+          iterationCache.candidateEvaluationsByPatchKey[patchKey] = runCachedEntry;
+          completedCandidateExperiments += 1;
+          return {
+            ...runCachedEntry.evaluation,
+            candidateId: candidate.candidateId,
+            strategy: candidate.strategy,
+            cached: true,
+          };
+        }
 
         const candidateExperimentId = `optimizer_${config.scenarioId}_iter_${pad2(iteration)}_${candidate.candidateId}`;
         if (candidateIndex === 0) {
-          console.log(`🧪 Running candidate single-arm scoring (${candidates.length} total)`);
+          logInfo(`🧪 Running candidate single-arm scoring (${candidates.length} total)`);
         }
         try {
           const definition = createExperimentDefinition({
@@ -902,7 +1187,7 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
             tempRootDir,
           });
           completedExperiments += 1;
-          console.log(`🔁 Overall run progress ${completedExperiments}/${estimatedTotalExperiments} (${formatProgressPercent(completedExperiments, estimatedTotalExperiments)}%)`);
+          logVerbose(`🔁 Overall run progress ${completedExperiments}/${estimatedTotalExperiments} (${formatProgressPercent(completedExperiments, estimatedTotalExperiments)}%)`);
           const scoreBreakdown = scoreArmSummary(result.arm);
           const scoreDeltaFromBaseline = roundTo(scoreBreakdown.score - baselineScore.score);
           const evaluation: OptimizerCandidateEvaluation = {
@@ -924,17 +1209,22 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
             patchKey,
             evaluation,
           } satisfies OptimizerCandidateEvaluationCacheEntry;
+          runCache.candidateEvaluationsByContextKey[runCacheKey] = {
+            patchKey,
+            evaluation,
+          } satisfies OptimizerCandidateEvaluationCacheEntry;
           completedCandidateExperiments += 1;
           if (completedCandidateExperiments % candidateProgressInterval === 0 || completedCandidateExperiments === candidates.length) {
-            console.log(`📊 Candidate batch progress ${completedCandidateExperiments}/${candidates.length}`);
+            logVerbose(`📊 Candidate batch progress ${completedCandidateExperiments}/${candidates.length}`);
           }
           return evaluation;
         } catch (error) {
           const err = error as Error;
-          console.log(`⚠️ Candidate ${candidate.candidateId} skipped: ${err.message}`);
+          recordRejectedPatch(runCache, candidateContextKey, patchKey, iteration, err.message);
+          logWarn(`⚠️ Candidate ${candidate.candidateId} skipped: ${err.message}`);
           completedCandidateExperiments += 1;
           if (completedCandidateExperiments % candidateProgressInterval === 0 || completedCandidateExperiments === candidates.length) {
-            console.log(`📊 Candidate batch progress ${completedCandidateExperiments}/${candidates.length}`);
+            logVerbose(`📊 Candidate batch progress ${completedCandidateExperiments}/${candidates.length}`);
           }
           return null;
         }
@@ -954,10 +1244,22 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
         return left.candidateId.localeCompare(right.candidateId);
       });
 
+    const rankingLeadersLine = buildRankingLeadersLine(rankings);
+    if (rankingLeadersLine) {
+      logInfo(rankingLeadersLine);
+    }
+
     let selectedCandidate = rankings[0] ?? null;
     let acceptedCandidate: OptimizerCandidateEvaluation | null = null;
     if (selectedCandidate) {
-      console.log(`🧪 Confirming top candidate via A/B candidate=${selectedCandidate.candidateId}`);
+      logInfo(buildSuccessRateComparisonLine({
+        label: `📊 Top candidate ${selectedCandidate.candidateId} single-arm comparison`,
+        baselineMetrics,
+        baselineScore,
+        candidateMetrics: selectedCandidate.metrics,
+        candidateScore: selectedCandidate.scoreBreakdown,
+      }));
+      logInfo(`🧪 Confirming top candidate via A/B candidate=${selectedCandidate.candidateId}`);
       try {
         const confirmationDefinition = createExperimentDefinition({
           id: `${selectedCandidate.experimentId}_confirm`,
@@ -980,7 +1282,7 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
           tempRootDir,
         });
         completedExperiments += 1;
-        console.log(`🔁 Overall run progress ${completedExperiments}/${estimatedTotalExperiments} (${formatProgressPercent(completedExperiments, estimatedTotalExperiments)}%) after confirmation`);
+        logVerbose(`🔁 Overall run progress ${completedExperiments}/${estimatedTotalExperiments} (${formatProgressPercent(completedExperiments, estimatedTotalExperiments)}%) after confirmation`);
         const scoreBreakdown = scoreArmSummary(confirmation.armB);
         const gate = evaluateGate({
           baselineMetrics,
@@ -1003,6 +1305,13 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
           gate,
         };
         selectedCandidate = confirmedEvaluation;
+        logInfo(buildSuccessRateComparisonLine({
+          label: `📊 Top candidate ${confirmedEvaluation.candidateId} confirmed comparison`,
+          baselineMetrics,
+          baselineScore,
+          candidateMetrics: confirmedEvaluation.metrics,
+          candidateScore: confirmedEvaluation.scoreBreakdown,
+        }));
         const selectedIndex = rankings.findIndex((entry) => entry.patchKey === confirmedEvaluation.patchKey);
         if (selectedIndex >= 0) {
           rankings[selectedIndex] = confirmedEvaluation;
@@ -1018,21 +1327,31 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
             strategy: confirmedEvaluation.strategy,
             score: confirmedEvaluation.scoreBreakdown.score,
             scoreDeltaFromBaseline: confirmedEvaluation.scoreDeltaFromBaseline,
+            previous: buildMetricSnapshot(baselineMetrics, baselineScore),
+            current: buildMetricSnapshot(confirmedEvaluation.metrics, confirmedEvaluation.scoreBreakdown),
             patch: confirmedEvaluation.patch,
           });
-          console.log(`🏆 New best configuration discovered candidate=${confirmedEvaluation.candidateId}`);
+          logSuccess(`🏆 New best configuration discovered candidate=${confirmedEvaluation.candidateId}`);
         } else {
+          recordRejectedPatch(
+            runCache,
+            candidateContextKey,
+            confirmedEvaluation.patchKey,
+            iteration,
+            confirmedEvaluation.gate.reasons.join(' | '),
+          );
           noImprovementStreak += 1;
-          console.log(`🔁 No significant improvement accepted (streak=${noImprovementStreak})`);
+          logInfo(`🔁 No significant improvement accepted (streak=${noImprovementStreak})`);
         }
       } catch (error) {
         const err = error as Error;
+        recordRejectedPatch(runCache, candidateContextKey, selectedCandidate.patchKey, iteration, err.message);
         noImprovementStreak += 1;
-        console.log(`⚠️ Candidate confirmation failed ${selectedCandidate.candidateId}: ${err.message}`);
+        logWarn(`⚠️ Candidate confirmation failed ${selectedCandidate.candidateId}: ${err.message}`);
       }
     } else {
       noImprovementStreak += 1;
-      console.log(`🔁 No candidate evaluations produced (streak=${noImprovementStreak})`);
+      logWarn(`🔁 No candidate evaluations produced (streak=${noImprovementStreak})`);
     }
 
     await writeJson(join(iterationDir, 'candidate_rankings.json'), rankings);
@@ -1060,19 +1379,19 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
 
     if (acceptedCandidate?.scoreBreakdown.allTargetsInRange) {
       stopReason = 'targets_reached';
-      console.log('🏆 Target metric ranges reached by accepted candidate');
+      logSuccess('🏆 Target metric ranges reached by accepted candidate');
       break;
     }
 
     if (noImprovementStreak >= config.patience) {
       stopReason = 'no_significant_improvement';
-      console.log('🔁 Patience limit reached without meaningful improvement');
+      logInfo('🔁 Patience limit reached without meaningful improvement');
       break;
     }
   }
 
   if (history.length > 0 && stopReason === 'max_iterations_reached') {
-    console.log('🔁 Maximum iterations reached');
+    logInfo('🔁 Maximum iterations reached');
   }
 
   const lastIteration = history[history.length - 1];
@@ -1107,23 +1426,24 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
 
   await writeJson(join(outputDir, 'optimization_history.json'), history);
   await writeJson(join(outputDir, 'accepted_patch_history.json'), acceptedPatches);
+  await writeJson(join(outputDir, 'rejected_patch_memory.json'), runCache.rejectedPatchesByContextKey);
   await writeJson(join(outputDir, 'recommended_patch.json'), report.recommendedPatch);
   await writeJson(join(outputDir, 'final_metrics.json'), finalMetrics);
   await writeJson(join(outputDir, 'optimizer_result.json'), report);
   await writeMarkdown(join(outputDir, 'final_report.md'), renderFinalReportMarkdown(report));
 
-  console.log('🏆 Optimization complete');
-  console.log(`🏆 Run progress completed ${completedExperiments}/${estimatedTotalExperiments} (${formatProgressPercent(completedExperiments, estimatedTotalExperiments)}%)`);
+  logSuccess('🏆 Optimization complete');
+  logSuccess(`🏆 Run progress completed ${completedExperiments}/${estimatedTotalExperiments} (${formatProgressPercent(completedExperiments, estimatedTotalExperiments)}%)`);
   if (Object.keys(report.recommendedPatch).length > 0) {
-    console.log(`🏆 Best configuration discovered for scenario=${config.scenarioId}:`);
-    console.log(JSON.stringify(report.recommendedPatch, null, 2));
+    logSuccess(`🏆 Best configuration discovered for scenario=${config.scenarioId}:`);
+    logInfo(JSON.stringify(report.recommendedPatch, null, 2));
   } else {
-    console.log(`🏆 No improved configuration discovered for scenario=${config.scenarioId} (baseline remains best)`);
+    logInfo(`🏆 No improved configuration discovered for scenario=${config.scenarioId} (baseline remains best)`);
   }
-  console.log(`📊 Success Rate: ${percent(finalMetrics.metrics.successRate)}`);
-  console.log(`📊 Public Victory Rate: ${percent(finalMetrics.metrics.publicVictoryRate)}`);
-  console.log(`📊 Mandate Failure Given Public: ${percent(finalMetrics.metrics.mandateFailRateGivenPublic)}`);
-  console.log(`📊 Average Turns: ${finalMetrics.metrics.turns.average.toFixed(2)}`);
+  logInfo(`📊 Success Rate: ${percent(finalMetrics.metrics.successRate)}`);
+  logInfo(`📊 Public Victory Rate: ${percent(finalMetrics.metrics.publicVictoryRate)}`);
+  logInfo(`📊 Mandate Failure Given Public: ${percent(finalMetrics.metrics.mandateFailRateGivenPublic)}`);
+  logInfo(`📊 Average Turns: ${finalMetrics.metrics.turns.average.toFixed(2)}`);
 
   return report;
 }

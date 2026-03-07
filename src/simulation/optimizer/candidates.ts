@@ -3,6 +3,7 @@ import { balanceCandidateToPatch, runBalanceSearch } from '../balance/SearchEngi
 import type { ScenarioPatch } from '../experiments/patchDsl.ts';
 import type { TrajectorySummary } from '../trajectory/types.ts';
 import { getRulesetDefinition } from '../../engine/index.ts';
+import { logInfo, logWarn } from '../logging.ts';
 import {
   buildMutationSpaceFromScenario,
   scenarioHasCatastrophicCap,
@@ -27,6 +28,7 @@ interface CandidateGenerationInput {
   analysis: OptimizerAnalysis;
   trajectorySummary: TrajectorySummary | null;
   hillClimbSourcePatch: ScenarioPatch | null;
+  rejectedPatchKeys?: ReadonlySet<string>;
   balanceSeedOutputDir: string;
   useBalanceSearchSeeding: boolean;
 }
@@ -656,6 +658,9 @@ export async function generateCandidatePatches(input: CandidateGenerationInput):
       return;
     }
     const key = getScenarioPatchKey(normalized);
+    if (input.rejectedPatchKeys?.has(key)) {
+      return;
+    }
     if (dedup.has(key)) {
       return;
     }
@@ -692,7 +697,7 @@ export async function generateCandidatePatches(input: CandidateGenerationInput):
 
   if (input.useBalanceSearchSeeding && includeNumericStrategies(input.strategyMode) && input.iteration % 3 === 0) {
     try {
-      console.log('🧪 Seeding candidates from balance search module');
+      logInfo('🧪 Seeding candidates from balance search module');
       const result = await runBalanceSearch({
         scenarioId: input.scenarioId,
         iterations: runtimeSeedIterations(input.runtime),
@@ -707,7 +712,7 @@ export async function generateCandidatePatches(input: CandidateGenerationInput):
       }
     } catch (error) {
       const err = error as Error;
-      console.log(`⚠️ Balance seed generation skipped: ${err.message}`);
+      logWarn(`⚠️ Balance seed generation skipped: ${err.message}`);
     }
   }
 
