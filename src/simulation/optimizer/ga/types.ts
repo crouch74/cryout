@@ -83,6 +83,10 @@ export interface GaIndividual {
   genome: PatchGenome;
   /** Raw fitness score from scoreArmSummary; undefined until simulated. */
   fitness: number | undefined;
+  metrics?: {
+    successRate: number;
+    avgRounds: number;
+  };
   /** True once simulation results have been applied. */
   simulated: boolean;
 }
@@ -142,7 +146,11 @@ export interface GaSearchInput {
   /** Baseline fitness score for the current accepted optimizer context. */
   baselineScore?: OptimizerScoreBreakdown;
   /** Optional external cache reused across optimizer iterations. */
-  scoreCache?: Map<string, number>;
+  scoreCache?: Map<string, {
+    fitness: number;
+    successRate: number;
+    avgRounds: number;
+  }>;
   /** Parallel workers forwarded to the simulation step. */
   parallelWorkers: number;
   /** Victory modes passed to individual simulations. */

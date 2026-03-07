@@ -141,6 +141,10 @@ async function scoreIndividual(
   return {
     ...individual,
     fitness: scoreBreakdown.score,
+    metrics: {
+      successRate: result.arm.successRate,
+      avgRounds: result.arm.turns.average,
+    },
     simulated: true,
   };
 }
@@ -205,7 +209,11 @@ export async function runGaSearch(input: GaSearchInput): Promise<GaSearchResult>
 
   let population = initPopulation(config.populationSize, rng, mutationSpace);
   const generationReports: GaGenerationReport[] = [];
-  const scoreCache = input.scoreCache ?? new Map<string, number>();
+  const scoreCache = input.scoreCache ?? new Map<string, {
+    fitness: number;
+    successRate: number;
+    avgRounds: number;
+  }>();
 
   for (let gen = 1; gen <= config.generations; gen += 1) {
     logInfo(`🧬 Generation ${gen}/${config.generations} simulating ${population.length} individuals`);
@@ -229,12 +237,24 @@ export async function runGaSearch(input: GaSearchInput): Promise<GaSearchResult>
             playerCounts: input.playerCounts,
             victoryModes: input.victoryModes,
           });
-          const cachedFitness = scoreCache.get(cacheKey);
-          if (cachedFitness !== undefined) {
-            return { ...individual, fitness: cachedFitness, simulated: true };
+          const cachedScore = scoreCache.get(cacheKey);
+          if (cachedScore !== undefined) {
+            return {
+              ...individual,
+              fitness: cachedScore.fitness,
+              metrics: {
+                successRate: cachedScore.successRate,
+                avgRounds: cachedScore.avgRounds,
+              },
+              simulated: true,
+            };
           }
           const scoredIndividual = await scoreIndividual(individual, input, gen, experimentDir, workerPlan.workersPerJob);
-          scoreCache.set(cacheKey, scoredIndividual.fitness ?? 0);
+          scoreCache.set(cacheKey, {
+            fitness: scoredIndividual.fitness ?? 0,
+            successRate: scoredIndividual.metrics?.successRate ?? 0,
+            avgRounds: scoredIndividual.metrics?.avgRounds ?? 0,
+          });
           return scoredIndividual;
         } catch (error) {
           const err = error as Error;
@@ -250,10 +270,15 @@ export async function runGaSearch(input: GaSearchInput): Promise<GaSearchResult>
     const stats = computePopulationStats(scored);
 
     logSuccess(`🧬 Generation ${gen}/${config.generations} complete`);
-    logInfo(`📊 Best fitness: ${stats.bestFitness.toFixed(6)} mean: ${stats.meanFitness.toFixed(6)}`);
+    logInfo(
+      `📊 Best fitness: ${stats.bestFitness.toFixed(6)} successRate=${(best?.metrics?.successRate ?? 0).toFixed(4)} avgRounds=${(best?.metrics?.avgRounds ?? 0).toFixed(2)} mean=${stats.meanFitness.toFixed(6)}`,
+    );
 
     if (best) {
       logSuccess(`🏆 Best individual: ${best.id} fitness=${(best.fitness ?? 0).toFixed(6)}`);
+      if (gen === config.generations) {
+        logInfo(`🧬 Final generation best genome: ${JSON.stringify(best.genome)}`);
+      }
     }
 
     const report: GaGenerationReport = {

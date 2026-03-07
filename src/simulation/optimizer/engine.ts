@@ -77,7 +77,7 @@ function buildSuccessRateComparisonLine(input: {
   candidateMetrics: ExperimentArmSummary;
   candidateScore: OptimizerScoreBreakdown;
 }) {
-  return `${input.label} baseline=${percent(input.baselineMetrics.successRate)} fitness=${input.baselineScore.score.toFixed(6)} | candidate=${percent(input.candidateMetrics.successRate)} fitness=${input.candidateScore.score.toFixed(6)}`;
+  return `${input.label} baseline=${percent(input.baselineMetrics.successRate)} avgRounds=${input.baselineMetrics.turns.average.toFixed(2)} fitness=${input.baselineScore.score.toFixed(6)} | candidate=${percent(input.candidateMetrics.successRate)} avgRounds=${input.candidateMetrics.turns.average.toFixed(2)} fitness=${input.candidateScore.score.toFixed(6)}`;
 }
 
 function buildRankingLeadersLine(rankings: OptimizerCandidateEvaluation[]) {
@@ -97,7 +97,7 @@ function buildRankingLeadersLine(rankings: OptimizerCandidateEvaluation[]) {
       return left.candidateId.localeCompare(right.candidateId);
     })[0];
 
-  return `📊 Ranking leaders bestFitness=${bestByFitness.candidateId} successRate=${percent(bestByFitness.metrics.successRate)} fitness=${bestByFitness.scoreBreakdown.score.toFixed(6)} | bestSuccessRate=${bestBySuccessRate.candidateId} successRate=${percent(bestBySuccessRate.metrics.successRate)} fitness=${bestBySuccessRate.scoreBreakdown.score.toFixed(6)}`;
+  return `📊 Ranking leaders bestFitness=${bestByFitness.candidateId} successRate=${percent(bestByFitness.metrics.successRate)} avgRounds=${bestByFitness.metrics.turns.average.toFixed(2)} fitness=${bestByFitness.scoreBreakdown.score.toFixed(6)} | bestSuccessRate=${bestBySuccessRate.candidateId} successRate=${percent(bestBySuccessRate.metrics.successRate)} avgRounds=${bestBySuccessRate.metrics.turns.average.toFixed(2)} fitness=${bestBySuccessRate.scoreBreakdown.score.toFixed(6)}`;
 }
 
 function buildMetricSnapshot(metrics: ExperimentArmSummary, score: OptimizerScoreBreakdown): OptimizerMetricSnapshot {
@@ -911,7 +911,11 @@ async function runScenarioOptimizerInternal(
     candidateEvaluationsByContextKey: {},
     rejectedPatchesByContextKey: {},
   };
-  const gaScoreCache = new Map<string, number>();
+  const gaScoreCache = new Map<string, {
+    fitness: number;
+    successRate: number;
+    avgRounds: number;
+  }>();
 
   logInfo(`🧠 Run start scenario=${config.scenarioId} strategy=${config.strategy} runtime=${config.runtime}`);
   logInfo(`🧠 Parallel workers configured=${config.parallelWorkers}`);
@@ -1352,6 +1356,11 @@ async function runScenarioOptimizerInternal(
     } else {
       noImprovementStreak += 1;
       logWarn(`🔁 No candidate evaluations produced (streak=${noImprovementStreak})`);
+    }
+
+    if (selectedCandidate) {
+      hillClimbSourcePatch = selectedCandidate.patch;
+      logInfo(`🧠 Next iteration seed candidate=${selectedCandidate.candidateId}`);
     }
 
     await writeJson(join(iterationDir, 'candidate_rankings.json'), rankings);
