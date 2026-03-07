@@ -13,7 +13,6 @@ import {
   CORE_VERSION,
   type CompiledContent,
   type DomainEvent,
-  type EngineCommand,
   type EngineState,
   type FactionId,
   type StateDelta,

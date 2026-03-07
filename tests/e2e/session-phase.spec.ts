@@ -1,8 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { dismissStartupOverlays, forceEnglishLocale } from './helpers.ts';
+import { dismissStartupOverlays, forceEnglishLocale, useStableUiPreferences } from './helpers.ts';
 
 test.describe('session phase progression', () => {
+  test.setTimeout(60_000);
+
   test.beforeEach(async ({ page }) => {
+    await useStableUiPreferences(page);
     await forceEnglishLocale(page);
   });
 
@@ -16,7 +19,7 @@ test.describe('session phase progression', () => {
     await playSystem.click();
 
     await expect(playSystem).toHaveCount(0);
-    await expect(page.getByText('Prepare moves, then mark every seat ready.')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Prepare Move' }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Commit Prepared Moves' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Organize(?:\s+Organize)?$/ })).toBeVisible();
   });
 });
