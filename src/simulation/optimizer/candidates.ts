@@ -669,8 +669,16 @@ function buildActionDiversityCandidates(
         ...(pressureDetected ? { defend: 6 } : {}),
         ...(launchSpamDetected ? { launch_campaign: -4 } : {}),
       },
+      actionCountPenalty: {
+        investigate: -2,
+        ...(launchSpamDetected ? { launch_campaign: -1 } : {}),
+      },
+      firstUseTargetedActionBonus: 10,
       launchCampaignWithoutSetupPenalty: 12,
       launchCampaignWithSetupBonus: 8,
+      preparedCampaignDiversityBonus: 8,
+      repeatActionPenaltyPerUse: 2,
+      repeatActionPenaltyStartsAfter: 2,
     },
   }));
 
@@ -684,8 +692,16 @@ function buildActionDiversityCandidates(
         investigate: -4,
         ...(launchSpamDetected ? { launch_campaign: -3 } : {}),
       },
+      actionCountPenalty: {
+        investigate: -2,
+        launch_campaign: -1,
+      },
+      firstUseTargetedActionBonus: 12,
       launchCampaignWithoutSetupPenalty: 14,
       launchCampaignWithSetupBonus: 8,
+      preparedCampaignDiversityBonus: 10,
+      repeatActionPenaltyPerUse: 2,
+      repeatActionPenaltyStartsAfter: 2,
       ...(analysis.structural.earlyTerminationRate > 0.05 ? { highPressureDefendBonus: 8 } : {}),
     },
   }));
@@ -702,9 +718,17 @@ function buildActionDiversityCandidates(
           international_outreach: 8,
           smuggle_evidence: 8,
         },
+        actionCountPenalty: {
+          investigate: -3,
+          launch_campaign: -1,
+        },
+        firstUseTargetedActionBonus: 12,
         lowGazeOutreachBonus: 12,
         evidenceScarcitySmuggleBonus: 12,
         launchCampaignWithoutSetupPenalty: 10,
+        preparedCampaignDiversityBonus: 8,
+        repeatActionPenaltyPerUse: 2,
+        repeatActionPenaltyStartsAfter: 2,
       },
     }));
   }
@@ -719,8 +743,14 @@ function buildActionDiversityCandidates(
           investigate: -3,
           ...(launchSpamDetected ? { launch_campaign: -2 } : {}),
         },
+        actionCountPenalty: {
+          investigate: -2,
+        },
+        firstUseTargetedActionBonus: 10,
         highPressureDefendBonus: 12,
         launchCampaignWithoutSetupPenalty: 8,
+        repeatActionPenaltyPerUse: 1,
+        repeatActionPenaltyStartsAfter: 3,
       },
     }));
   }
@@ -736,11 +766,19 @@ function buildActionDiversityCandidates(
         smuggle_evidence: 8,
         ...(launchSpamDetected ? { launch_campaign: -3 } : {}),
       },
+      actionCountPenalty: {
+        investigate: -2,
+        launch_campaign: -1,
+      },
+      firstUseTargetedActionBonus: 12,
       launchCampaignWithoutSetupPenalty: 10,
       launchCampaignWithSetupBonus: 8,
       ...(pressureDetected ? { highPressureDefendBonus: 12 } : {}),
       lowGazeOutreachBonus: 12,
       evidenceScarcitySmuggleBonus: 10,
+      preparedCampaignDiversityBonus: 10,
+      repeatActionPenaltyPerUse: 2,
+      repeatActionPenaltyStartsAfter: 2,
     },
   }));
 
@@ -762,11 +800,19 @@ function buildRandomActionDiversityPatch(rng: () => number, analysis: OptimizerA
         smuggle_evidence: pick([4, 6, 8, 10]),
         ...(pressureDetected ? { defend: pick([6, 8, 10, 12]) } : { defend: pick([2, 4, 6]) }),
       },
+      actionCountPenalty: {
+        investigate: pick([-3, -2, -2, -1]),
+        launch_campaign: pick([-2, -1, -1, 0]),
+      },
+      firstUseTargetedActionBonus: pick([8, 10, 12, 14]),
       launchCampaignWithoutSetupPenalty: pick([8, 10, 12, 14]),
       launchCampaignWithSetupBonus: pick([4, 6, 8, 10]),
       ...(pressureDetected ? { highPressureDefendBonus: pick([10, 12, 14, 16]) } : {}),
       evidenceScarcitySmuggleBonus: pick([0, 8, 10, 12, 14]),
       lowGazeOutreachBonus: pick([0, 8, 10, 12, 14]),
+      preparedCampaignDiversityBonus: pick([0, 6, 8, 10, 12]),
+      repeatActionPenaltyPerUse: pick([1, 2, 2, 3]),
+      repeatActionPenaltyStartsAfter: pick([1, 2, 2, 3]),
     },
   });
 }

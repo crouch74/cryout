@@ -288,11 +288,26 @@ function hasSetupPreparation(state: EngineState) {
     || (actions.smuggle_evidence ?? 0) > 0;
 }
 
+function getTargetedSetupCount(state: EngineState) {
+  const actions = state.victoryProgress?.actionsById ?? {};
+  return ['build_solidarity', 'international_outreach', 'smuggle_evidence', 'defend']
+    .reduce((count, actionId) => count + ((actions[actionId] ?? 0) > 0 ? 1 : 0), 0);
+}
+
+function isTargetedAction(actionId: string) {
+  return actionId === 'build_solidarity'
+    || actionId === 'international_outreach'
+    || actionId === 'smuggle_evidence'
+    || actionId === 'defend';
+}
+
 function applySimulatorOverrides(candidate: StrategyCandidate, context: StrategyEvaluationContext) {
   const overrides = context.simulatorOverrides;
   if (!overrides) {
     return;
   }
+  const actionCounts = context.state.victoryProgress?.actionsById ?? {};
+  const priorUses = actionCounts[candidate.action.actionId] ?? 0;
 
   const directBias = overrides.actionBias?.[candidate.action.actionId];
   if (directBias) {
@@ -300,11 +315,40 @@ function applySimulatorOverrides(candidate: StrategyCandidate, context: Strategy
     candidate.reasons.push(`sim:bias:${candidate.action.actionId}`);
   }
 
+  const countPenalty = overrides.actionCountPenalty?.[candidate.action.actionId];
+  if (countPenalty && priorUses > 0) {
+    candidate.score += countPenalty * priorUses;
+    candidate.reasons.push(`sim:count-penalty:${candidate.action.actionId}`);
+  }
+
+  const repeatPenaltyStartsAfter = overrides.repeatActionPenaltyStartsAfter ?? 2;
+  if (overrides.repeatActionPenaltyPerUse && priorUses >= repeatPenaltyStartsAfter) {
+    const repeatPenalty = (priorUses - repeatPenaltyStartsAfter + 1) * overrides.repeatActionPenaltyPerUse;
+    candidate.score -= repeatPenalty;
+    candidate.reasons.push(`sim:repeat-fatigue:${candidate.action.actionId}`);
+  }
+
+  if (
+    overrides.firstUseTargetedActionBonus
+    && isTargetedAction(candidate.action.actionId)
+    && priorUses === 0
+  ) {
+    candidate.score += overrides.firstUseTargetedActionBonus;
+    candidate.reasons.push(`sim:first-use-targeted:${candidate.action.actionId}`);
+  }
+
   if (candidate.action.actionId === 'launch_campaign') {
     if (hasSetupPreparation(context.state)) {
       if (overrides.launchCampaignWithSetupBonus) {
         candidate.score += overrides.launchCampaignWithSetupBonus;
         candidate.reasons.push('sim:campaign-with-setup');
+      }
+      if (overrides.preparedCampaignDiversityBonus) {
+        const targetedSetupCount = getTargetedSetupCount(context.state);
+        if (targetedSetupCount >= 2) {
+          candidate.score += overrides.preparedCampaignDiversityBonus;
+          candidate.reasons.push('sim:campaign-after-diverse-setup');
+        }
       }
     } else if (overrides.launchCampaignWithoutSetupPenalty) {
       candidate.score -= overrides.launchCampaignWithoutSetupPenalty;

@@ -40,7 +40,13 @@ export type RegionId =
   | 'FrenchMetropoleInfluence'
   | 'DeltaRailCorridor'
   | 'CanalZone'
-  | 'RuralVillages';
+  | 'RuralVillages'
+  | 'GazaWestBank'
+  | 'LebanonNorthernFront'
+  | 'GulfHormuzCorridor'
+  | 'RedSeaSuezCorridor'
+  | 'CaribbeanSiege'
+  | 'BlackSeaEasternFurnace';
 
 export type FactionId =
   | 'congo_basin_collective'
@@ -63,7 +69,12 @@ export type FactionId =
   | 'student_committees'
   | 'railway_workers'
   | 'womens_action_circles'
-  | 'provincial_organizers';
+  | 'provincial_organizers'
+  | 'palestinian_sumud_committees'
+  | 'gaza_west_bank_witness_medics'
+  | 'venezuelan_communal_councils'
+  | 'cuban_cdr_neighborhood_defense'
+  | 'corridor_workers_refuge_networks';
 
 export type DeckId = 'system' | 'resistance' | 'crisis';
 export type RevealDeckId = DeckId | 'beacon';
@@ -400,6 +411,8 @@ export interface RulesetDefinition {
     extractionPool?: number;
     extractionSeeds: Partial<Record<RegionId, number>>;
     regionHijabEnforcement?: Partial<Record<RegionId, number>>;
+    startingComradesByFaction?: Partial<Record<FactionId, number>>;
+    startingEvidenceByFaction?: Partial<Record<FactionId, number>>;
   };
   customTracks?: Array<{
     id: string;
@@ -449,11 +462,16 @@ export interface RulesetDefinition {
   };
   simulatorOverrides?: {
     actionBias?: Partial<Record<ActionId, number>>;
+    actionCountPenalty?: Partial<Record<ActionId, number>>;
     launchCampaignWithoutSetupPenalty?: number;
     launchCampaignWithSetupBonus?: number;
     highPressureDefendBonus?: number;
     evidenceScarcitySmuggleBonus?: number;
     lowGazeOutreachBonus?: number;
+    repeatActionPenaltyPerUse?: number;
+    repeatActionPenaltyStartsAfter?: number;
+    firstUseTargetedActionBonus?: number;
+    preparedCampaignDiversityBonus?: number;
   };
   victoryScoring?: VictoryScoringConfig;
 }

@@ -11,11 +11,25 @@ export type ScenarioPatch = {
       | 'defend',
       number
     >>;
+    actionCountPenalty?: Partial<Record<
+      'organize'
+      | 'investigate'
+      | 'launch_campaign'
+      | 'build_solidarity'
+      | 'smuggle_evidence'
+      | 'international_outreach'
+      | 'defend',
+      number
+    >>;
     launchCampaignWithoutSetupPenalty?: number;
     launchCampaignWithSetupBonus?: number;
     highPressureDefendBonus?: number;
     evidenceScarcitySmuggleBonus?: number;
     lowGazeOutreachBonus?: number;
+    repeatActionPenaltyPerUse?: number;
+    repeatActionPenaltyStartsAfter?: number;
+    firstUseTargetedActionBonus?: number;
+    preparedCampaignDiversityBonus?: number;
   };
   setup?: {
     globalGazeDelta?: number;

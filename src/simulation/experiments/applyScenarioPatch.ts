@@ -241,6 +241,12 @@ function applyPatchToRuleset(ruleset: RulesetDefinition, patch: ScenarioPatch) {
           ...patch.simulator.actionBias,
         },
       } : {}),
+      ...(patch.simulator.actionCountPenalty ? {
+        actionCountPenalty: {
+          ...(ruleset.simulatorOverrides?.actionCountPenalty ?? {}),
+          ...patch.simulator.actionCountPenalty,
+        },
+      } : {}),
       ...(patch.simulator.launchCampaignWithoutSetupPenalty !== undefined
         ? { launchCampaignWithoutSetupPenalty: patch.simulator.launchCampaignWithoutSetupPenalty }
         : {}),
@@ -255,6 +261,18 @@ function applyPatchToRuleset(ruleset: RulesetDefinition, patch: ScenarioPatch) {
         : {}),
       ...(patch.simulator.lowGazeOutreachBonus !== undefined
         ? { lowGazeOutreachBonus: patch.simulator.lowGazeOutreachBonus }
+        : {}),
+      ...(patch.simulator.repeatActionPenaltyPerUse !== undefined
+        ? { repeatActionPenaltyPerUse: patch.simulator.repeatActionPenaltyPerUse }
+        : {}),
+      ...(patch.simulator.repeatActionPenaltyStartsAfter !== undefined
+        ? { repeatActionPenaltyStartsAfter: patch.simulator.repeatActionPenaltyStartsAfter }
+        : {}),
+      ...(patch.simulator.firstUseTargetedActionBonus !== undefined
+        ? { firstUseTargetedActionBonus: patch.simulator.firstUseTargetedActionBonus }
+        : {}),
+      ...(patch.simulator.preparedCampaignDiversityBonus !== undefined
+        ? { preparedCampaignDiversityBonus: patch.simulator.preparedCampaignDiversityBonus }
         : {}),
     };
   }

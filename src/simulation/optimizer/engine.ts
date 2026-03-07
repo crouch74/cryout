@@ -265,6 +265,12 @@ export function mergeScenarioPatches(base: ScenarioPatch, incoming: ScenarioPatc
         ...incoming.simulator.actionBias,
       };
     }
+    if (incoming.simulator.actionCountPenalty) {
+      merged.simulator.actionCountPenalty = {
+        ...(merged.simulator.actionCountPenalty ?? {}),
+        ...incoming.simulator.actionCountPenalty,
+      };
+    }
     if (incoming.simulator.launchCampaignWithoutSetupPenalty !== undefined) {
       merged.simulator.launchCampaignWithoutSetupPenalty = incoming.simulator.launchCampaignWithoutSetupPenalty;
     }
@@ -279,6 +285,18 @@ export function mergeScenarioPatches(base: ScenarioPatch, incoming: ScenarioPatc
     }
     if (incoming.simulator.lowGazeOutreachBonus !== undefined) {
       merged.simulator.lowGazeOutreachBonus = incoming.simulator.lowGazeOutreachBonus;
+    }
+    if (incoming.simulator.repeatActionPenaltyPerUse !== undefined) {
+      merged.simulator.repeatActionPenaltyPerUse = incoming.simulator.repeatActionPenaltyPerUse;
+    }
+    if (incoming.simulator.repeatActionPenaltyStartsAfter !== undefined) {
+      merged.simulator.repeatActionPenaltyStartsAfter = incoming.simulator.repeatActionPenaltyStartsAfter;
+    }
+    if (incoming.simulator.firstUseTargetedActionBonus !== undefined) {
+      merged.simulator.firstUseTargetedActionBonus = incoming.simulator.firstUseTargetedActionBonus;
+    }
+    if (incoming.simulator.preparedCampaignDiversityBonus !== undefined) {
+      merged.simulator.preparedCampaignDiversityBonus = incoming.simulator.preparedCampaignDiversityBonus;
     }
   }
 
