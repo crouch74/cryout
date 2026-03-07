@@ -18,10 +18,10 @@ import { logDebug, logWarn } from '../../logging.ts';
 export const GENOME_LIMITS = {
   globalGazeDelta: { min: -2, max: 3 },
   northernWarMachineDelta: { min: -2, max: 2 },
-  seededExtractionTotalDelta: { min: -3, max: 3 },
-  crisisSpikeExtractionDelta: { min: -2, max: 2 },
+  seededExtractionNetDelta: { min: -3, max: 3 },
+  crisisAddExtractionDelta: { min: -2, max: 2 },
   liberationThresholdDelta: { min: -2, max: 2 },
-  relaxAllThresholdsBy: { min: -1, max: 3 },
+  thresholdEaseDelta: { min: -1, max: 3 },
   scoreThreshold: { min: 65, max: 75 },
   publicVictoryWeight: { min: 30, max: 50 },
   mandatesWeight: { min: 40, max: 60 },
@@ -45,6 +45,21 @@ function padId(index: number) {
   return `ind_${String(index + 1).padStart(3, '0')}`;
 }
 
+function mutationPathToGenomeKey(path: string) {
+  switch (path) {
+    case 'setup.seededExtractionTotalDelta':
+      return 'seededExtractionNetDelta';
+    case 'pressure.crisisSpikeExtractionDelta':
+      return 'crisisAddExtractionDelta';
+    case 'mandates.relaxAllThresholdsBy':
+      return 'thresholdEaseDelta';
+    case 'pressure.maxExtractionAddedPerRound':
+      return 'perCardExtractionCap';
+    default:
+      return path.split('.').pop() as string;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Genome construction helpers (exported for re-use in engine)
 // ---------------------------------------------------------------------------
@@ -58,11 +73,11 @@ export function randomGenome(rng: () => number, mutationSpace?: MutationDescript
     // Fallback for tests or legacy callers
     genome.globalGazeDelta = intInRange(rng, GENOME_LIMITS.globalGazeDelta.min, GENOME_LIMITS.globalGazeDelta.max);
     genome.northernWarMachineDelta = intInRange(rng, GENOME_LIMITS.northernWarMachineDelta.min, GENOME_LIMITS.northernWarMachineDelta.max);
-    genome.seededExtractionTotalDelta = intInRange(rng, GENOME_LIMITS.seededExtractionTotalDelta.min, GENOME_LIMITS.seededExtractionTotalDelta.max);
-    genome.crisisSpikeExtractionDelta = intInRange(rng, GENOME_LIMITS.crisisSpikeExtractionDelta.min, GENOME_LIMITS.crisisSpikeExtractionDelta.max);
+    genome.seededExtractionNetDelta = intInRange(rng, GENOME_LIMITS.seededExtractionNetDelta.min, GENOME_LIMITS.seededExtractionNetDelta.max);
+    genome.crisisAddExtractionDelta = intInRange(rng, GENOME_LIMITS.crisisAddExtractionDelta.min, GENOME_LIMITS.crisisAddExtractionDelta.max);
     genome.liberationThresholdDelta = intInRange(rng, GENOME_LIMITS.liberationThresholdDelta.min, GENOME_LIMITS.liberationThresholdDelta.max);
-    genome.relaxAllThresholdsBy = intInRange(rng, GENOME_LIMITS.relaxAllThresholdsBy.min, GENOME_LIMITS.relaxAllThresholdsBy.max);
-    genome.maxExtractionAddedPerRound = rng() % 4 === 0 ? intInRange(rng, 1, 4) : null;
+    genome.thresholdEaseDelta = intInRange(rng, GENOME_LIMITS.thresholdEaseDelta.min, GENOME_LIMITS.thresholdEaseDelta.max);
+    genome.perCardExtractionCap = rng() % 4 === 0 ? intInRange(rng, 1, 4) : null;
     genome.scoreThreshold = [65, 70, 75][rng() % 3];
     genome.publicVictoryWeight = publicVictoryWeight;
     genome.mandatesWeight = 100 - publicVictoryWeight;
@@ -74,7 +89,7 @@ export function randomGenome(rng: () => number, mutationSpace?: MutationDescript
   // Derive only from mutation space
   const mutableGenome = genome as Record<string, number | boolean | null>;
   for (const m of mutationSpace) {
-    const key = m.path.split('.').pop() as string;
+    const key = mutationPathToGenomeKey(m.path);
     if (m.type === 'number') {
       if (key === 'scoreThreshold') {
         mutableGenome.scoreThreshold = [65, 70, 75][rng() % 3];
@@ -111,7 +126,7 @@ export function mutateGenome(genome: PatchGenome, mutationRate: number, rng: () 
     for (const m of mutationSpace) {
       if ((rng() / 0xFFFFFFFF) >= mutationRate) continue;
 
-      const key = m.path.split('.').pop() as string;
+      const key = mutationPathToGenomeKey(m.path);
       if (m.type === 'number') {
         if (key === 'publicVictoryWeight' || key === 'mandatesWeight') {
           if (!mutationApplied) {
@@ -174,13 +189,13 @@ export function mutateGenome(genome: PatchGenome, mutationRate: number, rng: () 
       }
     }
     if ((rng() / 0xFFFFFFFF) < mutationRate * 0.3) {
-      if (mutableNext.maxExtractionAddedPerRound === null || mutableNext.maxExtractionAddedPerRound === undefined) {
-        mutableNext.maxExtractionAddedPerRound = intInRange(rng, 1, 4);
+      if (mutableNext.perCardExtractionCap === null || mutableNext.perCardExtractionCap === undefined) {
+        mutableNext.perCardExtractionCap = intInRange(rng, 1, 4);
       } else if (rng() % 3 === 0) {
-        mutableNext.maxExtractionAddedPerRound = null;
+        mutableNext.perCardExtractionCap = null;
       } else {
-        mutableNext.maxExtractionAddedPerRound = clamp(
-          (mutableNext.maxExtractionAddedPerRound as number) + (rng() % 2 === 0 ? -1 : 1),
+        mutableNext.perCardExtractionCap = clamp(
+          (mutableNext.perCardExtractionCap as number) + (rng() % 2 === 0 ? -1 : 1),
           1,
           4,
         );

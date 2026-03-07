@@ -5,10 +5,10 @@ export const crisisCards: CrisisCardDefinition[] = [
         id: 'crisis_wlf_morality_police_raid',
         deck: 'crisis',
         name: 'Morality Police Raid',
-        text: 'The System moves first and forces a hard turn in Tehran. Remove 1 Comrade and add 1 Extraction to Tehran as patrol violence expands control. The coalition must absorb this pressure and reorganize before the next phase.',
+        text: 'The System moves first and forces a hard turn in Tehran. Remove 1 Comrade as patrol violence escalates and the coalition scrambles to hold ground before the next phase.',
         effects: [
             { type: 'remove_comrades', region: 'Tehran', seat: 0, amount: 1 },
-            { type: 'add_extraction', region: 'Tehran', amount: 1 },
+            { type: 'add_extraction', region: 'Tehran', amount: 0 },
         ],
     },
     {
@@ -47,10 +47,10 @@ export const crisisCards: CrisisCardDefinition[] = [
         id: 'crisis_wlf_irgc_deployment',
         deck: 'crisis',
         name: 'IRGC Deployment',
-        text: 'The System moves first and forces a hard turn with direct Guard deployment. Add 1 Extraction across Kurdistan and Balochistan. The coalition must absorb this pressure and reorganize before the next phase.',
+        text: 'The System moves first and forces a hard turn with direct Guard deployment across Kurdistan and Balochistan. The coalition must absorb this pressure and reorganize before the next phase.',
         effects: [
-            { type: 'add_extraction', region: 'Kurdistan', amount: 1 },
-            { type: 'add_extraction', region: 'Balochistan', amount: 1 },
+            { type: 'add_extraction', region: 'Kurdistan', amount: 0 },
+            { type: 'add_extraction', region: 'Balochistan', amount: 0 },
         ],
     }
 ];

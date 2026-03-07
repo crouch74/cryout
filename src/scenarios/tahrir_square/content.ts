@@ -115,7 +115,7 @@ const factions: FactionDefinition[] = [
             condition: {
                 kind: 'all',
                 conditions: [
-                    { kind: 'compare', left: { type: 'region_extraction', region: 'Cairo' }, op: '<=', right: 1 },
+                    { kind: 'compare', left: { type: 'region_extraction', region: 'Cairo' }, op: '<=', right: 0 },
                 ],
             },
         },
@@ -141,8 +141,8 @@ const factions: FactionDefinition[] = [
             condition: {
                 kind: 'all',
                 conditions: [
-                    { kind: 'compare', left: { type: 'region_extraction', region: 'Alexandria' }, op: '<=', right: 1 },
-                    { kind: 'compare', left: { type: 'domain_progress', domain: 'EmptyStomach' }, op: '>=', right: 5 },
+                    { kind: 'compare', left: { type: 'region_extraction', region: 'Alexandria' }, op: '<=', right: 0 },
+                    { kind: 'compare', left: { type: 'domain_progress', domain: 'EmptyStomach' }, op: '>=', right: 6 },
                 ],
             },
         },
@@ -166,7 +166,7 @@ const factions: FactionDefinition[] = [
             title: 'We Are All Khaled Said',
             description: 'End with Silenced Truth at 6 or more.',
             condition: {
-                kind: 'compare', left: { type: 'domain_progress', domain: 'SilencedTruth' }, op: '>=', right: 6
+                kind: 'compare', left: { type: 'domain_progress', domain: 'SilencedTruth' }, op: '>=', right: 7
             },
         },
         color: '#2f67ab',
@@ -189,7 +189,7 @@ const factions: FactionDefinition[] = [
             title: 'End State Security',
             description: 'End with War Machine at 4 or less.',
             condition: {
-                kind: 'compare', left: { type: 'northern_war_machine' }, op: '<=', right: 4
+                kind: 'compare', left: { type: 'northern_war_machine' }, op: '<=', right: 3
             },
         },
         color: '#7a4ea0',
@@ -202,7 +202,7 @@ const beacons: BeaconDefinition[] = [
         title: 'The 18 Days',
         description: 'Survive the uprising with Tahrir never empty.',
         condition: {
-            kind: 'compare', left: { type: 'region_extraction', region: 'Cairo' }, op: '<=', right: 2
+            kind: 'compare', left: { type: 'region_extraction', region: 'Cairo' }, op: '<=', right: 1
         },
     },
     {
@@ -210,7 +210,7 @@ const beacons: BeaconDefinition[] = [
         title: 'Labor-Student Alliance',
         description: 'Successfully call 3 Labor Strikes (Represented by high Empty Stomach domain).',
         condition: {
-            kind: 'compare', left: { type: 'domain_progress', domain: 'EmptyStomach' }, op: '>=', right: 7
+            kind: 'compare', left: { type: 'domain_progress', domain: 'EmptyStomach' }, op: '>=', right: 8
         },
     },
     {
@@ -218,7 +218,7 @@ const beacons: BeaconDefinition[] = [
         title: 'No to Military Trials',
         description: 'Unfinished Justice must remain 0.',
         condition: {
-            kind: 'compare', left: { type: 'domain_progress', domain: 'UnfinishedJustice' }, op: '<=', right: 1
+            kind: 'compare', left: { type: 'domain_progress', domain: 'UnfinishedJustice' }, op: '<=', right: 0
         },
     }
 ];
@@ -328,7 +328,7 @@ export const compatRuleset: RulesetDefinition = {
     resistanceCards,
     crisisCards,
     systemCards,
-    liberationThreshold: 2,
+    liberationThreshold: 4,
     suddenDeathRound: 12, // (FULL — through coup)
     victoryGate: {
         minRoundBeforeVictory: 3,
@@ -338,7 +338,7 @@ export const compatRuleset: RulesetDefinition = {
     },
     victoryScoring: {
         mode: 'score',
-        threshold: 58,
+        threshold: 71,
         survivalScorePerRound: 2.5,
         beaconProgressScore: 10,
         components: [
@@ -362,7 +362,7 @@ export const compatRuleset: RulesetDefinition = {
                 {
                     id: 'catastrophic_state',
                     label: 'Catastrophic state cap',
-                    maxScore: 69,
+                    maxScore: 72,
                     condition: {
                         kind: 'any',
                         conditions: [
@@ -439,12 +439,12 @@ export const compatRuleset: RulesetDefinition = {
         ],
     },
     setup: {
-        globalGaze: 6,
-        northernWarMachine: 6,
+        globalGaze: 4,
+        northernWarMachine: 4,
         extractionPool: 72,
         extractionSeeds: {
             Cairo: 1,
-            Alexandria: 1,
+            Alexandria: 3,
             NileDelta: 1,
             Suez: 1,
         },

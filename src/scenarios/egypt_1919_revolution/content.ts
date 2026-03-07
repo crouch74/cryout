@@ -115,8 +115,8 @@ const factions: FactionDefinition[] = [
       condition: {
         kind: 'all',
         conditions: [
-          { kind: 'compare', left: { type: 'domain_progress', domain: 'SilencedTruth' }, op: '>=', right: 6 },
-          { kind: 'compare', left: { type: 'region_extraction', region: 'Cairo' }, op: '<=', right: 2 },
+          { kind: 'compare', left: { type: 'domain_progress', domain: 'SilencedTruth' }, op: '>=', right: 3 },
+          { kind: 'compare', left: { type: 'region_extraction', region: 'Cairo' }, op: '<=', right: 5 },
         ],
       },
     },
@@ -142,8 +142,8 @@ const factions: FactionDefinition[] = [
       condition: {
         kind: 'all',
         conditions: [
-          { kind: 'compare', left: { type: 'domain_progress', domain: 'EmptyStomach' }, op: '>=', right: 5 },
-          { kind: 'compare', left: { type: 'region_extraction', region: 'DeltaRailCorridor' }, op: '<=', right: 1 },
+          { kind: 'compare', left: { type: 'domain_progress', domain: 'EmptyStomach' }, op: '>=', right: 2 },
+          { kind: 'compare', left: { type: 'region_extraction', region: 'DeltaRailCorridor' }, op: '<=', right: 4 },
         ],
       },
     },
@@ -169,8 +169,8 @@ const factions: FactionDefinition[] = [
       condition: {
         kind: 'all',
         conditions: [
-          { kind: 'compare', left: { type: 'domain_progress', domain: 'RevolutionaryWave' }, op: '>=', right: 7 },
-          { kind: 'compare', left: { type: 'region_extraction', region: 'Alexandria' }, op: '<=', right: 2 },
+          { kind: 'compare', left: { type: 'domain_progress', domain: 'RevolutionaryWave' }, op: '>=', right: 4 },
+          { kind: 'compare', left: { type: 'region_extraction', region: 'Alexandria' }, op: '<=', right: 5 },
         ],
       },
     },
@@ -196,8 +196,8 @@ const factions: FactionDefinition[] = [
       condition: {
         kind: 'all',
         conditions: [
-          { kind: 'compare', left: { type: 'domain_progress', domain: 'StolenVoice' }, op: '>=', right: 5 },
-          { kind: 'compare', left: { type: 'region_extraction', region: 'RuralVillages' }, op: '<=', right: 1 },
+          { kind: 'compare', left: { type: 'domain_progress', domain: 'StolenVoice' }, op: '>=', right: 2 },
+          { kind: 'compare', left: { type: 'region_extraction', region: 'RuralVillages' }, op: '<=', right: 4 },
         ],
       },
     },
@@ -213,8 +213,8 @@ const beacons: BeaconDefinition[] = [
     condition: {
       kind: 'all',
       conditions: [
-        { kind: 'compare', left: { type: 'domain_progress', domain: 'RevolutionaryWave' }, op: '>=', right: 3 },
-        { kind: 'compare', left: { type: 'region_extraction', region: 'Cairo' }, op: '<=', right: 2 },
+        { kind: 'compare', left: { type: 'domain_progress', domain: 'RevolutionaryWave' }, op: '>=', right: 0 },
+        { kind: 'compare', left: { type: 'region_extraction', region: 'Cairo' }, op: '<=', right: 5 },
       ],
     },
   },
@@ -225,8 +225,8 @@ const beacons: BeaconDefinition[] = [
     condition: {
       kind: 'all',
       conditions: [
-        { kind: 'compare', left: { type: 'domain_progress', domain: 'EmptyStomach' }, op: '>=', right: 4 },
-        { kind: 'compare', left: { type: 'region_extraction', region: 'DeltaRailCorridor' }, op: '<=', right: 1 },
+        { kind: 'compare', left: { type: 'domain_progress', domain: 'EmptyStomach' }, op: '>=', right: 1 },
+        { kind: 'compare', left: { type: 'region_extraction', region: 'DeltaRailCorridor' }, op: '<=', right: 4 },
       ],
     },
   },
@@ -237,7 +237,7 @@ const beacons: BeaconDefinition[] = [
     condition: {
       kind: 'all',
       conditions: [
-        { kind: 'compare', left: { type: 'domain_progress', domain: 'RevolutionaryWave' }, op: '>=', right: 5 },
+        { kind: 'compare', left: { type: 'domain_progress', domain: 'RevolutionaryWave' }, op: '>=', right: 2 },
         { kind: 'compare', left: { type: 'scenario_flag', flag: 'womensMobilization' }, op: '==', right: 1 },
       ],
     },
@@ -249,8 +249,8 @@ const beacons: BeaconDefinition[] = [
     condition: {
       kind: 'all',
       conditions: [
-        { kind: 'compare', left: { type: 'domain_progress', domain: 'UnfinishedJustice' }, op: '>=', right: 4 },
-        { kind: 'compare', left: { type: 'global_gaze' }, op: '>=', right: 10 },
+        { kind: 'compare', left: { type: 'domain_progress', domain: 'UnfinishedJustice' }, op: '>=', right: 1 },
+        { kind: 'compare', left: { type: 'global_gaze' }, op: '>=', right: 7 },
       ],
     },
   },
@@ -261,8 +261,8 @@ const beacons: BeaconDefinition[] = [
     condition: {
       kind: 'all',
       conditions: [
-        { kind: 'compare', left: { type: 'domain_progress', domain: 'EmptyStomach' }, op: '>=', right: 6 },
-        { kind: 'compare', left: { type: 'region_extraction', region: 'Alexandria' }, op: '<=', right: 1 },
+        { kind: 'compare', left: { type: 'domain_progress', domain: 'EmptyStomach' }, op: '>=', right: 3 },
+        { kind: 'compare', left: { type: 'region_extraction', region: 'Alexandria' }, op: '<=', right: 4 },
       ],
     },
   },
@@ -273,8 +273,8 @@ const beacons: BeaconDefinition[] = [
     condition: {
       kind: 'all',
       conditions: [
-        { kind: 'compare', left: { type: 'domain_progress', domain: 'StolenVoice' }, op: '>=', right: 5 },
-        { kind: 'compare', left: { type: 'region_extraction', region: 'UpperEgypt' }, op: '<=', right: 1 },
+        { kind: 'compare', left: { type: 'domain_progress', domain: 'StolenVoice' }, op: '>=', right: 2 },
+        { kind: 'compare', left: { type: 'region_extraction', region: 'UpperEgypt' }, op: '<=', right: 4 },
       ],
     },
   },
@@ -525,20 +525,20 @@ export const compatRuleset: RulesetDefinition = {
   resistanceCards,
   crisisCards,
   systemCards,
-  liberationThreshold: 5,
+  liberationThreshold: 6,
   suddenDeathRound: 10,
   victoryGate: {
     minRoundBeforeVictory: 3,
   },
   victoryScoring: {
     mode: 'score',
-    threshold: 65,
+    threshold: 75,
     survivalScorePerRound: 0.5,
     components: [
       {
         id: 'publicVictory',
         label: 'Public Victory',
-        weight: 60,
+        weight: 40,
         type: 'binaryCondition',
         source: {
           type: 'publicVictory',
@@ -547,7 +547,7 @@ export const compatRuleset: RulesetDefinition = {
     ],
     mandatesAsScore: {
       enabled: true,
-      weight: 40,
+      weight: 60,
       mandateProgressMode: 'binary',
     },
     outcomeBands: [
@@ -558,14 +558,14 @@ export const compatRuleset: RulesetDefinition = {
     ],
   },
   setup: {
-    globalGaze: 4,
-    northernWarMachine: 5,
+    globalGaze: 3,
+    northernWarMachine: 7,
     extractionPool: 64,
     extractionSeeds: {
-      Cairo: 2,
+      Cairo: 1,
       Alexandria: 1,
       DeltaRailCorridor: 1,
-      CanalZone: 2,
+      CanalZone: 1,
       UpperEgypt: 1,
       RuralVillages: 1,
     },
@@ -591,9 +591,9 @@ export const compatRuleset: RulesetDefinition = {
     liberation: {
       kind: 'all',
       conditions: [
-        { kind: 'every_region_extraction_at_most', count: 1 },
-        { kind: 'compare', left: { type: 'domain_progress', domain: 'RevolutionaryWave' }, op: '>=', right: 6 },
-        { kind: 'compare', left: { type: 'domain_progress', domain: 'StolenVoice' }, op: '>=', right: 5 },
+        { kind: 'every_region_extraction_at_most', count: 4 },
+        { kind: 'compare', left: { type: 'domain_progress', domain: 'RevolutionaryWave' }, op: '>=', right: 3 },
+        { kind: 'compare', left: { type: 'domain_progress', domain: 'StolenVoice' }, op: '>=', right: 2 },
       ],
     },
   },

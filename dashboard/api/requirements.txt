@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+watchdog
+pandas
+pydantic
+python-multipart
+aiofiles

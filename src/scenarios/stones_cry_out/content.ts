@@ -20,7 +20,7 @@ const BASE_EXTRACTION_SEEDS = {
   Andes: 1,
 } as const;
 
-const SEEDED_EXTRACTION_REDUCTION = 3;
+const SEEDED_EXTRACTION_REDUCTION = 0;
 
 function reduceSeededExtractionByHighestRegions(
   seeds: Partial<Record<RegionDefinition['id'], number>>,
@@ -407,7 +407,7 @@ export const compatRuleset: RulesetDefinition = {
   resistanceCards,
   crisisCards,
   systemCards,
-  liberationThreshold: 1,
+  liberationThreshold: 3,
   suddenDeathRound: 12,
   victoryGate: {
     minRoundBeforeVictory: 3,
@@ -417,7 +417,7 @@ export const compatRuleset: RulesetDefinition = {
   },
   victoryScoring: {
     mode: 'score',
-    threshold: 82,
+    threshold: 75,
     survivalScorePerRound: 1,
     components: [
       {
@@ -443,7 +443,7 @@ export const compatRuleset: RulesetDefinition = {
     ],
   },
   setup: {
-    globalGaze: 7,
+    globalGaze: 8,
     northernWarMachine: 4,
     extractionSeeds: reduceSeededExtractionByHighestRegions(BASE_EXTRACTION_SEEDS, SEEDED_EXTRACTION_REDUCTION),
   },

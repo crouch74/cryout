@@ -7,7 +7,7 @@ export const crisisCards: CrisisCardDefinition[] = [
     name: 'Battle of Algiers',
     text: 'The System moves first and forces a hard turn. Add 1 Extraction Token to Algiers and raise War Machine by 1. The coalition must absorb this pressure and reorganize before the next phase.',
     effects: [
-      { type: 'add_extraction', region: 'Algiers', amount: 1 },
+      { type: 'add_extraction', region: 'Algiers', amount: 0 },
       { type: 'modify_war_machine', delta: 1 },
     ],
   },
@@ -18,7 +18,7 @@ export const crisisCards: CrisisCardDefinition[] = [
     text: 'The System moves first and forces a hard turn. Advance Empty Stomach by 1 and add 1 Extraction Token to Oran. The coalition must absorb this pressure and reorganize before the next phase.',
     effects: [
       { type: 'modify_domain', domain: 'EmptyStomach', delta: 1 },
-      { type: 'add_extraction', region: 'Oran', amount: 1 },
+      { type: 'add_extraction', region: 'Oran', amount: 0 },
     ],
   },
   {
@@ -50,7 +50,7 @@ export const crisisCards: CrisisCardDefinition[] = [
     text: 'The System moves first and forces a hard turn. Raise Global Gaze by 1 and add 1 Extraction Token to French Metropole Influence. The coalition must absorb this pressure and reorganize before the next phase.',
     effects: [
       { type: 'modify_gaze', delta: 1 },
-      { type: 'add_extraction', region: 'FrenchMetropoleInfluence', amount: 1 },
+      { type: 'add_extraction', region: 'FrenchMetropoleInfluence', amount: 0 },
     ],
   },
   {
@@ -79,7 +79,7 @@ export const crisisCards: CrisisCardDefinition[] = [
     name: 'Border Closure',
     text: 'The System moves first and forces a hard turn. Add 1 Extraction Token to Tunisian Border and advance War Machine by 1. The coalition must absorb this pressure and reorganize before the next phase.',
     effects: [
-      { type: 'add_extraction', region: 'TunisianBorder', amount: 1 },
+      { type: 'add_extraction', region: 'TunisianBorder', amount: 0 },
       { type: 'modify_domain', domain: 'WarMachine', delta: 1 },
     ],
   },
@@ -90,7 +90,7 @@ export const crisisCards: CrisisCardDefinition[] = [
     text: 'The System moves first and forces a hard turn. Advance Empty Stomach by 1 and add 1 Extraction Token to Oran. The coalition must absorb this pressure and reorganize before the next phase.',
     effects: [
       { type: 'modify_domain', domain: 'EmptyStomach', delta: 1 },
-      { type: 'add_extraction', region: 'Oran', amount: 1 },
+      { type: 'add_extraction', region: 'Oran', amount: 0 },
     ],
   },
   {

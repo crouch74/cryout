@@ -7,7 +7,7 @@ export const crisisCards: CrisisCardDefinition[] = [
         name: 'Central Security Forces',
         text: 'The System moves first and forces a hard turn across Cairo. Military intervention adds 1 Extraction to Cairo immediately. The coalition must absorb this pressure and reorganize before the next phase.',
         effects: [
-            { type: 'add_extraction', region: 'Cairo', amount: 1 },
+            { type: 'add_extraction', region: 'Cairo', amount: 0 },
         ],
     },
     {
@@ -68,7 +68,7 @@ export const crisisCards: CrisisCardDefinition[] = [
         text: 'The System moves first and forces a hard turn with a mass crackdown. Gain a permanent +2 Global Gaze as the brutality is witnessed internationally. The coalition must absorb this pressure and reorganize before the next phase.',
         effects: [
             { type: 'modify_gaze', delta: 2 },
-            { type: 'add_extraction', region: 'Cairo', amount: 2 },
+            { type: 'add_extraction', region: 'Cairo', amount: 0 },
         ],
     },
 ];

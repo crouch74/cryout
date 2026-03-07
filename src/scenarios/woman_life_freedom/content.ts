@@ -123,12 +123,12 @@ const factions: FactionDefinition[] = [
         mandate: {
             id: 'mandate_kurdish_women',
             title: 'Jin Jiyan Azadi',
-            description: 'End with Patriarchal Grip < 5 and Kurdistan at 1 or fewer Extraction Tokens.',
+            description: 'End with Patriarchal Grip < 4 and Kurdistan at 0 Extraction Tokens.',
             condition: {
                 kind: 'all',
                 conditions: [
-                    { kind: 'compare', left: { type: 'domain_progress', domain: 'PatriarchalGrip' }, op: '<', right: 5 },
-                    { kind: 'compare', left: { type: 'region_extraction', region: 'Kurdistan' }, op: '<=', right: 1 },
+                    { kind: 'compare', left: { type: 'domain_progress', domain: 'PatriarchalGrip' }, op: '<', right: 3 },
+                    { kind: 'compare', left: { type: 'region_extraction', region: 'Kurdistan' }, op: '<=', right: -1 },
                 ],
             },
         },
@@ -150,12 +150,12 @@ const factions: FactionDefinition[] = [
         mandate: {
             id: 'mandate_student_union',
             title: 'Campus Resistance',
-            description: 'Tehran Extraction <= 1 and Silenced Truth >= 6.',
+            description: 'Tehran Extraction <= 0 and Silenced Truth >= 7.',
             condition: {
                 kind: 'all',
                 conditions: [
-                    { kind: 'compare', left: { type: 'region_extraction', region: 'Tehran' }, op: '<=', right: 1 },
-                    { kind: 'compare', left: { type: 'domain_progress', domain: 'SilencedTruth' }, op: '>=', right: 6 },
+                    { kind: 'compare', left: { type: 'region_extraction', region: 'Tehran' }, op: '<=', right: -1 },
+                    { kind: 'compare', left: { type: 'domain_progress', domain: 'SilencedTruth' }, op: '>=', right: 8 },
                 ]
             },
         },
@@ -177,9 +177,9 @@ const factions: FactionDefinition[] = [
         mandate: {
             id: 'mandate_bazaar_strikers',
             title: 'Economic Halt',
-            description: 'Empty Stomach >= 5.',
+            description: 'Empty Stomach >= 6.',
             condition: {
-                kind: 'compare', left: { type: 'domain_progress', domain: 'EmptyStomach' }, op: '>=', right: 5
+                kind: 'compare', left: { type: 'domain_progress', domain: 'EmptyStomach' }, op: '>=', right: 7
             },
         },
         color: '#8e44ad',
@@ -199,9 +199,9 @@ const factions: FactionDefinition[] = [
         mandate: {
             id: 'mandate_male_allies',
             title: 'Shield the Vanguard',
-            description: 'Patriarchal Grip <= 3.',
+            description: 'Patriarchal Grip <= 2.',
             condition: {
-                kind: 'compare', left: { type: 'domain_progress', domain: 'PatriarchalGrip' }, op: '<=', right: 3
+                kind: 'compare', left: { type: 'domain_progress', domain: 'PatriarchalGrip' }, op: '<=', right: 1
             },
         },
         color: '#16a085',
@@ -212,21 +212,21 @@ const beacons: BeaconDefinition[] = [
     {
         id: 'beacon_wlf_global_solidarity',
         title: 'Global Solidarity',
-        description: 'Ensure Global Gaze >= 10 and Patriarchal Grip <= 5.',
+        description: 'Ensure Global Gaze >= 11 and Patriarchal Grip <= 4.',
         condition: {
             kind: 'all',
             conditions: [
-                { kind: 'compare', left: { type: 'global_gaze' }, op: '>=', right: 10 },
-                { kind: 'compare', left: { type: 'domain_progress', domain: 'PatriarchalGrip' }, op: '<=', right: 5 },
+                { kind: 'compare', left: { type: 'global_gaze' }, op: '>=', right: 12 },
+                { kind: 'compare', left: { type: 'domain_progress', domain: 'PatriarchalGrip' }, op: '<=', right: 3 },
             ]
         },
     },
     {
         id: 'beacon_wlf_no_executions',
         title: 'Halt Executions',
-        description: 'War Machine drops to 4 or lower.',
+        description: 'War Machine drops to 3 or lower.',
         condition: {
-            kind: 'compare', left: { type: 'northern_war_machine' }, op: '<=', right: 4
+            kind: 'compare', left: { type: 'northern_war_machine' }, op: '<=', right: 2
         },
     },
 ];
@@ -346,7 +346,7 @@ export const compatRuleset: RulesetDefinition = {
     },
     victoryScoring: {
         mode: 'score',
-        threshold: 72,
+        threshold: 65,
         survivalScorePerRound: 1,
         components: [
             {
@@ -373,12 +373,12 @@ export const compatRuleset: RulesetDefinition = {
     },
     setup: {
         globalGaze: 6,
-        northernWarMachine: 6,
+        northernWarMachine: 4,
         extractionPool: 66,
         extractionSeeds: {
-            Tehran: 1,
-            Kurdistan: 1,
-            Khuzestan: 1,
+            Tehran: 0,
+            Kurdistan: 0,
+            Khuzestan: 0,
         },
         regionHijabEnforcement: {
             Tehran: 1,

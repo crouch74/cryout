@@ -1,6 +1,6 @@
 import type { CrisisCardDefinition } from '../../../engine/adapters/compat/types.ts';
 
-const CRISIS_EXTRACTION_REDUCTION = 1;
+const CRISIS_EXTRACTION_REDUCTION = 2;
 
 const baseCrisisCards: CrisisCardDefinition[] = [
   {

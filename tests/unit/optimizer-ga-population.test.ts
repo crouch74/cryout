@@ -62,9 +62,9 @@ test('randomGenome produces values within GENOME_LIMITS bounds', () => {
     const genome = randomGenome(rng);
     assert.ok(genome.globalGazeDelta >= -2 && genome.globalGazeDelta <= 3);
     assert.ok(genome.northernWarMachineDelta >= -2 && genome.northernWarMachineDelta <= 2);
-    assert.ok(genome.seededExtractionTotalDelta >= -3 && genome.seededExtractionTotalDelta <= 3);
+    assert.ok(genome.seededExtractionNetDelta >= -3 && genome.seededExtractionNetDelta <= 3);
     assert.ok(genome.liberationThresholdDelta >= -2 && genome.liberationThresholdDelta <= 2);
-    assert.ok(genome.relaxAllThresholdsBy >= -1 && genome.relaxAllThresholdsBy <= 3);
+    assert.ok(genome.thresholdEaseDelta >= -1 && genome.thresholdEaseDelta <= 3);
     assert.ok(genome.scoreThreshold >= 65 && genome.scoreThreshold <= 75);
     assert.ok(genome.publicVictoryWeight >= 30 && genome.publicVictoryWeight <= 50);
     // Weight coupling invariant
@@ -210,4 +210,18 @@ test('genomeToCandidate omits catastrophic cap value when the cap is disabled', 
 
   assert.equal(patch.victoryScoring?.catastrophicCapEnabled, false);
   assert.equal(patch.victoryScoring?.catastrophicCapValue, undefined);
+});
+
+test('genomeToCandidate maps renamed GA genome fields onto patch semantics', () => {
+  const patch = genomeToCandidate({
+    seededExtractionNetDelta: -2,
+    crisisAddExtractionDelta: -1,
+    thresholdEaseDelta: 2,
+    perCardExtractionCap: 3,
+  });
+
+  assert.equal(patch.setup?.seededExtractionTotalDelta, -2);
+  assert.equal(patch.pressure?.crisisSpikeExtractionDelta, -1);
+  assert.equal(patch.pressure?.maxExtractionAddedPerRound, 3);
+  assert.equal(patch.mandates?.relaxAllThresholdsBy, 2);
 });

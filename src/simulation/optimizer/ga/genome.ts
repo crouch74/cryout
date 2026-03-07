@@ -43,7 +43,7 @@ export function genomeToCandidate(genome: PatchGenome): ScenarioPatch {
     ? undefined
     : genome.catastrophicCapValue;
 
-  if (genome.globalGazeDelta !== 0 || genome.northernWarMachineDelta !== 0 || genome.seededExtractionTotalDelta !== 0) {
+  if (genome.globalGazeDelta !== 0 || genome.northernWarMachineDelta !== 0 || genome.seededExtractionNetDelta !== 0) {
     patch.setup = {};
     if (genome.globalGazeDelta !== 0) {
       patch.setup.globalGazeDelta = genome.globalGazeDelta;
@@ -51,18 +51,18 @@ export function genomeToCandidate(genome: PatchGenome): ScenarioPatch {
     if (genome.northernWarMachineDelta !== 0) {
       patch.setup.northernWarMachineDelta = genome.northernWarMachineDelta;
     }
-    if (genome.seededExtractionTotalDelta !== 0) {
-      patch.setup.seededExtractionTotalDelta = genome.seededExtractionTotalDelta;
+    if (genome.seededExtractionNetDelta !== 0) {
+      patch.setup.seededExtractionTotalDelta = genome.seededExtractionNetDelta;
     }
   }
 
-  if (genome.crisisSpikeExtractionDelta !== 0 || genome.maxExtractionAddedPerRound !== null) {
+  if (genome.crisisAddExtractionDelta !== 0 || genome.perCardExtractionCap !== null) {
     patch.pressure = {};
-    if (genome.crisisSpikeExtractionDelta !== 0) {
-      patch.pressure.crisisSpikeExtractionDelta = genome.crisisSpikeExtractionDelta;
+    if (genome.crisisAddExtractionDelta !== 0) {
+      patch.pressure.crisisSpikeExtractionDelta = genome.crisisAddExtractionDelta;
     }
-    if (genome.maxExtractionAddedPerRound !== null) {
-      patch.pressure.maxExtractionAddedPerRound = genome.maxExtractionAddedPerRound;
+    if (genome.perCardExtractionCap !== null) {
+      patch.pressure.maxExtractionAddedPerRound = genome.perCardExtractionCap;
     }
   }
 
@@ -72,9 +72,9 @@ export function genomeToCandidate(genome: PatchGenome): ScenarioPatch {
     };
   }
 
-  if (genome.relaxAllThresholdsBy !== 0) {
+  if (genome.thresholdEaseDelta !== 0) {
     patch.mandates = {
-      relaxAllThresholdsBy: genome.relaxAllThresholdsBy,
+      relaxAllThresholdsBy: genome.thresholdEaseDelta,
     };
   }
 

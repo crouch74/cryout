@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+### Balanced
+- 🧬 **Scenario Engine Rebalance** — applied optimized winning genomes from GA evolutionary search across all major scenarios.
+  - **1919 — EGYPT RISES**: Adjusted starting Gaze (3) and War Machine (7). Relaxed mandate and beacon thresholds by 3. Improved liberation probability by raising extraction removal cap to 4.
+  - **WOMAN, LIFE, FREEDOM**: Hardened state security (War Machine 4) and lowered liberation threshold to 2. Mandate thresholds tightened by 1 to reflect the high-stakes political pressure of the 2022 uprising.
+  - **ALGERIAN WAR OF INDEPENDENCE**: Balanced colonial army surge (War Machine 7). Set crisis extraction floor to 0 to reflect the sustainablity of the maquis. Relaxed mandate thresholds by 3.
+  - **TAHRIR SQUARE**: Optimized for 18-day pacing. Cairo/Alexandria start with lower extraction overhead. Total liberation extraction cap raised to 4. Thresholds tightened by 1 to maintain revolutionary tension.
+  - **WHERE THE STONES CRY OUT**: Base world scenario stabilized. Global Gaze (8) and War Machine (4) adjusted for early survivability. Improved liberation threshold to 3.
+
 ## [0.11.0] - To Be Released
 ### Added
 - 🇪🇬 **Scenario Expansion: 1919 — EGYPT RISES** — added the full historical uprising scenario, featuring:

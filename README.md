@@ -19,6 +19,7 @@ This repo now ships with four major rulebooks/scenarios:
 - **3 live decks**: System, Resistance, and Crisis.
 - **2 global meters**: Global Gaze and Northern War Machine.
 - **Asymmetric factions**: Each with unique passives, weaknesses, and room-play Secret Mandates.
+- **Balance Optimization**: All scenarios utilize parameters refined by an evolutionary genetic algorithm for optimal difficulty curves and cooperative tension.
 
 ## Game Loop
 

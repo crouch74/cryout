@@ -23,11 +23,11 @@ import type { OptimizerCandidate } from '../types.ts';
 export interface PatchGenome {
   globalGazeDelta?: number;
   northernWarMachineDelta?: number;
-  seededExtractionTotalDelta?: number;
-  crisisSpikeExtractionDelta?: number;
+  seededExtractionNetDelta?: number;
+  crisisAddExtractionDelta?: number;
   liberationThresholdDelta?: number;
-  relaxAllThresholdsBy?: number;
-  maxExtractionAddedPerRound?: number | null;
+  thresholdEaseDelta?: number;
+  perCardExtractionCap?: number | null;
   scoreThreshold?: number;
   publicVictoryWeight?: number;
   mandatesWeight?: number;

@@ -116,8 +116,8 @@ const factions: FactionDefinition[] = [
             condition: {
                 kind: 'all',
                 conditions: [
-                    { kind: 'compare', left: { type: 'global_gaze' }, op: '>=', right: 12 },
-                    { kind: 'compare', left: { type: 'region_extraction', region: 'Algiers' }, op: '<=', right: 2 },
+                    { kind: 'compare', left: { type: 'global_gaze' }, op: '>=', right: 9 },
+                    { kind: 'compare', left: { type: 'region_extraction', region: 'Algiers' }, op: '<=', right: 5 },
                 ],
             },
         },
@@ -142,8 +142,8 @@ const factions: FactionDefinition[] = [
             condition: {
                 kind: 'all',
                 conditions: [
-                    { kind: 'compare', left: { type: 'domain_progress', domain: 'RevolutionaryWave' }, op: '>=', right: 6 },
-                    { kind: 'compare', left: { type: 'region_extraction', region: 'KabylieMountains' }, op: '<=', right: 1 },
+                    { kind: 'compare', left: { type: 'domain_progress', domain: 'RevolutionaryWave' }, op: '>=', right: 3 },
+                    { kind: 'compare', left: { type: 'region_extraction', region: 'KabylieMountains' }, op: '<=', right: 4 },
                 ],
             },
         },
@@ -168,8 +168,8 @@ const factions: FactionDefinition[] = [
             condition: {
                 kind: 'all',
                 conditions: [
-                    { kind: 'compare', left: { type: 'custom_track', track: 'repression_cycle' }, op: '<=', right: 6 },
-                    { kind: 'compare', left: { type: 'region_extraction', region: 'SaharaSouth' }, op: '<=', right: 2 },
+                    { kind: 'compare', left: { type: 'custom_track', track: 'repression_cycle' }, op: '<=', right: 9 },
+                    { kind: 'compare', left: { type: 'region_extraction', region: 'SaharaSouth' }, op: '<=', right: 5 },
                 ],
             },
         },
@@ -194,8 +194,8 @@ const factions: FactionDefinition[] = [
             condition: {
                 kind: 'all',
                 conditions: [
-                    { kind: 'compare', left: { type: 'domain_progress', domain: 'GildedCage' }, op: '<=', right: 4 },
-                    { kind: 'compare', left: { type: 'region_extraction', region: 'FrenchMetropoleInfluence' }, op: '<=', right: 2 },
+                    { kind: 'compare', left: { type: 'domain_progress', domain: 'GildedCage' }, op: '<=', right: 7 },
+                    { kind: 'compare', left: { type: 'region_extraction', region: 'FrenchMetropoleInfluence' }, op: '<=', right: 5 },
                 ],
             },
         },
@@ -211,7 +211,7 @@ const beacons: BeaconDefinition[] = [
             kind: 'compare',
             left: { type: 'global_gaze' },
             op: '>=',
-            right: 15,
+            right: 12,
         },
     },
     {
@@ -320,20 +320,20 @@ export const compatRuleset: RulesetDefinition = {
     resistanceCards,
     crisisCards,
     systemCards,
-    liberationThreshold: 5,
+    liberationThreshold: 4,
     suddenDeathRound: 12,
     victoryGate: {
         minRoundBeforeVictory: 3,
     },
     victoryScoring: {
         mode: 'score',
-        threshold: 70,
+        threshold: 72,
         survivalScorePerRound: 0.8,
         components: [
             {
                 id: 'publicVictory',
                 label: 'Public Victory',
-                weight: 50,
+                weight: 30,
                 type: 'binaryCondition',
                 source: {
                     type: 'publicVictory',
@@ -342,7 +342,7 @@ export const compatRuleset: RulesetDefinition = {
         ],
         mandatesAsScore: {
             enabled: true,
-            weight: 50,
+            weight: 70,
             mandateProgressMode: 'binary',
         },
         outcomeBands: [
@@ -353,12 +353,12 @@ export const compatRuleset: RulesetDefinition = {
         ],
     },
     setup: {
-        globalGaze: 4,
-        northernWarMachine: 6,
+        globalGaze: 3,
+        northernWarMachine: 7,
         extractionPool: 72,
         extractionSeeds: {
             Oran: 2,
-            Algiers: 2,
+            Algiers: 4,
             KabylieMountains: 2,
             SaharaSouth: 1,
             TunisianBorder: 1,
@@ -440,8 +440,8 @@ export const compatRuleset: RulesetDefinition = {
         liberation: {
             kind: 'all',
             conditions: [
-                { kind: 'compare', left: { type: 'custom_track', track: 'repression_cycle' }, op: '<=', right: 6 },
-                { kind: 'every_region_extraction_at_most', count: 5 },
+                { kind: 'compare', left: { type: 'custom_track', track: 'repression_cycle' }, op: '<=', right: 9 },
+                { kind: 'every_region_extraction_at_most', count: 8 },
             ],
         },
     },

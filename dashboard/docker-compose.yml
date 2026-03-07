@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  dashboard-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    volumes:
+      - ./api:/app
+      - ../simulation_output:/simulation_output
+    ports:
+      - "8000:8000"
+    environment:
+      - SIMULATION_OUTPUT_DIR=/simulation_output
+
+  dashboard-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.ui
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./ui:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - dashboard-api
