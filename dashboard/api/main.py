@@ -197,25 +197,46 @@ def get_latest_run_of_type(scenario_id: str, run_type: str) -> Optional[Dict[str
     return runs[0] if runs else None
 
 
+def list_all_known_scenarios(summary: Dict[str, Any]) -> List[str]:
+    summary_scenarios = set((summary.get("scenarioStats") or {}).keys())
+    single_optimizer_scenarios = set(
+        name
+        for name in list_subdirs(os.path.join(SIM_DIR, "optimizer"))
+        if name != "all_scenarios_parallel"
+    )
+    parallel_scenarios: set[str] = set()
+    parallel_root = os.path.join(SIM_DIR, "optimizer", "all_scenarios_parallel")
+    for parent_run_id in list_subdirs(parallel_root):
+        parallel_scenarios.update(
+            list_subdirs(os.path.join(parallel_root, parent_run_id, "scenarios"))
+        )
+
+    all_scenarios = summary_scenarios | single_optimizer_scenarios | parallel_scenarios
+    return sorted(all_scenarios)
+
+
 def build_overview() -> Dict[str, Any]:
     summary = load_json(os.path.join(SIM_DIR, "simulation_summary.json"), default={}) or {}
     scenario_stats = summary.get("scenarioStats") or {}
     strategy_performance = summary.get("strategyPerformance") or {}
+    known_scenarios = list_all_known_scenarios(summary)
 
     scenarios: List[Dict[str, Any]] = []
     optimizer_status: List[Dict[str, Any]] = []
 
-    for scenario_id, stats in sorted(scenario_stats.items()):
+    for scenario_id in known_scenarios:
+        stats = scenario_stats.get(scenario_id) or {}
         runs = list_optimizer_runs_for_scenario(scenario_id)
         latest_single = next((run for run in runs if run["runType"] == "single"), None)
         latest_parallel = next((run for run in runs if run["runType"] == "parallel"), None)
+        fallback_summary = (latest_single or latest_parallel or {}).get("summary") or {}
 
         scenarios.append(
             {
                 "scenarioId": scenario_id,
-                "runs": stats.get("runs", 0),
-                "successRate": stats.get("successRate", 0),
-                "averageTurns": stats.get("averageTurns", 0),
+                "runs": stats.get("runs", fallback_summary.get("sampleSize", 0)),
+                "successRate": stats.get("successRate", fallback_summary.get("successRate", 0)),
+                "averageTurns": stats.get("averageTurns", fallback_summary.get("averageTurns", 0)),
                 "campaignSuccessRate": stats.get("campaignSuccessRate", 0),
                 "defeatReasons": stats.get("defeatReasons", {}),
                 "optimizer": {
@@ -718,12 +739,113 @@ def build_run_catalog(scenario_id: str) -> List[Dict[str, Any]]:
     return catalog
 
 
+def build_recommended_config(run: Dict[str, Any]) -> Dict[str, Any]:
+    result = run["result"]
+    optimizer_config = load_json(os.path.join(run["runDir"], "optimizer_config.json"), default={}) or {}
+    recommended_patch = result.get("recommendedPatch") or {}
+    final_metrics = (result.get("finalMetrics") or {}).get("metrics") or {}
+    flattened_patch = flatten_patch(recommended_patch)
+    return {
+        "runKey": run["runKey"],
+        "label": run["label"],
+        "runType": run["runType"],
+        "generatedAt": run["generatedAt"],
+        "stopReason": result.get("stopReason"),
+        "iterationsCompleted": result.get("iterationsCompleted", 0),
+        "recommendedPatch": recommended_patch,
+        "flattenedPatch": flattened_patch,
+        "acceptedPatches": result.get("acceptedPatches") or [],
+        "optimizerConfig": {
+            "runtime": optimizer_config.get("runtime"),
+            "searchMode": optimizer_config.get("searchMode"),
+            "strategy": optimizer_config.get("strategy"),
+            "significance": optimizer_config.get("significance"),
+            "baselineRuns": optimizer_config.get("baselineRuns"),
+            "candidateRuns": optimizer_config.get("candidateRuns"),
+            "candidates": optimizer_config.get("candidates"),
+            "playerCounts": optimizer_config.get("playerCounts"),
+            "victoryModes": optimizer_config.get("victoryModes"),
+        },
+        "finalMetrics": {
+            "successRate": final_metrics.get("successRate", 0),
+            "publicVictoryRate": final_metrics.get("publicVictoryRate", 0),
+            "earlyTerminationRate": final_metrics.get("earlyTerminationRate", 0),
+            "averageTurns": ((final_metrics.get("turns") or {}).get("average", 0)),
+            "defeatRates": final_metrics.get("defeatRates", {}),
+        },
+    }
+
+
+def diff_flat_maps(left: Dict[str, Any], right: Dict[str, Any]) -> List[Dict[str, Any]]:
+    keys = sorted(set(left.keys()) | set(right.keys()))
+    diffs = []
+    for key in keys:
+        left_value = left.get(key)
+        right_value = right.get(key)
+        if left_value == right_value:
+            continue
+        diffs.append(
+            {
+                "parameter": key,
+                "left": left_value,
+                "right": right_value,
+            }
+        )
+    return diffs
+
+
+def build_run_comparison(scenario_id: str, left_run_key: str, right_run_key: str) -> Dict[str, Any]:
+    all_runs = list_optimizer_runs_for_scenario(scenario_id)
+    left_run = next((run for run in all_runs if run["runKey"] == left_run_key), None)
+    right_run = next((run for run in all_runs if run["runKey"] == right_run_key), None)
+    if not left_run or not right_run:
+        raise HTTPException(status_code=404, detail="One or both runs were not found")
+
+    left_config = build_recommended_config(left_run)
+    right_config = build_recommended_config(right_run)
+
+    left_metrics = left_config["finalMetrics"]
+    right_metrics = right_config["finalMetrics"]
+    metric_diff = {
+        "successRate": right_metrics["successRate"] - left_metrics["successRate"],
+        "publicVictoryRate": right_metrics["publicVictoryRate"] - left_metrics["publicVictoryRate"],
+        "earlyTerminationRate": right_metrics["earlyTerminationRate"] - left_metrics["earlyTerminationRate"],
+        "averageTurns": right_metrics["averageTurns"] - left_metrics["averageTurns"],
+        "acceptedPatchCount": len(right_config["acceptedPatches"]) - len(left_config["acceptedPatches"]),
+    }
+
+    defeat_diff = []
+    defeat_keys = sorted(set(left_metrics["defeatRates"].keys()) | set(right_metrics["defeatRates"].keys()))
+    for key in defeat_keys:
+        defeat_diff.append(
+            {
+                "reason": key,
+                "left": left_metrics["defeatRates"].get(key, 0),
+                "right": right_metrics["defeatRates"].get(key, 0),
+                "delta": right_metrics["defeatRates"].get(key, 0) - left_metrics["defeatRates"].get(key, 0),
+            }
+        )
+
+    return {
+        "scenarioId": scenario_id,
+        "leftRun": left_config,
+        "rightRun": right_config,
+        "metricDiff": metric_diff,
+        "defeatDiff": defeat_diff,
+        "recommendedPatchDiff": diff_flat_maps(
+            left_config["flattenedPatch"],
+            right_config["flattenedPatch"],
+        ),
+    }
+
+
 def build_scenario_analysis(scenario_id: str, scope: str, run_key: Optional[str]) -> Dict[str, Any]:
     overview = build_overview()
     scenario_summary = next((item for item in overview["scenarios"] if item["scenarioId"] == scenario_id), None)
     if not scenario_summary:
         raise HTTPException(status_code=404, detail="Scenario not found")
 
+    all_runs = list_optimizer_runs_for_scenario(scenario_id)
     selected_runs, selection = select_runs_for_scope(scenario_id, scope, run_key)
     trajectory = build_trajectory_analytics(scenario_id)
     histories = [item for run in selected_runs for item in normalize_history_for_run(run)]
@@ -750,6 +872,13 @@ def build_scenario_analysis(scenario_id: str, scope: str, run_key: Optional[str]
                 **(run["summary"] or {}),
             }
             for run in selected_runs
+        ],
+        "recommendedConfig": build_recommended_config(selected_runs[0]) if len(selected_runs) == 1 else None,
+        "recommendedConfigs": [build_recommended_config(run) for run in selected_runs],
+        "allRunRecommendations": [
+            build_recommended_config(run)
+            for run in all_runs
+            if flatten_patch((run["result"].get("recommendedPatch") or {}))
         ],
         "targetDistances": build_target_distances(histories),
         "acceptedPatches": [patch for run in selected_runs for patch in (run["result"].get("acceptedPatches") or [])],
@@ -818,6 +947,17 @@ async def get_scenario_runs(scenario_id: str) -> Dict[str, Any]:
     if not catalog:
         raise HTTPException(status_code=404, detail="Scenario not found or no optimizer runs available")
     return {"scenarioId": scenario_id, "runs": catalog}
+
+
+@app.get("/api/scenarios/{scenario_id}/compare")
+async def get_scenario_run_comparison(
+    scenario_id: str,
+    leftRunKey: str = Query(...),
+    rightRunKey: str = Query(...),
+) -> Dict[str, Any]:
+    payload = build_run_comparison(scenario_id, leftRunKey, rightRunKey)
+    log_success(f"Run comparison prepared for {scenario_id}")
+    return payload
 
 
 @app.get("/api/scenarios/{scenario_id}/analysis")

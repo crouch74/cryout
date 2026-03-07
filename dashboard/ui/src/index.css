@@ -211,6 +211,39 @@ select {
   margin-bottom: 24px;
 }
 
+.filter-toolbar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.filter-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  padding: 14px;
+  min-width: 0;
+}
+
+.filter-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.filter-caption {
+  margin-top: 10px;
+  color: var(--slate);
+  font-size: 13px;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .page-header h2 {
   margin: 8px 0 6px;
   font-size: clamp(30px, 4vw, 42px);
@@ -351,6 +384,24 @@ select {
   gap: 6px;
 }
 
+.recommendation-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.recommendation-block {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: white;
+}
+
+.recommendation-block-wide {
+  grid-column: span 2;
+}
+
 .data-table-head,
 .data-table-row {
   display: grid;
@@ -371,6 +422,14 @@ select {
 .data-table-row {
   background: white;
   border: 1px solid var(--border);
+}
+
+.data-table-head span,
+.data-table-row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .empty-state,
@@ -443,7 +502,13 @@ select {
 
   .header-summary,
   .sidebar-metrics,
-  .alert-grid {
+  .alert-grid,
+  .filter-meta,
+  .recommendation-grid {
     grid-template-columns: 1fr;
+  }
+
+  .recommendation-block-wide {
+    grid-column: span 1;
   }
 }

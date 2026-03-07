@@ -4,6 +4,7 @@ import axios from 'axios';
 import {
   Activity,
   ArrowLeftRight,
+  BookMarked,
   Gauge,
   GitBranch,
   Layers,
@@ -51,6 +52,15 @@ type ScenarioPayload = {
   trajectory: any;
 };
 
+type ComparisonPayload = {
+  scenarioId: string;
+  leftRun: any;
+  rightRun: any;
+  metricDiff: any;
+  defeatDiff: any[];
+  recommendedPatchDiff: any[];
+};
+
 type RunScope =
   | 'latest_single'
   | 'latest_parallel'
@@ -73,7 +83,9 @@ const LEVELS = [
   { id: 'balance', label: 'Scenario Balance', icon: Target },
   { id: 'optimizer', label: 'Optimizer Progress', icon: GitBranch },
   { id: 'parameters', label: 'Parameter Effects', icon: Gauge },
+  { id: 'comparison', label: 'Run Comparison', icon: ArrowLeftRight },
   { id: 'trajectories', label: 'Gameplay Trajectories', icon: Workflow },
+  { id: 'recommendations', label: 'Recommendations', icon: BookMarked },
 ] as const;
 
 const COLORS = {
@@ -99,6 +111,14 @@ const titleCase = (value: string) =>
   value
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (match) => match.toUpperCase());
+
+function compactRunLabel(label?: string): string {
+  if (!label) return 'Run';
+  return label
+    .replace(/^Parallel /, 'P ')
+    .replace(/^Single /, 'S ')
+    .replace(/^(.{16}).+(_\d{2,})$/, '$1…$2');
+}
 
 function readUrlState(): {
   level?: (typeof LEVELS)[number]['id'];
@@ -129,8 +149,12 @@ function App() {
   const [selectedRunKey, setSelectedRunKey] = useState(initialUrlState.runKey || '');
   const [selectedOptimizerIteration, setSelectedOptimizerIteration] = useState<number | 'all'>('all');
   const [scenarioData, setScenarioData] = useState<ScenarioPayload | null>(null);
+  const [comparisonData, setComparisonData] = useState<ComparisonPayload | null>(null);
+  const [comparisonLeftRunKey, setComparisonLeftRunKey] = useState('');
+  const [comparisonRightRunKey, setComparisonRightRunKey] = useState('');
   const [loadingOverview, setLoadingOverview] = useState(true);
   const [loadingScenario, setLoadingScenario] = useState(false);
+  const [loadingComparison, setLoadingComparison] = useState(false);
   const scenarioOptions = overview?.scenarios || [];
   const summary = overview?.summary;
   const currentScenario = scenarioData?.summary;
@@ -139,6 +163,9 @@ function App() {
   const iterations = optimizer?.iterations || [];
   const runCatalog = optimizer?.selection?.runCatalog || [];
   const runSelectionLabel = optimizer?.selection?.label || 'No run scope selected';
+  const recommendedConfig = optimizer?.recommendedConfig || null;
+  const recommendedConfigs = optimizer?.recommendedConfigs || [];
+  const allRunRecommendations = optimizer?.allRunRecommendations || [];
 
   useEffect(() => {
     const fetchOverview = async () => {
@@ -199,6 +226,9 @@ function App() {
     setSelectedRunKey('');
     setScenarioData(null);
     setSelectedOptimizerIteration('all');
+    setComparisonData(null);
+    setComparisonLeftRunKey('');
+    setComparisonRightRunKey('');
   }, [selectedScenario]);
 
   useEffect(() => {
@@ -241,6 +271,47 @@ function App() {
     window.history.replaceState({}, '', nextUrl);
   }, [activeLevel, selectedScenario, runScope, selectedRunKey]);
 
+  useEffect(() => {
+    if (activeLevel !== 'comparison') return;
+    if (runCatalog.length < 2) return;
+    if (!comparisonLeftRunKey) {
+      setComparisonLeftRunKey(runCatalog[0].runKey);
+    }
+    if (!comparisonRightRunKey) {
+      const fallback = runCatalog.find((run: any) => run.runKey !== runCatalog[0].runKey);
+      if (fallback) {
+        setComparisonRightRunKey(fallback.runKey);
+      }
+    }
+  }, [activeLevel, runCatalog, comparisonLeftRunKey, comparisonRightRunKey]);
+
+  useEffect(() => {
+    if (activeLevel !== 'comparison') return;
+    if (!selectedScenario || !comparisonLeftRunKey || !comparisonRightRunKey) return;
+    if (comparisonLeftRunKey === comparisonRightRunKey) return;
+
+    const fetchComparison = async () => {
+      setLoadingComparison(true);
+      try {
+        const response = await axios.get<ComparisonPayload>(
+          `${API_URL}/api/scenarios/${selectedScenario}/compare`,
+          {
+            params: {
+              leftRunKey: comparisonLeftRunKey,
+              rightRunKey: comparisonRightRunKey,
+            },
+          },
+        );
+        setComparisonData(response.data);
+      } catch (error) {
+        console.error('🚨 Failed to load run comparison payload', error);
+      } finally {
+        setLoadingComparison(false);
+      }
+    };
+    void fetchComparison();
+  }, [activeLevel, selectedScenario, comparisonLeftRunKey, comparisonRightRunKey]);
+
   const globalScenarioRows = useMemo(
     () =>
       scenarioOptions.map((scenario) => ({
@@ -272,7 +343,7 @@ function App() {
     () =>
       iterations.map((item: any) => ({
         iteration: item.iteration,
-        label: item.iterationLabel || `I${item.iteration}`,
+        label: `${compactRunLabel(item.runLabel)} · I${item.iteration}`,
         runLabel: item.runLabel,
         baselineSuccessRate: +((item.baselineMetrics?.successRate || 0) * 100).toFixed(2),
         baselinePublicVictoryRate: +(
@@ -292,7 +363,7 @@ function App() {
       iterations.flatMap((item: any) =>
         (item.topCandidates || []).map((candidate: any) => ({
           iteration: item.iteration,
-          label: item.iterationLabel || `I${item.iteration}`,
+          label: `${compactRunLabel(item.runLabel)} · I${item.iteration}`,
           runLabel: item.runLabel,
           candidateId: candidate.candidateId,
           strategy: titleCase(candidate.strategy || 'unknown'),
@@ -449,6 +520,14 @@ function App() {
     return <LoadingState label="Reading simulation intelligence" />;
   }
 
+  const showScenarioFilter = activeLevel !== 'overview';
+  const showRunScopeFilter =
+    activeLevel === 'balance' || activeLevel === 'optimizer' || activeLevel === 'parameters';
+  const showSpecificRunFilter = showRunScopeFilter && runScope === 'specific_run';
+  const showIterationFilter = activeLevel === 'parameters' && optimizerIterationOptions.length > 0;
+  const showComparisonFilters = activeLevel === 'comparison';
+  const showRecommendationFilter = activeLevel === 'recommendations';
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -473,63 +552,6 @@ function App() {
               <span>{label}</span>
             </button>
           ))}
-        </div>
-
-        <div className="sidebar-card">
-          <p className="eyebrow">Scenario</p>
-          <select
-            value={selectedScenario}
-            onChange={(event) => setSelectedScenario(event.target.value)}
-            className="scenario-select"
-          >
-            {scenarioOptions.map((scenario) => (
-              <option key={scenario.scenarioId} value={scenario.scenarioId}>
-                {titleCase(scenario.scenarioId)}
-              </option>
-            ))}
-          </select>
-
-          <div className="sidebar-metrics">
-            <MetricMini label="Runs" value={`${currentScenario?.runs || 0}`} />
-            <MetricMini label="Success" value={pct(currentScenario?.successRate)} />
-            <MetricMini
-              label="Optimizer"
-              value={optimizer?.selection?.runCount ? `${optimizer.selection.runCount} run(s)` : 'No run'}
-            />
-          </div>
-        </div>
-
-        <div className="sidebar-card">
-          <p className="eyebrow">Run Scope</p>
-          <select
-            value={runScope}
-            onChange={(event) => setRunScope(event.target.value as RunScope)}
-            className="scenario-select"
-          >
-            {RUN_SCOPE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          {runScope === 'specific_run' ? (
-            <select
-              value={selectedRunKey}
-              onChange={(event) => setSelectedRunKey(event.target.value)}
-              className="scenario-select"
-            >
-              <option value="">Select a run</option>
-              {runCatalog.map((run: any) => (
-                <option key={run.runKey} value={run.runKey}>
-                  {run.label}
-                </option>
-              ))}
-            </select>
-          ) : null}
-          <div className="question-row">
-            <span>Current scope</span>
-            <strong>{runSelectionLabel}</strong>
-          </div>
         </div>
 
         <div className="sidebar-card">
@@ -567,6 +589,176 @@ function App() {
             />
           </div>
         </header>
+
+        {(showScenarioFilter || showRunScopeFilter || showIterationFilter || showComparisonFilters || showRecommendationFilter) ? (
+          <section className="filter-toolbar">
+            {showScenarioFilter ? (
+              <div className="filter-card">
+                <label className="eyebrow" htmlFor="scenario-filter">Scenario</label>
+                <select
+                  id="scenario-filter"
+                  value={selectedScenario}
+                  onChange={(event) => setSelectedScenario(event.target.value)}
+                  className="scenario-select"
+                >
+                  {scenarioOptions.map((scenario) => (
+                    <option key={scenario.scenarioId} value={scenario.scenarioId}>
+                      {titleCase(scenario.scenarioId)}
+                    </option>
+                  ))}
+                </select>
+                <div className="filter-meta">
+                  <MetricMini label="Runs" value={`${currentScenario?.runs || 0}`} />
+                  <MetricMini label="Success" value={pct(currentScenario?.successRate)} />
+                </div>
+              </div>
+            ) : null}
+
+            {showRunScopeFilter ? (
+              <div className="filter-card">
+                <label className="eyebrow" htmlFor="scope-filter">Run Scope</label>
+                <select
+                  id="scope-filter"
+                  value={runScope}
+                  onChange={(event) => setRunScope(event.target.value as RunScope)}
+                  className="scenario-select"
+                >
+                  {RUN_SCOPE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <div className="filter-caption">{runSelectionLabel}</div>
+              </div>
+            ) : null}
+
+            {showSpecificRunFilter ? (
+              <div className="filter-card">
+                <label className="eyebrow" htmlFor="run-filter">Specific Run</label>
+                <select
+                  id="run-filter"
+                  value={selectedRunKey}
+                  onChange={(event) => setSelectedRunKey(event.target.value)}
+                  className="scenario-select"
+                >
+                  <option value="">Select a run</option>
+                  {runCatalog.map((run: any) => (
+                    <option key={run.runKey} value={run.runKey}>
+                      {run.label}
+                    </option>
+                  ))}
+                </select>
+                <div className="filter-caption">Pinned permalink-ready run selection.</div>
+              </div>
+            ) : null}
+
+            {showIterationFilter ? (
+              <div className="filter-card">
+                <label className="eyebrow" htmlFor="iteration-filter">Optimizer Iteration</label>
+                <select
+                  id="iteration-filter"
+                  value={String(selectedOptimizerIteration)}
+                  onChange={(event) =>
+                    setSelectedOptimizerIteration(
+                      event.target.value === 'all' ? 'all' : Number(event.target.value),
+                    )
+                  }
+                  className="scenario-select"
+                >
+                  {optimizerIterationOptions.length > 1 ? <option value="all">All Iterations</option> : null}
+                  {optimizerIterationOptions.map((iteration) => (
+                    <option key={iteration} value={iteration}>
+                      Iteration {iteration}
+                    </option>
+                  ))}
+                </select>
+                <div className="filter-caption">
+                  {selectedOptimizerIteration === 'all'
+                    ? 'Averaging GA diagnostics across iterations.'
+                    : `Focused on iteration ${selectedOptimizerIteration}.`}
+                </div>
+              </div>
+            ) : null}
+
+            {showComparisonFilters ? (
+              <>
+                <div className="filter-card">
+                  <label className="eyebrow" htmlFor="compare-left-filter">Left Run</label>
+                  <select
+                    id="compare-left-filter"
+                    value={comparisonLeftRunKey}
+                    onChange={(event) => setComparisonLeftRunKey(event.target.value)}
+                    className="scenario-select"
+                  >
+                    <option value="">Select a run</option>
+                    {runCatalog.map((run: any) => (
+                      <option key={run.runKey} value={run.runKey}>
+                        {run.label}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="filter-caption">Baseline run.</div>
+                </div>
+                <div className="filter-card">
+                  <label className="eyebrow" htmlFor="compare-right-filter">Right Run</label>
+                  <select
+                    id="compare-right-filter"
+                    value={comparisonRightRunKey}
+                    onChange={(event) => setComparisonRightRunKey(event.target.value)}
+                    className="scenario-select"
+                  >
+                    <option value="">Select a run</option>
+                    {runCatalog.map((run: any) => (
+                      <option key={run.runKey} value={run.runKey}>
+                        {run.label}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="filter-caption">Comparison run.</div>
+                </div>
+              </>
+            ) : null}
+
+            {showRecommendationFilter ? (
+              <>
+                <div className="filter-card">
+                  <label className="eyebrow" htmlFor="recommendation-scope-filter">Recommendation Source</label>
+                  <select
+                    id="recommendation-scope-filter"
+                    value={runScope}
+                    onChange={(event) => setRunScope(event.target.value as RunScope)}
+                    className="scenario-select"
+                  >
+                    <option value="specific_run">Specific Run</option>
+                    <option value="latest_single">Latest Single Run</option>
+                    <option value="latest_parallel">Latest Parallel Run</option>
+                  </select>
+                  <div className="filter-caption">Recommendation must come from one concrete run.</div>
+                </div>
+                {runScope === 'specific_run' ? (
+                  <div className="filter-card">
+                    <label className="eyebrow" htmlFor="recommendation-run-filter">Recommended Run</label>
+                    <select
+                      id="recommendation-run-filter"
+                      value={selectedRunKey}
+                      onChange={(event) => setSelectedRunKey(event.target.value)}
+                      className="scenario-select"
+                    >
+                      <option value="">Select a run</option>
+                      {runCatalog.map((run: any) => (
+                        <option key={run.runKey} value={run.runKey}>
+                          {run.label}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="filter-caption">Pinned run for the recommended config shelf.</div>
+                  </div>
+                ) : null}
+              </>
+            ) : null}
+          </section>
+        ) : null}
 
         {loadingScenario && activeLevel !== 'overview' ? (
           <LoadingState label="Compiling scenario-level diagnostics" compact />
@@ -867,6 +1059,61 @@ function App() {
                 />
               )}
             </Card>
+
+            <Card
+              title="Recommended Config"
+              subtitle="Exact run-level recommendation for the current selection."
+              className="span-12"
+            >
+              {recommendedConfig ? (
+                <div className="recommendation-grid">
+                  <div className="recommendation-block">
+                    <p className="eyebrow">Run Summary</p>
+                    <MetricList
+                      items={[
+                        ['Run', recommendedConfig.label],
+                        ['Generated', recommendedConfig.generatedAt || 'n/a'],
+                        ['Stop reason', titleCase(recommendedConfig.stopReason || 'unknown')],
+                        ['Success', pct(recommendedConfig.finalMetrics?.successRate)],
+                        ['Public victory', pct(recommendedConfig.finalMetrics?.publicVictoryRate)],
+                        ['Average turns', num(recommendedConfig.finalMetrics?.averageTurns)],
+                      ]}
+                    />
+                  </div>
+                  <div className="recommendation-block">
+                    <p className="eyebrow">Recommended Patch</p>
+                    {Object.keys(recommendedConfig.flattenedPatch || {}).length ? (
+                      <DataTable
+                        columns={['Parameter', 'Value']}
+                        rows={Object.entries(recommendedConfig.flattenedPatch || {}).map(([key, value]) => [
+                          key,
+                          String(value),
+                        ])}
+                      />
+                    ) : (
+                      <EmptyState title="No patch recommendation" body="This run ended without a recommended patch." />
+                    )}
+                  </div>
+                  <div className="recommendation-block">
+                    <p className="eyebrow">Optimizer Settings</p>
+                    <DataTable
+                      columns={['Field', 'Value']}
+                      rows={Object.entries(recommendedConfig.optimizerConfig || {})
+                        .filter(([, value]) => value !== null && value !== undefined)
+                        .map(([key, value]) => [
+                          key,
+                          Array.isArray(value) ? value.join(', ') : String(value),
+                        ])}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <EmptyState
+                  title="No single run selected"
+                  body="Switch the run scope to a single concrete run to inspect the exact recommended config."
+                />
+              )}
+            </Card>
           </section>
         ) : null}
 
@@ -923,15 +1170,19 @@ function App() {
 
             <Card
               title="GA Convergence"
-              subtitle="Best, mean, and median fitness across generations."
+              subtitle={
+                selectedOptimizerIteration === 'all'
+                  ? 'Average best, mean, and median fitness by generation across the selected run scope.'
+                  : `Best, mean, and median fitness across generations for iteration ${selectedOptimizerIteration}.`
+              }
               className="span-7"
             >
               <ResponsiveContainer width="100%" height={320}>
-                <LineChart data={generationRows}>
+                <LineChart data={gaRowsForIteration}>
                   <CartesianGrid stroke={COLORS.line} strokeDasharray="2 4" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fill: COLORS.slate, fontSize: 11 }} interval={0} angle={-24} textAnchor="end" height={72} />
+                  <XAxis dataKey="generation" tick={{ fill: COLORS.slate, fontSize: 12 }} />
                   <YAxis tick={{ fill: COLORS.slate, fontSize: 12 }} />
-                  <Tooltip />
+                  <Tooltip formatter={(value: any) => Number(value).toFixed(3)} />
                   <Legend />
                   <Line dataKey="bestFitness" stroke={COLORS.green} strokeWidth={3} />
                   <Line dataKey="meanFitness" stroke={COLORS.accent} strokeWidth={2} />
@@ -942,16 +1193,20 @@ function App() {
 
             <Card
               title="Genome Drift"
-              subtitle="Best-genome parameter drift across generations."
+              subtitle={
+                selectedOptimizerIteration === 'all'
+                  ? 'Average best-genome parameter values by generation across the selected run scope.'
+                  : `Best-genome parameter drift across generations for iteration ${selectedOptimizerIteration}.`
+              }
               className="span-5"
             >
               {genomePreview.length ? (
                 <ResponsiveContainer width="100%" height={320}>
-                  <LineChart data={genomeRows}>
+                  <LineChart data={genomeRowsForIteration}>
                     <CartesianGrid stroke={COLORS.line} strokeDasharray="2 4" vertical={false} />
-                    <XAxis dataKey="label" tick={{ fill: COLORS.slate, fontSize: 11 }} interval={0} angle={-24} textAnchor="end" height={72} />
+                    <XAxis dataKey="generation" tick={{ fill: COLORS.slate, fontSize: 12 }} />
                     <YAxis tick={{ fill: COLORS.slate, fontSize: 12 }} />
-                    <Tooltip />
+                    <Tooltip formatter={(value: any) => Number(value).toFixed(2)} />
                     <Legend />
                     {genomePreview.map((key, index) => (
                       <Line
@@ -1105,6 +1360,197 @@ function App() {
                   />
                 </RadarChart>
               </ResponsiveContainer>
+            </Card>
+          </section>
+        ) : null}
+
+        {activeLevel === 'comparison' ? (
+          <section className="content-grid">
+            {loadingComparison ? <LoadingState label="Comparing selected runs" compact /> : null}
+
+            <Card
+              title="Run Metric Delta"
+              subtitle="How the right run changed key outcomes relative to the left run."
+              className="span-5"
+            >
+              {comparisonData ? (
+                <MetricList
+                  items={[
+                    ['Success delta', pct(comparisonData.metricDiff?.successRate)],
+                    ['Public victory delta', pct(comparisonData.metricDiff?.publicVictoryRate)],
+                    ['Early termination delta', pct(comparisonData.metricDiff?.earlyTerminationRate)],
+                    ['Average turns delta', num(comparisonData.metricDiff?.averageTurns)],
+                    ['Accepted patches delta', String(comparisonData.metricDiff?.acceptedPatchCount || 0)],
+                  ]}
+                />
+              ) : (
+                <EmptyState title="Choose two runs" body="Select a left and right run to compare." />
+              )}
+            </Card>
+
+            <Card
+              title="Selected Run Summaries"
+              subtitle="Snapshot of the two runs being compared."
+              className="span-7"
+            >
+              {comparisonData ? (
+                <DataTable
+                  columns={['Side', 'Run', 'Success', 'Public', 'Avg turns']}
+                  rows={[
+                    [
+                      'Left',
+                      comparisonData.leftRun?.label,
+                      pct(comparisonData.leftRun?.finalMetrics?.successRate),
+                      pct(comparisonData.leftRun?.finalMetrics?.publicVictoryRate),
+                      num(comparisonData.leftRun?.finalMetrics?.averageTurns),
+                    ],
+                    [
+                      'Right',
+                      comparisonData.rightRun?.label,
+                      pct(comparisonData.rightRun?.finalMetrics?.successRate),
+                      pct(comparisonData.rightRun?.finalMetrics?.publicVictoryRate),
+                      num(comparisonData.rightRun?.finalMetrics?.averageTurns),
+                    ],
+                  ]}
+                />
+              ) : (
+                <EmptyState title="No comparison yet" body="Run details appear here once both runs are selected." />
+              )}
+            </Card>
+
+            <Card
+              title="Defeat Channel Shift"
+              subtitle="Run-vs-run defeat composition."
+              className="span-6"
+            >
+              {comparisonData ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={comparisonData.defeatDiff}>
+                    <CartesianGrid stroke={COLORS.line} strokeDasharray="2 4" vertical={false} />
+                    <XAxis dataKey="reason" tick={{ fill: COLORS.slate, fontSize: 12 }} />
+                    <YAxis tick={{ fill: COLORS.slate, fontSize: 12 }} />
+                    <Tooltip formatter={(value: any) => `${(Number(value) * 100).toFixed(1)}%`} />
+                    <Legend />
+                    <Bar dataKey="left" fill={COLORS.red} name="Left defeat rate" />
+                    <Bar dataKey="right" fill={COLORS.blue} name="Right defeat rate" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <EmptyState title="No defeat diff" body="Comparison chart appears once both runs load." />
+              )}
+            </Card>
+
+            <Card
+              title="Recommended Patch Diff"
+              subtitle="Parameter-level differences between the two selected run recommendations."
+              className="span-6"
+            >
+              {comparisonData ? (
+                <DataTable
+                  columns={['Parameter', 'Left', 'Right']}
+                  rows={comparisonData.recommendedPatchDiff.map((item) => [
+                    item.parameter,
+                    String(item.left ?? ''),
+                    String(item.right ?? ''),
+                  ])}
+                />
+              ) : (
+                <EmptyState title="No patch diff" body="Pick two runs with available recommendations." />
+              )}
+            </Card>
+          </section>
+        ) : null}
+
+        {activeLevel === 'recommendations' ? (
+          <section className="content-grid">
+            <Card
+              title="Recommended Config Shelf"
+              subtitle="Run-specific recommended config, optimizer settings, and accepted patch history."
+              className="span-12"
+            >
+              {recommendedConfig ? (
+                <div className="recommendation-grid">
+                  <div className="recommendation-block">
+                    <p className="eyebrow">Run Summary</p>
+                    <MetricList
+                      items={[
+                        ['Run', recommendedConfig.label],
+                        ['Generated', recommendedConfig.generatedAt || 'n/a'],
+                        ['Stop reason', titleCase(recommendedConfig.stopReason || 'unknown')],
+                        ['Success', pct(recommendedConfig.finalMetrics?.successRate)],
+                        ['Public victory', pct(recommendedConfig.finalMetrics?.publicVictoryRate)],
+                        ['Early termination', pct(recommendedConfig.finalMetrics?.earlyTerminationRate)],
+                        ['Average turns', num(recommendedConfig.finalMetrics?.averageTurns)],
+                      ]}
+                    />
+                  </div>
+                  <div className="recommendation-block">
+                    <p className="eyebrow">Recommended Patch</p>
+                    {Object.keys(recommendedConfig.flattenedPatch || {}).length ? (
+                      <DataTable
+                        columns={['Parameter', 'Value']}
+                        rows={Object.entries(recommendedConfig.flattenedPatch || {}).map(([key, value]) => [
+                          key,
+                          String(value),
+                        ])}
+                      />
+                    ) : (
+                      <EmptyState title="No patch recommendation" body="This run ended without a recommended patch." />
+                    )}
+                  </div>
+                  <div className="recommendation-block">
+                    <p className="eyebrow">Accepted Patch History</p>
+                    {(recommendedConfig.acceptedPatches || []).length ? (
+                      <DataTable
+                        columns={['Iteration', 'Strategy', 'Score']}
+                        rows={(recommendedConfig.acceptedPatches || []).map((item: any) => [
+                          String(item.iteration),
+                          item.strategy,
+                          String(item.score ?? ''),
+                        ])}
+                      />
+                    ) : (
+                      <EmptyState title="No accepted patches" body="This run ended without committing a patch." />
+                    )}
+                  </div>
+                </div>
+              ) : allRunRecommendations.length ? (
+                <div className="recommendation-grid">
+                  <div className="recommendation-block">
+                    <p className="eyebrow">Selected Run Status</p>
+                    <EmptyState
+                      title="No recommendation in selected run"
+                      body="This run finished without a recommended patch. Other runs for this scenario did produce recommendations."
+                    />
+                  </div>
+                  <div className="recommendation-block recommendation-block-wide">
+                    <p className="eyebrow">Available Recommended Runs</p>
+                    <DataTable
+                      columns={['Run', 'Success', 'Public', 'Avg turns', 'Patch fields']}
+                      rows={allRunRecommendations.map((item: any) => [
+                        item.label,
+                        pct(item.finalMetrics?.successRate),
+                        pct(item.finalMetrics?.publicVictoryRate),
+                        num(item.finalMetrics?.averageTurns),
+                        String(Object.keys(item.flattenedPatch || {}).length),
+                      ])}
+                    />
+                  </div>
+                </div>
+              ) : recommendedConfigs.length ? (
+                <DataTable
+                  columns={['Run', 'Success', 'Public', 'Avg turns', 'Accepted patches']}
+                  rows={recommendedConfigs.map((item: any) => [
+                    item.label,
+                    pct(item.finalMetrics?.successRate),
+                    pct(item.finalMetrics?.publicVictoryRate),
+                    num(item.finalMetrics?.averageTurns),
+                    String((item.acceptedPatches || []).length),
+                  ])}
+                />
+              ) : (
+                <EmptyState title="No recommendation data" body="No available run for this scenario produced a recommended patch." />
+              )}
             </Card>
           </section>
         ) : null}
