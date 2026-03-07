@@ -179,3 +179,17 @@ export interface ExperimentResult {
   recommendation: ExperimentRecommendation;
   structuralDiagnostics?: StructuralDiagnostics;
 }
+
+export interface SingleArmExperimentResult {
+  definition: ExperimentDefinition;
+  outputDir: string;
+  startedAt: string;
+  finishedAt: string;
+  durationMs: number;
+  arm: ExperimentArmSummary;
+  armLabel: ExperimentArm;
+  metadata: {
+    cached?: boolean;
+    baselinePatchApplied: boolean;
+  };
+}

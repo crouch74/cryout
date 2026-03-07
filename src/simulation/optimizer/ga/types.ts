@@ -54,6 +54,8 @@ export interface GaConfig {
   runsPerIndividual: number;
   /** Top-N individuals to promote to A/B validation after search completes. */
   topCandidates: number;
+  /** Whether to write per-generation reports for debugging. */
+  writeGenerationArtifacts?: boolean;
 }
 
 export const GA_DEFAULT_CONFIG: GaConfig = {
@@ -64,6 +66,7 @@ export const GA_DEFAULT_CONFIG: GaConfig = {
   elitism: 3,
   runsPerIndividual: 1000,
   topCandidates: 5,
+  writeGenerationArtifacts: false,
 };
 
 // ---------------------------------------------------------------------------

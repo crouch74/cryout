@@ -12,8 +12,9 @@
  */
 
 import { join } from 'node:path';
-import { runExperiment } from '../../experiments/runner.ts';
+import { runSingleArmExperiment } from '../../experiments/runner.ts';
 import type { ExperimentDefinition } from '../../experiments/types.ts';
+import { getScenarioPatchKey } from '../candidates.ts';
 import { scoreArmSummary } from '../fitness.ts';
 import { ensureDir } from '../io.ts';
 import type { OptimizerCandidate } from '../types.ts';
@@ -69,6 +70,20 @@ function pad2(value: number) {
   return String(value).padStart(2, '0');
 }
 
+function planWorkerAllocation(totalWorkers: number, jobCount: number, minWorkersPerJob = 2) {
+  if (jobCount <= 0) {
+    return { concurrency: 1, workersPerJob: Math.max(1, totalWorkers) };
+  }
+  const cappedWorkers = Math.max(1, totalWorkers);
+  const concurrency = cappedWorkers >= minWorkersPerJob
+    ? Math.max(1, Math.min(jobCount, Math.floor(cappedWorkers / minWorkersPerJob)))
+    : 1;
+  return {
+    concurrency,
+    workersPerJob: Math.max(1, Math.floor(cappedWorkers / concurrency)),
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Simulation scoring (single-arm: arm B only = the candidate patch)
 // ---------------------------------------------------------------------------
@@ -78,6 +93,7 @@ async function scoreIndividual(
   input: GaSearchInput,
   generationIndex: number,
   experimentDir: string,
+  parallelWorkers: number,
 ): Promise<GaIndividual> {
   const patch = genomeToCandidate(individual.genome);
   
@@ -110,16 +126,15 @@ async function scoreIndividual(
     },
   };
 
-  const result = await runExperiment(definition, {
+  const result = await runSingleArmExperiment(definition, {
     outDir: experimentDir,
     recordTrajectories: false,
-    parallelWorkers: input.parallelWorkers,
+    parallelWorkers,
     logMode: 'aggregated',
+    armLabel: 'B',
+    tempRootDir: join(input.outDir, 'ga_search', '.tmp'),
   });
-
-  // Score arm B (the patched scenario); arm A is the unmodified baseline
-  // used by runExperiment for comparison but we only care about arm B fitness.
-  const scoreBreakdown = scoreArmSummary(result.armB);
+  const scoreBreakdown = scoreArmSummary(result.arm);
 
   return {
     ...individual,
@@ -183,6 +198,7 @@ export async function runGaSearch(input: GaSearchInput): Promise<GaSearchResult>
 
   let population = initPopulation(config.populationSize, rng, mutationSpace);
   const generationReports: GaGenerationReport[] = [];
+  const scoreCache = new Map<string, number>();
 
   for (let gen = 1; gen <= config.generations; gen += 1) {
     console.log(`🧬 Generation ${gen}/${config.generations} simulating ${population.length} individuals`);
@@ -190,15 +206,21 @@ export async function runGaSearch(input: GaSearchInput): Promise<GaSearchResult>
     const experimentDir = join(gaDir, `generation_${pad2(gen)}`, 'experiments');
     await ensureDir(experimentDir);
 
-    // Score every individual in the population (parallel, bounded by worker count)
-    // Use at most 1 worker per individual to avoid over-subscribing the experiment pool.
-    const scoringConcurrency = Math.max(1, Math.min(input.parallelWorkers, Math.ceil(population.length / 2)));
+    const workerPlan = planWorkerAllocation(input.parallelWorkers, population.length);
+    console.log(`🧬 Generation worker plan concurrency=${workerPlan.concurrency} workers/score=${workerPlan.workersPerJob}`);
     const scored = await mapWithConcurrency(
       population,
-      scoringConcurrency,
+      workerPlan.concurrency,
       async (individual) => {
         try {
-          return await scoreIndividual(individual, input, gen, experimentDir);
+          const patchKey = getScenarioPatchKey(genomeToCandidate(individual.genome));
+          const cachedFitness = scoreCache.get(patchKey);
+          if (cachedFitness !== undefined) {
+            return { ...individual, fitness: cachedFitness, simulated: true };
+          }
+          const scoredIndividual = await scoreIndividual(individual, input, gen, experimentDir, workerPlan.workersPerJob);
+          scoreCache.set(patchKey, scoredIndividual.fitness ?? 0);
+          return scoredIndividual;
         } catch (error) {
           const err = error as Error;
           console.log(`⚠️ GA individual ${individual.id} scoring failed: ${err.message}`);
@@ -228,7 +250,9 @@ export async function runGaSearch(input: GaSearchInput): Promise<GaSearchResult>
       elitismCount: Math.min(config.elitism, scored.length),
     };
     generationReports.push(report);
-    await writeGenerationReport(join(gaDir, `generation_${pad2(gen)}`), report);
+    if (config.writeGenerationArtifacts) {
+      await writeGenerationReport(join(gaDir, `generation_${pad2(gen)}`), report);
+    }
 
     // Evolve to produce the next generation (skip after last generation)
     if (gen < config.generations) {
@@ -246,13 +270,23 @@ export async function runGaSearch(input: GaSearchInput): Promise<GaSearchResult>
   const finalSorted = [...population].sort((a, b) => (b.fitness ?? 0) - (a.fitness ?? 0));
   const promotionCount = Math.min(config.topCandidates, finalSorted.length);
 
-  const topCandidates: OptimizerCandidate[] = finalSorted
-    .slice(0, promotionCount)
-    .map((individual, rank) => ({
-      candidateId: `ga_promoted_${String(rank + 1).padStart(3, '0')}`,
+  const promotedByPatchKey = new Map<string, OptimizerCandidate>();
+  for (const individual of finalSorted) {
+    const patch = genomeToCandidate(individual.genome);
+    const patchKey = getScenarioPatchKey(patch);
+    if (promotedByPatchKey.has(patchKey)) {
+      continue;
+    }
+    promotedByPatchKey.set(patchKey, {
+      candidateId: `ga_promoted_${String(promotedByPatchKey.size).padStart(3, '0')}`,
       strategy: 'evolutionary' as const,
-      patch: genomeToCandidate(individual.genome),
-    }));
+      patch,
+    });
+    if (promotedByPatchKey.size >= promotionCount) {
+      break;
+    }
+  }
+  const topCandidates = Array.from(promotedByPatchKey.values());
 
   const bestFitness = finalSorted[0]?.fitness ?? 0;
 

@@ -77,6 +77,8 @@ interface ScenarioMutationConfig {
   supportedPaths: Set<string>;
 }
 
+const SCENARIO_MUTATION_CONFIG_CACHE = new Map<string, ScenarioMutationConfig>();
+
 function stableHash(value: string) {
   let hash = 2166136261 >>> 0;
   for (let index = 0; index < value.length; index += 1) {
@@ -121,17 +123,23 @@ function hasMutationPath(config: ScenarioMutationConfig, path: string) {
 }
 
 function createScenarioMutationConfig(scenarioId: string): ScenarioMutationConfig {
+  const cached = SCENARIO_MUTATION_CONFIG_CACHE.get(scenarioId);
+  if (cached) {
+    return cached;
+  }
   const ruleset = getRulesetDefinition(scenarioId);
   if (!ruleset) {
     throw new Error(`Unknown scenario: ${scenarioId}`);
   }
 
   const mutationSpace = buildMutationSpaceFromScenario(ruleset);
-  return {
+  const config = {
     allowCatastrophicCap: scenarioHasCatastrophicCap(ruleset),
     mutationSpace,
     supportedPaths: new Set(mutationSpace.map((entry) => entry.path)),
   };
+  SCENARIO_MUTATION_CONFIG_CACHE.set(scenarioId, config);
+  return config;
 }
 
 function toGenome(patch: ScenarioPatch | null, config: ScenarioMutationConfig): PatchGenome {
@@ -340,7 +348,7 @@ function normalizeValue(value: unknown): unknown {
   return value;
 }
 
-function serializePatch(patch: ScenarioPatch) {
+export function getScenarioPatchKey(patch: ScenarioPatch) {
   return JSON.stringify(normalizeValue(patch) ?? {});
 }
 
@@ -647,7 +655,7 @@ export async function generateCandidatePatches(input: CandidateGenerationInput):
     if (!ruleset || !validateScenarioPatch(normalized, ruleset)) {
       return;
     }
-    const key = serializePatch(normalized);
+    const key = getScenarioPatchKey(normalized);
     if (dedup.has(key)) {
       return;
     }

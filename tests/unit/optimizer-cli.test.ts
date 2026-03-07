@@ -1,6 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildConfig, parseArgs, renderHelpManual } from '../../src/simulation/optimizer/cli.ts';
+import {
+  buildConfig,
+  getInteractiveGaDefaults,
+  getInteractivePlayerCountsDefault,
+  parseArgs,
+  renderResolvedOptimizerCommand,
+  renderHelpManual,
+} from '../../src/simulation/optimizer/cli.ts';
 
 test('optimizer CLI parser reads all explicit flags', () => {
   const parsed = parseArgs([
@@ -185,3 +192,77 @@ test('optimizer buildConfig applies player counts from CLI', async () => {
   assert.deepStrictEqual(config.playerCounts, [2, 4]);
 });
 
+test('interactive player-count selector starts empty unless a prior selection exists', () => {
+  assert.deepStrictEqual(getInteractivePlayerCountsDefault(undefined), []);
+  assert.deepStrictEqual(getInteractivePlayerCountsDefault([2]), [2]);
+  assert.deepStrictEqual(getInteractivePlayerCountsDefault([2, 4]), [2, 4]);
+});
+
+test('interactive GA defaults mirror CLI prefill or GA defaults', () => {
+  assert.deepStrictEqual(getInteractiveGaDefaults({}), {
+    gaPopulation: 30,
+    gaGenerations: 10,
+    gaRuns: 1000,
+    gaTopCandidates: 5,
+    gaMutationRate: 0.15,
+    gaCrossoverRate: 0.6,
+    gaElitism: 3,
+  });
+
+  assert.deepStrictEqual(getInteractiveGaDefaults({
+    gaPopulation: 12,
+    gaGenerations: 4,
+    gaRuns: 250,
+    gaTopCandidates: 2,
+    gaMutationRate: 0.25,
+    gaCrossoverRate: 0.75,
+    gaElitism: 1,
+  }), {
+    gaPopulation: 12,
+    gaGenerations: 4,
+    gaRuns: 250,
+    gaTopCandidates: 2,
+    gaMutationRate: 0.25,
+    gaCrossoverRate: 0.75,
+    gaElitism: 1,
+  });
+});
+
+test('renderResolvedOptimizerCommand includes resolved GA parameters when GA search is active', async () => {
+  const config = await buildConfig([
+    '--scenario', 'stones_cry_out',
+    '--iterations', '2',
+    '--baseline-runs', '3000',
+    '--candidate-runs', '1500',
+    '--candidates', '8',
+    '--patience', '2',
+    '--seed', '2026',
+    '--parallel-workers', '3',
+    '--out', '/tmp/stones-opt',
+    '--mode', 'liberation',
+    '--runtime', 'fast',
+    '--significance', 'balanced',
+    '--strategy', 'full_optimizer',
+    '--search-mode', 'evolutionary',
+    '--players', '2,4',
+    '--population', '12',
+    '--generations', '4',
+    '--ga-runs', '250',
+    '--top-candidates', '2',
+    '--mutation-rate', '0.25',
+    '--crossover-rate', '0.75',
+    '--elitism', '1',
+  ]);
+
+  const command = renderResolvedOptimizerCommand(config);
+  assert.match(command, /^npm run optimize -- --scenario stones_cry_out /);
+  assert.match(command, /--players 2,4/);
+  assert.match(command, /--search-mode evolutionary/);
+  assert.match(command, /--population 12/);
+  assert.match(command, /--generations 4/);
+  assert.match(command, /--ga-runs 250/);
+  assert.match(command, /--top-candidates 2/);
+  assert.match(command, /--mutation-rate 0.25/);
+  assert.match(command, /--crossover-rate 0.75/);
+  assert.match(command, /--elitism 1/);
+});

@@ -1,11 +1,11 @@
 import { join } from 'node:path';
 import { getRulesetDefinition, listRulesets } from '../../engine/index.ts';
 import type { ScenarioPatch } from '../experiments/patchDsl.ts';
-import { runExperiment } from '../experiments/runner.ts';
+import { runExperiment, runSingleArmExperiment } from '../experiments/runner.ts';
 import type { ExperimentArmSummary, ExperimentDefinition, MetricComparison } from '../experiments/types.ts';
 import { summarizeTrajectories } from '../trajectory/analyzeTrajectories.ts';
 import type { TrajectorySummary } from '../trajectory/types.ts';
-import { generateCandidatePatches, normalizeScenarioPatch } from './candidates.ts';
+import { generateCandidatePatches, getScenarioPatchKey, normalizeScenarioPatch } from './candidates.ts';
 import {
   choosePrimaryMetricForGate,
   directionTowardRange,
@@ -28,10 +28,12 @@ import type {
   AllScenariosParallelScenarioSummary,
   OptimizerAnalysis,
   OptimizerCandidateEvaluation,
+  OptimizerCandidateEvaluationCacheEntry,
   OptimizerConfig,
   OptimizerFinalReport,
   OptimizerFinalMetrics,
   OptimizerGateDecision,
+  OptimizerIterationCache,
   OptimizerIterationResult,
   OptimizerScoreBreakdown,
   OptimizerSignificanceMode,
@@ -57,6 +59,20 @@ function formatProgressPercent(completed: number, total: number) {
     return '100.0';
   }
   return ((completed / total) * 100).toFixed(1);
+}
+
+function planWorkerAllocation(totalWorkers: number, jobCount: number, minWorkersPerJob = 2) {
+  if (jobCount <= 0) {
+    return { concurrency: 1, workersPerJob: Math.max(1, totalWorkers) };
+  }
+  const cappedWorkers = Math.max(1, totalWorkers);
+  const concurrency = cappedWorkers >= minWorkersPerJob
+    ? Math.max(1, Math.min(jobCount, Math.floor(cappedWorkers / minWorkersPerJob)))
+    : 1;
+  return {
+    concurrency,
+    workersPerJob: Math.max(1, Math.floor(cappedWorkers / concurrency)),
+  };
 }
 
 async function mapWithConcurrency<T, R>(
@@ -395,6 +411,18 @@ async function summarizeBaselineTrajectories(
   }
 }
 
+function createPendingGate(scoreDeltaFromBaseline: number): OptimizerGateDecision {
+  return {
+    accepted: false,
+    primaryMetric: choosePrimaryMetricForGate(),
+    statisticallyMeaningful: false,
+    fitnessLiftPassed: scoreDeltaFromBaseline > 0,
+    guardrailsPassed: true,
+    movedTowardTarget: scoreDeltaFromBaseline > 0,
+    reasons: ['Ranked via single-arm scoring; full A/B confirmation has not run.'],
+  };
+}
+
 function evaluateGate(input: {
   baselineMetrics: ExperimentArmSummary;
   candidateMetrics: ExperimentArmSummary;
@@ -576,8 +604,9 @@ export async function runAllScenariosParallelDiagnostics(config: OptimizerConfig
     scenarioCount: rulesets.length,
   });
 
-  const scenarioConcurrency = Math.max(1, Math.min(config.parallelWorkers, rulesets.length));
-  const workersPerScenarioOptimizer = Math.max(1, Math.floor(config.parallelWorkers / scenarioConcurrency));
+  const scenarioPlan = planWorkerAllocation(config.parallelWorkers, rulesets.length, 2);
+  const scenarioConcurrency = scenarioPlan.concurrency;
+  const workersPerScenarioOptimizer = scenarioPlan.workersPerJob;
   console.log(`🧠 All-scenarios parallel optimization start scenarios=${rulesets.length} concurrency=${scenarioConcurrency}`);
   console.log(`🧠 Worker budget per scenario optimizer=${workersPerScenarioOptimizer}`);
 
@@ -675,12 +704,12 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
   let stopReason: OptimizerStopReason = 'max_iterations_reached';
   let hillClimbSourcePatch: ScenarioPatch | null = null;
   let iterationsCompleted = 0;
-  const estimatedTotalExperiments = (config.iterations * (1 + config.candidates)) + 1;
+  const estimatedTotalExperiments = config.iterations * (2 + config.candidates);
   let completedExperiments = 0;
 
   console.log(`🧠 Run start scenario=${config.scenarioId} strategy=${config.strategy} runtime=${config.runtime}`);
   console.log(`🧠 Parallel workers configured=${config.parallelWorkers}`);
-  console.log(`🧠 Estimated experiment workload=${estimatedTotalExperiments} (baselines + candidates + final confirmation)`);
+  console.log(`🧠 Estimated experiment workload=${estimatedTotalExperiments} (baselines + candidate scoring + selected confirmations)`);
 
   for (let iteration = 1; iteration <= config.iterations; iteration += 1) {
     iterationsCompleted = iteration;
@@ -689,152 +718,166 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
 
     const iterationDir = join(outputDir, `iteration_${pad2(iteration)}`);
     const experimentsDir = join(iterationDir, 'experiments');
+    const tempRootDir = join(iterationDir, '.tmp');
     await ensureDir(experimentsDir);
+    await ensureDir(tempRootDir);
 
-      const baselineExperimentId = `optimizer_${config.scenarioId}_iter_${pad2(iteration)}_baseline`;
-      const baselineDefinition = createExperimentDefinition({
-        id: baselineExperimentId,
-        title: `Optimizer baseline iteration ${iteration}`,
-        scenarioId: config.scenarioId,
-        patch: { note: '📊 Baseline control patch (no-op)' },
-        runsPerArm: config.baselineRuns,
-        seed: mixSeed(config.seed, stableHash(`baseline:${iteration}`)),
-        confidence: getSignificanceThresholds(config.significance).confidence,
-        primary: 'successRate',
-        victoryModes: config.victoryModes,
-        playerCounts: config.playerCounts,
-      });
+    const baselineExperimentId = `optimizer_${config.scenarioId}_iter_${pad2(iteration)}_baseline`;
+    const baselineDefinition = createExperimentDefinition({
+      id: baselineExperimentId,
+      title: `Optimizer baseline iteration ${iteration}`,
+      scenarioId: config.scenarioId,
+      patch: { note: '📊 Baseline control patch (no-op)' },
+      runsPerArm: config.baselineRuns,
+      seed: mixSeed(config.seed, stableHash(`baseline:${iteration}`)),
+      confidence: getSignificanceThresholds(config.significance).confidence,
+      primary: 'successRate',
+      victoryModes: config.victoryModes,
+      playerCounts: config.playerCounts,
+    });
 
-      console.log('📊 Running baseline simulation');
-      const baselineResult = await runExperiment(baselineDefinition, {
-        outDir: experimentsDir,
-        recordTrajectories: true,
-        parallelWorkers: config.parallelWorkers,
-        logMode: 'aggregated',
-        baselinePatch: accumulatedPatch,
-      });
-      completedExperiments += 1;
-      console.log(`🔁 Overall run progress ${completedExperiments}/${estimatedTotalExperiments} (${formatProgressPercent(completedExperiments, estimatedTotalExperiments)}%) after baseline`);
-      console.log('📊 Baseline metrics computed');
+    console.log('📊 Running baseline simulation');
+    const baselineResult = await runExperiment(baselineDefinition, {
+      outDir: experimentsDir,
+      recordTrajectories: true,
+      parallelWorkers: config.parallelWorkers,
+      logMode: 'aggregated',
+      baselinePatch: accumulatedPatch,
+      tempRootDir,
+    });
+    completedExperiments += 1;
+    console.log(`🔁 Overall run progress ${completedExperiments}/${estimatedTotalExperiments} (${formatProgressPercent(completedExperiments, estimatedTotalExperiments)}%) after baseline`);
+    console.log('📊 Baseline metrics computed');
 
-      const baselineMetrics = baselineResult.armA;
-      const baselineScore = scoreArmSummary(baselineMetrics);
-      await writeJson(join(iterationDir, 'baseline_summary.json'), {
-        metrics: baselineMetrics,
-        score: baselineScore,
-      });
+    const baselineMetrics = baselineResult.armA;
+    const baselineScore = scoreArmSummary(baselineMetrics);
+    const iterationCache: OptimizerIterationCache = {
+      baselineMetrics,
+      baselineScore,
+      candidateEvaluationsByPatchKey: {},
+    };
 
-      const analysis = analyzeBaselineMetrics(baselineMetrics, baselineScore);
-      await writeJson(join(iterationDir, 'analysis.json'), analysis);
-      console.log(`📊 Analysis summary: ${analysis.insights.join(' | ') || 'No major imbalances detected'}`);
+    await writeJson(join(iterationDir, 'baseline_summary.json'), {
+      metrics: baselineMetrics,
+      score: baselineScore,
+    });
 
-      console.log('🧭 Exploring victory trajectories');
-      const trajectorySummary = await summarizeBaselineTrajectories(baselineResult.outputDir, config.scenarioId);
-      await writeJson(join(iterationDir, 'trajectory_summary.json'), trajectorySummary);
-      await writeJson(join(iterationDir, 'victory_trajectory_analysis.json'), trajectorySummary
-        ? {
-          averageRoundVictory: trajectorySummary.averageRoundVictory,
-          distributionOfVictoryRounds: trajectorySummary.distributionOfVictoryRounds,
-          progressBeforeVictory: trajectorySummary.progressBeforeVictory,
-          actionsLeadingToVictory: trajectorySummary.topActionSequences,
-        }
-        : null);
-      if (trajectorySummary?.mostCommonActionSequence) {
-        console.log(`🧭 Most common sequence: ${trajectorySummary.mostCommonActionSequence.sequence}`);
-      } else {
-        console.log('🧭 No baseline trajectories captured in this iteration');
+    const analysis = analyzeBaselineMetrics(baselineMetrics, baselineScore);
+    await writeJson(join(iterationDir, 'analysis.json'), analysis);
+    console.log(`📊 Analysis summary: ${analysis.insights.join(' | ') || 'No major imbalances detected'}`);
+
+    console.log('🧭 Exploring victory trajectories');
+    const trajectorySummary = await summarizeBaselineTrajectories(baselineResult.outputDir, config.scenarioId);
+    await writeJson(join(iterationDir, 'trajectory_summary.json'), trajectorySummary);
+    await writeJson(join(iterationDir, 'victory_trajectory_analysis.json'), trajectorySummary
+      ? {
+        averageRoundVictory: trajectorySummary.averageRoundVictory,
+        distributionOfVictoryRounds: trajectorySummary.distributionOfVictoryRounds,
+        progressBeforeVictory: trajectorySummary.progressBeforeVictory,
+        actionsLeadingToVictory: trajectorySummary.topActionSequences,
       }
+      : null);
+    if (trajectorySummary?.mostCommonActionSequence) {
+      console.log(`🧭 Most common sequence: ${trajectorySummary.mostCommonActionSequence.sequence}`);
+    } else {
+      console.log('🧭 No baseline trajectories captured in this iteration');
+    }
 
-      if (baselineScore.allTargetsInRange) {
-        stopReason = 'targets_reached';
-        history.push({
-          iteration,
-          baselineScenarioId: config.scenarioId,
-          baselineExperimentId,
-          baselineMetrics,
-          baselineScore,
-          analysis,
-          trajectorySummary,
-          candidateCount: 0,
-          rankings: [],
-          selectedCandidate: null,
-          acceptedCandidate: null,
-          noImprovementStreak,
-        });
-        console.log('🏆 Baseline already satisfies all target ranges');
-        break;
-      }
-
-      console.log('🧠 Generating candidate rule patches');
-      let candidates = await generateCandidatePatches({
-        scenarioId: config.scenarioId,
+    if (baselineScore.allTargetsInRange) {
+      stopReason = 'targets_reached';
+      history.push({
         iteration,
-        seed: config.seed,
-        targetCount: config.searchMode === 'evolutionary' ? 0 : config.candidates,
-        candidateRuns: config.candidateRuns,
-        runtime: config.runtime,
-        strategyMode: config.strategy,
+        baselineScenarioId: config.scenarioId,
+        baselineExperimentId,
+        baselineMetrics,
+        baselineScore,
         analysis,
         trajectorySummary,
-        hillClimbSourcePatch,
-        balanceSeedOutputDir: join(iterationDir, 'balance_seed'),
-        useBalanceSearchSeeding: config.useBalanceSearchSeeding ?? true,
+        candidateCount: 0,
+        rankings: [],
+        selectedCandidate: null,
+        acceptedCandidate: null,
+        noImprovementStreak,
       });
+      console.log('🏆 Baseline already satisfies all target ranges');
+      break;
+    }
 
-      // -----------------------------------------------------------------------
-      // 🧬 GA Evolutionary Search Phase
-      // -----------------------------------------------------------------------
-      const activeSearchMode = config.searchMode ?? 'local';
-      if (activeSearchMode === 'evolutionary' || activeSearchMode === 'hybrid') {
-        const gaConfig = { ...GA_DEFAULT_CONFIG, ...(config.gaConfig ?? {}) };
-        console.log(`🧬 GA search starting searchMode=${activeSearchMode} population=${gaConfig.populationSize} generations=${gaConfig.generations}`);
-        try {
-          const gaResult = await runGaSearch({
-            scenarioId: config.scenarioId,
-            iteration,
-            seed: mixSeed(config.seed, stableHash(`ga-search:${iteration}`)),
-            config: gaConfig,
-            parallelWorkers: config.parallelWorkers,
-            victoryModes: config.victoryModes as string[],
-            playerCounts: config.playerCounts,
-            outDir: iterationDir,
-          });
-          await writeJson(join(iterationDir, 'ga_search_report.json'), gaResult);
+    console.log('🧠 Generating candidate rule patches');
+    let candidates = await generateCandidatePatches({
+      scenarioId: config.scenarioId,
+      iteration,
+      seed: config.seed,
+      targetCount: config.searchMode === 'evolutionary' ? 0 : config.candidates,
+      candidateRuns: config.candidateRuns,
+      runtime: config.runtime,
+      strategyMode: config.strategy,
+      analysis,
+      trajectorySummary,
+      hillClimbSourcePatch,
+      balanceSeedOutputDir: join(iterationDir, 'balance_seed'),
+      useBalanceSearchSeeding: config.useBalanceSearchSeeding ?? true,
+    });
 
-          if (activeSearchMode === 'evolutionary') {
-            // Pure GA: replace all candidates with GA promotions
-            candidates = gaResult.topCandidates;
-            console.log(`🧬 GA search complete: replaced candidate pool with ${candidates.length} GA-promoted candidates`);
-          } else {
-            // Hybrid: merge GA candidates into existing pool (dedup by patch)
-            const existingKeys = new Set(candidates.map((c) => JSON.stringify(normalizeScenarioPatch(c.patch))));
-            const newGaCandidates = gaResult.topCandidates.filter(
-              (c) => !existingKeys.has(JSON.stringify(normalizeScenarioPatch(c.patch))),
-            );
-            candidates = [...candidates, ...newGaCandidates];
-            console.log(`🧬 GA search complete: merged ${newGaCandidates.length} new GA candidates (total=${candidates.length})`);
-          }
-        } catch (error) {
-          const err = error as Error;
-          console.log(`⚠️ GA search failed iteration=${iteration}: ${err.message}`);
+    const activeSearchMode = config.searchMode ?? 'local';
+    if (activeSearchMode === 'evolutionary' || activeSearchMode === 'hybrid') {
+      const gaConfig = { ...GA_DEFAULT_CONFIG, ...(config.gaConfig ?? {}) };
+      console.log(`🧬 GA search starting searchMode=${activeSearchMode} population=${gaConfig.populationSize} generations=${gaConfig.generations}`);
+      try {
+        const gaResult = await runGaSearch({
+          scenarioId: config.scenarioId,
+          iteration,
+          seed: mixSeed(config.seed, stableHash(`ga-search:${iteration}`)),
+          config: gaConfig,
+          parallelWorkers: config.parallelWorkers,
+          victoryModes: config.victoryModes as string[],
+          playerCounts: config.playerCounts,
+          outDir: iterationDir,
+        });
+        await writeJson(join(iterationDir, 'ga_search_report.json'), gaResult);
+
+        if (activeSearchMode === 'evolutionary') {
+          candidates = gaResult.topCandidates;
+          console.log(`🧬 GA search complete: replaced candidate pool with ${candidates.length} GA-promoted candidates`);
+        } else {
+          candidates = [...candidates, ...gaResult.topCandidates];
+          console.log(`🧬 GA search complete: merged GA candidates before dedup (total=${candidates.length})`);
         }
+      } catch (error) {
+        const err = error as Error;
+        console.log(`⚠️ GA search failed iteration=${iteration}: ${err.message}`);
       }
+    }
 
-      await writeJson(join(iterationDir, 'candidate_patches.json'), candidates);
-      console.log(`🧠 ${candidates.length} candidates created`);
+    const dedupedCandidates = new Map<string, typeof candidates[number]>();
+    for (const candidate of candidates) {
+      const patchKey = getScenarioPatchKey(candidate.patch);
+      if (!dedupedCandidates.has(patchKey)) {
+        dedupedCandidates.set(patchKey, candidate);
+      }
+    }
+    candidates = Array.from(dedupedCandidates.values());
+    await writeJson(join(iterationDir, 'candidate_patches.json'), candidates);
+    console.log(`🧠 ${candidates.length} candidates created after dedup`);
 
-      const candidateConcurrency = Math.max(1, Math.min(config.parallelWorkers, candidates.length));
-      const workersPerCandidateExperiment = Math.max(1, Math.floor(config.parallelWorkers / candidateConcurrency));
-      console.log(`🧪 Candidate pool concurrency=${candidateConcurrency} workers/experiment=${workersPerCandidateExperiment}`);
-      let completedCandidateExperiments = 0;
-      const candidateProgressInterval = Math.max(1, Math.floor(candidates.length / 5));
-      const candidateEvaluationResults = await mapWithConcurrency(
-        candidates,
-        candidateConcurrency,
-        async (candidate, candidateIndex): Promise<OptimizerCandidateEvaluation | null> => {
+    const workerPlan = planWorkerAllocation(config.parallelWorkers, candidates.length, 2);
+    console.log(`🧪 Candidate pool concurrency=${workerPlan.concurrency} workers/score=${workerPlan.workersPerJob}`);
+    let completedCandidateExperiments = 0;
+    const candidateProgressInterval = Math.max(1, Math.floor(Math.max(1, candidates.length) / 5));
+    const candidateEvaluationResults = await mapWithConcurrency(
+      candidates,
+      workerPlan.concurrency,
+      async (candidate, candidateIndex): Promise<OptimizerCandidateEvaluation | null> => {
+        const patchKey = getScenarioPatchKey(candidate.patch);
+        const cachedEntry = iterationCache.candidateEvaluationsByPatchKey[patchKey];
+        if (cachedEntry) {
+          completedCandidateExperiments += 1;
+          return { ...cachedEntry.evaluation, candidateId: candidate.candidateId, strategy: candidate.strategy, cached: true };
+        }
+
         const candidateExperimentId = `optimizer_${config.scenarioId}_iter_${pad2(iteration)}_${candidate.candidateId}`;
         if (candidateIndex === 0) {
-          console.log(`🧪 Running candidate experiments (${candidates.length} total)`);
+          console.log(`🧪 Running candidate single-arm scoring (${candidates.length} total)`);
         }
         try {
           const definition = createExperimentDefinition({
@@ -849,42 +892,43 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
             victoryModes: config.victoryModes,
             playerCounts: config.playerCounts,
           });
-          const result = await runExperiment(definition, {
+          const result = await runSingleArmExperiment(definition, {
             outDir: experimentsDir,
             recordTrajectories: false,
-            parallelWorkers: workersPerCandidateExperiment,
+            parallelWorkers: workerPlan.workersPerJob,
             logMode: 'aggregated',
             baselinePatch: accumulatedPatch,
+            armLabel: 'B',
+            tempRootDir,
           });
           completedExperiments += 1;
           console.log(`🔁 Overall run progress ${completedExperiments}/${estimatedTotalExperiments} (${formatProgressPercent(completedExperiments, estimatedTotalExperiments)}%)`);
-          const scoreBreakdown = scoreArmSummary(result.armB);
-          const gate = evaluateGate({
-            baselineMetrics,
-            candidateMetrics: result.armB,
-            baselineScore,
-            candidateScore: scoreBreakdown,
-            comparison: result.comparison,
-            significance: config.significance,
-          });
+          const scoreBreakdown = scoreArmSummary(result.arm);
           const scoreDeltaFromBaseline = roundTo(scoreBreakdown.score - baselineScore.score);
-          completedCandidateExperiments += 1;
-          if (completedCandidateExperiments % candidateProgressInterval === 0 || completedCandidateExperiments === candidates.length) {
-            console.log(`📊 Candidate batch progress ${completedCandidateExperiments}/${candidates.length}`);
-          }
-
-          return {
+          const evaluation: OptimizerCandidateEvaluation = {
             candidateId: candidate.candidateId,
             strategy: candidate.strategy,
             experimentId: candidateExperimentId,
             outputDir: result.outputDir,
+            evaluationMode: 'single_arm',
+            patchKey,
+            cached: false,
             patch: candidate.patch,
-            metrics: result.armB,
-            comparison: result.comparison,
+            metrics: result.arm,
+            comparison: null,
             scoreBreakdown,
             scoreDeltaFromBaseline,
-            gate,
+            gate: createPendingGate(scoreDeltaFromBaseline),
           };
+          iterationCache.candidateEvaluationsByPatchKey[patchKey] = {
+            patchKey,
+            evaluation,
+          } satisfies OptimizerCandidateEvaluationCacheEntry;
+          completedCandidateExperiments += 1;
+          if (completedCandidateExperiments % candidateProgressInterval === 0 || completedCandidateExperiments === candidates.length) {
+            console.log(`📊 Candidate batch progress ${completedCandidateExperiments}/${candidates.length}`);
+          }
+          return evaluation;
         } catch (error) {
           const err = error as Error;
           console.log(`⚠️ Candidate ${candidate.candidateId} skipped: ${err.message}`);
@@ -895,115 +939,159 @@ export async function runScenarioOptimizer(config: OptimizerConfig): Promise<Opt
           return null;
         }
       },
-      );
+    );
 
-      const evaluations = candidateEvaluationResults
-        .filter((entry): entry is OptimizerCandidateEvaluation => entry !== null);
+    const evaluations = candidateEvaluationResults.filter((entry): entry is OptimizerCandidateEvaluation => entry !== null);
+    const rankings = evaluations
+      .slice()
+      .sort((left, right) => {
+        if (right.scoreBreakdown.score !== left.scoreBreakdown.score) {
+          return right.scoreBreakdown.score - left.scoreBreakdown.score;
+        }
+        if (right.scoreDeltaFromBaseline !== left.scoreDeltaFromBaseline) {
+          return right.scoreDeltaFromBaseline - left.scoreDeltaFromBaseline;
+        }
+        return left.candidateId.localeCompare(right.candidateId);
+      });
 
-      const rankings = evaluations
-        .slice()
-        .sort((left, right) => {
-          if (right.scoreBreakdown.score !== left.scoreBreakdown.score) {
-            return right.scoreBreakdown.score - left.scoreBreakdown.score;
-          }
-          if (right.scoreDeltaFromBaseline !== left.scoreDeltaFromBaseline) {
-            return right.scoreDeltaFromBaseline - left.scoreDeltaFromBaseline;
-          }
-          return left.candidateId.localeCompare(right.candidateId);
-        });
-      await writeJson(join(iterationDir, 'candidate_rankings.json'), rankings);
-
-      const selectedCandidate = rankings[0] ?? null;
-      let acceptedCandidate: OptimizerCandidateEvaluation | null = null;
-      if (selectedCandidate?.gate.accepted) {
-        acceptedCandidate = selectedCandidate;
-        accumulatedPatch = mergeScenarioPatches(accumulatedPatch, selectedCandidate.patch);
-        hillClimbSourcePatch = selectedCandidate.patch;
-        noImprovementStreak = 0;
-        acceptedPatches.push({
-          iteration,
-          candidateId: selectedCandidate.candidateId,
-          strategy: selectedCandidate.strategy,
-          score: selectedCandidate.scoreBreakdown.score,
-          scoreDeltaFromBaseline: selectedCandidate.scoreDeltaFromBaseline,
+    let selectedCandidate = rankings[0] ?? null;
+    let acceptedCandidate: OptimizerCandidateEvaluation | null = null;
+    if (selectedCandidate) {
+      console.log(`🧪 Confirming top candidate via A/B candidate=${selectedCandidate.candidateId}`);
+      try {
+        const confirmationDefinition = createExperimentDefinition({
+          id: `${selectedCandidate.experimentId}_confirm`,
+          title: `Optimizer confirmation ${selectedCandidate.candidateId}`,
+          scenarioId: config.scenarioId,
           patch: selectedCandidate.patch,
+          runsPerArm: config.candidateRuns,
+          seed: mixSeed(config.seed, stableHash(`candidate-confirm:${iteration}:${selectedCandidate.candidateId}`)),
+          confidence: getSignificanceThresholds(config.significance).confidence,
+          primary: choosePrimaryMetricForGate(),
+          victoryModes: config.victoryModes,
+          playerCounts: config.playerCounts,
         });
-        console.log(`🏆 New best configuration discovered candidate=${selectedCandidate.candidateId}`);
-      } else {
+        const confirmation = await runExperiment(confirmationDefinition, {
+          outDir: experimentsDir,
+          recordTrajectories: false,
+          parallelWorkers: config.parallelWorkers,
+          logMode: 'aggregated',
+          baselinePatch: accumulatedPatch,
+          tempRootDir,
+        });
+        completedExperiments += 1;
+        console.log(`🔁 Overall run progress ${completedExperiments}/${estimatedTotalExperiments} (${formatProgressPercent(completedExperiments, estimatedTotalExperiments)}%) after confirmation`);
+        const scoreBreakdown = scoreArmSummary(confirmation.armB);
+        const gate = evaluateGate({
+          baselineMetrics,
+          candidateMetrics: confirmation.armB,
+          baselineScore,
+          candidateScore: scoreBreakdown,
+          comparison: confirmation.comparison,
+          significance: config.significance,
+        });
+        const confirmedEvaluation: OptimizerCandidateEvaluation = {
+          ...selectedCandidate,
+          experimentId: confirmationDefinition.id,
+          outputDir: confirmation.outputDir,
+          evaluationMode: 'ab_confirmed',
+          cached: false,
+          metrics: confirmation.armB,
+          comparison: confirmation.comparison,
+          scoreBreakdown,
+          scoreDeltaFromBaseline: roundTo(scoreBreakdown.score - baselineScore.score),
+          gate,
+        };
+        selectedCandidate = confirmedEvaluation;
+        const selectedIndex = rankings.findIndex((entry) => entry.patchKey === confirmedEvaluation.patchKey);
+        if (selectedIndex >= 0) {
+          rankings[selectedIndex] = confirmedEvaluation;
+        }
+        if (confirmedEvaluation.gate.accepted) {
+          acceptedCandidate = confirmedEvaluation;
+          accumulatedPatch = mergeScenarioPatches(accumulatedPatch, confirmedEvaluation.patch);
+          hillClimbSourcePatch = confirmedEvaluation.patch;
+          noImprovementStreak = 0;
+          acceptedPatches.push({
+            iteration,
+            candidateId: confirmedEvaluation.candidateId,
+            strategy: confirmedEvaluation.strategy,
+            score: confirmedEvaluation.scoreBreakdown.score,
+            scoreDeltaFromBaseline: confirmedEvaluation.scoreDeltaFromBaseline,
+            patch: confirmedEvaluation.patch,
+          });
+          console.log(`🏆 New best configuration discovered candidate=${confirmedEvaluation.candidateId}`);
+        } else {
+          noImprovementStreak += 1;
+          console.log(`🔁 No significant improvement accepted (streak=${noImprovementStreak})`);
+        }
+      } catch (error) {
+        const err = error as Error;
         noImprovementStreak += 1;
-        console.log(`🔁 No significant improvement accepted (streak=${noImprovementStreak})`);
+        console.log(`⚠️ Candidate confirmation failed ${selectedCandidate.candidateId}: ${err.message}`);
       }
+    } else {
+      noImprovementStreak += 1;
+      console.log(`🔁 No candidate evaluations produced (streak=${noImprovementStreak})`);
+    }
 
-      await writeJson(join(iterationDir, 'selected_candidate.json'), {
-        selectedCandidate,
-        acceptedCandidate,
-        noImprovementStreak,
-        accumulatedPatch,
-      });
+    await writeJson(join(iterationDir, 'candidate_rankings.json'), rankings);
+    await writeJson(join(iterationDir, 'selected_candidate.json'), {
+      selectedCandidate,
+      acceptedCandidate,
+      noImprovementStreak,
+      accumulatedPatch,
+    });
 
-      history.push({
-        iteration,
-        baselineScenarioId: config.scenarioId,
-        baselineExperimentId,
-        baselineMetrics,
-        baselineScore,
-        analysis,
-        trajectorySummary,
-        candidateCount: candidates.length,
-        rankings,
-        selectedCandidate,
-        acceptedCandidate,
-        noImprovementStreak,
-      });
+    history.push({
+      iteration,
+      baselineScenarioId: config.scenarioId,
+      baselineExperimentId,
+      baselineMetrics,
+      baselineScore,
+      analysis,
+      trajectorySummary,
+      candidateCount: candidates.length,
+      rankings,
+      selectedCandidate,
+      acceptedCandidate,
+      noImprovementStreak,
+    });
 
-      if (acceptedCandidate?.scoreBreakdown.allTargetsInRange) {
-        stopReason = 'targets_reached';
-        console.log('🏆 Target metric ranges reached by accepted candidate');
-        break;
-      }
+    if (acceptedCandidate?.scoreBreakdown.allTargetsInRange) {
+      stopReason = 'targets_reached';
+      console.log('🏆 Target metric ranges reached by accepted candidate');
+      break;
+    }
 
-      if (noImprovementStreak >= config.patience) {
-        stopReason = 'no_significant_improvement';
-        console.log('🔁 Patience limit reached without meaningful improvement');
-        break;
-      }
+    if (noImprovementStreak >= config.patience) {
+      stopReason = 'no_significant_improvement';
+      console.log('🔁 Patience limit reached without meaningful improvement');
+      break;
+    }
   }
 
   if (history.length > 0 && stopReason === 'max_iterations_reached') {
     console.log('🔁 Maximum iterations reached');
   }
 
-  const finalExperimentId = `optimizer_${config.scenarioId}_final_confirmation`;
-  console.log('📊 Running final baseline confirmation');
-  const result = await runExperiment(
-    createExperimentDefinition({
-      id: finalExperimentId,
-      title: 'Optimizer final confirmation',
-      scenarioId: config.scenarioId,
-      patch: { note: '📊 Final confirmation control patch (no-op)' },
-      runsPerArm: config.baselineRuns,
-      seed: mixSeed(config.seed, stableHash('final-confirmation')),
-      confidence: getSignificanceThresholds(config.significance).confidence,
-      primary: 'successRate',
-      victoryModes: config.victoryModes,
-      playerCounts: config.playerCounts,
-    }),
-    {
-      outDir: join(outputDir, 'final_confirmation'),
-      recordTrajectories: false,
-      parallelWorkers: config.parallelWorkers,
-      logMode: 'aggregated',
-      baselinePatch: accumulatedPatch,
-    },
-  );
-  completedExperiments += 1;
-  console.log(`🔁 Overall run progress ${completedExperiments}/${estimatedTotalExperiments} (${formatProgressPercent(completedExperiments, estimatedTotalExperiments)}%) after final confirmation`);
+  const lastIteration = history[history.length - 1];
+  const finalSourceMetrics = lastIteration?.acceptedCandidate?.metrics
+    ?? lastIteration?.baselineMetrics;
+  const finalSourceScore = lastIteration?.acceptedCandidate?.scoreBreakdown
+    ?? lastIteration?.baselineScore;
+  const finalExperimentId = lastIteration?.acceptedCandidate?.experimentId
+    ?? lastIteration?.baselineExperimentId
+    ?? `optimizer_${config.scenarioId}_final_cached`;
+  if (!finalSourceMetrics || !finalSourceScore) {
+    throw new Error('Optimizer completed without final metrics to report.');
+  }
   const finalMetrics: OptimizerFinalMetrics = {
     scenarioId: config.scenarioId,
     baselineScenarioId: config.scenarioId,
     experimentId: finalExperimentId,
-    metrics: result.armA,
-    score: scoreArmSummary(result.armA),
+    metrics: finalSourceMetrics,
+    score: finalSourceScore,
   };
 
   const report: OptimizerFinalReport = {

@@ -46,6 +46,7 @@ test('scenario optimizer writes iteration artifacts and final recommendation', a
   await stat(join(report.outputDir, 'iteration_01', 'candidate_patches.json'));
   await stat(join(report.outputDir, 'iteration_01', 'candidate_rankings.json'));
   await stat(join(report.outputDir, 'iteration_01', 'selected_candidate.json'));
+  await assert.rejects(() => stat(join(report.outputDir, 'final_confirmation')));
 
   const recommendedPatch = JSON.parse(
     await readFile(join(report.outputDir, 'recommended_patch.json'), 'utf8'),
@@ -56,6 +57,16 @@ test('scenario optimizer writes iteration artifacts and final recommendation', a
     await readFile(join(report.outputDir, 'final_metrics.json'), 'utf8'),
   ) as { score: { score: number } };
   assert.equal(typeof finalMetrics.score.score, 'number');
+
+  const selectedCandidate = JSON.parse(
+    await readFile(join(report.outputDir, 'iteration_01', 'selected_candidate.json'), 'utf8'),
+  ) as { selectedCandidate: { evaluationMode: string } | null };
+  if (selectedCandidate.selectedCandidate) {
+    assert.equal(
+      ['single_arm', 'ab_confirmed'].includes(selectedCandidate.selectedCandidate.evaluationMode),
+      true,
+    );
+  }
 });
 
 test('all-scenarios parallel mode runs iterative optimization and writes aggregate artifacts', async () => {

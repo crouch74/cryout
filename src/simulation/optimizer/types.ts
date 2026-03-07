@@ -144,12 +144,31 @@ export interface OptimizerCandidateEvaluation {
   strategy: OptimizerCandidateStrategy;
   experimentId: string;
   outputDir: string;
+  evaluationMode: 'single_arm' | 'ab_confirmed';
+  patchKey: string;
+  cached: boolean;
   patch: ScenarioPatch;
   metrics: ExperimentArmSummary;
-  comparison: MetricComparison;
+  comparison: MetricComparison | null;
   scoreBreakdown: OptimizerScoreBreakdown;
   scoreDeltaFromBaseline: number;
   gate: OptimizerGateDecision;
+}
+
+export interface OptimizerPatchKeyRecord {
+  key: string;
+  patch: ScenarioPatch;
+}
+
+export interface OptimizerCandidateEvaluationCacheEntry {
+  patchKey: string;
+  evaluation: OptimizerCandidateEvaluation;
+}
+
+export interface OptimizerIterationCache {
+  baselineMetrics: ExperimentArmSummary;
+  baselineScore: OptimizerScoreBreakdown;
+  candidateEvaluationsByPatchKey: Record<string, OptimizerCandidateEvaluationCacheEntry>;
 }
 
 export interface OptimizerIterationResult {

@@ -60,6 +60,13 @@ interface InteractiveConfigAnswers {
   parallelWorkers: number;
   outDir: string;
   playerCounts: number[];
+  gaPopulation?: number;
+  gaGenerations?: number;
+  gaRuns?: number;
+  gaTopCandidates?: number;
+  gaMutationRate?: number;
+  gaCrossoverRate?: number;
+  gaElitism?: number;
 }
 
 interface InquirerPrompt {
@@ -116,6 +123,22 @@ const EXECUTION_MODE_DESCRIPTIONS: Record<OptimizerExecutionMode, string> = {
   single_scenario: 'Optimize one scenario using iterative candidate search.',
   all_scenarios_parallel: 'Optimize every scenario in parallel; each scenario runs its own multi-iteration candidate search.',
 };
+
+export function getInteractivePlayerCountsDefault(playerCounts?: number[]) {
+  return playerCounts ?? [];
+}
+
+export function getInteractiveGaDefaults(prefill: CliArgs) {
+  return {
+    gaPopulation: prefill.gaPopulation ?? GA_DEFAULT_CONFIG.populationSize,
+    gaGenerations: prefill.gaGenerations ?? GA_DEFAULT_CONFIG.generations,
+    gaRuns: prefill.gaRuns ?? GA_DEFAULT_CONFIG.runsPerIndividual,
+    gaTopCandidates: prefill.gaTopCandidates ?? GA_DEFAULT_CONFIG.topCandidates,
+    gaMutationRate: prefill.gaMutationRate ?? GA_DEFAULT_CONFIG.mutationRate,
+    gaCrossoverRate: prefill.gaCrossoverRate ?? GA_DEFAULT_CONFIG.crossoverRate,
+    gaElitism: prefill.gaElitism ?? GA_DEFAULT_CONFIG.elitism,
+  };
+}
 
 function buildManual() {
   const workersDefault = defaultParallelWorkers();
@@ -333,6 +356,14 @@ function toPositiveInteger(value: string, label: string) {
   return parsed;
 }
 
+function toProbabilityInput(value: string, label: string) {
+  const parsed = Number.parseFloat(value);
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 1) {
+    throw new Error(`${label} must be a float between 0 and 1.`);
+  }
+  return parsed;
+}
+
 function defaultParallelWorkers() {
   return Math.max(1, cpus().length - 1);
 }
@@ -405,6 +436,42 @@ function modeToVictoryModes(mode: OptimizerMode): OptimizerConfig['victoryModes'
     return ['liberation', 'symbolic'];
   }
   return [mode];
+}
+
+export function renderResolvedOptimizerCommand(config: OptimizerConfig) {
+  const parts = [
+    'npm run optimize --',
+    '--scenario', config.scenarioId,
+    '--iterations', String(config.iterations),
+    '--baseline-runs', String(config.baselineRuns),
+    '--candidate-runs', String(config.candidateRuns),
+    '--candidates', String(config.candidates),
+    '--patience', String(config.patience),
+    '--seed', String(config.seed),
+    '--parallel-workers', String(config.parallelWorkers),
+    '--out', config.outDir,
+    '--optimizer-mode', config.executionMode,
+    '--mode', config.mode,
+    '--runtime', config.runtime,
+    '--significance', config.significance,
+    '--strategy', config.strategy,
+    '--search-mode', config.searchMode,
+    '--players', config.playerCounts.join(','),
+  ];
+
+  if (config.searchMode === 'hybrid' || config.searchMode === 'evolutionary') {
+    parts.push(
+      '--population', String(config.gaConfig.populationSize),
+      '--generations', String(config.gaConfig.generations),
+      '--ga-runs', String(config.gaConfig.runsPerIndividual),
+      '--top-candidates', String(config.gaConfig.topCandidates),
+      '--mutation-rate', String(config.gaConfig.mutationRate),
+      '--crossover-rate', String(config.gaConfig.crossoverRate),
+      '--elitism', String(config.gaConfig.elitism),
+    );
+  }
+
+  return parts.join(' ');
 }
 
 export function parseArgs(argv: string[]): CliArgs {
@@ -589,7 +656,7 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
         type: 'checkbox',
         name: 'playerCounts',
         message: 'Select player counts to optimize for:',
-        default: prefill.playerCounts ?? [2, 3, 4],
+        default: getInteractivePlayerCountsDefault(prefill.playerCounts),
         choices: [
           { name: '2 players', value: 2 },
           { name: '3 players', value: 3 },
@@ -721,6 +788,62 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
       },
     ]);
 
+    let gaAnswers: Pick<InteractiveConfigAnswers, 'gaPopulation' | 'gaGenerations' | 'gaRuns' | 'gaTopCandidates' | 'gaMutationRate' | 'gaCrossoverRate' | 'gaElitism'> = {};
+    if (firstPass.searchMode === 'hybrid' || firstPass.searchMode === 'evolutionary') {
+      const gaDefaults = getInteractiveGaDefaults(prefill);
+      gaAnswers = await prompt<Pick<InteractiveConfigAnswers, 'gaPopulation' | 'gaGenerations' | 'gaRuns' | 'gaTopCandidates' | 'gaMutationRate' | 'gaCrossoverRate' | 'gaElitism'>>([
+        {
+          type: 'input',
+          name: 'gaPopulation',
+          message: 'GA population size (higher = broader search, slower)',
+          default: gaDefaults.gaPopulation,
+          filter: (value: unknown) => toPositiveInteger(String(value), 'population'),
+        },
+        {
+          type: 'input',
+          name: 'gaGenerations',
+          message: 'GA generations (higher = deeper search, slower)',
+          default: gaDefaults.gaGenerations,
+          filter: (value: unknown) => toPositiveInteger(String(value), 'generations'),
+        },
+        {
+          type: 'input',
+          name: 'gaRuns',
+          message: 'GA runs per individual (higher = more stable fitness, slower)',
+          default: gaDefaults.gaRuns,
+          filter: (value: unknown) => toPositiveInteger(String(value), 'ga-runs'),
+        },
+        {
+          type: 'input',
+          name: 'gaTopCandidates',
+          message: 'GA promoted candidates (top-N carried into confirmation pool)',
+          default: gaDefaults.gaTopCandidates,
+          filter: (value: unknown) => toPositiveInteger(String(value), 'top-candidates'),
+        },
+        {
+          type: 'input',
+          name: 'gaMutationRate',
+          message: 'GA mutation rate (0-1)',
+          default: gaDefaults.gaMutationRate,
+          filter: (value: unknown) => toProbabilityInput(String(value), 'mutation-rate'),
+        },
+        {
+          type: 'input',
+          name: 'gaCrossoverRate',
+          message: 'GA crossover rate (0-1)',
+          default: gaDefaults.gaCrossoverRate,
+          filter: (value: unknown) => toProbabilityInput(String(value), 'crossover-rate'),
+        },
+        {
+          type: 'input',
+          name: 'gaElitism',
+          message: 'GA elitism count (top individuals preserved per generation)',
+          default: gaDefaults.gaElitism,
+          filter: (value: unknown) => toPositiveInteger(String(value), 'elitism'),
+        },
+      ]);
+    }
+
     const executionMode = firstPass.scenarioSelection === ALL_SCENARIOS_SELECTION
       ? 'all_scenarios_parallel'
       : 'single_scenario';
@@ -738,6 +861,7 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
       searchMode: firstPass.searchMode,
       playerCounts: firstPass.playerCounts,
       ...secondPass,
+      ...gaAnswers,
     };
   };
 
@@ -805,6 +929,12 @@ export async function runCli(argv: string[]) {
   }
 
   const config = await buildConfig(argv);
+  const executionMode = parsed.executionMode ?? 'single_scenario';
+  const usedInteractivePrompt = !parsed.scenarioId && executionMode !== 'all_scenarios_parallel';
+  if (usedInteractivePrompt) {
+    console.log('🧾 Equivalent command:');
+    console.log(renderResolvedOptimizerCommand(config));
+  }
   console.log('🧠 Optimizer configuration resolved');
   console.log(JSON.stringify({
     scenarioId: config.scenarioId,

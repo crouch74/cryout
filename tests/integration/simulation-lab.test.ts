@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { runExperiment } from '../../src/simulation/experiments/runner.ts';
+import { runExperiment, runSingleArmExperiment } from '../../src/simulation/experiments/runner.ts';
 import { getExperimentById } from '../../src/simulation/experiments/hypotheses/backlog.ts';
 import type { ExperimentArmSummary } from '../../src/simulation/experiments/types.ts';
 import { runBalanceSearch } from '../../src/simulation/balance/SearchEngine.ts';
@@ -45,6 +45,36 @@ test('experiment output includes mandate diagnostics in arm summaries, compariso
   assert.equal(typeof diagnostics.noGameplayWarning, 'boolean');
   assert.match(report, /Mandate Failure Ranking \(Arm A\)/);
   assert.match(report, /Mandate Failure Ranking \(Arm B\)/);
+});
+
+test('single-arm experiment matches arm B summary for the same definition and seed', async () => {
+  const outputRoot = await mkdtemp(join(tmpdir(), 'stones-exp-single-arm-'));
+  const definition = getExperimentById('stones_cry_out_new_baseline_validation');
+  assert.ok(definition);
+
+  const experiment = await runExperiment({
+    ...definition,
+    runsPerArm: 3,
+    seed: 1777,
+  }, {
+    outDir: outputRoot,
+    recordTrajectories: false,
+    parallelWorkers: 1,
+  });
+
+  const singleArm = await runSingleArmExperiment({
+    ...definition,
+    id: `${definition.id}_single_arm`,
+    runsPerArm: 3,
+    seed: 1777,
+  }, {
+    outDir: outputRoot,
+    recordTrajectories: false,
+    parallelWorkers: 1,
+    armLabel: 'B',
+  });
+
+  assert.deepEqual(singleArm.arm, experiment.armB);
 });
 
 test('balance search writes best_candidates.json with ordered top candidates', async () => {

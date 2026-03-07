@@ -25,7 +25,13 @@ import {
   renderMarkdownReport,
 } from './report.ts';
 import type { ScenarioPatch } from './patchDsl.ts';
-import type { ExperimentDefinition, ExperimentResult, StructuralDiagnostics, VictoryMode } from './types.ts';
+import type {
+  ExperimentDefinition,
+  ExperimentResult,
+  SingleArmExperimentResult,
+  StructuralDiagnostics,
+  VictoryMode,
+} from './types.ts';
 
 const DEFAULT_OUT_DIR = resolve(process.cwd(), 'simulation_output/experiments');
 const MAX_TRAJECTORIES_PER_EXPERIMENT = 200;
@@ -44,7 +50,10 @@ export interface RunExperimentOptions {
   parallelWorkers?: number;
   logMode?: 'verbose' | 'aggregated';
   baselinePatch?: ScenarioPatch;
+  tempRootDir?: string;
 }
+
+const SAMPLE_PROFILE_CACHE = new Map<string, SampleProfile[]>();
 
 class TrajectoryReservoir {
   private readonly trajectories: VictoryTrajectory[] = [];
@@ -183,6 +192,47 @@ function buildSampleProfile(
   };
 }
 
+function buildSampleProfileCacheKey(
+  definition: ExperimentDefinition,
+  factionIds: FactionId[],
+  strategyIds: StrategyId[],
+) {
+  return JSON.stringify({
+    scenarioId: definition.scenarioId,
+    runsPerArm: definition.runsPerArm,
+    seed: definition.seed,
+    victoryModes: definition.victoryModes,
+    playerCounts: definition.playerCounts,
+    factionIds,
+    strategyIds,
+  });
+}
+
+function getSampleProfiles(
+  definition: ExperimentDefinition,
+  factionIds: FactionId[],
+  strategyIds: StrategyId[],
+) {
+  const key = buildSampleProfileCacheKey(definition, factionIds, strategyIds);
+  const cached = SAMPLE_PROFILE_CACHE.get(key);
+  if (cached) {
+    return cached;
+  }
+
+  const profiles = Array.from(
+    { length: definition.runsPerArm },
+    (_, runIndex) => buildSampleProfile(runIndex, definition, factionIds, strategyIds),
+  );
+  SAMPLE_PROFILE_CACHE.set(key, profiles);
+  if (SAMPLE_PROFILE_CACHE.size > 128) {
+    const oldestKey = SAMPLE_PROFILE_CACHE.keys().next().value;
+    if (oldestKey) {
+      SAMPLE_PROFILE_CACHE.delete(oldestKey);
+    }
+  }
+  return profiles;
+}
+
 function buildRun(
   runIndex: number,
   arm: 'A' | 'B',
@@ -205,6 +255,22 @@ function buildRun(
     seatOwnerIds: [...profile.seatOwnerIds],
     strategyIds: [...profile.strategyIds],
   };
+}
+
+function buildPlannedRuns(
+  definition: ExperimentDefinition,
+  arm: 'A' | 'B',
+  scenarioId: string,
+  sampleProfiles: SampleProfile[],
+) {
+  return sampleProfiles.map((profile, runIndex) => buildRun(
+    runIndex,
+    arm,
+    scenarioId,
+    definition.seed,
+    profile,
+    definition.id,
+  ));
 }
 
 function formatMetric(value: number) {
@@ -248,6 +314,122 @@ async function sampleTrajectoriesFromDir(
   for (const filePath of files) {
     const payload = await readFile(filePath, 'utf8');
     reservoir.consider(JSON.parse(payload) as VictoryTrajectory);
+  }
+}
+
+function createExperimentLoggers(aggregatedLogs: boolean) {
+  return {
+    logInfo: (line: string) => {
+      console.log(line);
+    },
+    logVerbose: (line: string) => {
+      if (!aggregatedLogs) {
+        console.log(line);
+      }
+    },
+  };
+}
+
+async function executeArmRuns(input: {
+  definition: ExperimentDefinition;
+  arm: 'A' | 'B';
+  scenarioId: string;
+  plannedRuns: PlannedSimulationRun[];
+  accumulator: ReturnType<typeof createArmAccumulator>;
+  outputRoot: string;
+  parallelWorkers: number;
+  recordTrajectories: boolean;
+  aggregatedLogs: boolean;
+  trajectoryReservoir: TrajectoryReservoir;
+  baselinePatch?: ScenarioPatch;
+  treatmentPatch?: ScenarioPatch;
+  tempRootDir?: string;
+  logInfo: (line: string) => void;
+  logVerbose: (line: string) => void;
+}) {
+  const progressInterval = Math.max(1, Math.floor(input.definition.runsPerArm / 20));
+  const workerBatchCompatible = true;
+  if (input.parallelWorkers > 1 && workerBatchCompatible) {
+    if (input.arm === 'A') {
+      input.logInfo(`⚙️ Experiment worker batching enabled parallelWorkers=${input.parallelWorkers}`);
+    }
+    const tempParent = resolve(input.tempRootDir ?? input.outputRoot);
+    const tempRoot = join(tempParent, `.tmp_${input.definition.id}_${input.arm}_${Date.now()}`);
+    const shardRoot = join(tempRoot, `arm_${input.arm}_shards`);
+    const trajectorySpool = join(tempRoot, 'trajectories');
+    try {
+      const scenarioPatches = input.arm === 'A'
+        ? (
+          input.baselinePatch
+            ? [{
+              experimentId: `${input.definition.id}_baseline_A`,
+              scenarioId: input.definition.scenarioId,
+              patch: input.baselinePatch,
+            }]
+            : undefined
+        )
+        : [
+          ...(input.baselinePatch
+            ? [{
+              experimentId: `${input.definition.id}_baseline_A`,
+              scenarioId: input.definition.scenarioId,
+              patch: input.baselinePatch,
+            }]
+            : []),
+          ...(input.treatmentPatch
+            ? [{
+              experimentId: input.definition.id,
+              scenarioId: input.definition.scenarioId,
+              patch: input.treatmentPatch,
+            }]
+            : []),
+        ];
+
+      const result = await executePlannedRunsWithWorkers({
+        runs: input.plannedRuns,
+        parallelWorkers: input.parallelWorkers,
+        shardDir: shardRoot,
+        progressInterval,
+        trajectoryRecording: input.recordTrajectories,
+        trajectoryDir: trajectorySpool,
+        progressLabel: `Experiment ${input.definition.id} arm ${input.arm} progress`,
+        progressThrottleMs: input.aggregatedLogs ? 5000 : 0,
+        suppressSanityWarnings: input.aggregatedLogs,
+        scenarioPatches,
+      });
+
+      await ingestShardRecordsIntoAccumulator(result.shardPaths, input.accumulator);
+
+      if (input.recordTrajectories) {
+        await sampleTrajectoriesFromDir(trajectorySpool, input.trajectoryReservoir);
+        input.logVerbose(`📊 Trajectory spool sampled ${input.trajectoryReservoir.totalSeen()} captures before reservoir cap.`);
+      }
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+    return;
+  }
+
+  const sequentialProgressInterval = input.aggregatedLogs
+    ? Math.max(1, Math.floor(input.definition.runsPerArm / 10))
+    : progressInterval;
+  for (let runIndex = 0; runIndex < input.plannedRuns.length; runIndex += 1) {
+    const run = input.plannedRuns[runIndex];
+    if (!run) {
+      continue;
+    }
+    const outcome = runSingleSimulation(run, { trajectoryRecording: input.recordTrajectories });
+    if (input.recordTrajectories && outcome.trajectory) {
+      input.trajectoryReservoir.consider(outcome.trajectory);
+      const capturedCount = input.trajectoryReservoir.totalSeen();
+      if (capturedCount <= 5 || capturedCount % 50 === 0) {
+        input.logVerbose(`🏁 Public victory trajectory captured arm=${input.arm} sim=${run.simulationId} count=${capturedCount}`);
+      }
+    }
+    ingestArmRecord(input.accumulator, outcome.record);
+    if ((runIndex + 1) % sequentialProgressInterval === 0 || runIndex + 1 === input.plannedRuns.length) {
+      input.logInfo(`🧮 Progress ${runIndex + 1}/${input.plannedRuns.length} ${input.arm === 'A' ? 'pairs' : 'runs'} complete`);
+    }
   }
 }
 
@@ -459,6 +641,138 @@ function detectStructuralDiagnostics(armA: ExperimentResult['armA'], armB: Exper
   };
 }
 
+export async function runSingleArmExperiment(
+  definition: ExperimentDefinition,
+  options?: RunExperimentOptions & { armLabel?: 'A' | 'B' },
+): Promise<SingleArmExperimentResult> {
+  assertPlayerCounts(definition.playerCounts);
+  assertVictoryModes(definition.victoryModes);
+
+  const scenario = getRulesetDefinition(definition.scenarioId);
+  if (!scenario) {
+    throw new Error(`Unknown scenario in experiment definition: ${definition.scenarioId}`);
+  }
+
+  const outputRoot = resolve(options?.outDir ?? DEFAULT_OUT_DIR);
+  const outputDir = join(outputRoot, definition.id);
+  const recordTrajectories = Boolean(options?.recordTrajectories);
+  const parallelWorkers = Math.max(1, Math.floor(options?.parallelWorkers ?? 1));
+  const aggregatedLogs = options?.logMode === 'aggregated';
+  const { logInfo, logVerbose } = createExperimentLoggers(aggregatedLogs);
+  const trajectoryReservoir = new TrajectoryReservoir(
+    MAX_TRAJECTORIES_PER_EXPERIMENT,
+    mixSeed(definition.seed, stableHash(`${definition.id}:trajectory-reservoir`)),
+  );
+  const armLabel = options?.armLabel ?? 'B';
+
+  logInfo(`🔬 Single-arm experiment start id=${definition.id} arm=${armLabel}`);
+
+  const startedAtMs = Date.now();
+  const startedAt = new Date(startedAtMs).toISOString();
+
+  const baselinePatch = options?.baselinePatch;
+  const baselineMounted = baselinePatch
+    ? applyScenarioPatch({
+      experimentId: `${definition.id}_baseline_A`,
+      scenarioId: definition.scenarioId,
+      patch: baselinePatch,
+    })
+    : null;
+  const treatmentPatch = mergeScenarioPatchForExperiment(baselinePatch, definition.patch);
+  const mountedScenario = applyScenarioPatch({
+    experimentId: definition.id,
+    scenarioId: definition.scenarioId,
+    patch: treatmentPatch,
+  });
+  const previousSimulationQuiet = process.env.SIMULATION_QUIET;
+  if (aggregatedLogs) {
+    process.env.SIMULATION_QUIET = '1';
+  }
+
+  try {
+    const strategyIds = listStrategyProfiles().map((profile) => profile.id) as StrategyId[];
+    const factionIds = scenario.factions.map((faction) => faction.id as FactionId);
+    const sampleProfiles = getSampleProfiles(definition, factionIds, strategyIds);
+
+    const accumulator = createArmAccumulator(armLabel, mixSeed(definition.seed, stableHash(`arm-${armLabel}`)), {
+      mandateFailureAsCostlyWin: definition.patch.mandates?.classifyMandateFailureAs === 'COSTLY_WIN',
+    });
+
+    const scenarioId = armLabel === 'A'
+      ? (baselineMounted?.treatmentScenarioId ?? mountedScenario.baselineScenarioId)
+      : mountedScenario.treatmentScenarioId;
+    const plannedRuns = buildPlannedRuns(definition, armLabel, scenarioId, sampleProfiles);
+
+    await executeArmRuns({
+      definition,
+      arm: armLabel,
+      scenarioId,
+      plannedRuns,
+      accumulator,
+      outputRoot,
+      parallelWorkers,
+      recordTrajectories,
+      aggregatedLogs,
+      trajectoryReservoir,
+      baselinePatch,
+      treatmentPatch: armLabel === 'B' ? treatmentPatch : undefined,
+      tempRootDir: options?.tempRootDir,
+      logInfo,
+      logVerbose,
+    });
+
+    const arm = finalizeArmSummary(accumulator);
+    const finishedAtMs = Date.now();
+    const result: SingleArmExperimentResult = {
+      definition,
+      outputDir,
+      startedAt,
+      finishedAt: new Date(finishedAtMs).toISOString(),
+      durationMs: finishedAtMs - startedAtMs,
+      arm,
+      armLabel,
+      metadata: {
+        baselinePatchApplied: Boolean(baselinePatch),
+      },
+    };
+
+    await rm(outputDir, { recursive: true, force: true });
+    await mkdir(outputDir, { recursive: true });
+    await writeJson(join(outputDir, 'experiment_definition.json'), definition);
+    await writeJson(join(outputDir, `arm_${armLabel}_summary.json`), arm);
+    await writeJson(join(outputDir, 'single_arm_result.json'), result);
+
+    if (recordTrajectories) {
+      const trajectoryDir = join(outputDir, 'trajectories');
+      await mkdir(trajectoryDir, { recursive: true });
+      const stemCount = new Map<string, number>();
+      const trajectories = trajectoryReservoir.values();
+      for (const trajectory of trajectories) {
+        const stem = buildTrajectoryFileStem(trajectory);
+        const count = stemCount.get(stem) ?? 0;
+        stemCount.set(stem, count + 1);
+        const suffix = count === 0 ? '' : `_${count}`;
+        await writeJson(join(trajectoryDir, `${stem}${suffix}.json`), trajectory);
+      }
+      logInfo(`📊 Trajectory sampling kept ${trajectories.length}/${trajectoryReservoir.totalSeen()} captures (max ${MAX_TRAJECTORIES_PER_EXPERIMENT}).`);
+    }
+
+    logInfo(`💾 Wrote single-arm report to ${outputDir}`);
+    logInfo(`✅ Single-arm experiment complete: ${definition.id}`);
+    return result;
+  } finally {
+    if (aggregatedLogs) {
+      if (previousSimulationQuiet === undefined) {
+        delete process.env.SIMULATION_QUIET;
+      } else {
+        process.env.SIMULATION_QUIET = previousSimulationQuiet;
+      }
+    }
+    baselineMounted?.unregister();
+    mountedScenario.unregister();
+  }
+}
+
 export async function runExperiment(definition: ExperimentDefinition, options?: RunExperimentOptions): Promise<ExperimentResult> {
   assertPlayerCounts(definition.playerCounts);
   assertVictoryModes(definition.victoryModes);
@@ -473,14 +787,7 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
   const recordTrajectories = Boolean(options?.recordTrajectories);
   const parallelWorkers = Math.max(1, Math.floor(options?.parallelWorkers ?? 1));
   const aggregatedLogs = options?.logMode === 'aggregated';
-  const logInfo = (line: string) => {
-    console.log(line);
-  };
-  const logVerbose = (line: string) => {
-    if (!aggregatedLogs) {
-      console.log(line);
-    }
-  };
+  const { logInfo, logVerbose } = createExperimentLoggers(aggregatedLogs);
   const trajectoryReservoir = new TrajectoryReservoir(
     MAX_TRAJECTORIES_PER_EXPERIMENT,
     mixSeed(definition.seed, stableHash(`${definition.id}:trajectory-reservoir`)),
@@ -513,6 +820,7 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
   try {
     const strategyIds = listStrategyProfiles().map((profile) => profile.id) as StrategyId[];
     const factionIds = scenario.factions.map((faction) => faction.id as FactionId);
+    const sampleProfiles = getSampleProfiles(definition, factionIds, strategyIds);
 
     const armAAccumulator = createArmAccumulator('A', mixSeed(definition.seed, stableHash('arm-A')));
     const armBAccumulator = createArmAccumulator(
@@ -526,132 +834,43 @@ export async function runExperiment(definition: ExperimentDefinition, options?: 
     logVerbose(`🅰️ Arm A baseline runs=${definition.runsPerArm}`);
     logVerbose(`🅱️ Arm B treatment patch=${definition.patch.note ?? 'scenario-local patch applied'}`);
 
-    const progressInterval = Math.max(1, Math.floor(definition.runsPerArm / 20));
-    const plannedRunsA: PlannedSimulationRun[] = [];
-    const plannedRunsB: PlannedSimulationRun[] = [];
     const baselineScenarioId = baselineMounted?.treatmentScenarioId ?? patchedScenario.baselineScenarioId;
-    for (let runIndex = 0; runIndex < definition.runsPerArm; runIndex += 1) {
-      const sampleProfile = buildSampleProfile(runIndex, definition, factionIds, strategyIds);
-      plannedRunsA.push(buildRun(
-        runIndex,
-        'A',
-        baselineScenarioId,
-        definition.seed,
-        sampleProfile,
-        definition.id,
-      ));
-      plannedRunsB.push(buildRun(
-        runIndex,
-        'B',
-        patchedScenario.treatmentScenarioId,
-        definition.seed,
-        sampleProfile,
-        definition.id,
-      ));
-    }
+    const plannedRunsA = buildPlannedRuns(definition, 'A', baselineScenarioId, sampleProfiles);
+    const plannedRunsB = buildPlannedRuns(definition, 'B', patchedScenario.treatmentScenarioId, sampleProfiles);
 
-    const workerBatchCompatible = true;
-    if (parallelWorkers > 1 && workerBatchCompatible) {
-      logInfo(`⚙️ Experiment worker batching enabled parallelWorkers=${parallelWorkers}`);
-      const tempRoot = join(outputRoot, `.tmp_${definition.id}_${Date.now()}`);
-      const shardRootA = join(tempRoot, 'arm_A_shards');
-      const shardRootB = join(tempRoot, 'arm_B_shards');
-      const trajectorySpool = join(tempRoot, 'trajectories');
-      try {
-        const armAResult = await executePlannedRunsWithWorkers({
-          runs: plannedRunsA,
-          parallelWorkers,
-          shardDir: shardRootA,
-          progressInterval,
-          trajectoryRecording: recordTrajectories,
-          trajectoryDir: trajectorySpool,
-          progressLabel: `Experiment ${definition.id} arm A progress`,
-          progressThrottleMs: aggregatedLogs ? 5000 : 0,
-          suppressSanityWarnings: aggregatedLogs,
-          scenarioPatches: baselinePatch
-            ? [
-              {
-                experimentId: `${definition.id}_baseline_A`,
-                scenarioId: definition.scenarioId,
-                patch: baselinePatch,
-              },
-            ]
-            : undefined,
-        });
-        const armBResult = await executePlannedRunsWithWorkers({
-          runs: plannedRunsB,
-          parallelWorkers,
-          shardDir: shardRootB,
-          progressInterval,
-          trajectoryRecording: recordTrajectories,
-          trajectoryDir: trajectorySpool,
-          progressLabel: `Experiment ${definition.id} arm B progress`,
-          progressThrottleMs: aggregatedLogs ? 5000 : 0,
-          suppressSanityWarnings: aggregatedLogs,
-          scenarioPatches: [
-            ...(baselinePatch
-              ? [
-                {
-                  experimentId: `${definition.id}_baseline_A`,
-                  scenarioId: definition.scenarioId,
-                  patch: baselinePatch,
-                },
-              ]
-              : []),
-            {
-              experimentId: definition.id,
-              scenarioId: definition.scenarioId,
-              patch: treatmentPatch,
-            },
-          ],
-        });
-
-        await ingestShardRecordsIntoAccumulator(armAResult.shardPaths, armAAccumulator);
-        await ingestShardRecordsIntoAccumulator(armBResult.shardPaths, armBAccumulator);
-
-        if (recordTrajectories) {
-          await sampleTrajectoriesFromDir(trajectorySpool, trajectoryReservoir);
-          logVerbose(`📊 Trajectory spool sampled ${trajectoryReservoir.totalSeen()} captures before reservoir cap.`);
-        }
-      } finally {
-        await rm(tempRoot, { recursive: true, force: true });
-      }
-    } else {
-      const sequentialProgressInterval = aggregatedLogs
-        ? Math.max(1, Math.floor(definition.runsPerArm / 10))
-        : progressInterval;
-      for (let runIndex = 0; runIndex < definition.runsPerArm; runIndex += 1) {
-        const runA = plannedRunsA[runIndex];
-        const runB = plannedRunsB[runIndex];
-        if (!runA || !runB) {
-          continue;
-        }
-        const outcomeA = runSingleSimulation(runA, { trajectoryRecording: recordTrajectories });
-        const outcomeB = runSingleSimulation(runB, { trajectoryRecording: recordTrajectories });
-
-        if (recordTrajectories && outcomeA.trajectory) {
-          trajectoryReservoir.consider(outcomeA.trajectory);
-          const capturedCount = trajectoryReservoir.totalSeen();
-          if (capturedCount <= 5 || capturedCount % 50 === 0) {
-            logVerbose(`🏁 Public victory trajectory captured arm=A sim=${runA.simulationId} count=${capturedCount}`);
-          }
-        }
-        if (recordTrajectories && outcomeB.trajectory) {
-          trajectoryReservoir.consider(outcomeB.trajectory);
-          const capturedCount = trajectoryReservoir.totalSeen();
-          if (capturedCount <= 5 || capturedCount % 50 === 0) {
-            logVerbose(`🏁 Public victory trajectory captured arm=B sim=${runB.simulationId} count=${capturedCount}`);
-          }
-        }
-
-        ingestArmRecord(armAAccumulator, outcomeA.record);
-        ingestArmRecord(armBAccumulator, outcomeB.record);
-
-        if ((runIndex + 1) % sequentialProgressInterval === 0 || runIndex + 1 === definition.runsPerArm) {
-          logInfo(`🧮 Progress ${runIndex + 1}/${definition.runsPerArm} pairs complete`);
-        }
-      }
-    }
+    await executeArmRuns({
+      definition,
+      arm: 'A',
+      scenarioId: baselineScenarioId,
+      plannedRuns: plannedRunsA,
+      accumulator: armAAccumulator,
+      outputRoot,
+      parallelWorkers,
+      recordTrajectories,
+      aggregatedLogs,
+      trajectoryReservoir,
+      baselinePatch,
+      tempRootDir: options?.tempRootDir,
+      logInfo,
+      logVerbose,
+    });
+    await executeArmRuns({
+      definition,
+      arm: 'B',
+      scenarioId: patchedScenario.treatmentScenarioId,
+      plannedRuns: plannedRunsB,
+      accumulator: armBAccumulator,
+      outputRoot,
+      parallelWorkers,
+      recordTrajectories,
+      aggregatedLogs,
+      trajectoryReservoir,
+      baselinePatch,
+      treatmentPatch,
+      tempRootDir: options?.tempRootDir,
+      logInfo,
+      logVerbose,
+    });
 
     logInfo('📈 Aggregating metrics...');
 
