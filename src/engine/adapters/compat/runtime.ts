@@ -2151,12 +2151,13 @@ function resolveSystemEscalation(state: EngineState, content: CompiledContent) {
 function createInitialPlayers(command: StartGameCommand, content: CompiledContent): PlayerState[] {
   const { seatFactionIds, seatOwnerIds } = normalizeStartGameCommand(command);
   const secretMandatesEnabled = areSecretMandatesEnabled(command);
+  const setup = getRulesetSetup(content);
 
   return seatFactionIds.map((factionId, seat) => ({
     seat,
     ownerId: seatOwnerIds[seat] ?? seat,
     factionId,
-    evidence: 1,
+    evidence: setup?.startingEvidenceByFaction?.[factionId] ?? 1,
     actionsRemaining: ACTIONS_PER_TURN,
     ready: false,
     queuedIntents: [],
@@ -2215,7 +2216,7 @@ function createInitialState(command: StartGameCommand, content: CompiledContent)
 
   for (const player of players) {
     const faction = content.factions[player.factionId];
-    regions[faction.homeRegion].comradesPresent[player.seat] = 4;
+    regions[faction.homeRegion].comradesPresent[player.seat] = setup?.startingComradesByFaction?.[faction.id] ?? 4;
   }
 
   const beacons = Object.fromEntries(

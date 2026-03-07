@@ -10,6 +10,7 @@ const EXPECTED_SCENARIOS = [
   'tahrir_square',
   'woman_life_freedom',
   'algerian_war_of_independence',
+  'when_the_corridors_burn',
 ];
 
 function parseNdjson<T>(content: string): T[] {

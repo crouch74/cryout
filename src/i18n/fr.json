@@ -1128,6 +1128,11 @@
         "name": "1919 — ÉGYPTE SE SOULÈVE",
         "description": "\"Pain, patrie et les rues.\"",
         "introduction": "Le soulèvement de 1919 est une lutte de coalition de masse. Les étudiants, les cheminots et les cercles d'action des femmes doivent tenir Le Caire et les provinces pendant que l'occupation britannique tente d'écraser la mobilisation populaire par la détention et la loi martiale."
+      },
+      "when_the_corridors_burn": {
+        "name": "2026 — QUAND LES CORRIDORS BRULENT",
+        "description": "Un scenario de guerre des corridors ou bombardements, sanctions, transport maritime et bases forment un seul systeme.",
+        "introduction": "Mars 2026 n'est pas une seule guerre. C'est une condition de corridors qui s'etend de Gaza et du sud du Liban a Ormuz, Suez, La Havane, Caracas et la mer Noire."
       }
     },
     "domains": {
@@ -2233,6 +2238,33 @@
           "UpperEgypt": {
             "description": "Districts autonomes et défi d'Assiout, là où le contrôle de l'État est fragile.",
             "strapline": "Le Sud résiste."
+          }
+        }
+      },
+      "when_the_corridors_burn": {
+        "name": "2026 — Quand les Corridors Brulent",
+        "description": "Les corridors brulent de Gaza jusqu'aux Caraibes. La coalition survit en ouvrant les passages que le systeme veut maintenir fermes.",
+        "introduction": "Dirigez une coalition de cinq sieges a travers une guerre connectee de siege, de sanctions, de perturbation maritime, de pression des bases et d'effacement public.",
+        "story": "Ce qui est appele escalade est en realite un ordre des corridors qui se revele. Gaza reste le centre moral, tandis que le Liban brule plus largement, qu'Ormuz et Suez se grippent, et que la ligne de blocus s'etend vers Cuba et le Venezuela.",
+        "dramatization": "Les hopitaux comptent les blesses et les disparus, les dockers comptent les retards, les communes comptent le carburant restant, et chaque nouvelle trajectoire de missile menace une population deja placee sous discipline et coercition.",
+        "gameplay": "Tenez les theatres les plus exposes, puis fracturez le systeme de transport maritime, de sanctions et de bases avant que la War Machine ne depasse les reseaux de temoignage et de survie de la coalition.",
+        "moralCenter": "Aucun sauveur du Nord n'arrive. La table vit ou tombe selon l'endurance des mouvements, les structures de temoignage et les reseaux de survie construits par les peuples attaques.",
+        "specialRules": {
+          "regional_powers_layer": {
+            "label": "Puissances regionales / Etats-corridors",
+            "description": "L'Egypte, la Turquie, la Jordanie et le Qatar utilisent des pistes de posture distinctes, tandis que les hotes du Golfe restent pris dans un sous-systeme commun de contrecoup."
+          },
+          "gulf_host_target_subsystem": {
+            "label": "Sous-systeme du Golfe, hotes et cibles",
+            "description": "L'Arabie saoudite, les EAU, Bahrein et le Koweit ne forment pas un seul camp. Ils hedgent, hebergent ou prennent leurs distances sous un meme indicateur de contrecoup du Golfe."
+          },
+          "atlantic_fracture": {
+            "label": "Fracture atlantique",
+            "description": "L'Espagne peut elargir l'espace anti-guerre tandis que le Royaume-Uni peut durcir l'alignement atlantique et augmenter la pression sur les campagnes."
+          },
+          "corridor_war_not_state_war": {
+            "label": "Guerre des corridors",
+            "description": "Transport maritime, nourriture, bases, sanctions et temoignage sont tous des fronts. Un passage ouvert ailleurs peut encore sauver Gaza, Cuba ou le Venezuela."
           }
         }
       }

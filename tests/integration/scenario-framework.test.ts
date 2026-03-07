@@ -28,7 +28,14 @@ const registry = {
 test('scenario registry exposes only shipped scenarios', () => {
   const ids = listScenarioMetadata().map((scenario) => scenario.id).sort();
 
-  assert.deepEqual(ids, ['algerian_war_of_independence', 'egypt_1919_revolution', 'stones_cry_out', 'tahrir_square', 'woman_life_freedom']);
+  assert.deepEqual(ids, [
+    'algerian_war_of_independence',
+    'egypt_1919_revolution',
+    'stones_cry_out',
+    'tahrir_square',
+    'when_the_corridors_burn',
+    'woman_life_freedom',
+  ]);
 });
 
 test('testing scenarios stay outside the shipped registry', () => {
@@ -46,7 +53,7 @@ test('all scenario modules conform to the required framework contract', () => {
 
 test('compat-backed shipped scenarios create deterministic projected core states', () => {
   const summaries = Object.fromEntries(
-    ['stones_cry_out', 'tahrir_square', 'woman_life_freedom', 'algerian_war_of_independence'].map((scenarioId) => {
+    ['stones_cry_out', 'tahrir_square', 'woman_life_freedom', 'algerian_war_of_independence', 'when_the_corridors_burn'].map((scenarioId) => {
       const scenario = getScenarioModule(scenarioId);
       assert.ok(scenario);
       const state = createGameState(scenario, { seed: 4242, mode: 'LIBERATION' });
@@ -88,6 +95,13 @@ test('compat-backed shipped scenarios create deterministic projected core states
     algerian_war_of_independence: {
       phase: 'system',
       players: 4,
+      zones: 6,
+      hasLegacyState: true,
+      hopeLikeTracks: true,
+    },
+    when_the_corridors_burn: {
+      phase: 'system',
+      players: 5,
       zones: 6,
       hasLegacyState: true,
       hopeLikeTracks: true,

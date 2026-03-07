@@ -50,6 +50,7 @@ const DEFAULT_SCENARIOS = [
   'tahrir_square',
   'woman_life_freedom',
   'algerian_war_of_independence',
+  'when_the_corridors_burn',
 ] as const;
 
 const DEFAULT_VICTORY_MODES: SimulationVictoryMode[] = ['liberation', 'symbolic'];

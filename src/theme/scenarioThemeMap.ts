@@ -6,6 +6,7 @@ const SCENARIO_THEME_MAP: Record<string, ScenarioOverlayId> = {
   woman_life_freedom: 'dossier-of-the-disappeared',
   algerian_war_of_independence: 'desert-horizon',
   egypt_1919_revolution: 'papyrus-insurgency',
+  when_the_corridors_burn: 'burnt-earth-resistance',
 };
 
 export function getScenarioOverlayForRuleset(rulesetId: string): ScenarioOverlayId | null {

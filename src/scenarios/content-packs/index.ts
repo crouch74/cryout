@@ -4,6 +4,7 @@ import algeriaPack from '../algerian_war_of_independence/content.ts';
 import stonesCryOutPack from '../stones_cry_out/content.ts';
 import tahrirSquarePack from '../tahrir_square/content.ts';
 import womanLifeFreedomPack from '../woman_life_freedom/content.ts';
+import whenTheCorridorsBurnPack from '../when_the_corridors_burn/content.ts';
 
 export const CONTENT_PACKS: RulesetDefinition[] = [
 
@@ -12,6 +13,7 @@ export const CONTENT_PACKS: RulesetDefinition[] = [
   tahrirSquarePack,
   womanLifeFreedomPack,
   algeriaPack,
+  whenTheCorridorsBurnPack,
 ];
 
 export function getRulesetById(rulesetId: string): RulesetDefinition | undefined {

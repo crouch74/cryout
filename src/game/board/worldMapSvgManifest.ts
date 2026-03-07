@@ -8,6 +8,7 @@ import {
 } from '../../scenarios/stones_cry_out/boards/baseWorldBoard.ts';
 import { tahrirBoard } from '../../scenarios/tahrir_square/boards/tahrirBoard.ts';
 import { womanLifeFreedomBoard } from '../../scenarios/woman_life_freedom/boards/womanLifeFreedomBoard.ts';
+import { corridorsBurnBoard } from '../../scenarios/when_the_corridors_burn/boards/corridorsBurnBoard.ts';
 
 export type { BoardRegionMapEntry, MapViewport } from '../../engine/index.ts';
 
@@ -25,6 +26,7 @@ export const BOARD_REGION_MAP_MANIFEST = {
   ...tahrirBoard.regions,
   ...womanLifeFreedomBoard.regions,
   ...algeriaBoard.regions,
+  ...corridorsBurnBoard.regions,
 } as Partial<Record<RegionId, BoardRegionMapEntry>>;
 
 export function getBoardRegionSvgPathIds(regionId: keyof typeof baseWorldBoard.regions) {

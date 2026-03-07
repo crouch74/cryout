@@ -40,6 +40,7 @@ import {
   getTrackPresentation,
 } from '../../src/game/presentation/gameUiHelpers.ts';
 import { DEFAULT_GAME_VIEW_STATE } from '../../src/features/session-setup/model/sessionTypes.ts';
+import { getScenarioModule } from '../../src/scenarios/index.ts';
 
 const startCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
   type: 'StartGame',
@@ -556,8 +557,8 @@ test('all shipped rulesets and cards have localization entries in both catalogs'
   const arRulesets = (arCatalog as any).content.rulesets as Record<string, unknown>;
 
   for (const ruleset of listRulesets()) {
-    // TODO: remove skip once egypt_1919_revolution is fully localized
-    if (ruleset.id === 'egypt_1919_revolution') continue;
+    const supportedLocales = getScenarioModule(ruleset.id)?.metadata.supportedLocales ?? ['en'];
+    if (!supportedLocales.includes('ar-EG')) continue;
     assert.equal(typeof enRulesets[ruleset.id], 'object', `Missing English ruleset localization for ${ruleset.id}`);
     assert.equal(typeof arRulesets[ruleset.id], 'object', `Missing Arabic ruleset localization for ${ruleset.id}`);
 
