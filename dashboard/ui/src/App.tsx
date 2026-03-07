@@ -41,7 +41,7 @@ import {
   YAxis,
 } from 'recharts';
 
-const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000';
+const API_URL = (import.meta as any).env?.VITE_API_URL || '';
 
 type OverviewPayload = {
   summary: any;
