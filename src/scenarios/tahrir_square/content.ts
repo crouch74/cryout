@@ -362,7 +362,7 @@ export const compatRuleset: RulesetDefinition = {
                 {
                     id: 'catastrophic_state',
                     label: 'Catastrophic state cap',
-                    maxScore: 72,
+                    maxScore: 69,
                     condition: {
                         kind: 'any',
                         conditions: [

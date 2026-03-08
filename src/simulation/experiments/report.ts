@@ -582,6 +582,28 @@ function metricValue(summary: ExperimentArmSummary, metric: ExperimentMetricKey)
   }
 }
 
+function metricImprovesWhenLower(metric: ExperimentMetricKey) {
+  return metric === 'mandateFailRateGivenPublic'
+    || metric === 'defeat_extraction_breach'
+    || metric === 'defeat_comrades_exhausted'
+    || metric === 'defeat_mandate_failure'
+    || metric === 'defeat_sudden_death';
+}
+
+function metricRegressionAmount(metric: ExperimentMetricKey, absoluteLift: number) {
+  if (metricImprovesWhenLower(metric)) {
+    return Math.max(0, absoluteLift);
+  }
+  return Math.max(0, -absoluteLift);
+}
+
+function metricImproved(metric: ExperimentMetricKey, absoluteLift: number) {
+  if (metricImprovesWhenLower(metric)) {
+    return absoluteLift < 0;
+  }
+  return absoluteLift > 0;
+}
+
 function getCriticalZ(confidence: 0.9 | 0.95 | 0.99) {
   if (confidence === 0.9) {
     return 1.6448536269514722;
@@ -982,15 +1004,16 @@ function evaluateDecision(definition: ExperimentDefinition, comparison: MetricCo
   if (definition.decisionRule.guardrails) {
     for (const guardrail of definition.decisionRule.guardrails) {
       const metric = comparison.metrics[guardrail.metric];
-      if (metric.absoluteLift < -guardrail.maxRegression) {
-        rationale.push(`Guardrail failed for ${guardrail.metric}: regression ${metric.absoluteLift} exceeds ${guardrail.maxRegression}.`);
+      const regressionAmount = metricRegressionAmount(guardrail.metric, metric.absoluteLift);
+      if (regressionAmount > guardrail.maxRegression) {
+        rationale.push(`Guardrail failed for ${guardrail.metric}: regression ${regressionAmount} exceeds ${guardrail.maxRegression}.`);
         return { decision: 'REJECT', rationale };
       }
     }
   }
 
   if (definition.decisionRule.requireImprovedMetricsCount !== undefined) {
-    const improvedCount = METRIC_KEYS.filter((metric) => comparison.metrics[metric].absoluteLift > 0).length;
+    const improvedCount = METRIC_KEYS.filter((metric) => metricImproved(metric, comparison.metrics[metric].absoluteLift)).length;
     if (improvedCount < definition.decisionRule.requireImprovedMetricsCount) {
       rationale.push(`Only ${improvedCount} metrics improved; required ${definition.decisionRule.requireImprovedMetricsCount}.`);
       return { decision: 'REJECT', rationale };

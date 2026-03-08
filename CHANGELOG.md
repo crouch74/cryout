@@ -8,10 +8,13 @@ All notable changes to this project will be documented in this file.
   - **1919 — EGYPT RISES**: Adjusted starting Gaze (3) and War Machine (7). Relaxed mandate and beacon thresholds by 3. Improved liberation probability by raising extraction removal cap to 4.
   - **WOMAN, LIFE, FREEDOM**: Hardened state security (War Machine 4) and lowered liberation threshold to 2. Mandate thresholds tightened by 1 to reflect the high-stakes political pressure of the 2022 uprising.
   - **ALGERIAN WAR OF INDEPENDENCE**: Balanced colonial army surge (War Machine 7). Set crisis extraction floor to 0 to reflect the sustainablity of the maquis. Relaxed mandate thresholds by 3.
-  - **TAHRIR SQUARE**: Optimized for 18-day pacing. Cairo/Alexandria start with lower extraction overhead. Total liberation extraction cap raised to 4. Thresholds tightened by 1 to maintain revolutionary tension.
+  - **TAHRIR SQUARE**: Optimized for 18-day pacing. Cairo/Alexandria start with lower extraction overhead. Total liberation extraction cap raised to 4. Thresholds tightened by 1 to maintain revolutionary tension. Lowered catastrophic state score cap to 69.
   - **WHERE THE STONES CRY OUT**: Base world scenario stabilized. Global Gaze (8) and War Machine (4) adjusted for early survivability. Improved liberation threshold to 3.
 
 ### Improved
+- 🧬 **GA Mutation Space Safety** — improved the evolutionary search space by implementing dynamic bounds for `seededExtractionTotalDelta`. Constraints are now automatically calculated based on the scenario's initial seeded extraction values, preventing the optimizer from generating invalid negative seeds while maintaining exploration range.
+- 🧪 **Experiment Metric Intelligence** — upgraded the A/B experiment reporter to correctly handle "lower-is better" metrics (such as defeat rates and extraction breach frequency). The engine now accurately calculates lifts and regressions for these metrics, ensuring guardrail evaluations and decision rules remain statistically sound across all performance axes.
+- 🌐 **Dashboard Access Reliability** — added support for Cloudflare tunnel hosts in the dashboard proxy configuration, enabling seamless remote access and shared development environments via `trycloudflare.com` alongside existing Ngrok support.
 - 📊 **Dashboard Recommendation Fallback** — implemented a smart fallback in the Recommendations tab. If no strong production-ready patch is identified by the optimizer, the dashboard now surface the "Top Genome" (highest fitness individual) as a draft recommendation.
   - Added **Inconclusive Analysis** status for draft recommendations.
   - Detailed explanation of verification gaps (noise, sample size, convergence).

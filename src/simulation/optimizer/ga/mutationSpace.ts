@@ -16,12 +16,35 @@ function rulesetHasAnyExtractionAdds(scenario: RulesetDefinition) {
     || scenario.systemCards.some((card) => card.onReveal.some((effect) => effect.type === 'add_extraction'));
 }
 
+function getSeededExtractionMutationBounds(scenario: RulesetDefinition) {
+  const seedEntries = Object.values(scenario.setup?.extractionSeeds ?? {});
+  const seededFrontCount = seedEntries.length;
+  const totalSeededExtraction = seedEntries.reduce((sum, amount) => sum + (amount ?? 0), 0);
+
+  if (seededFrontCount === 0) {
+    return undefined;
+  }
+
+  return {
+    min: -Math.min(3, totalSeededExtraction),
+    max: 3,
+  };
+}
+
 export function buildMutationSpaceFromScenario(scenario: RulesetDefinition): MutationDescriptor[] {
   const space: MutationDescriptor[] = [];
   
   space.push({ path: 'setup.globalGazeDelta', type: 'number', min: -2, max: 3 });
   space.push({ path: 'setup.northernWarMachineDelta', type: 'number', min: -2, max: 2 });
-  space.push({ path: 'setup.seededExtractionTotalDelta', type: 'number', min: -3, max: 3 });
+  const seededExtractionBounds = getSeededExtractionMutationBounds(scenario);
+  if (seededExtractionBounds) {
+    space.push({
+      path: 'setup.seededExtractionTotalDelta',
+      type: 'number',
+      min: seededExtractionBounds.min,
+      max: seededExtractionBounds.max,
+    });
+  }
   
   if (rulesetHasCrisisExtractionAdds(scenario)) {
     space.push({ path: 'pressure.crisisSpikeExtractionDelta', type: 'number', min: -2, max: 2 });
@@ -59,6 +82,16 @@ export function pathExists(scenario: RulesetDefinition, path: string): boolean {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validateScenarioPatch(patch: any, scenario: RulesetDefinition): boolean {
+  const seededExtractionDelta = patch.setup?.seededExtractionTotalDelta;
+  if (typeof seededExtractionDelta === 'number') {
+    const seededExtractionBounds = getSeededExtractionMutationBounds(scenario);
+    if (!seededExtractionBounds) {
+      return false;
+    }
+    if (seededExtractionDelta < seededExtractionBounds.min || seededExtractionDelta > seededExtractionBounds.max) {
+      return false;
+    }
+  }
   if (patch.pressure?.crisisSpikeExtractionDelta !== undefined && !rulesetHasCrisisExtractionAdds(scenario)) {
     return false;
   }
