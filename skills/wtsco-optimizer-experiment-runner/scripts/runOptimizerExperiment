@@ -1,0 +1,755 @@
+#!/usr/bin/env python3
+"""Run optimizer experiments against the repository's existing tooling."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import shlex
+import subprocess
+import sys
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+
+SEARCH_HINTS = (
+    "optimizer",
+    "simulation",
+    "experiment",
+    "ga",
+    "genetic",
+    "hillclimb",
+    "abtest",
+    "montecarlo",
+    "scenario_runner",
+)
+
+ANSI_ESCAPE_RE = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
+
+
+@dataclass
+class Discovery:
+    repo_root: Path
+    package_version: str
+    scripts: dict[str, str]
+    cli_sources: dict[str, str]
+    cli_flags: dict[str, list[str]]
+    modules: dict[str, str]
+    backlog_ids: list[str]
+    search_hits: list[str]
+
+
+def log(message: str) -> None:
+    print(message, flush=True)
+
+
+def parse_json(raw: str | None) -> dict[str, Any]:
+    if not raw:
+        return {}
+    value = json.loads(raw)
+    if not isinstance(value, dict):
+        raise ValueError("parameters must decode to a JSON object")
+    return value
+
+
+def slugify(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+    return slug or "experiment"
+
+
+def utc_stamp() -> str:
+    return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
+
+def read_text(path: Path) -> str:
+    return path.read_text(encoding="utf8")
+
+
+def write_json(path: Path, payload: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(f"{json.dumps(payload, indent=2)}\n", encoding="utf8")
+
+
+def append_line(path: Path, line: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf8") as handle:
+        handle.write(f"{line}\n")
+
+
+def flatten_patch(value: Any, prefix: str = "") -> list[tuple[str, Any]]:
+    if not isinstance(value, dict):
+        return []
+    rows: list[tuple[str, Any]] = []
+    for key in sorted(value.keys()):
+        if key == "note":
+            continue
+        next_prefix = f"{prefix}.{key}" if prefix else key
+        child = value[key]
+        if isinstance(child, dict):
+            rows.extend(flatten_patch(child, next_prefix))
+        else:
+            rows.append((next_prefix, child))
+    return rows
+
+
+def strip_ansi(value: str) -> str:
+    return ANSI_ESCAPE_RE.sub("", value)
+
+
+def find_repo_root(start: Path) -> Path:
+    current = start.resolve()
+    for candidate in [current, *current.parents]:
+        package_json = candidate / "package.json"
+        if package_json.exists() and (candidate / "src" / "simulation").exists():
+            return candidate
+    raise FileNotFoundError("Could not locate repo root containing package.json and src/simulation/")
+
+
+def discover_first_path(repo_root: Path, pattern: re.Pattern[str], *, contains: str | None = None) -> Path:
+    for path in repo_root.rglob("*.ts"):
+        if pattern.search(str(path.relative_to(repo_root))):
+            if contains is None or contains in read_text(path):
+                return path
+    raise FileNotFoundError(f"Could not discover file matching {pattern.pattern}")
+
+
+def discover_search_hits(repo_root: Path) -> list[str]:
+    hits: set[str] = set()
+    matcher = re.compile("|".join(re.escape(term) for term in SEARCH_HINTS), re.IGNORECASE)
+    for path in repo_root.rglob("*"):
+        if path.is_dir():
+            continue
+        relative = str(path.relative_to(repo_root))
+        if matcher.search(relative):
+            hits.add(relative)
+            continue
+        if path.suffix not in {".ts", ".md", ".json", ".mjs"}:
+            continue
+        try:
+            content = read_text(path)
+        except UnicodeDecodeError:
+            continue
+        if matcher.search(content):
+            hits.add(relative)
+    return sorted(hits)[:80]
+
+
+def discover_repo(repo_root: Path) -> Discovery:
+    package = json.loads(read_text(repo_root / "package.json"))
+    scripts = package.get("scripts", {})
+    if not isinstance(scripts, dict):
+        raise ValueError("package.json scripts must be an object")
+
+    cli_sources = {
+        "simulate": str(discover_first_path(repo_root, re.compile(r"src/simulation/runSimulation\.ts$")).relative_to(repo_root)),
+        "experiment": str(discover_first_path(repo_root, re.compile(r"src/simulation/experiments/cli\.ts$")).relative_to(repo_root)),
+        "balance-search": str(discover_first_path(repo_root, re.compile(r"src/simulation/balance/cli\.ts$")).relative_to(repo_root)),
+        "optimize": str(discover_first_path(repo_root, re.compile(r"src/simulation/optimizer/cli\.ts$")).relative_to(repo_root)),
+    }
+
+    modules = {
+        "runExperiment": str(discover_first_path(repo_root, re.compile(r"src/simulation/experiments/runner\.ts$"), contains="export async function runExperiment").relative_to(repo_root)),
+        "runSingleArmExperiment": str(discover_first_path(repo_root, re.compile(r"src/simulation/experiments/runner\.ts$"), contains="export async function runSingleArmExperiment").relative_to(repo_root)),
+        "runBalanceSearch": str(discover_first_path(repo_root, re.compile(r"src/simulation/balance/SearchEngine\.ts$"), contains="export async function runBalanceSearch").relative_to(repo_root)),
+        "runGaSearch": str(discover_first_path(repo_root, re.compile(r"src/simulation/optimizer/ga/engine\.ts$"), contains="export async function runGaSearch").relative_to(repo_root)),
+        "scoreArmSummary": str(discover_first_path(repo_root, re.compile(r"src/simulation/optimizer/fitness\.ts$"), contains="export function scoreArmSummary").relative_to(repo_root)),
+        "patchHelpers": str(discover_first_path(repo_root, re.compile(r"src/simulation/optimizer/candidates\.ts$"), contains="export function getScenarioPatchKey").relative_to(repo_root)),
+    }
+
+    cli_flags: dict[str, list[str]] = {}
+    for key, rel_path in cli_sources.items():
+        source = read_text(repo_root / rel_path)
+        flags = sorted({match.group(1) for match in re.finditer(r"arg === '--([a-z0-9-]+)'", source)})
+        cli_flags[key] = flags
+
+    backlog_path = repo_root / "src" / "simulation" / "experiments" / "hypotheses" / "backlog.ts"
+    backlog_ids = sorted(set(re.findall(r"id:\s*'([^']+)'", read_text(backlog_path)))) if backlog_path.exists() else []
+
+    return Discovery(
+        repo_root=repo_root,
+        package_version=str(package.get("version", "unknown")),
+        scripts={key: str(value) for key, value in scripts.items()},
+        cli_sources=cli_sources,
+        cli_flags=cli_flags,
+        modules=modules,
+        backlog_ids=backlog_ids,
+        search_hits=discover_search_hits(repo_root),
+    )
+
+
+def build_arg_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Run optimizer experiments with repo discovery.")
+    parser.add_argument("--repo-root", default=".", help="Repository root or a child path inside it.")
+    parser.add_argument("--scenario", required=True, help="Scenario id to test.")
+    parser.add_argument("--method", required=True, choices=("genetic", "hillclimb", "abtest", "simulation"))
+    parser.add_argument("--simulation-count", required=True, type=int, help="Runs per arm or per candidate, depending on method.")
+    parser.add_argument("--parameters", help="JSON object matching ScenarioPatch.")
+    parser.add_argument("--parameters-file", help="Path to a JSON file containing ScenarioPatch.")
+    parser.add_argument("--notes", default="", help="Freeform notes stored with the run.")
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--players", default="2,3,4")
+    parser.add_argument("--modes", default="liberation,symbolic")
+    parser.add_argument("--parallel-workers", type=int, default=max(1, (os.cpu_count() or 2) - 1))
+    parser.add_argument("--runtime", default="balanced", choices=("fast", "balanced", "thorough"))
+    parser.add_argument("--iterations", type=int, default=6)
+    parser.add_argument("--population", type=int, default=12)
+    parser.add_argument("--generations", type=int, default=4)
+    parser.add_argument("--top-candidates", type=int, default=3)
+    parser.add_argument("--mutation-rate", type=float, default=0.15)
+    parser.add_argument("--crossover-rate", type=float, default=0.6)
+    parser.add_argument("--elitism", type=int, default=2)
+    parser.add_argument("--output-root", help="Override root directory for skill run bundles.")
+    return parser
+
+
+def method_request(args: argparse.Namespace, repo_root: Path, out_dir: Path, discovery: Discovery) -> dict[str, Any]:
+    if args.parameters_file:
+        parameters = parse_json(Path(args.parameters_file).read_text(encoding="utf8"))
+    else:
+        parameters = parse_json(args.parameters)
+
+    modes = [entry.strip() for entry in args.modes.split(",") if entry.strip()]
+    players = [int(entry.strip()) for entry in args.players.split(",") if entry.strip()]
+    request = {
+        "scenario": args.scenario,
+        "method": args.method,
+        "parameters": parameters,
+        "simulationCount": args.simulation_count,
+        "notes": args.notes,
+        "seed": args.seed,
+        "players": players,
+        "modes": modes,
+        "parallelWorkers": args.parallel_workers,
+        "runtime": args.runtime,
+        "iterations": args.iterations,
+        "population": args.population,
+        "generations": args.generations,
+        "topCandidates": args.top_candidates,
+        "mutationRate": args.mutation_rate,
+        "crossoverRate": args.crossover_rate,
+        "elitism": args.elitism,
+        "outputDir": str(out_dir),
+        "repoRoot": str(repo_root),
+        "discovery": {
+            "modules": discovery.modules,
+            "scripts": discovery.scripts,
+        },
+    }
+    return request
+
+
+def render_node_runner() -> str:
+    return r"""#!/usr/bin/env node
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+const requestPath = process.argv[2];
+if (!requestPath) {
+  throw new Error('request path is required');
+}
+
+const request = JSON.parse(await readFile(requestPath, 'utf8'));
+
+const runner = {
+  runExperiment: request.discovery.modules.runExperiment,
+  runSingleArmExperiment: request.discovery.modules.runSingleArmExperiment,
+  runBalanceSearch: request.discovery.modules.runBalanceSearch,
+  runGaSearch: request.discovery.modules.runGaSearch,
+  scoreArmSummary: request.discovery.modules.scoreArmSummary,
+  patchHelpers: request.discovery.modules.patchHelpers,
+};
+
+function moduleUrl(relativePath) {
+  return pathToFileURL(join(request.repoRoot, relativePath)).href;
+}
+
+const { runExperiment, runSingleArmExperiment } = await import(moduleUrl(runner.runExperiment));
+const balanceModule = await import(moduleUrl(runner.runBalanceSearch));
+const gaModule = await import(moduleUrl(runner.runGaSearch));
+const fitnessModule = await import(moduleUrl(runner.scoreArmSummary));
+const patchModule = await import(moduleUrl(runner.patchHelpers));
+
+const { runBalanceSearch } = balanceModule;
+const { runGaSearch } = gaModule;
+const { scoreArmSummary } = fitnessModule;
+const { getScenarioPatchKey, normalizeScenarioPatch } = patchModule;
+
+function buildDefinition(id, title, scenarioId, runsPerArm, seed, patch, modes, players) {
+  return {
+    id,
+    title,
+    scenarioId,
+    runsPerArm,
+    seed,
+    victoryModes: modes,
+    playerCounts: players,
+    patch,
+    expectedEffects: {},
+    decisionRule: {
+      primary: 'successRate',
+      minLift: 0,
+      confidence: 0.95,
+    },
+  };
+}
+
+function armSnapshot(arm, score) {
+  return {
+    successRate: arm.successRate,
+    publicVictoryRate: arm.publicVictoryRate,
+    averageRounds: arm.turns.average,
+    medianRounds: arm.turns.median,
+    earlyTerminationRate: arm.earlyTerminationRate,
+    earlyLossRate: arm.earlyLossRate,
+    outcomeEntropy: arm.outcomeEntropy,
+    actionEntropy: arm.actionBalance.entropy,
+    fitnessScore: score.score,
+  };
+}
+
+async function ensure(path) {
+  await mkdir(path, { recursive: true });
+}
+
+async function measureBaselinePatch(baselinePatch) {
+  const definition = buildDefinition(
+    `${request.method}_${request.scenario}_baseline_measure`,
+    `Baseline measurement ${request.scenario}`,
+    request.scenario,
+    request.simulationCount,
+    request.seed,
+    {},
+    request.modes,
+    request.players,
+  );
+  const result = await runSingleArmExperiment(definition, {
+    outDir: join(request.outputDir, 'baseline_measurement'),
+    baselinePatch,
+    parallelWorkers: request.parallelWorkers,
+    logMode: 'aggregated',
+    armLabel: 'B',
+  });
+  const score = scoreArmSummary(result.arm);
+  return {
+    result,
+    score,
+    snapshot: armSnapshot(result.arm, score),
+  };
+}
+
+const baselinePatch = normalizeScenarioPatch(request.parameters || {});
+let summary;
+
+if (request.method === 'abtest') {
+  const definition = buildDefinition(
+    `${request.method}_${request.scenario}_${request.seed}`,
+    `A/B test for ${request.scenario}`,
+    request.scenario,
+    request.simulationCount,
+    request.seed,
+    baselinePatch,
+    request.modes,
+    request.players,
+  );
+  const result = await runExperiment(definition, {
+    outDir: join(request.outputDir, 'abtest'),
+    parallelWorkers: request.parallelWorkers,
+    logMode: 'aggregated',
+  });
+  const armAScore = scoreArmSummary(result.armA);
+  const armBScore = scoreArmSummary(result.armB);
+  summary = {
+    kind: 'abtest',
+    outputDir: result.outputDir,
+    patch: baselinePatch,
+    armA: armSnapshot(result.armA, armAScore),
+    armB: armSnapshot(result.armB, armBScore),
+    comparison: result.comparison.metrics.successRate,
+    recommendation: result.recommendation,
+    structuralDiagnostics: result.structuralDiagnostics || null,
+  };
+} else if (request.method === 'simulation') {
+  const definition = buildDefinition(
+    `${request.method}_${request.scenario}_${request.seed}`,
+    `Simulation sweep for ${request.scenario}`,
+    request.scenario,
+    request.simulationCount,
+    request.seed,
+    baselinePatch,
+    request.modes,
+    request.players,
+  );
+  const result = await runSingleArmExperiment(definition, {
+    outDir: join(request.outputDir, 'simulation'),
+    parallelWorkers: request.parallelWorkers,
+    logMode: 'aggregated',
+    armLabel: 'B',
+  });
+  const score = scoreArmSummary(result.arm);
+  summary = {
+    kind: 'simulation',
+    outputDir: result.outputDir,
+    patch: baselinePatch,
+    arm: armSnapshot(result.arm, score),
+  };
+} else if (request.method === 'hillclimb') {
+  const inputPatchEvaluation = Object.keys(baselinePatch).length > 0
+    ? await runExperiment(
+      buildDefinition(
+        `${request.method}_${request.scenario}_${request.seed}_input_patch`,
+        `Input patch A/B for ${request.scenario}`,
+        request.scenario,
+        request.simulationCount,
+        request.seed,
+        baselinePatch,
+        request.modes,
+        request.players,
+      ),
+      {
+        outDir: join(request.outputDir, 'hillclimb_input_patch'),
+        parallelWorkers: request.parallelWorkers,
+        logMode: 'aggregated',
+      },
+    )
+    : null;
+
+  const result = await runBalanceSearch({
+    scenarioId: request.scenario,
+    iterations: request.iterations,
+    runsPerCandidate: request.simulationCount,
+    seed: request.seed,
+    outputDir: join(request.outputDir, 'hillclimb'),
+    topN: request.topCandidates,
+  });
+
+  summary = {
+    kind: 'hillclimb',
+    outputDir: join(request.outputDir, 'hillclimb'),
+    note: Object.keys(baselinePatch).length > 0
+      ? 'Input patch evaluated separately. Built-in balance search remains baseline-oriented.'
+      : 'Balance search ran against the shipped baseline.',
+    inputPatchEvaluation: inputPatchEvaluation
+      ? {
+        armA: armSnapshot(inputPatchEvaluation.armA, scoreArmSummary(inputPatchEvaluation.armA)),
+        armB: armSnapshot(inputPatchEvaluation.armB, scoreArmSummary(inputPatchEvaluation.armB)),
+        recommendation: inputPatchEvaluation.recommendation,
+      }
+      : null,
+    bestCandidates: result.bestCandidates,
+  };
+} else if (request.method === 'genetic') {
+  const baseline = await measureBaselinePatch(baselinePatch);
+  const gaResult = await runGaSearch({
+    scenarioId: request.scenario,
+    iteration: 1,
+    seed: request.seed,
+    config: {
+      populationSize: request.population,
+      generations: request.generations,
+      mutationRate: request.mutationRate,
+      crossoverRate: request.crossoverRate,
+      elitism: request.elitism,
+      runsPerIndividual: request.simulationCount,
+      topCandidates: request.topCandidates,
+      writeGenerationArtifacts: true,
+    },
+    baselinePatch,
+    baselinePatchKey: getScenarioPatchKey(baselinePatch),
+    baselineMetrics: baseline.result.arm,
+    baselineScore: baseline.score,
+    parallelWorkers: request.parallelWorkers,
+    victoryModes: request.modes,
+    playerCounts: request.players,
+    outDir: join(request.outputDir, 'genetic'),
+  });
+
+  const bestCandidate = gaResult.topCandidates[0] || null;
+  let confirmation = null;
+  if (bestCandidate) {
+    confirmation = await runExperiment(
+      buildDefinition(
+        `${request.method}_${request.scenario}_${request.seed}_confirm`,
+        `GA confirmation for ${request.scenario}`,
+        request.scenario,
+        request.simulationCount,
+        request.seed,
+        bestCandidate.patch,
+        request.modes,
+        request.players,
+      ),
+      {
+        outDir: join(request.outputDir, 'genetic_confirmation'),
+        baselinePatch,
+        parallelWorkers: request.parallelWorkers,
+        logMode: 'aggregated',
+      },
+    );
+  }
+
+  summary = {
+    kind: 'genetic',
+    outputDir: join(request.outputDir, 'genetic'),
+    baselinePatch,
+    baseline: baseline.snapshot,
+    ga: {
+      generationsCompleted: gaResult.generationsCompleted,
+      bestFitness: gaResult.bestFitness,
+      bestGenome: bestCandidate ? bestCandidate.patch : null,
+      topCandidates: gaResult.topCandidates,
+    },
+    confirmation: confirmation
+      ? {
+        armA: armSnapshot(confirmation.armA, scoreArmSummary(confirmation.armA)),
+        armB: armSnapshot(confirmation.armB, scoreArmSummary(confirmation.armB)),
+        recommendation: confirmation.recommendation,
+        structuralDiagnostics: confirmation.structuralDiagnostics || null,
+      }
+      : null,
+  };
+} else {
+  throw new Error(`Unsupported method: ${request.method}`);
+}
+
+const summaryPath = join(request.outputDir, 'summary.json');
+await ensure(request.outputDir);
+await writeFile(summaryPath, `${JSON.stringify(summary, null, 2)}\n`, 'utf8');
+console.log(JSON.stringify({ summaryPath }, null, 2));
+"""
+
+
+def run_process(command: list[str], cwd: Path, raw_log: Path, commands_log: Path) -> str:
+    append_line(commands_log, shlex.join(command))
+    log(f"🧪 Executing: {shlex.join(command)}")
+    process = subprocess.Popen(
+        command,
+        cwd=str(cwd),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+    )
+    output_lines: list[str] = []
+    assert process.stdout is not None
+    for line in process.stdout:
+        raw_line = line.rstrip("\n")
+        output_lines.append(raw_line)
+        append_line(raw_log, raw_line)
+        print(raw_line, flush=True)
+    return_code = process.wait()
+    if return_code != 0:
+        raise RuntimeError(f"Process failed with exit code {return_code}: {shlex.join(command)}")
+    return "\n".join(output_lines)
+
+
+def extract_progress_markers(raw_output: str) -> list[str]:
+    markers: list[str] = []
+    for line in raw_output.splitlines():
+        if any(icon in line for icon in ("🧬", "🧪", "📊", "🧮", "🧠", "🚨", "🏆")):
+            markers.append(strip_ansi(line))
+    return markers[-30:]
+
+
+def recommendation_lines(summary: dict[str, Any]) -> list[str]:
+    if summary["kind"] == "abtest":
+        arm_b = summary["armB"]
+        lines = []
+        if summary.get("recommendation"):
+            rationale = summary["recommendation"].get("rationale", [])
+            if rationale:
+                lines.append(rationale[0])
+        if arm_b["earlyTerminationRate"] > 0.05:
+            lines.append("Reduce opening pressure or crisis extraction to avoid early collapses.")
+        if arm_b["averageRounds"] < 7:
+            lines.append("Slow the early game slightly so victories and defeats happen after meaningful setup.")
+        if arm_b["outcomeEntropy"] < 0.3:
+            lines.append("Increase action diversity or soften dominant rush lines to widen outcome variety.")
+        return lines[:3]
+
+    if summary["kind"] == "simulation":
+        arm = summary["arm"]
+        lines = []
+        if arm["earlyTerminationRate"] > 0.05:
+            lines.append("Opening defeat pressure is still high; reduce extraction or War Machine escalation.")
+        if arm["averageRounds"] > 12:
+            lines.append("Pacing is long; consider tightening victory thresholds or pressure caps.")
+        if arm["fitnessScore"] <= 0:
+            lines.append("Fitness is weak; move to A/B validation only after adjusting the patch.")
+        return lines[:3]
+
+    if summary["kind"] == "hillclimb":
+        best = (summary.get("bestCandidates") or [{}])[0]
+        lines = []
+        if best.get("metrics", {}).get("successRate", 0) < 0.3:
+            lines.append("Local search still struggles to find a viable success band; broaden the numeric search or escalate to GA.")
+        if summary.get("inputPatchEvaluation"):
+            decision = summary["inputPatchEvaluation"]["recommendation"]["decision"]
+            lines.append(f"Input patch A/B decision: {decision}.")
+        lines.append("Use the top local candidate as the next hypothesis, then confirm it with `abtest`.")
+        return lines[:3]
+
+    if summary["kind"] == "genetic":
+        lines = []
+        confirmation = summary.get("confirmation")
+        if confirmation:
+            decision = confirmation["recommendation"]["decision"]
+            lines.append(f"Top genome confirmation decision: {decision}.")
+            if confirmation["armB"]["earlyTerminationRate"] > 0.05:
+                lines.append("The GA improved fitness but still leaves early defeat pressure elevated.")
+        if summary["ga"].get("bestGenome"):
+            lines.append("Promote the best genome into a focused A/B retest at a larger simulation budget before changing scenario rules.")
+        return lines[:3]
+
+    return []
+
+
+def render_report(request: dict[str, Any], summary: dict[str, Any], progress_markers: list[str]) -> str:
+    lines = [
+        "Experiment Summary",
+        "------------------",
+        "",
+        f"Scenario: {request['scenario']}",
+        f"Method: {request['method']}",
+        f"Simulations: {request['simulationCount']}",
+    ]
+
+    flattened = flatten_patch(request.get("parameters", {}))
+    if flattened:
+        lines.extend(["", "Input Patch:"])
+        for key, value in flattened:
+            lines.append(f"- {key}: {value}")
+
+    if request.get("notes"):
+        lines.extend(["", f"Notes: {request['notes']}"])
+
+    if summary["kind"] == "abtest":
+        lines.extend([
+            "",
+            "Results:",
+            f"- Baseline win rate: {summary['armA']['successRate'] * 100:.2f}%",
+            f"- Treatment win rate: {summary['armB']['successRate'] * 100:.2f}%",
+            f"- Treatment average rounds: {summary['armB']['averageRounds']:.2f}",
+            f"- Treatment early termination: {summary['armB']['earlyTerminationRate'] * 100:.2f}%",
+            f"- Treatment entropy: {summary['armB']['outcomeEntropy']:.4f}",
+            f"- Treatment fitness: {summary['armB']['fitnessScore']:.6f}",
+            f"- Decision: {summary['recommendation']['decision']}",
+        ])
+    elif summary["kind"] == "simulation":
+        arm = summary["arm"]
+        lines.extend([
+            "",
+            "Results:",
+            f"- Win rate: {arm['successRate'] * 100:.2f}%",
+            f"- Average rounds: {arm['averageRounds']:.2f}",
+            f"- Early termination: {arm['earlyTerminationRate'] * 100:.2f}%",
+            f"- Outcome entropy: {arm['outcomeEntropy']:.4f}",
+            f"- Fitness: {arm['fitnessScore']:.6f}",
+        ])
+    elif summary["kind"] == "hillclimb":
+        best = (summary.get("bestCandidates") or [{}])[0]
+        params = best.get("parameters", {})
+        lines.extend(["", "Best Candidate:"])
+        for key, value in params.items():
+            lines.append(f"- {key}: {value}")
+        metrics = best.get("metrics", {})
+        if metrics:
+            lines.extend([
+                "",
+                "Results:",
+                f"- Win rate: {metrics.get('successRate', 0) * 100:.2f}%",
+                f"- Public victory rate: {metrics.get('publicVictoryRate', 0) * 100:.2f}%",
+                f"- Score: {best.get('score', 0):.6f}",
+            ])
+        if summary.get("inputPatchEvaluation"):
+            lines.extend([
+                "",
+                f"Input Patch Decision: {summary['inputPatchEvaluation']['recommendation']['decision']}",
+            ])
+    elif summary["kind"] == "genetic":
+        lines.extend(["", "Best Genome:"])
+        best_genome = summary["ga"].get("bestGenome") or {}
+        for key, value in flatten_patch(best_genome):
+            lines.append(f"- {key}: {value}")
+        lines.extend([
+            "",
+            "Results:",
+            f"- Baseline win rate: {summary['baseline']['successRate'] * 100:.2f}%",
+            f"- Baseline average rounds: {summary['baseline']['averageRounds']:.2f}",
+            f"- Best GA fitness: {summary['ga']['bestFitness']:.6f}",
+        ])
+        if summary.get("confirmation"):
+            lines.extend([
+                f"- Confirmed win rate: {summary['confirmation']['armB']['successRate'] * 100:.2f}%",
+                f"- Confirmed average rounds: {summary['confirmation']['armB']['averageRounds']:.2f}",
+                f"- Confirmed early termination: {summary['confirmation']['armB']['earlyTerminationRate'] * 100:.2f}%",
+                f"- Decision: {summary['confirmation']['recommendation']['decision']}",
+            ])
+
+    recommendations = recommendation_lines(summary)
+    if recommendations:
+        lines.extend(["", "Recommendation:"])
+        for entry in recommendations:
+            lines.append(f"- {entry}")
+
+    if progress_markers:
+        lines.extend(["", "Progress Markers:"])
+        for marker in progress_markers[-8:]:
+            lines.append(f"- {marker}")
+
+    return "\n".join(lines) + "\n"
+
+
+def main() -> int:
+    args = build_arg_parser().parse_args()
+    repo_root = find_repo_root(Path(args.repo_root))
+    discovery = discover_repo(repo_root)
+
+    run_root = Path(args.output_root) if args.output_root else repo_root / "simulation_output" / "optimizer_skill_runs"
+    out_dir = run_root / f"{utc_stamp()}_{slugify(args.scenario)}_{slugify(args.method)}"
+    out_dir.mkdir(parents=True, exist_ok=False)
+
+    request = method_request(args, repo_root, out_dir, discovery)
+    write_json(out_dir / "request.json", request)
+    write_json(out_dir / "discovery.json", {
+        "repoRoot": str(discovery.repo_root),
+        "packageVersion": discovery.package_version,
+        "scripts": discovery.scripts,
+        "cliSources": discovery.cli_sources,
+        "cliFlags": discovery.cli_flags,
+        "modules": discovery.modules,
+        "backlogIds": discovery.backlog_ids,
+        "searchHits": discovery.search_hits,
+    })
+
+    node_runner = out_dir / "runner.mjs"
+    node_runner.write_text(render_node_runner(), encoding="utf8")
+    raw_log = out_dir / "raw_process.log"
+    commands_log = out_dir / "commands.log"
+
+    log(f"🔎 Repo root: {repo_root}")
+    log(f"🧭 Output bundle: {out_dir}")
+    log(f"📚 Package version: {discovery.package_version}")
+    log(f"🧱 Discovered modules: {json.dumps(discovery.modules, indent=2)}")
+
+    raw_output = run_process(["node", str(node_runner), str(out_dir / "request.json")], repo_root, raw_log, commands_log)
+    progress_markers = extract_progress_markers(raw_output)
+
+    summary = json.loads(read_text(out_dir / "summary.json"))
+    report = render_report(request, summary, progress_markers)
+    (out_dir / "report.md").write_text(report, encoding="utf8")
+
+    log("📊 Report ready")
+    log(report)
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except Exception as error:  # pragma: no cover - CLI safety net
+        print(f"❌ Optimizer experiment runner failed: {error}", file=sys.stderr)
+        raise SystemExit(1)

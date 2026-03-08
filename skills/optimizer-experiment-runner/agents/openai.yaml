@@ -1,4 +1,0 @@
-interface:
-  display_name: "Optimizer Experiment Runner"
-  short_description: "Run balance experiments from repo tooling"
-  default_prompt: "Use $optimizer-experiment-runner to run a balancing experiment for a scenario in this repo and summarize the results."

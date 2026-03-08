@@ -1,0 +1,4 @@
+interface:
+  display_name: "WTSCO Optimizer Experiment Runner"
+  short_description: "Run WTSCO balance experiments"
+  default_prompt: "Use $wtsco-optimizer-experiment-runner to run a balancing experiment for a Where the Stones Cry Out scenario and summarize the results."
