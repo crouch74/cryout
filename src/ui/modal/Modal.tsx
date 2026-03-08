@@ -96,9 +96,8 @@ export function Modal({
               />
             </DialogOverlay>
             <DialogContent
-              asChild
               aria-labelledby={accessibilityTitleId}
-              aria-describedby={accessibilityDescription ? accessibilityDescriptionId : undefined}
+              aria-describedby={accessibilityDescriptionId}
               onOpenAutoFocus={(event) => {
                 if (initialFocusRef?.current) {
                   event.preventDefault();
@@ -124,26 +123,24 @@ export function Modal({
                 event.preventDefault();
               }}
             >
-              <m.div
-                className={`modal-card ${className}`.trim()}
-                tabIndex={-1}
-                initial={canAnimate ? { opacity: 0, y: 10, scale: 0.98 } : false}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={canAnimate ? { opacity: 0, y: 10, scale: 0.98 } : undefined}
-                transition={canAnimate ? { duration: 0.2, ease: [0.18, 0.85, 0.24, 1] } : undefined}
-              >
-                <div className="visually-hidden">
-                  <DialogTitle id={accessibilityTitleId}>
-                    {accessibilityTitle ?? 'Dialog'}
-                  </DialogTitle>
-                  {accessibilityDescription ? (
-                    <DialogDescription id={accessibilityDescriptionId}>
-                      {accessibilityDescription}
-                    </DialogDescription>
-                  ) : null}
-                </div>
-                {children}
-              </m.div>
+              <>
+                <DialogTitle className="visually-hidden" id={accessibilityTitleId}>
+                  {accessibilityTitle ?? 'Dialog'}
+                </DialogTitle>
+                <DialogDescription className="visually-hidden" id={accessibilityDescriptionId}>
+                  {accessibilityDescription ?? 'Dialog content'}
+                </DialogDescription>
+                <m.div
+                  className={`modal-card ${className}`.trim()}
+                  tabIndex={-1}
+                  initial={canAnimate ? { opacity: 0, y: 10, scale: 0.98 } : false}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={canAnimate ? { opacity: 0, y: 10, scale: 0.98 } : undefined}
+                  transition={canAnimate ? { duration: 0.2, ease: [0.18, 0.85, 0.24, 1] } : undefined}
+                >
+                  {children}
+                </m.div>
+              </>
             </DialogContent>
           </LazyMotion>
         ) : null}
