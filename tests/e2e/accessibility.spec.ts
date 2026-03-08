@@ -31,7 +31,8 @@ test.describe('accessibility smoke coverage', () => {
     await page.goto('/offline');
     await page.getByRole('button', { name: 'Start Session' }).click();
     await dismissStartupOverlays(page);
-    await expect(page.getByRole('button', { name: 'Back Home' }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Gameplay display controls' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Ledger', exact: true })).toBeVisible();
     await expectNoAccessibilitySmokeIssues(page, 'offline table');
   });
 });

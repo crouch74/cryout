@@ -131,9 +131,9 @@ test('startup withdrawal applies Archive Leak immediately for the owning seat', 
     (entry) => entry.context?.actingSeat === 0 && entry.context?.cardReveals?.[0]?.cardId === 'res_archive_leak',
   );
 
-  assert.equal(event.deltas.some((delta) => delta.kind === 'track' && delta.label === 'globalGaze' && delta.before === 7 && delta.after === 8), true);
+  assert.equal(event.deltas.some((delta) => delta.kind === 'track' && delta.label === 'globalGaze' && delta.before === 8 && delta.after === 9), true);
   assert.equal(event.deltas.some((delta) => delta.kind === 'evidence' && delta.label === 'seat:0:evidence' && delta.before === 1 && delta.after === 2), true);
-  assert.equal(state.globalGaze >= 8, true);
+  assert.equal(state.globalGaze >= 9, true);
   assert.equal(state.players[0]?.evidence >= 2, true);
   assert.equal(state.decks.resistance.discardPile.includes('res_archive_leak'), true);
   assert.equal(event.context?.cardReveals?.[0]?.origin, 'startup_withdrawal');
@@ -169,9 +169,9 @@ test('Tahrir startup withdrawal applies effectful resistance cards during setup'
   );
 
   assert.equal(event.deltas.some((delta) => delta.kind === 'evidence' && delta.label === 'seat:0:evidence' && delta.before === 1 && delta.after === 4), true);
-  assert.equal(event.deltas.some((delta) => delta.kind === 'track' && delta.label === 'globalGaze' && delta.before === 6 && delta.after === 7), true);
+  assert.equal(event.deltas.some((delta) => delta.kind === 'track' && delta.label === 'globalGaze' && delta.before === 0 && delta.after === 1), true);
   assert.equal(state.players[0]?.evidence >= 4, true);
-  assert.equal(state.globalGaze >= 7, true);
+  assert.equal(state.globalGaze >= 1, true);
   assert.equal(event.context?.targetRegionId, 'Cairo');
 });
 
@@ -190,8 +190,8 @@ test('Algeria startup seeds authored tracks and extraction values', () => {
   const content = compileContent(algeriaStartCommand.rulesetId);
   const state = initializeGame(algeriaStartCommand);
 
-  assert.equal(content.ruleset.setup?.globalGaze, 4);
-  assert.equal(content.ruleset.setup?.northernWarMachine, 6);
+  assert.equal(content.ruleset.setup?.globalGaze, 3);
+  assert.equal(content.ruleset.setup?.northernWarMachine, 7);
   assert.equal(state.customTracks.repression_cycle?.value, 3);
   assert.equal(state.regions.Oran.extractionTokens, content.ruleset.setup?.extractionSeeds?.Oran);
   assert.equal(state.regions.Algiers.extractionTokens, content.ruleset.setup?.extractionSeeds?.Algiers);
@@ -242,8 +242,8 @@ test('local victory can clear the score threshold while room play continues with
 
   localState.phase = 'RESOLUTION';
   roomState.phase = 'RESOLUTION';
-  localState.round = 3;
-  roomState.round = 3;
+  localState.round = 4;
+  roomState.round = 4;
   localState.domains.DyingPlanet.progress = 0;
   roomState.domains.DyingPlanet.progress = 0;
   localState.northernWarMachine = 7;
@@ -254,7 +254,7 @@ test('local victory can clear the score threshold while room play continues with
 
   assert.equal(localOutcome.phase, 'WIN');
   assert.equal(roomOutcome.phase, 'SYSTEM');
-  assert.equal(roomOutcome.round, 4);
+  assert.equal(roomOutcome.round, 5);
   assert.equal(roomOutcome.terminalOutcome, null);
 });
 
@@ -381,7 +381,7 @@ test('Algeria symbolic beacons and tribunal acknowledgement can produce symbolic
   const content = compileContent('algerian_war_of_independence');
   const state = initializeGame({ ...algeriaStartCommand, mode: 'SYMBOLIC' });
   state.phase = 'RESOLUTION';
-  state.round = 3;
+  state.round = 4;
   for (const player of state.players) {
     player.mandateSatisfied = true;
   }
@@ -405,7 +405,7 @@ test('Algeria liberation victory requires repression to remain at 6 or lower', (
   const content = compileContent('algerian_war_of_independence');
   const state = initializeGame(algeriaStartCommand);
   state.phase = 'RESOLUTION';
-  state.round = 3;
+  state.round = 4;
   for (const player of state.players) {
     player.mandateSatisfied = true;
   }
@@ -500,7 +500,7 @@ test('liberation victory requires the public win and all active mandates', () =>
   const content = compileContent(startCommand.rulesetId);
   const state = initializeGame(startCommand);
   state.phase = 'RESOLUTION';
-  state.round = 3;
+  state.round = 4;
   for (const player of state.players) {
     player.mandateSatisfied = true;
   }
@@ -543,6 +543,7 @@ test('secret mandates lock only from coalition action resolution and stay latche
   const content = compileContent(startCommand.rulesetId);
   let state = initializeGame(startCommand);
   state.northernWarMachine = 6;
+  state.regions.Levant.extractionTokens = 1;
   state.decks.crisis.drawPile = [];
   state.decks.system.drawPile = [];
 

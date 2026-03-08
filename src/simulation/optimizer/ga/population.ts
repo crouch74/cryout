@@ -8,7 +8,7 @@
 
 import type { GaConfig, GaIndividual, PatchGenome } from './types.ts';
 import type { MutationDescriptor } from './mutationSpace.ts';
-import { logDebug, logWarn } from '../../logging.ts';
+import { logDebug } from '../../logging.ts';
 
 // ---------------------------------------------------------------------------
 // Genome parameter limits (mirrored from candidates.ts; kept here to

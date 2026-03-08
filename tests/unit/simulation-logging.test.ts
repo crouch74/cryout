@@ -15,6 +15,10 @@ import {
   withSimulationLogger,
 } from '../../src/simulation/logging.ts';
 
+const ANSI_WARN_LINE = new RegExp(`${String.raw`\u001b\[33m`}.*\\[WARN\\].*warning line${String.raw`\u001b\[0m`}`);
+const ANSI_ERROR_LINE = new RegExp(`${String.raw`\u001b\[31m`}.*\\[ERROR\\].*error line${String.raw`\u001b\[0m`}`);
+const ANSI_ESCAPE = new RegExp(String.raw`\u001b\[`);
+
 test('simulation logger applies levels, colors console output, and writes plain text logs to file', async () => {
   const tempDir = await mkdtemp(join(tmpdir(), 'stones-logger-'));
   const logFilePath = join(tempDir, 'optimizer.log');
@@ -51,8 +55,8 @@ test('simulation logger applies levels, colors console output, and writes plain 
 
     assert.equal(consoleStdout.length, 0);
     assert.equal(consoleStderr.length, 2);
-    assert.match(consoleStderr[0] ?? '', /\u001b\[33m.*\[WARN\].*warning line\u001b\[0m/);
-    assert.match(consoleStderr[1] ?? '', /\u001b\[31m.*\[ERROR\].*error line\u001b\[0m/);
+    assert.match(consoleStderr[0] ?? '', ANSI_WARN_LINE);
+    assert.match(consoleStderr[1] ?? '', ANSI_ERROR_LINE);
 
     const persisted = await readFile(logFilePath, 'utf8');
     assert.match(persisted, /\[DEBUG\] \[optimizer\/test\] debug detail/);
@@ -61,7 +65,7 @@ test('simulation logger applies levels, colors console output, and writes plain 
     assert.match(persisted, /\[SUCCESS\] \[optimizer\/test\] success line/);
     assert.match(persisted, /\[WARN\] \[optimizer\/test\] warning line/);
     assert.match(persisted, /\[ERROR\] \[optimizer\/test\] error line/);
-    assert.doesNotMatch(persisted, /\u001b\[/);
+    assert.doesNotMatch(persisted, ANSI_ESCAPE);
   } finally {
     console.log = originalLog;
     console.error = originalError;

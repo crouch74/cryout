@@ -67,7 +67,7 @@ test('action gate only evaluates victory when the required action resolves', () 
       region.extractionTokens = 0;
     }
     state.phase = 'COALITION';
-    state.round = 3;
+    state.round = 4;
 
     for (const player of state.players) {
       player.actionsRemaining = 0;
@@ -106,7 +106,7 @@ test('progress gate requires minimum extraction removal before victory can trigg
       region.extractionTokens = 0;
     }
     state.phase = 'RESOLUTION';
-    state.round = 3;
+    state.round = 4;
     state.victoryProgress = {
       extractionRemoved: 2,
       actionsById: {},

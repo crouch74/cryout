@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { dismissStartupOverlays, forceEnglishLocale, useStableUiPreferences } from './helpers.ts';
+import { dismissStartupOverlays, forceEnglishLocale, settleLateStartupPrompts, useStableUiPreferences } from './helpers.ts';
 
 test.describe('session phase progression', () => {
   test.setTimeout(60_000);
@@ -13,9 +13,12 @@ test.describe('session phase progression', () => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Start Session' }).click();
     await dismissStartupOverlays(page);
+    await settleLateStartupPrompts(page);
+    await dismissStartupOverlays(page);
 
     const playSystem = page.getByRole('button', { name: 'Play System' });
     await expect(playSystem).toBeVisible();
+    await expect(playSystem).toBeEnabled();
     await playSystem.click();
 
     await expect(playSystem).toHaveCount(0);

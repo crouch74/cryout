@@ -49,6 +49,55 @@ function makeArmSummary(input?: Partial<ExperimentArmSummary>): ExperimentArmSum
       success: 520,
       successRate: 0.52,
     },
+    actionBalance: input?.actionBalance ?? {
+      entropy: 0.72,
+      concentration: 0.24,
+      dominantAction: 'organize',
+      targetedShare: 0.36,
+      winningTargetedShare: 0.34,
+      setupDependentCampaignRate: 0.5,
+      failurePathPenalty: 0.18,
+      regimeWeightedTargetedShare: 0.28,
+      actionShare: {
+        organize: 0.22,
+        investigate: 0.13,
+        launchCampaign: 0.16,
+        buildSolidarity: 0.15,
+        smuggleEvidence: 0.11,
+        internationalOutreach: 0.1,
+        defend: 0.13,
+      },
+      actionAverageCounts: {
+        organize: 2.2,
+        investigate: 1.3,
+        launchCampaign: 1.6,
+        buildSolidarity: 1.5,
+        smuggleEvidence: 1.1,
+        internationalOutreach: 1,
+        defend: 1.3,
+      },
+      actionShareByOutcome: {
+        victory: {
+          organize: 0.24,
+          investigate: 0.12,
+          launchCampaign: 0.17,
+          buildSolidarity: 0.16,
+          smuggleEvidence: 0.09,
+          internationalOutreach: 0.1,
+          defend: 0.12,
+        },
+        defeat: {
+          organize: 0.18,
+          investigate: 0.14,
+          launchCampaign: 0.15,
+          buildSolidarity: 0.13,
+          smuggleEvidence: 0.13,
+          internationalOutreach: 0.1,
+          defend: 0.17,
+        },
+      },
+      actionShareByPlayerCount: {},
+    },
     reservoirSampleSize: input?.reservoirSampleSize ?? 1000,
     byPlayerCount: input?.byPlayerCount ?? {},
   };
@@ -103,10 +152,20 @@ test('fitness prefers diverse outcomes over deterministic ones', () => {
   const deterministic = scoreArmSummary(makeArmSummary({
     outcomeEntropy: 0.04,
     regionCollapseVariance: 0.08,
+    actionBalance: {
+      ...makeArmSummary().actionBalance,
+      entropy: 0.18,
+      concentration: 0.52,
+    },
   }));
   const varied = scoreArmSummary(makeArmSummary({
     outcomeEntropy: 0.81,
     regionCollapseVariance: 0.44,
+    actionBalance: {
+      ...makeArmSummary().actionBalance,
+      entropy: 0.78,
+      concentration: 0.22,
+    },
   }));
 
   assert.equal(varied.components.varianceScore > deterministic.components.varianceScore, true);
@@ -121,6 +180,13 @@ test('fitness falls back to region collapse variance when entropy is unavailable
     lateGameRate: 0.04,
     outcomeEntropy: 0,
     regionCollapseVariance: 0.67,
+    actionEntropy: 0.7,
+    actionConcentration: 0.24,
+    targetedActionShare: 0.34,
+    winningTargetedActionShare: 0.31,
+    setupDependentCampaignRate: 0.48,
+    failurePathPenalty: 0.2,
+    regimeWeightedTargetedShare: 0.26,
   });
 
   assert.equal(score.components.varianceScore, 0.67);
@@ -134,6 +200,13 @@ test('fitness fail-safe rejects clearly broken win rates', () => {
     lateGameRate: 0.03,
     outcomeEntropy: 0.9,
     regionCollapseVariance: 0.7,
+    actionEntropy: 0.72,
+    actionConcentration: 0.24,
+    targetedActionShare: 0.33,
+    winningTargetedActionShare: 0.29,
+    setupDependentCampaignRate: 0.44,
+    failurePathPenalty: 0.21,
+    regimeWeightedTargetedShare: 0.25,
   });
   const trivial = computeFitness({
     winRate: 0.82,
@@ -142,6 +215,13 @@ test('fitness fail-safe rejects clearly broken win rates', () => {
     lateGameRate: 0.03,
     outcomeEntropy: 0.9,
     regionCollapseVariance: 0.7,
+    actionEntropy: 0.72,
+    actionConcentration: 0.24,
+    targetedActionShare: 0.33,
+    winningTargetedActionShare: 0.29,
+    setupDependentCampaignRate: 0.44,
+    failurePathPenalty: 0.21,
+    regimeWeightedTargetedShare: 0.25,
   });
 
   assert.equal(unwinnable.failSafeTriggered, true);

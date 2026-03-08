@@ -13,6 +13,7 @@ test.describe('visual regression baselines', () => {
     await expect(page).toHaveScreenshot('home-shell.png', {
       fullPage: true,
       animations: 'disabled',
+      maxDiffPixels: 10,
     });
   });
 

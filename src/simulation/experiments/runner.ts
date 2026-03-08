@@ -14,7 +14,7 @@ import { listStrategyProfiles } from '../strategies.ts';
 import { buildTrajectoryFileStem } from '../trajectory/TrajectoryRecorder.ts';
 import type { VictoryTrajectory } from '../trajectory/types.ts';
 import type { PlannedSimulationRun, StrategyId } from '../types.ts';
-import { logDebug, logVerbose, logWarn } from '../logging.ts';
+import { logVerbose, logWarn } from '../logging.ts';
 import { applyScenarioPatch } from './applyScenarioPatch.ts';
 import {
   buildRecommendation,

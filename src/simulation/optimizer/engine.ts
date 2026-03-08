@@ -4,7 +4,6 @@ import {
   createSimulationLogger,
   getActiveSimulationLogger,
   getSimulationLogger,
-  logDebug,
   logInfo,
   logSuccess,
   logVerbose,

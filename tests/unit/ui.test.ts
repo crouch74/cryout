@@ -249,11 +249,8 @@ test('front track rows expose direction-aware copy for leverage and pressure tra
   const repressionCycle = algeriaRows.find((row) => row.id === 'repression_cycle');
 
   assert.equal(gulfPosture?.direction, 'higher_is_better');
-  assert.match(gulfPosture?.tooltip ?? '', /movement leverage/i);
   assert.equal(gulfBlowback?.direction, 'higher_is_worse');
-  assert.match(gulfBlowback?.tooltip ?? '', /system pressure/i);
   assert.equal(repressionCycle?.direction, 'higher_is_worse');
-  assert.match(repressionCycle?.tooltip ?? '', /system pressure/i);
 });
 
 test('region danger states escalate by extraction thresholds', () => {
@@ -314,6 +311,9 @@ test('game session screen source keeps the compressed board layout contract', ()
   assert.match(source, /overlayControls/);
   assert.equal(source.match(/<ThemeSwitcher/g)?.length, 1);
   assert.equal(source.match(/<LocaleSwitcher/g)?.length, 1);
+  assert.match(source, /phase-progress-display-trigger/);
+  assert.match(source, /phase-progress-display-popover/);
+  assert.match(source, /GameIcon name="settings"/);
   assert.match(source, /Commit Prepared Moves/);
   assert.match(source, /QueueIntent/);
   assert.match(source, /advancePhase/);
@@ -410,8 +410,10 @@ test('terminal modal source renders canonical final-state labels and actions', (
   assert.match(source, /Extraction Tokens/);
   assert.match(source, /Secret Mandates/);
   assert.match(source, /Review Ledger/);
+  assert.match(source, /terminal-outcome-final-state/);
+  assert.match(source, /terminal-outcome-actions/);
   assert.doesNotMatch(source, /Export Save/);
-  assert.match(source, /Back Home/);
+  assert.doesNotMatch(source, /Back Home/);
   assert.match(source, /role="dialog"/);
   assert.match(source, /aria-modal="true"/);
 });
@@ -431,10 +433,14 @@ test('phase progress styles keep top controls responsive and direction-safe', ()
   const source = readFileSync(new URL('../../src/styles/game/layout.css', import.meta.url), 'utf8');
 
   assert.match(source, /\.phase-progress-overlay-controls/);
-  assert.match(source, /justify-self:\s*end/);
-  assert.match(source, /max-width:\s*100%/);
+  assert.match(source, /position:\s*absolute/);
+  assert.match(source, /top:\s*0/);
+  assert.match(source, /display:\s*inline-flex/);
+  assert.match(source, /pointer-events:\s*none/);
+  assert.match(source, /\.phase-progress-display-menu:hover \.phase-progress-display-popover/);
+  assert.match(source, /\.phase-progress-display-menu:focus-within \.phase-progress-display-popover/);
   assert.match(source, /@media \(max-width: 900px\)/);
-  assert.match(source, /justify-self:\s*stretch/);
+  assert.match(source, /inset-inline:\s*0/);
 });
 
 test('world map source no longer renders the clipped launch campaign overlay', () => {

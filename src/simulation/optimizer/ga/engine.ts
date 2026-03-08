@@ -14,7 +14,7 @@
 import { join } from 'node:path';
 import { runSingleArmExperiment } from '../../experiments/runner.ts';
 import type { ExperimentDefinition } from '../../experiments/types.ts';
-import { logDebug, logInfo, logSuccess, logWarn } from '../../logging.ts';
+import { logInfo, logSuccess, logWarn } from '../../logging.ts';
 import { getScenarioPatchKey } from '../candidates.ts';
 import { scoreArmSummary } from '../fitness.ts';
 import { ensureDir } from '../io.ts';

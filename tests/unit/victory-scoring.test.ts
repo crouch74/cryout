@@ -40,7 +40,7 @@ test('binary scenarios preserve mandate-failure defeat behavior', () => {
     for (const region of Object.values(state.regions)) {
       region.extractionTokens = 0;
     }
-    state.round = 3;
+    state.round = 4;
     state.phase = 'RESOLUTION';
     for (const player of state.players) {
       player.mandateSatisfied = false;
@@ -109,7 +109,7 @@ test('score cap prevents success when catastrophic condition is active', () => {
 
     const next = dispatchCommand(state, { type: 'ResolveResolutionPhase' }, content);
     assert.notEqual(next.phase, 'WIN');
-    assert.equal(next.victoryProgress?.lastVictoryScore, 69);
+    assert.equal(next.victoryProgress?.lastVictoryScore, 68);
     assert.equal(next.victoryProgress?.lastVictoryThreshold, 70);
   } finally {
     mounted.unregister();

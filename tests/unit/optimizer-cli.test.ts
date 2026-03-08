@@ -104,14 +104,14 @@ test('optimizer help manual documents all primary input flags and impacts', () =
   assert.match(manual, /--parallel-workers <n>/);
   assert.match(manual, /--log-level <debug\|verbose\|info\|success\|warn\|error>/);
   assert.match(manual, /--out <path>/);
-  assert.match(manual, /--optimizer-mode <single_scenario\|all_scenarios_parallel>/);
+  assert.match(manual, /--optimizer-mode <single_scenario\|all_scenarios_parallel\|benchmark>/);
   assert.match(manual, /--mode <liberation\|symbolic\|both>/);
   assert.match(manual, /liberation:\s+Optimize only Liberation mode metrics/i);
   assert.match(manual, /symbolic:\s+Optimize only Symbolic mode metrics/i);
   assert.match(manual, /both:\s+Optimize across both modes/i);
   assert.match(manual, /--runtime <fast\|balanced\|thorough>/);
   assert.match(manual, /--significance <strict\|balanced\|lenient>/);
-  assert.match(manual, /--strategy <numeric_balancing\|victory_gating_exploration\|trajectory_discovery\|full_optimizer>/);
+  assert.match(manual, /--strategy <numeric_balancing\|victory_gating_exploration\|trajectory_discovery\|action_diversity\|full_optimizer>/);
   assert.match(manual, /Implementation:/);
   assert.match(manual, /Impact:/);
   assert.match(manual, /Options:/);
