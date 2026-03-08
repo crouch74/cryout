@@ -68,6 +68,17 @@ type ComparisonPayload = {
   recommendedPatchDiff: any[];
 };
 
+type BaselineOverviewPayload = {
+  runs: any[];
+  latest: any;
+};
+
+type BaselineHistoryPayload = {
+  scenarioId: string;
+  summary: any;
+  runs: any[];
+};
+
 type RunScope =
   | 'latest_single'
   | 'latest_parallel'
@@ -90,6 +101,7 @@ const LEVELS = [
   { id: 'balance', label: 'Scenario Balance', icon: Target },
   { id: 'optimizer', label: 'Optimizer Progress', icon: GitBranch },
   { id: 'parameters', label: 'Parameter Effects', icon: Gauge },
+  { id: 'baselines', label: 'Baselines', icon: Layers },
   { id: 'actions', label: 'Action Diversity', icon: PieChartIcon },
   { id: 'comparison', label: 'Run Comparison', icon: ArrowLeftRight },
   { id: 'trajectories', label: 'Gameplay Trajectories', icon: Workflow },
@@ -189,6 +201,8 @@ function App() {
   const [trajectoryPlayerCountFilter, setTrajectoryPlayerCountFilter] = useState<'all' | number>('all');
   const [scenarioData, setScenarioData] = useState<ScenarioPayload | null>(null);
   const [comparisonData, setComparisonData] = useState<ComparisonPayload | null>(null);
+  const [baselineOverview, setBaselineOverview] = useState<BaselineOverviewPayload | null>(null);
+  const [baselineHistory, setBaselineHistory] = useState<BaselineHistoryPayload | null>(null);
   const [comparisonLeftRunKey, setComparisonLeftRunKey] = useState('');
   const [comparisonRightRunKey, setComparisonRightRunKey] = useState('');
   const [loadingOverview, setLoadingOverview] = useState(true);
@@ -221,6 +235,18 @@ function App() {
       }
     };
     void fetchOverview();
+  }, []);
+
+  useEffect(() => {
+    const fetchBaselineOverview = async () => {
+      try {
+        const response = await axios.get<BaselineOverviewPayload>(`${API_URL}/api/baselines/overview`);
+        setBaselineOverview(response.data);
+      } catch (error) {
+        console.error('🚨 Failed to load baseline overview payload', error);
+      }
+    };
+    void fetchBaselineOverview();
   }, []);
 
   useEffect(() => {
@@ -259,6 +285,22 @@ function App() {
     };
     void fetchScenario();
   }, [selectedScenario, runScope, selectedRunKey]);
+
+  useEffect(() => {
+    if (!selectedScenario || selectedScenario === 'all') {
+      setBaselineHistory(null);
+      return;
+    }
+    const fetchBaselineHistory = async () => {
+      try {
+        const response = await axios.get<BaselineHistoryPayload>(`${API_URL}/api/baselines/${selectedScenario}/history`);
+        setBaselineHistory(response.data);
+      } catch (error) {
+        console.error('🚨 Failed to load baseline history payload', error);
+      }
+    };
+    void fetchBaselineHistory();
+  }, [selectedScenario]);
 
   useEffect(() => {
     if (runScope !== 'specific_run') return;
@@ -492,6 +534,53 @@ function App() {
   const actionRunDiagnostics = optimizer?.actionRunDiagnostics || [];
   const actionMixDeltaRows = optimizer?.actionMixDelta || [];
   const scenarioRecommendations = optimizer?.scenarioRecommendations || [];
+  const baselineRows = baselineHistory?.runs || [];
+
+  const baselineTrendRows = useMemo(
+    () =>
+      baselineRows
+        .slice()
+        .reverse()
+        .map((item: any) => ({
+          label: item.compactLabel,
+          successRate: +((item.successRate || 0) * 100).toFixed(2),
+          publicVictoryRate: +((item.publicVictoryRate || 0) * 100).toFixed(2),
+          averageTurns: +(item.averageTurns || 0).toFixed(2),
+          earlyTerminationRate: +((item.earlyTerminationRate || 0) * 100).toFixed(2),
+          fitness: +(item.fitness || 0).toFixed(3),
+        })),
+    [baselineRows],
+  );
+
+  const baselineComponentRows = useMemo(
+    () =>
+      baselineRows
+        .slice()
+        .reverse()
+        .map((item: any) => ({
+          label: item.compactLabel,
+          balanceScore: +(item.components?.balanceScore || 0).toFixed(3),
+          pacingScore: +(item.components?.pacingScore || 0).toFixed(3),
+          tensionScore: +(item.components?.tensionScore || 0).toFixed(3),
+          varianceScore: +(item.components?.varianceScore || 0).toFixed(3),
+          actionBalanceScore: +(item.components?.actionBalanceScore || 0).toFixed(3),
+          trajectoryPathScore: +(item.components?.trajectoryPathScore || 0).toFixed(3),
+        })),
+    [baselineRows],
+  );
+
+  const baselineLatestScenarioRows = useMemo(
+    () =>
+      ((baselineOverview?.latest?.scenarios || []) as any[]).map((item: any) => ({
+        scenario: titleCase(item.scenarioId),
+        successRate: +((item.successRate || 0) * 100).toFixed(2),
+        publicVictoryRate: +((item.publicVictoryRate || 0) * 100).toFixed(2),
+        averageTurns: +(item.averageTurns || 0).toFixed(2),
+        earlyTerminationRate: +((item.earlyTerminationRate || 0) * 100).toFixed(2),
+        fitness: +(item.fitness || 0).toFixed(3),
+      })),
+    [baselineOverview],
+  );
 
   const trajectoryPlayerCountOptions = useMemo(
     () =>
@@ -745,7 +834,7 @@ function App() {
     return <LoadingState label={t('common.loadingOverview')} />;
   }
 
-  const showScenarioFilter = true;
+  const showScenarioFilter = activeLevel !== 'overview';
   const showRunScopeFilter =
     activeLevel === 'balance'
     || activeLevel === 'optimizer'
@@ -1199,6 +1288,119 @@ function App() {
                   num(item.averageTurns),
                 ])}
               />
+            </Card>
+          </section>
+        ) : null}
+
+        {activeLevel === 'baselines' ? (
+          <section className="content-grid">
+            <Card
+              title="Latest All-Scenario Baseline"
+              subtitle="Current baseline state across the scenario library."
+              className="span-7"
+            >
+              {baselineLatestScenarioRows.length ? (
+                <ResponsiveContainer width="100%" height={320}>
+                  <BarChart data={baselineLatestScenarioRows}>
+                    <CartesianGrid stroke={COLORS.line} strokeDasharray="2 4" vertical={false} />
+                    <XAxis dataKey="scenario" tick={{ fill: COLORS.slate, fontSize: 12 }} />
+                    <YAxis tick={{ fill: COLORS.slate, fontSize: 12 }} />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="successRate" fill={COLORS.green} name="Success %" />
+                    <Bar dataKey="publicVictoryRate" fill={COLORS.blue} name="Public victory %" />
+                    <Bar dataKey="fitness" fill={COLORS.accent} name="Fitness" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <EmptyState title="No all-scenario baselines" body="Run benchmark mode without a scenario to capture the current state across the full library." />
+              )}
+            </Card>
+
+            <Card
+              title="Baseline Sweep Runs"
+              subtitle="Available all-scenarios baseline batches."
+              className="span-5"
+            >
+              {(baselineOverview?.runs || []).length ? (
+                <DataTable
+                  columns={['Run', 'Generated', 'Scenarios']}
+                  rows={(baselineOverview?.runs || []).map((run: any) => [
+                    compactRunLabel(run.label),
+                    run.generatedAt || 'n/a',
+                    `${run.scenarioCount || 0}`,
+                  ])}
+                />
+              ) : (
+                <EmptyState title="No baseline sweeps" body="No all-scenarios baseline batches are on disk yet." />
+              )}
+            </Card>
+
+            <Card
+              title="Scenario Baseline History"
+              subtitle="How the selected scenario baseline moved over captured runs."
+              className="span-8"
+            >
+              {baselineTrendRows.length ? (
+                <ResponsiveContainer width="100%" height={320}>
+                  <LineChart data={baselineTrendRows}>
+                    <CartesianGrid stroke={COLORS.line} strokeDasharray="2 4" vertical={false} />
+                    <XAxis dataKey="label" tick={{ fill: COLORS.slate, fontSize: 11 }} interval={0} angle={-18} textAnchor="end" height={72} />
+                    <YAxis tick={{ fill: COLORS.slate, fontSize: 12 }} />
+                    <Tooltip />
+                    <Legend />
+                    <Line dataKey="successRate" stroke={COLORS.green} strokeWidth={3} name="Success %" />
+                    <Line dataKey="publicVictoryRate" stroke={COLORS.blue} strokeWidth={2} name="Public victory %" />
+                    <Line dataKey="earlyTerminationRate" stroke={COLORS.red} strokeWidth={2} name="Early termination %" />
+                    <Line dataKey="fitness" stroke={COLORS.accent} strokeWidth={2} name="Fitness" />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <EmptyState title="No scenario baseline history" body="Run benchmark mode for this scenario to build a baseline history." />
+              )}
+            </Card>
+
+            <Card
+              title="Latest Scenario Baseline"
+              subtitle="Current-state snapshot for the selected scenario."
+              className="span-4"
+            >
+              <MetricList
+                items={[
+                  ['Success rate', pct(baselineRows[0]?.successRate)],
+                  ['Public victory', pct(baselineRows[0]?.publicVictoryRate)],
+                  ['Average turns', num(baselineRows[0]?.averageTurns)],
+                  ['Early termination', pct(baselineRows[0]?.earlyTerminationRate)],
+                  ['Campaign success', pct(baselineRows[0]?.campaignSuccessRate)],
+                  ['Fitness', num(baselineRows[0]?.fitness)],
+                ]}
+              />
+            </Card>
+
+            <Card
+              title="Baseline Score Components"
+              subtitle="How balance, pacing, tension, variance, action-balance, and trajectory-path scores evolve across baseline captures."
+              className="span-12"
+            >
+              {baselineComponentRows.length ? (
+                <ResponsiveContainer width="100%" height={320}>
+                  <LineChart data={baselineComponentRows}>
+                    <CartesianGrid stroke={COLORS.line} strokeDasharray="2 4" vertical={false} />
+                    <XAxis dataKey="label" tick={{ fill: COLORS.slate, fontSize: 11 }} interval={0} angle={-18} textAnchor="end" height={72} />
+                    <YAxis tick={{ fill: COLORS.slate, fontSize: 12 }} domain={[0, 1]} />
+                    <Tooltip />
+                    <Legend />
+                    <Line dataKey="balanceScore" stroke={COLORS.green} strokeWidth={2} name="Balance" />
+                    <Line dataKey="pacingScore" stroke={COLORS.gold} strokeWidth={2} name="Pacing" />
+                    <Line dataKey="tensionScore" stroke={COLORS.red} strokeWidth={2} name="Tension" />
+                    <Line dataKey="varianceScore" stroke={COLORS.blue} strokeWidth={2} name="Variance" />
+                    <Line dataKey="actionBalanceScore" stroke={COLORS.accent} strokeWidth={2} name="Action balance" />
+                    <Line dataKey="trajectoryPathScore" stroke={COLORS.brown} strokeWidth={2} name="Trajectory path" />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <EmptyState title="No component history" body="Capture more than one baseline run to track score movement." />
+              )}
             </Card>
           </section>
         ) : null}

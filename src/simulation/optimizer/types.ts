@@ -304,7 +304,33 @@ export interface OptimizerBenchmarkReport {
   baselineScore: OptimizerScoreBreakdown;
   analysis: OptimizerAnalysis;
   trajectorySummary: TrajectorySummary | null;
-  gaSummary: OptimizerBenchmarkGaSummary | null;
+}
+
+export interface AllScenariosBaselineScenarioSummary {
+  scenarioId: string;
+  scenarioName: string;
+  outputDir: string;
+  baselineExperimentId: string;
+  successRate: number;
+  publicVictoryRate: number;
+  averageTurns: number;
+  earlyTerminationRate: number;
+  fitness: number;
+}
+
+export interface AllScenariosBaselineErrorSummary {
+  scenarioId: string;
+  scenarioName: string;
+  error: string;
+}
+
+export interface AllScenariosBaselineReport {
+  generatedAt: string;
+  outputDir: string;
+  victoryModes: VictoryMode[];
+  playerCounts: number[];
+  scenarios: AllScenariosBaselineScenarioSummary[];
+  failedScenarios: AllScenariosBaselineErrorSummary[];
 }
 
 export interface AllScenariosParallelScenarioSummary {

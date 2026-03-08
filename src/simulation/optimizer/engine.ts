@@ -29,8 +29,6 @@ import {
   movedTowardRange,
   scoreArmSummary,
 } from './fitness.ts';
-import { runGaSearch } from './ga/engine.ts';
-import { GA_DEFAULT_CONFIG } from './ga/types.ts';
 import {
   buildRunStamp,
   ensureDir,
@@ -40,10 +38,11 @@ import {
   writeMarkdown,
 } from './io.ts';
 import type {
+  AllScenariosBaselineReport,
+  AllScenariosBaselineScenarioSummary,
   AllScenariosParallelReport,
   AllScenariosParallelScenarioSummary,
   OptimizerAnalysis,
-  OptimizerBenchmarkGaSummary,
   OptimizerBenchmarkReport,
   OptimizerCandidateEvaluation,
   OptimizerCandidateEvaluationCacheEntry,
@@ -782,6 +781,33 @@ ${failureLines}
 `;
 }
 
+function renderAllScenariosBaselineReportMarkdown(report: AllScenariosBaselineReport) {
+  const scenarioLines = report.scenarios.length > 0
+    ? report.scenarios
+      .map((entry) => `- ${entry.scenarioId}: success=${percent(entry.successRate)}, publicVictory=${percent(entry.publicVictoryRate)}, avgRounds=${entry.averageTurns.toFixed(2)}, fitness=${entry.fitness.toFixed(6)}`)
+      .join('\n')
+    : '- None completed.';
+  const failureLines = report.failedScenarios.length > 0
+    ? report.failedScenarios
+      .map((entry) => `- ${entry.scenarioId}: ${entry.error}`)
+      .join('\n')
+    : '- None.';
+
+  return `# All-Scenarios Baseline Report
+
+- Generated At: ${report.generatedAt}
+- Scenarios Completed: ${report.scenarios.length}
+- Scenarios Failed: ${report.failedScenarios.length}
+- Victory Modes: ${report.victoryModes.join(', ')}
+
+## Scenario Baselines
+${scenarioLines}
+
+## Scenario Failures
+${failureLines}
+`;
+}
+
 function renderBenchmarkReportMarkdown(report: OptimizerBenchmarkReport) {
   const targetRows = Object.values(report.baselineScore.targets)
     .map((target) => `| ${target.metric} | ${target.value.toFixed(6)} | ${target.min.toFixed(6)} | ${target.max.toFixed(6)} | ${target.inRange ? 'yes' : 'no'} | ${target.distanceFromRange.toFixed(6)} |`)
@@ -789,27 +815,16 @@ function renderBenchmarkReportMarkdown(report: OptimizerBenchmarkReport) {
   const componentRows = Object.entries(report.baselineScore.components)
     .map(([name, value]) => `| ${name} | ${value.toFixed(6)} |`)
     .join('\n');
-  const gaGenerationRows = report.gaSummary
-    ? report.gaSummary.generationReports
-      .map((generation) => `| ${generation.generation} | ${generation.bestFitness.toFixed(6)} | ${generation.meanFitness.toFixed(6)} | ${generation.medianFitness.toFixed(6)} | ${generation.bestIndividualId} |`)
-      .join('\n')
-    : '| - | - | - | - | - |';
-  const gaCandidateRows = report.gaSummary && report.gaSummary.topCandidates.length > 0
-    ? report.gaSummary.topCandidates
-      .map((candidate) => `| ${candidate.rank} | ${candidate.candidateId} | ${candidate.fitness.toFixed(6)} | ${percent(candidate.successRate)} | ${candidate.avgRounds.toFixed(2)} | ${candidate.patch.note ?? ''} |`)
-      .join('\n')
-    : '| - | - | - | - | - | - |';
   const insightLines = report.analysis.insights.length > 0
     ? report.analysis.insights.map((line) => `- ${line}`).join('\n')
     : '- No major structural imbalances detected.';
 
-  return `# Optimizer Benchmark Report
+  return `# Scenario Baseline Report
 
 - Generated At: ${report.generatedAt}
 - Scenario: ${report.scenarioName} (\`${report.scenarioId}\`)
 - Output Dir: \`${report.outputDir}\`
 - Baseline Experiment: \`${report.baselineExperimentId}\`
-- GA Search Included: ${report.gaSummary ? 'yes' : 'no'}
 
 ## Baseline Metrics
 
@@ -838,49 +853,11 @@ ${targetRows}
 ## Structural Analysis
 
 ${insightLines}
-
-## GA Generation Progress
-
-| Gen | Best Fitness | Mean Fitness | Median Fitness | Best Individual |
-|-----|--------------|--------------|----------------|-----------------|
-${gaGenerationRows}
-
-## GA Top Candidates
-
-| Rank | Candidate ID | Fitness | Success | Avg Rounds | Note |
-|------|--------------|---------|---------|------------|------|
-${gaCandidateRows}
 `;
 }
 
 function toSerializable<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
-}
-
-function toBenchmarkGaSummary(gaResult: Awaited<ReturnType<typeof runGaSearch>>): OptimizerBenchmarkGaSummary {
-  return {
-    generationsCompleted: gaResult.generationsCompleted,
-    bestFitness: gaResult.bestFitness,
-    generationReports: gaResult.generationReports.map((report) => ({
-      generation: report.generation,
-      bestFitness: report.stats.bestFitness,
-      meanFitness: report.stats.meanFitness,
-      medianFitness: report.stats.medianFitness,
-      bestIndividualId: report.bestIndividualId,
-      bestGenome: toSerializable(report.bestGenome as Record<string, unknown>),
-    })),
-    topCandidates: gaResult.topCandidateSummaries.map((candidate) => ({
-      rank: candidate.rank,
-      individualId: candidate.individualId,
-      candidateId: candidate.candidateId,
-      strategy: candidate.strategy,
-      fitness: candidate.fitness,
-      successRate: candidate.metrics.successRate,
-      avgRounds: candidate.metrics.avgRounds,
-      genome: toSerializable(candidate.genome as Record<string, unknown>),
-      patch: candidate.patch,
-    })),
-  };
 }
 
 export async function runAllScenariosParallelDiagnostics(config: OptimizerConfig): Promise<AllScenariosParallelReport> {
@@ -897,6 +874,78 @@ export async function runAllScenariosParallelDiagnostics(config: OptimizerConfig
     try {
       logInfo(`🗂️ Optimizer log file=${logFilePath}`);
       return await runAllScenariosParallelDiagnosticsInternal(config, outputDir);
+    } finally {
+      await logger.close();
+    }
+  });
+}
+
+export async function runAllScenariosBaselineBenchmarks(config: OptimizerConfig): Promise<AllScenariosBaselineReport> {
+  const runStamp = buildRunStamp();
+  const outputDir = join(config.outDir, 'baseline', 'all_scenarios', `${runStamp}_${config.seed}`);
+  await ensureDir(outputDir);
+  const logFilePath = join(outputDir, 'optimizer.log');
+  const logger = await createSimulationLogger({
+    scope: 'baseline/all-scenarios',
+    logFilePath,
+    consoleMinLevel: config.logLevel,
+  });
+  return withSimulationLogger(logger, async () => {
+    try {
+      logInfo(`🗂️ Baseline log file=${logFilePath}`);
+      const rulesets = listRulesets().sort((left, right) => left.id.localeCompare(right.id));
+      if (rulesets.length === 0) {
+        throw new Error('No scenarios available for all-scenarios baseline.');
+      }
+      const allocation = planWorkerAllocation(config.parallelWorkers, rulesets.length, 2);
+      const scenarios: AllScenariosBaselineScenarioSummary[] = [];
+      const failedScenarios: Array<{ scenarioId: string; scenarioName: string; error: string }> = [];
+
+      await mapWithConcurrency(rulesets, allocation.concurrency, async (ruleset) => {
+        try {
+          const baseline = await runScenarioBenchmarkInternal(
+            {
+              ...config,
+              scenarioId: ruleset.id,
+              parallelWorkers: allocation.workersPerJob,
+              seed: mixSeed(config.seed, stableHash(`baseline:${ruleset.id}`)),
+            },
+            join(outputDir, 'scenarios', ruleset.id, `${runStamp}_${config.seed}`),
+          );
+          scenarios.push({
+            scenarioId: ruleset.id,
+            scenarioName: ruleset.name,
+            outputDir: baseline.outputDir,
+            baselineExperimentId: baseline.baselineExperimentId,
+            successRate: baseline.baselineMetrics.successRate,
+            publicVictoryRate: baseline.baselineMetrics.publicVictoryRate,
+            averageTurns: baseline.baselineMetrics.turns.average,
+            earlyTerminationRate: baseline.baselineMetrics.earlyTerminationRate,
+            fitness: baseline.baselineScore.score,
+          });
+        } catch (error) {
+          failedScenarios.push({
+            scenarioId: ruleset.id,
+            scenarioName: ruleset.name,
+            error: (error as Error).message,
+          });
+        }
+      });
+
+      scenarios.sort((left, right) => left.scenarioId.localeCompare(right.scenarioId));
+      failedScenarios.sort((left, right) => left.scenarioId.localeCompare(right.scenarioId));
+
+      const report: AllScenariosBaselineReport = {
+        generatedAt: new Date().toISOString(),
+        outputDir,
+        victoryModes: config.victoryModes,
+        playerCounts: config.playerCounts,
+        scenarios,
+        failedScenarios,
+      };
+      await writeJson(join(outputDir, 'all_scenarios_baseline_report.json'), report);
+      await writeMarkdown(join(outputDir, 'final_report.md'), renderAllScenariosBaselineReportMarkdown(report));
+      return report;
     } finally {
       await logger.close();
     }
@@ -1031,17 +1080,17 @@ export async function runScenarioBenchmark(config: OptimizerConfig): Promise<Opt
   }
 
   const runStamp = buildRunStamp();
-  const outputDir = join(config.outDir, 'benchmark', config.scenarioId, `${runStamp}_${config.seed}`);
+  const outputDir = join(config.outDir, 'baseline', config.scenarioId, `${runStamp}_${config.seed}`);
   await ensureDir(outputDir);
   const logFilePath = join(outputDir, 'optimizer.log');
   const logger = await createSimulationLogger({
-    scope: `optimizer-benchmark/${config.scenarioId}`,
+    scope: `baseline/${config.scenarioId}`,
     logFilePath,
     consoleMinLevel: config.logLevel,
   });
   return withSimulationLogger(logger, async () => {
     try {
-      logInfo(`🗂️ Optimizer benchmark log file=${logFilePath}`);
+      logInfo(`🗂️ Baseline log file=${logFilePath}`);
       return await runScenarioBenchmarkInternal(config, outputDir);
     } finally {
       await logger.close();
@@ -1059,15 +1108,15 @@ async function runScenarioBenchmarkInternal(
   }
 
   const runStamp = buildRunStamp();
-  const outputDir = precomputedOutputDir ?? join(config.outDir, 'benchmark', config.scenarioId, `${runStamp}_${config.seed}`);
+  const outputDir = precomputedOutputDir ?? join(config.outDir, 'baseline', config.scenarioId, `${runStamp}_${config.seed}`);
   await ensureDir(outputDir);
   const experimentsDir = join(outputDir, 'experiments');
   const tempRootDir = join(outputDir, '.tmp');
   await ensureDir(experimentsDir);
   await ensureDir(tempRootDir);
 
-  logInfo(`🧭 Benchmark start scenario=${config.scenarioId} strategy=${config.strategy} searchMode=${config.searchMode ?? 'local'}`);
-  logInfo(`🧠 Benchmark parallel workers configured=${config.parallelWorkers}`);
+  logInfo(`🧭 Baseline start scenario=${config.scenarioId}`);
+  logInfo(`🧠 Baseline parallel workers configured=${config.parallelWorkers}`);
 
   await writeJson(join(outputDir, 'optimizer_config.json'), {
     ...config,
@@ -1076,14 +1125,14 @@ async function runScenarioBenchmarkInternal(
   });
   await writeJson(join(outputDir, 'scenario_config_snapshot.json'), toSerializable(scenario));
 
-  const baselineExperimentId = `optimizer_${config.scenarioId}_benchmark_baseline`;
+  const baselineExperimentId = `baseline_${config.scenarioId}`;
   const baselineDefinition = createExperimentDefinition({
     id: baselineExperimentId,
-    title: `Optimizer benchmark baseline`,
+    title: `Scenario baseline`,
     scenarioId: config.scenarioId,
-    patch: { note: '📊 Benchmark baseline control patch (no-op)' },
+    patch: { note: '📊 Baseline control patch (no-op)' },
     runsPerArm: config.baselineRuns,
-    seed: mixSeed(config.seed, stableHash('benchmark:baseline')),
+    seed: mixSeed(config.seed, stableHash('baseline:control')),
     confidence: getSignificanceThresholds(config.significance).confidence,
     primary: choosePrimaryMetricForGate(),
     victoryModes: config.victoryModes,
@@ -1110,29 +1159,6 @@ async function runScenarioBenchmarkInternal(
   await writeJson(join(outputDir, 'analysis.json'), analysis);
   await writeJson(join(outputDir, 'trajectory_summary.json'), trajectorySummary);
 
-  const activeSearchMode = config.searchMode ?? 'hybrid';
-  let gaSummary: OptimizerBenchmarkReport['gaSummary'] = null;
-  if (activeSearchMode === 'hybrid' || activeSearchMode === 'evolutionary') {
-    const gaConfig = { ...GA_DEFAULT_CONFIG, ...(config.gaConfig ?? {}) };
-    logInfo(`🧬 Benchmark GA search starting searchMode=${activeSearchMode} population=${gaConfig.populationSize} generations=${gaConfig.generations}`);
-    const gaResult = await runGaSearch({
-      scenarioId: config.scenarioId,
-      iteration: 1,
-      seed: mixSeed(config.seed, stableHash('benchmark:ga')),
-      config: gaConfig,
-      baselinePatch: {},
-      baselinePatchKey: getScenarioPatchKey(normalizeScenarioPatch({})),
-      baselineMetrics,
-      baselineScore,
-      parallelWorkers: config.parallelWorkers,
-      victoryModes: config.victoryModes as string[],
-      playerCounts: config.playerCounts,
-      outDir: outputDir,
-    });
-    gaSummary = toBenchmarkGaSummary(gaResult);
-    await writeJson(join(outputDir, 'ga_benchmark_summary.json'), gaSummary);
-  }
-
   const report: OptimizerBenchmarkReport = {
     generatedAt: new Date().toISOString(),
     scenarioId: config.scenarioId,
@@ -1145,17 +1171,13 @@ async function runScenarioBenchmarkInternal(
     baselineScore,
     analysis,
     trajectorySummary,
-    gaSummary,
   };
 
-  await writeJson(join(outputDir, 'benchmark_result.json'), report);
-  await writeMarkdown(join(outputDir, 'benchmark_report.md'), renderBenchmarkReportMarkdown(report));
+  await writeJson(join(outputDir, 'baseline_result.json'), report);
+  await writeMarkdown(join(outputDir, 'baseline_report.md'), renderBenchmarkReportMarkdown(report));
 
-  logSuccess('🏁 Benchmark complete');
-  logInfo(`📊 Benchmark success rate=${percent(report.baselineMetrics.successRate)} avgRounds=${report.baselineMetrics.turns.average.toFixed(2)} fitness=${report.baselineScore.score.toFixed(6)}`);
-  if (gaSummary) {
-    logInfo(`🧬 Benchmark GA bestFitness=${gaSummary.bestFitness.toFixed(6)} topCandidates=${gaSummary.topCandidates.length}`);
-  }
+  logSuccess('🏁 Baseline complete');
+  logInfo(`📊 Baseline success rate=${percent(report.baselineMetrics.successRate)} avgRounds=${report.baselineMetrics.turns.average.toFixed(2)} fitness=${report.baselineScore.score.toFixed(6)}`);
 
   return report;
 }

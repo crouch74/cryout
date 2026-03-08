@@ -263,6 +263,62 @@ def list_optimizer_runs_for_scenario(scenario_id: str) -> List[Dict[str, Any]]:
     return runs
 
 
+def build_baseline_run_descriptor(scenario_id: str, run_id: str) -> Optional[Dict[str, Any]]:
+    run_dir = os.path.join(SIM_DIR, "optimizer", "baseline", scenario_id, run_id)
+    result = load_json(os.path.join(run_dir, "baseline_result.json"))
+    if not result:
+        return None
+    config = load_json(os.path.join(run_dir, "optimizer_config.json"), default={}) or {}
+    return {
+        "runKey": f"baseline:{run_id}",
+        "runId": run_id,
+        "runDir": run_dir,
+        "generatedAt": config.get("generatedAt") or result.get("generatedAt"),
+        "label": f"Baseline {run_id}",
+        "result": result,
+        "summary": {
+            "successRate": ((result.get("baselineMetrics") or {}).get("successRate", 0)),
+            "publicVictoryRate": ((result.get("baselineMetrics") or {}).get("publicVictoryRate", 0)),
+            "earlyTerminationRate": ((result.get("baselineMetrics") or {}).get("earlyTerminationRate", 0)),
+            "averageTurns": ((((result.get("baselineMetrics") or {}).get("turns") or {}).get("average", 0))),
+            "fitness": ((result.get("baselineScore") or {}).get("score", 0)),
+        },
+    }
+
+
+def list_baseline_runs_for_scenario(scenario_id: str) -> List[Dict[str, Any]]:
+    scenario_dir = os.path.join(SIM_DIR, "optimizer", "baseline", scenario_id)
+    runs: List[Dict[str, Any]] = []
+    for run_id in list_subdirs(scenario_dir):
+        descriptor = build_baseline_run_descriptor(scenario_id, run_id)
+        if descriptor:
+            runs.append(descriptor)
+    runs.sort(key=lambda item: item["generatedAt"] or item["runId"] or "", reverse=True)
+    return runs
+
+
+def list_all_scenarios_baseline_runs() -> List[Dict[str, Any]]:
+    base_dir = os.path.join(SIM_DIR, "optimizer", "baseline", "all_scenarios")
+    runs: List[Dict[str, Any]] = []
+    for run_id in list_subdirs(base_dir):
+        run_dir = os.path.join(base_dir, run_id)
+        report = load_json(os.path.join(run_dir, "all_scenarios_baseline_report.json"))
+        if not report:
+            continue
+        runs.append(
+            {
+                "runKey": f"baseline_all:{run_id}",
+                "runId": run_id,
+                "runDir": run_dir,
+                "generatedAt": report.get("generatedAt"),
+                "label": f"Baseline All {run_id}",
+                "report": report,
+            }
+        )
+    runs.sort(key=lambda item: item["generatedAt"] or item["runId"] or "", reverse=True)
+    return runs
+
+
 def get_latest_run_of_type(scenario_id: str, run_type: str) -> Optional[Dict[str, Any]]:
     runs = [run for run in list_optimizer_runs_for_scenario(scenario_id) if run["runType"] == run_type]
     return runs[0] if runs else None
@@ -292,6 +348,9 @@ def build_overview() -> Dict[str, Any]:
     strategy_performance = summary.get("strategyPerformance") or {}
     known_scenarios = list_all_known_scenarios(summary)
 
+    baseline_runs = list_all_scenarios_baseline_runs()
+    latest_baseline_report = baseline_runs[0]["report"] if baseline_runs else None
+
     scenarios: List[Dict[str, Any]] = []
     optimizer_status: List[Dict[str, Any]] = []
 
@@ -300,6 +359,8 @@ def build_overview() -> Dict[str, Any]:
         runs = list_optimizer_runs_for_scenario(scenario_id)
         latest_single = next((run for run in runs if run["runType"] == "single"), None)
         latest_parallel = next((run for run in runs if run["runType"] == "parallel"), None)
+        baseline_history = list_baseline_runs_for_scenario(scenario_id)
+        latest_baseline = baseline_history[0] if baseline_history else None
         fallback_summary = (latest_single or latest_parallel or {}).get("summary") or {}
 
         scenarios.append(
@@ -315,6 +376,10 @@ def build_overview() -> Dict[str, Any]:
                     "parallelLatest": latest_parallel["summary"] if latest_parallel else None,
                     "singleRunCount": len([run for run in runs if run["runType"] == "single"]),
                     "parallelRunCount": len([run for run in runs if run["runType"] == "parallel"]),
+                },
+                "baseline": {
+                    "latest": latest_baseline["summary"] if latest_baseline else None,
+                    "runCount": len(baseline_history),
                 },
             }
         )
@@ -365,6 +430,17 @@ def build_overview() -> Dict[str, Any]:
         "strategies": strategies,
         "optimizerStatus": optimizer_status,
         "parallelRuns": parallel_runs,
+        "baselineRuns": [
+            {
+                "runKey": run["runKey"],
+                "runId": run["runId"],
+                "generatedAt": run["generatedAt"],
+                "label": run["label"],
+                "scenarioCount": len((run["report"] or {}).get("scenarios") or []),
+            }
+            for run in baseline_runs
+        ],
+        "latestBaselineReport": latest_baseline_report,
     }
 
 
@@ -1554,6 +1630,67 @@ async def get_overview() -> Dict[str, Any]:
 async def list_scenarios() -> List[str]:
     overview = build_overview()
     return [scenario["scenarioId"] for scenario in overview["scenarios"]]
+
+
+@app.get("/api/baselines/overview")
+async def get_baseline_overview() -> Dict[str, Any]:
+    runs = list_all_scenarios_baseline_runs()
+    latest = runs[0]["report"] if runs else None
+    return {
+        "runs": [
+            {
+                "runKey": run["runKey"],
+                "runId": run["runId"],
+                "generatedAt": run["generatedAt"],
+                "label": run["label"],
+                "scenarioCount": len((run["report"] or {}).get("scenarios") or []),
+            }
+            for run in runs
+        ],
+        "latest": latest,
+    }
+
+
+@app.get("/api/baselines/{scenario_id}/history")
+async def get_baseline_history(scenario_id: str) -> Dict[str, Any]:
+    overview = build_overview()
+    scenario_summary = next((item for item in overview["scenarios"] if item["scenarioId"] == scenario_id), None)
+    if not scenario_summary:
+        raise HTTPException(status_code=404, detail="Scenario not found")
+
+    history = list_baseline_runs_for_scenario(scenario_id)
+    rows = []
+    for run in history:
+        result = run["result"]
+        baseline_metrics = result.get("baselineMetrics") or {}
+        baseline_score = result.get("baselineScore") or {}
+        analysis = result.get("analysis") or {}
+        rows.append(
+            {
+                "runKey": run["runKey"],
+                "runId": run["runId"],
+                "label": run["label"],
+                "compactLabel": compact_run_label(run["label"]),
+                "generatedAt": run["generatedAt"],
+                "successRate": baseline_metrics.get("successRate", 0),
+                "publicVictoryRate": baseline_metrics.get("publicVictoryRate", 0),
+                "averageTurns": ((baseline_metrics.get("turns") or {}).get("average", 0)),
+                "earlyTerminationRate": baseline_metrics.get("earlyTerminationRate", 0),
+                "campaignSuccessRate": ((baseline_metrics.get("campaign") or {}).get("successRate", 0)),
+                "fitness": baseline_score.get("score", 0),
+                "actionBalance": baseline_metrics.get("actionBalance") or {},
+                "targets": baseline_score.get("targets") or {},
+                "components": baseline_score.get("components") or {},
+                "analysis": analysis,
+                "trajectorySummary": result.get("trajectorySummary"),
+            }
+        )
+
+    return {
+        "scenarioId": scenario_id,
+        "summary": scenario_summary,
+        "runs": rows,
+    }
 
 
 @app.get("/api/scenarios/{scenario_id}/runs")
