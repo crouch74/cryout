@@ -251,12 +251,6 @@ export default function DevGameSessionShell({
           >
             {autoPlayRunning ? t('ui.debug.stopAutoplay', 'Stop') : t('ui.debug.autoplayTitle', 'Run rounds automatically')}
           </button>
-          <button type="button" className="dev-tools-fab-action" role="menuitem" onClick={() => openDevSection('autoplay')}>
-            {t('ui.debug.autoplayTitle', 'Run rounds automatically')}
-          </button>
-          <button type="button" className="dev-tools-fab-action" role="menuitem" onClick={() => openDevSection('snapshot')}>
-            {t('ui.debug.snapshotTitle', 'Engine debug snapshot')}
-          </button>
           <button type="button" className="dev-tools-fab-action" role="menuitem" onClick={() => openDevSection('replay')}>
             {t('ui.debug.menuReplayInspector', 'Replay Inspector')}
           </button>
