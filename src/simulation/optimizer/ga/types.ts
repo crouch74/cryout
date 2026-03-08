@@ -111,6 +111,20 @@ export interface GaGenerationReport {
   elitismCount: number;
 }
 
+export interface GaPromotedCandidateSummary {
+  rank: number;
+  individualId: string;
+  candidateId: string;
+  strategy: OptimizerCandidate['strategy'];
+  fitness: number;
+  metrics: {
+    successRate: number;
+    avgRounds: number;
+  };
+  genome: PatchGenome;
+  patch: ScenarioPatch;
+}
+
 // ---------------------------------------------------------------------------
 // Search result
 // ---------------------------------------------------------------------------
@@ -125,6 +139,7 @@ export interface GaSearchResult {
   generationsCompleted: number;
   generationReports: GaGenerationReport[];
   topCandidates: OptimizerCandidate[];
+  topCandidateSummaries: GaPromotedCandidateSummary[];
   bestFitness: number;
 }
 

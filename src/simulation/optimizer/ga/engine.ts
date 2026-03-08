@@ -311,15 +311,31 @@ export async function runGaSearch(input: GaSearchInput): Promise<GaSearchResult>
   const promotionCount = Math.min(config.topCandidates, finalSorted.length);
 
   const promotedByPatchKey = new Map<string, OptimizerCandidate>();
+  const promotedSummaries: GaSearchResult['topCandidateSummaries'] = [];
   for (const individual of finalSorted) {
     const patch = genomeToCandidate(individual.genome);
     const patchKey = getScenarioPatchKey(patch);
     if (promotedByPatchKey.has(patchKey)) {
       continue;
     }
-    promotedByPatchKey.set(patchKey, {
-      candidateId: `ga_promoted_${String(promotedByPatchKey.size).padStart(3, '0')}`,
+    const candidateId = `ga_promoted_${String(promotedByPatchKey.size).padStart(3, '0')}`;
+    const candidate: OptimizerCandidate = {
+      candidateId,
       strategy: 'evolutionary' as const,
+      patch,
+    };
+    promotedByPatchKey.set(patchKey, candidate);
+    promotedSummaries.push({
+      rank: promotedSummaries.length + 1,
+      individualId: individual.id,
+      candidateId,
+      strategy: candidate.strategy,
+      fitness: individual.fitness ?? 0,
+      metrics: {
+        successRate: individual.metrics?.successRate ?? 0,
+        avgRounds: individual.metrics?.avgRounds ?? 0,
+      },
+      genome: { ...individual.genome },
       patch,
     });
     if (promotedByPatchKey.size >= promotionCount) {
@@ -337,6 +353,7 @@ export async function runGaSearch(input: GaSearchInput): Promise<GaSearchResult>
     generationsCompleted: config.generations,
     generationReports,
     topCandidates,
+    topCandidateSummaries: promotedSummaries,
     bestFitness,
   };
 

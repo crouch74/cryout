@@ -563,7 +563,7 @@ export const compatRuleset: RulesetDefinition = {
     extractionPool: 64,
     extractionSeeds: {
       Cairo: 1,
-      Alexandria: 1,
+      Alexandria: 0,
       DeltaRailCorridor: 1,
       CanalZone: 1,
       UpperEgypt: 1,

@@ -111,11 +111,11 @@ const factions: FactionDefinition[] = [
         mandate: {
             id: 'mandate_april_6_youth',
             title: 'Hold The Square',
-            description: 'End with Cairo at 1 or fewer Extraction Tokens.',
+            description: 'End with Cairo at 2 or fewer Extraction Tokens.',
             condition: {
                 kind: 'all',
                 conditions: [
-                    { kind: 'compare', left: { type: 'region_extraction', region: 'Cairo' }, op: '<=', right: 0 },
+                    { kind: 'compare', left: { type: 'region_extraction', region: 'Cairo' }, op: '<=', right: 2 },
                 ],
             },
         },
@@ -137,12 +137,12 @@ const factions: FactionDefinition[] = [
         mandate: {
             id: 'mandate_labor_movement',
             title: 'Bread and Freedom',
-            description: 'End with Alexandria at 1 or fewer Extraction Tokens and Empty Stomach at 5 or more.',
+            description: 'End with Alexandria at 2 or fewer Extraction Tokens and Empty Stomach at 4 or more.',
             condition: {
                 kind: 'all',
                 conditions: [
-                    { kind: 'compare', left: { type: 'region_extraction', region: 'Alexandria' }, op: '<=', right: 0 },
-                    { kind: 'compare', left: { type: 'domain_progress', domain: 'EmptyStomach' }, op: '>=', right: 6 },
+                    { kind: 'compare', left: { type: 'region_extraction', region: 'Alexandria' }, op: '<=', right: 2 },
+                    { kind: 'compare', left: { type: 'domain_progress', domain: 'EmptyStomach' }, op: '>=', right: 4 },
                 ],
             },
         },
@@ -164,9 +164,9 @@ const factions: FactionDefinition[] = [
         mandate: {
             id: 'mandate_independent_journalists',
             title: 'We Are All Khaled Said',
-            description: 'End with Silenced Truth at 6 or more.',
+            description: 'End with Silenced Truth at 5 or more.',
             condition: {
-                kind: 'compare', left: { type: 'domain_progress', domain: 'SilencedTruth' }, op: '>=', right: 7
+                kind: 'compare', left: { type: 'domain_progress', domain: 'SilencedTruth' }, op: '>=', right: 5
             },
         },
         color: '#2f67ab',
@@ -187,9 +187,9 @@ const factions: FactionDefinition[] = [
         mandate: {
             id: 'mandate_rights_defenders',
             title: 'End State Security',
-            description: 'End with War Machine at 4 or less.',
+            description: 'End with War Machine at 5 or less.',
             condition: {
-                kind: 'compare', left: { type: 'northern_war_machine' }, op: '<=', right: 3
+                kind: 'compare', left: { type: 'northern_war_machine' }, op: '<=', right: 5
             },
         },
         color: '#7a4ea0',
@@ -202,23 +202,23 @@ const beacons: BeaconDefinition[] = [
         title: 'The 18 Days',
         description: 'Survive the uprising with Tahrir never empty.',
         condition: {
-            kind: 'compare', left: { type: 'region_extraction', region: 'Cairo' }, op: '<=', right: 1
+            kind: 'compare', left: { type: 'region_extraction', region: 'Cairo' }, op: '<=', right: 3
         },
     },
     {
         id: 'beacon_tahrir_labor_student',
         title: 'Labor-Student Alliance',
-        description: 'Successfully call 3 Labor Strikes (Represented by high Empty Stomach domain).',
+        description: 'Sustain the labor-student alliance (represented by Empty Stomach reaching 6 or more).',
         condition: {
-            kind: 'compare', left: { type: 'domain_progress', domain: 'EmptyStomach' }, op: '>=', right: 8
+            kind: 'compare', left: { type: 'domain_progress', domain: 'EmptyStomach' }, op: '>=', right: 6
         },
     },
     {
         id: 'beacon_tahrir_no_military_trials',
         title: 'No to Military Trials',
-        description: 'Unfinished Justice must remain 0.',
+        description: 'Keep Unfinished Justice at 2 or less.',
         condition: {
-            kind: 'compare', left: { type: 'domain_progress', domain: 'UnfinishedJustice' }, op: '<=', right: 0
+            kind: 'compare', left: { type: 'domain_progress', domain: 'UnfinishedJustice' }, op: '<=', right: 2
         },
     }
 ];
@@ -338,7 +338,7 @@ export const compatRuleset: RulesetDefinition = {
     },
     victoryScoring: {
         mode: 'score',
-        threshold: 71,
+        threshold: 75,
         survivalScorePerRound: 2.5,
         beaconProgressScore: 10,
         components: [
@@ -362,7 +362,7 @@ export const compatRuleset: RulesetDefinition = {
                 {
                     id: 'catastrophic_state',
                     label: 'Catastrophic state cap',
-                    maxScore: 69,
+                    maxScore: 68,
                     condition: {
                         kind: 'any',
                         conditions: [
@@ -439,12 +439,12 @@ export const compatRuleset: RulesetDefinition = {
         ],
     },
     setup: {
-        globalGaze: 4,
-        northernWarMachine: 4,
+        globalGaze: 0,
+        northernWarMachine: 5,
         extractionPool: 72,
         extractionSeeds: {
-            Cairo: 1,
-            Alexandria: 3,
+            Cairo: 0,
+            Alexandria: 0,
             NileDelta: 1,
             Suez: 1,
         },

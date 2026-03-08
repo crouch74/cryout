@@ -362,13 +362,13 @@ export const compatRuleset: RulesetDefinition = {
   },
   victoryScoring: {
     mode: 'score',
-    threshold: 66,
+    threshold: 65,
     survivalScorePerRound: 0.75,
     components: [
       {
         id: 'publicVictory',
         label: 'Public Victory',
-        weight: 55,
+        weight: 30,
         type: 'binaryCondition',
         source: {
           type: 'publicVictory',
@@ -377,7 +377,7 @@ export const compatRuleset: RulesetDefinition = {
     ],
     mandatesAsScore: {
       enabled: true,
-      weight: 45,
+      weight: 70,
       mandateProgressMode: 'binary',
     },
     outcomeBands: [
@@ -388,11 +388,11 @@ export const compatRuleset: RulesetDefinition = {
     ],
   },
   setup: {
-    globalGaze: 9,
-    northernWarMachine: 6,
+    globalGaze: 7,
+    northernWarMachine: 8,
     extractionPool: 72,
     extractionSeeds: {
-      GazaWestBank: 2,
+      GazaWestBank: 4,
       LebanonNorthernFront: 1,
       GulfHormuzCorridor: 1,
       RedSeaSuezCorridor: 1,

@@ -648,6 +648,7 @@ function buildVictoryGatingCandidates(mode: OptimizerStrategyMode, analysis: Opt
 }
 
 function buildActionDiversityCandidates(
+  scenarioId: string,
   analysis: OptimizerAnalysis,
   trajectorySummary: TrajectorySummary | null,
 ): ScenarioPatch[] {
@@ -657,6 +658,128 @@ function buildActionDiversityCandidates(
   const investigateOpening = trajectorySummary?.mostCommonFirstAction?.action?.toLowerCase().includes('investigate') ?? false;
   const launchSpamDetected = (trajectorySummary?.mostCommonFirstAction?.action?.toLowerCase().includes('launch') ?? false)
     || analysis.insights.some((line) => line.toLowerCase().includes('collapse'));
+
+  const scenarioPresetById: Partial<Record<string, ScenarioPatch>> = {
+    algerian_war_of_independence: normalizeScenarioPatch({
+      note: '🧭 Scenario action-diversity preset: Algeria',
+      simulator: {
+        actionBias: {
+          build_solidarity: 6,
+          defend: 6,
+          international_outreach: 8,
+          investigate: -4,
+          launch_campaign: -3,
+          smuggle_evidence: 8,
+        },
+        actionCountPenalty: {
+          investigate: -2,
+          launch_campaign: -1,
+        },
+        evidenceScarcitySmuggleBonus: 10,
+        firstUseTargetedActionBonus: 12,
+        highPressureDefendBonus: 12,
+        launchCampaignWithSetupBonus: 8,
+        launchCampaignWithoutSetupPenalty: 10,
+        lowGazeOutreachBonus: 12,
+        preparedCampaignDiversityBonus: 10,
+        repeatActionPenaltyPerUse: 2,
+        repeatActionPenaltyStartsAfter: 2,
+      },
+    }),
+    egypt_1919_revolution: normalizeScenarioPatch({
+      note: '🧭 Scenario action-diversity preset: Egypt',
+      simulator: {
+        actionBias: {
+          build_solidarity: 4,
+          defend: 6,
+          international_outreach: 4,
+          investigate: -2,
+          launch_campaign: -1,
+          smuggle_evidence: 4,
+        },
+        firstUseTargetedActionBonus: 8,
+        launchCampaignWithSetupBonus: 6,
+        launchCampaignWithoutSetupPenalty: 6,
+        repeatActionPenaltyPerUse: 1,
+        repeatActionPenaltyStartsAfter: 3,
+      },
+    }),
+    tahrir_square: normalizeScenarioPatch({
+      note: '🧭 Scenario action-diversity preset: Tahrir',
+      simulator: {
+        actionBias: {
+          build_solidarity: 4,
+          defend: 8,
+          investigate: -3,
+          launch_campaign: -2,
+        },
+        actionCountPenalty: {
+          investigate: -2,
+        },
+        firstUseTargetedActionBonus: 10,
+        highPressureDefendBonus: 12,
+        launchCampaignWithoutSetupPenalty: 8,
+        repeatActionPenaltyPerUse: 1,
+        repeatActionPenaltyStartsAfter: 3,
+      },
+    }),
+    when_the_corridors_burn: normalizeScenarioPatch({
+      note: '🧭 Scenario action-diversity preset: Corridors',
+      simulator: {
+        actionBias: {
+          build_solidarity: 2,
+          defend: 3,
+          investigate: -1,
+          launch_campaign: -1,
+        },
+        launchCampaignWithoutSetupPenalty: 4,
+        repeatActionPenaltyPerUse: 1,
+        repeatActionPenaltyStartsAfter: 4,
+      },
+    }),
+    stones_cry_out: normalizeScenarioPatch({
+      note: '🧭 Scenario action-diversity preset: Stones',
+      simulator: {
+        actionBias: {
+          build_solidarity: 4,
+          defend: 4,
+          international_outreach: 4,
+          investigate: -2,
+          launch_campaign: -1,
+          smuggle_evidence: 4,
+        },
+        firstUseTargetedActionBonus: 8,
+        launchCampaignWithoutSetupPenalty: 6,
+        preparedCampaignDiversityBonus: 6,
+        repeatActionPenaltyPerUse: 1,
+        repeatActionPenaltyStartsAfter: 3,
+      },
+    }),
+    woman_life_freedom: normalizeScenarioPatch({
+      note: '🧭 Scenario action-diversity preset: WLF',
+      simulator: {
+        actionBias: {
+          build_solidarity: 2,
+          defend: 2,
+          international_outreach: 6,
+          investigate: -1,
+          launch_campaign: -1,
+          smuggle_evidence: 6,
+        },
+        evidenceScarcitySmuggleBonus: 10,
+        firstUseTargetedActionBonus: 6,
+        launchCampaignWithoutSetupPenalty: 4,
+        lowGazeOutreachBonus: 10,
+        repeatActionPenaltyPerUse: 1,
+        repeatActionPenaltyStartsAfter: 4,
+      },
+    }),
+  };
+
+  const scenarioPreset = scenarioPresetById[scenarioId];
+  if (scenarioPreset) {
+    candidates.push(scenarioPreset);
+  }
 
   candidates.push(normalizeScenarioPatch({
     note: '🧭 Action-diversity seed: prepared campaigns over raw campaign spam',
@@ -858,7 +981,7 @@ export async function generateCandidatePatches(input: CandidateGenerationInput):
   }
 
   if (includeActionDiversityStrategies(input.strategyMode)) {
-    for (const patch of buildActionDiversityCandidates(input.analysis, input.trajectorySummary)) {
+    for (const patch of buildActionDiversityCandidates(input.scenarioId, input.analysis, input.trajectorySummary)) {
       addCandidate('action_diversity_seed', patch);
     }
   }

@@ -5,9 +5,8 @@ export const systemCards: SystemCardDefinition[] = [
     id: 'sys_alg_colonial_army_sweep',
     deck: 'system',
     name: 'Colonial Army Sweep',
-    text: 'The System moves first and forces a hard turn. Add 1 Extraction Token to the region most vulnerable to War Machine, raise War Machine by 1, and increase future campaign targets by 1. The coalition must absorb this pressure and reorganize before the next phase.',
+    text: 'The System moves first and forces a hard turn. Raise War Machine by 1 and increase future campaign targets by 1 as colonial doctrine expands the scale of repression. The coalition must absorb this pressure and reorganize before the next phase.',
     onReveal: [
-      { type: 'add_extraction', region: { byVulnerability: 'WarMachine' }, amount: 0 },
       { type: 'modify_war_machine', delta: 1 },
     ],
     persistentModifiers: {
@@ -18,10 +17,9 @@ export const systemCards: SystemCardDefinition[] = [
     id: 'sys_alg_settler_political_veto',
     deck: 'system',
     name: 'Settler Political Veto',
-    text: 'The System moves first and forces a hard turn. Advance Empty Stomach by 1, add 1 Extraction Token to French Metropole Influence, and increase Global Appeal cost by 1 Evidence. The coalition must absorb this pressure and reorganize before the next phase.',
+    text: 'The System moves first and forces a hard turn. Advance Empty Stomach by 1 and increase Global Appeal cost by 1 Evidence as settler veto power tightens the political field. The coalition must absorb this pressure and reorganize before the next phase.',
     onReveal: [
       { type: 'modify_domain', domain: 'EmptyStomach', delta: 1 },
-      { type: 'add_extraction', region: 'FrenchMetropoleInfluence', amount: 0 },
     ],
     persistentModifiers: {
       outreachCostDelta: 1,

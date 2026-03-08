@@ -5,7 +5,7 @@ import { cpus } from 'node:os';
 import { listRulesets } from '../../engine/index.ts';
 import type { LogLevel } from '../logging.ts';
 import { logError, logInfo } from '../logging.ts';
-import { runAllScenariosParallelDiagnostics, runScenarioOptimizer } from './engine.ts';
+import { runAllScenariosParallelDiagnostics, runScenarioBenchmark, runScenarioOptimizer } from './engine.ts';
 import { GA_DEFAULT_CONFIG } from './ga/types.ts';
 import type {
   OptimizerConfig,
@@ -127,6 +127,7 @@ const MODE_DESCRIPTIONS: Record<OptimizerMode, string> = {
 const EXECUTION_MODE_DESCRIPTIONS: Record<OptimizerExecutionMode, string> = {
   single_scenario: 'Optimize one scenario using iterative candidate search.',
   all_scenarios_parallel: 'Optimize every scenario in parallel; each scenario runs its own multi-iteration candidate search.',
+  benchmark: 'Capture a current-state benchmark: baseline metrics, config snapshot, trajectory summary, and GA output without accepting patches.',
 };
 
 const LOG_LEVELS: LogLevel[] = ['debug', 'verbose', 'info', 'success', 'warn', 'error'];
@@ -228,13 +229,14 @@ ${scenarioOptions}
     Implementation: Resolved to absolute path; default ${DEFAULT_OUT_DIR}.
     Impact: Determines where iteration summaries, patch history, and final report are written.
 
-  --optimizer-mode <single_scenario|all_scenarios_parallel>
+  --optimizer-mode <single_scenario|all_scenarios_parallel|benchmark>
     Name: Optimizer Execution Mode
     Functionality: Selects single-scenario optimization or all-scenarios parallel optimization.
     Implementation:
       single_scenario: ${EXECUTION_MODE_DESCRIPTIONS.single_scenario}
       all_scenarios_parallel: ${EXECUTION_MODE_DESCRIPTIONS.all_scenarios_parallel}
-    Impact: all_scenarios_parallel runs iterative optimization per scenario concurrently using a shared worker budget.
+      benchmark: ${EXECUTION_MODE_DESCRIPTIONS.benchmark}
+    Impact: all_scenarios_parallel runs iterative optimization per scenario concurrently using a shared worker budget; benchmark writes a current-state snapshot plus GA exploration artifacts.
 
   --mode <liberation|symbolic|both>
     Name: Victory Mode Scope
@@ -355,6 +357,7 @@ Examples:
   npm run optimize -- --scenario woman_life_freedom --mode both --significance strict --parallel-workers 8 --seed 2026
   npm run optimize -- --scenario tahrir_square --search-mode evolutionary --population 30 --generations 10 --ga-runs 1000
   npm run optimize -- --scenario tahrir_square --search-mode hybrid --population 20 --generations 6 --ga-runs 500
+  npm run optimize -- --scenario tahrir_square --optimizer-mode benchmark --runtime balanced --search-mode hybrid --strategy full_optimizer
 `;
 }
 
@@ -392,10 +395,10 @@ function parseMode(raw: string): OptimizerMode {
 
 function parseExecutionMode(raw: string): OptimizerExecutionMode {
   const value = raw.toLowerCase();
-  if (value === 'single_scenario' || value === 'all_scenarios_parallel') {
+  if (value === 'single_scenario' || value === 'all_scenarios_parallel' || value === 'benchmark') {
     return value;
   }
-  throw new Error(`Unsupported --optimizer-mode value "${raw}". Use single_scenario or all_scenarios_parallel.`);
+  throw new Error(`Unsupported --optimizer-mode value "${raw}". Use single_scenario, all_scenarios_parallel, or benchmark.`);
 }
 
 function parseRuntime(raw: string): OptimizerRuntimeProfile {
@@ -914,9 +917,9 @@ export async function buildConfig(argv: string[]): Promise<OptimizerConfig> {
   const runtime = args.runtime ?? 'balanced';
   const runtimeDefaults = RUNTIME_DEFAULTS[runtime];
   const mode = args.mode ?? 'liberation';
-  const strategy = args.strategy ?? 'full_optimizer';
-  const searchMode: OptimizerSearchMode = args.searchMode ?? 'local';
   const executionModeResolved = args.executionMode ?? 'single_scenario';
+  const strategy = args.strategy ?? 'full_optimizer';
+  const searchMode: OptimizerSearchMode = args.searchMode ?? (executionModeResolved === 'benchmark' ? 'hybrid' : 'local');
   const scenarioId = executionModeResolved === 'all_scenarios_parallel'
     ? (args.scenarioId ?? interactiveAnswers?.scenarioId ?? 'all_scenarios')
     : args.scenarioId
@@ -999,6 +1002,21 @@ export async function runCli(argv: string[]) {
       scenariosEvaluated: report.scenarios.length,
       failedScenarioCount: report.failedScenarios.length,
       iterations: report.iterations,
+    }, null, 2));
+    return;
+  }
+
+  if (config.executionMode === 'benchmark') {
+    const report = await runScenarioBenchmark(config);
+    logInfo(JSON.stringify({
+      scenarioId: report.scenarioId,
+      outputDir: report.outputDir,
+      baselineExperimentId: report.baselineExperimentId,
+      successRate: report.baselineMetrics.successRate,
+      avgRounds: report.baselineMetrics.turns.average,
+      fitness: report.baselineScore.score,
+      gaIncluded: report.gaSummary !== null,
+      gaBestFitness: report.gaSummary?.bestFitness ?? null,
     }, null, 2));
     return;
   }

@@ -407,10 +407,10 @@ export const compatRuleset: RulesetDefinition = {
   resistanceCards,
   crisisCards,
   systemCards,
-  liberationThreshold: 3,
+  liberationThreshold: 2,
   suddenDeathRound: 12,
   victoryGate: {
-    minRoundBeforeVictory: 3,
+    minRoundBeforeVictory: 4,
   },
   scenarioHooks: {
     comradesExhaustionGraceRounds: 3,

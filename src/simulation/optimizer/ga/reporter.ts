@@ -50,7 +50,10 @@ export function renderGaSummaryMarkdown(result: GaSearchResult): string {
     .join('\n');
 
   const candidateRows = result.topCandidates
-    .map((candidate, index) => `| ${index + 1} | ${candidate.candidateId} | ${candidate.strategy} | ${candidate.patch.note ?? ''} |`)
+    .map((candidate, index) => {
+      const summary = result.topCandidateSummaries[index];
+      return `| ${index + 1} | ${candidate.candidateId} | ${candidate.strategy} | ${float(summary?.fitness ?? 0)} | ${float(summary?.metrics.successRate ?? 0)} | ${float(summary?.metrics.avgRounds ?? 0)} | ${candidate.patch.note ?? ''} |`;
+    })
     .join('\n');
 
   return `# 🧬 GA Evolutionary Search Report
@@ -68,8 +71,8 @@ ${generationRows}
 
 ## Top Candidates Promoted to A/B Validation
 
-| Rank | Candidate ID | Strategy | Note |
-|------|-------------|----------|------|
+| Rank | Candidate ID | Strategy | Fitness | Success | Avg Rounds | Note |
+|------|-------------|----------|---------|---------|------------|------|
 ${candidateRows}
 `;
 }

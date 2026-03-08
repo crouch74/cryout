@@ -8,7 +8,7 @@ import type { GaConfig } from './ga/types.ts';
 export type OptimizerRuntimeProfile = 'fast' | 'balanced' | 'thorough';
 export type OptimizerSignificanceMode = 'strict' | 'balanced' | 'lenient';
 export type OptimizerMode = 'liberation' | 'symbolic' | 'both';
-export type OptimizerExecutionMode = 'single_scenario' | 'all_scenarios_parallel';
+export type OptimizerExecutionMode = 'single_scenario' | 'all_scenarios_parallel' | 'benchmark';
 /**
  * Controls whether the optimizer uses the existing hill-climbing approach
  * (local), a pure GA evolutionary search (evolutionary), or a hybrid that
@@ -262,6 +262,49 @@ export interface OptimizerFinalReport {
   recommendedPatch: ScenarioPatch;
   finalMetrics: OptimizerFinalMetrics;
   history: OptimizerIterationResult[];
+}
+
+export interface OptimizerBenchmarkGaGenerationSummary {
+  generation: number;
+  bestFitness: number;
+  meanFitness: number;
+  medianFitness: number;
+  bestIndividualId: string;
+  bestGenome: Record<string, unknown>;
+}
+
+export interface OptimizerBenchmarkGaCandidateSummary {
+  rank: number;
+  individualId: string;
+  candidateId: string;
+  strategy: OptimizerCandidateStrategy;
+  fitness: number;
+  successRate: number;
+  avgRounds: number;
+  genome: Record<string, unknown>;
+  patch: ScenarioPatch;
+}
+
+export interface OptimizerBenchmarkGaSummary {
+  generationsCompleted: number;
+  bestFitness: number;
+  generationReports: OptimizerBenchmarkGaGenerationSummary[];
+  topCandidates: OptimizerBenchmarkGaCandidateSummary[];
+}
+
+export interface OptimizerBenchmarkReport {
+  generatedAt: string;
+  scenarioId: string;
+  scenarioName: string;
+  outputDir: string;
+  optimizerConfig: OptimizerConfig;
+  scenarioConfig: Record<string, unknown>;
+  baselineExperimentId: string;
+  baselineMetrics: ExperimentArmSummary;
+  baselineScore: OptimizerScoreBreakdown;
+  analysis: OptimizerAnalysis;
+  trajectorySummary: TrajectorySummary | null;
+  gaSummary: OptimizerBenchmarkGaSummary | null;
 }
 
 export interface AllScenariosParallelScenarioSummary {

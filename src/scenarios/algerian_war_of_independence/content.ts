@@ -323,7 +323,7 @@ export const compatRuleset: RulesetDefinition = {
     liberationThreshold: 4,
     suddenDeathRound: 12,
     victoryGate: {
-        minRoundBeforeVictory: 3,
+        minRoundBeforeVictory: 4,
     },
     victoryScoring: {
         mode: 'score',

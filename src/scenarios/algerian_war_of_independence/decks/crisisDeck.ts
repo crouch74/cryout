@@ -5,9 +5,8 @@ export const crisisCards: CrisisCardDefinition[] = [
     id: 'crs_alg_battle_of_algiers',
     deck: 'crisis',
     name: 'Battle of Algiers',
-    text: 'The System moves first and forces a hard turn. Add 1 Extraction Token to Algiers and raise War Machine by 1. The coalition must absorb this pressure and reorganize before the next phase.',
+    text: 'The System moves first and forces a hard turn. Raise War Machine by 1 as the colonial security apparatus tightens across Algiers. The coalition must absorb this pressure and reorganize before the next phase.',
     effects: [
-      { type: 'add_extraction', region: 'Algiers', amount: 0 },
       { type: 'modify_war_machine', delta: 1 },
     ],
   },
@@ -15,10 +14,9 @@ export const crisisCards: CrisisCardDefinition[] = [
     id: 'crs_alg_oas_terror_attack',
     deck: 'crisis',
     name: 'OAS Terror Attack',
-    text: 'The System moves first and forces a hard turn. Advance Empty Stomach by 1 and add 1 Extraction Token to Oran. The coalition must absorb this pressure and reorganize before the next phase.',
+    text: 'The System moves first and forces a hard turn. Advance Empty Stomach by 1 as settler terror disrupts daily survival in Oran. The coalition must absorb this pressure and reorganize before the next phase.',
     effects: [
       { type: 'modify_domain', domain: 'EmptyStomach', delta: 1 },
-      { type: 'add_extraction', region: 'Oran', amount: 0 },
     ],
   },
   {
@@ -47,10 +45,9 @@ export const crisisCards: CrisisCardDefinition[] = [
     id: 'crs_alg_french_national_assembly_debate',
     deck: 'crisis',
     name: 'French National Assembly Debate',
-    text: 'The System moves first and forces a hard turn. Raise Global Gaze by 1 and add 1 Extraction Token to French Metropole Influence. The coalition must absorb this pressure and reorganize before the next phase.',
+    text: 'The System moves first and forces a hard turn. Raise Global Gaze by 1 as debate inside the metropole briefly widens international scrutiny. The coalition must absorb this pressure and reorganize before the next phase.',
     effects: [
       { type: 'modify_gaze', delta: 1 },
-      { type: 'add_extraction', region: 'FrenchMetropoleInfluence', amount: 0 },
     ],
   },
   {
@@ -77,9 +74,8 @@ export const crisisCards: CrisisCardDefinition[] = [
     id: 'crs_alg_border_closure',
     deck: 'crisis',
     name: 'Border Closure',
-    text: 'The System moves first and forces a hard turn. Add 1 Extraction Token to Tunisian Border and advance War Machine by 1. The coalition must absorb this pressure and reorganize before the next phase.',
+    text: 'The System moves first and forces a hard turn. Advance War Machine by 1 as the border closure hardens regional militarization. The coalition must absorb this pressure and reorganize before the next phase.',
     effects: [
-      { type: 'add_extraction', region: 'TunisianBorder', amount: 0 },
       { type: 'modify_domain', domain: 'WarMachine', delta: 1 },
     ],
   },
@@ -87,10 +83,9 @@ export const crisisCards: CrisisCardDefinition[] = [
     id: 'crs_alg_settler_militias_mobilize',
     deck: 'crisis',
     name: 'Settler Militias Mobilize',
-    text: 'The System moves first and forces a hard turn. Advance Empty Stomach by 1 and add 1 Extraction Token to Oran. The coalition must absorb this pressure and reorganize before the next phase.',
+    text: 'The System moves first and forces a hard turn. Advance Empty Stomach by 1 as settler militias disrupt food and movement in Oran. The coalition must absorb this pressure and reorganize before the next phase.',
     effects: [
       { type: 'modify_domain', domain: 'EmptyStomach', delta: 1 },
-      { type: 'add_extraction', region: 'Oran', amount: 0 },
     ],
   },
   {
