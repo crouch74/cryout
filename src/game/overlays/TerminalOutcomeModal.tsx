@@ -1,7 +1,6 @@
 import type { CompiledContent, EngineState } from '../../engine/index.ts';
 import { formatNumber, localizeRulesetField, t } from '../../i18n/index.ts';
 import { presentTerminalOutcome } from '../presentation/historyPresentation.ts';
-import { Icon } from '../../ui/icon/Icon.tsx';
 import { ModalFrame } from '../../ui/components/overlay/ModalFrame.tsx';
 import { MetricRibbon } from '../../ui/components/data/MetricRibbon.tsx';
 import { UiButton } from '../../ui/components/actions/UiButton.tsx';
@@ -11,7 +10,6 @@ interface TerminalOutcomeModalProps {
   state: EngineState;
   content: CompiledContent;
   onReviewLedger: () => void;
-  onBack: () => void;
 }
 
 export function TerminalOutcomeModal({
@@ -19,7 +17,6 @@ export function TerminalOutcomeModal({
   state,
   content,
   onReviewLedger,
-  onBack,
 }: TerminalOutcomeModalProps) {
   if (!open) {
     return null;
@@ -96,11 +93,8 @@ export function TerminalOutcomeModal({
       </blockquote>
 
       <div className="terminal-outcome-actions">
-        <UiButton variant="primary" onClick={onReviewLedger} icon={<Icon type="ledger" size="md" />}>
+        <UiButton variant="primary" onClick={onReviewLedger}>
           {t('ui.terminal.reviewLedger', 'Review Ledger')}
-        </UiButton>
-        <UiButton variant="secondary" onClick={onBack} icon={<Icon type="home" size="md" />}>
-          {t('ui.terminal.backHome', 'Back Home')}
         </UiButton>
       </div>
     </ModalFrame>

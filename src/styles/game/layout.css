@@ -2552,7 +2552,6 @@ html[dir='rtl'] .deck-reveal-deck-label {
 .phase-progress-nav {
   position: relative;
   z-index: var(--z-panel);
-  padding-top: 52px;
 }
 
 .phase-progress-overlay-controls {
@@ -2659,10 +2658,6 @@ html[dir='rtl'] .deck-reveal-deck-label {
 }
 
 @media (max-width: 900px) {
-  .phase-progress-nav {
-    padding-top: 48px;
-  }
-
   .phase-progress-overlay-controls {
     inset-inline: 0;
   }

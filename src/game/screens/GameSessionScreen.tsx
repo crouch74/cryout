@@ -33,6 +33,7 @@ import { CampaignResultModal } from '../overlays/CampaignResultModal.tsx';
 import { GameIntroModal } from '../overlays/GameIntroModal.tsx';
 import { SecretMandateModal } from '../overlays/SecretMandateModal.tsx';
 import { Icon } from '../../ui/icon/Icon.tsx';
+import { GameIcon } from '../../ui/icon/GameIcon.tsx';
 import type { IconType } from '../../ui/icon/iconTypes.ts';
 import { PlayerStrip } from '../hud/PlayerStrip.tsx';
 import { PhaseProgress } from '../hud/PhaseProgress.tsx';
@@ -1523,8 +1524,35 @@ export function GameSessionScreen({
             activeHelpContent={phaseHelpContent}
             overlayControls={(
               <div className="phase-progress-display-controls">
-                <ThemeSwitcher showLabel={false} compact />
-                <LocaleSwitcher showLabel={false} compact />
+                <div className="phase-progress-display-menu">
+                  <button
+                    type="button"
+                    className="phase-progress-display-trigger"
+                    aria-label={t('ui.game.phaseOverlayControls', 'Gameplay display controls')}
+                    title={t('ui.game.phaseOverlayControls', 'Gameplay display controls')}
+                  >
+                    <GameIcon name="settings" size="sm" ariaLabel={t('ui.game.phaseOverlayControls', 'Gameplay display controls')} />
+                  </button>
+                  <div className="phase-progress-display-popover">
+                    <ThemePlate
+                      label={(
+                        <>
+                          <Icon
+                            type="home"
+                            size="md"
+                            title={t('ui.game.backHome', 'Back Home')}
+                            ariaHidden
+                          />
+                          <span className="visually-hidden">{t('ui.game.backHome', 'Back Home')}</span>
+                        </>
+                      )}
+                      ariaLabel={t('ui.game.backHome', 'Back Home')}
+                      onClick={onBack}
+                    />
+                    <ThemeSwitcher showLabel={false} compact />
+                    <LocaleSwitcher showLabel={false} compact />
+                  </div>
+                </div>
               </div>
             )}
           />
@@ -1591,21 +1619,6 @@ export function GameSessionScreen({
             suspendHighlights={highlightSuspended}
             utilities={(
               <div className="status-ribbon-utilities-group">
-                <ThemePlate
-                  label={(
-                    <>
-                      <Icon
-                        type="home"
-                        size="md"
-                        title={t('ui.game.backHome', 'Back Home')}
-                        ariaHidden
-                      />
-                      <span className="visually-hidden">{t('ui.game.backHome', 'Back Home')}</span>
-                    </>
-                  )}
-                  ariaLabel={t('ui.game.backHome', 'Back Home')}
-                  onClick={onBack}
-                />
                 {state.secretMandatesEnabled ? (
                   <button
                     type="button"
@@ -1791,7 +1804,6 @@ export function GameSessionScreen({
           setContextMode('ledger');
           setContextOpen(true);
         }}
-        onBack={onBack}
       />
 
       <SecretMandateModal

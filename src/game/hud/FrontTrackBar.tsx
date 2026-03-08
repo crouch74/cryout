@@ -63,10 +63,7 @@ export function FrontTrackBar({
                 className="front-track-tooltip"
               >
                 <strong>{row.label}</strong>
-                <div className="front-track-tooltip-section">
-                  <span className="front-track-tooltip-label">{t('ui.game.trackTooltipNarrative', 'Narrative impact')}</span>
-                  <p>{row.tooltipNarrative}</p>
-                </div>
+                <p>{row.tooltipNarrative}</p>
                 {row.tooltipMaterial ? (
                   <div className="front-track-tooltip-section">
                     <span className="front-track-tooltip-label">{t('ui.game.trackTooltipMaterial', 'Material impact')}</span>
