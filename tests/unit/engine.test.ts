@@ -58,6 +58,22 @@ const algeriaStartCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
   seed: 4242,
 };
 
+const corridorsBurnStartCommand: Extract<EngineCommand, { type: 'StartGame' }> = {
+  type: 'StartGame',
+  rulesetId: 'when_the_corridors_burn',
+  mode: 'LIBERATION',
+  humanPlayerCount: 4,
+  seatFactionIds: [
+    'palestinian_sumud_committees',
+    'gaza_west_bank_witness_medics',
+    'venezuelan_communal_councils',
+    'cuban_cdr_neighborhood_defense',
+    'corridor_workers_refuge_networks',
+  ],
+  seatOwnerIds: [0, 1, 2, 3, 0],
+  seed: 20260307,
+};
+
 function getStartupWithdrawalEvents(state: EngineState) {
   return state.eventLog.filter((event) => event.context?.cardReveals?.[0]?.origin === 'startup_withdrawal');
 }
@@ -409,6 +425,37 @@ test('Algeria liberation victory requires repression to remain at 6 or lower', (
 
   assert.equal(next.phase, 'WIN');
   assert.equal(next.terminalOutcome?.cause, 'liberation');
+});
+
+test('when_the_corridors_burn aggregated gulf posture fires both authored threshold bundles', () => {
+  const content = compileContent(corridorsBurnStartCommand.rulesetId);
+  let state = initializeGame(corridorsBurnStartCommand);
+
+  state.phase = 'COALITION';
+  state.players[0].actionsRemaining = 1;
+  state.players[0].resistanceHand = ['res_corr_street_to_strait_coordination'];
+  state.regions.GulfHormuzCorridor.extractionTokens = 2;
+  state = dispatchCommand(
+    state,
+    { type: 'QueueIntent', seat: 0, action: { actionId: 'play_card', regionId: 'RedSeaSuezCorridor', cardId: 'res_corr_street_to_strait_coordination' } },
+    content,
+  );
+  state.players[0].actionsRemaining = 0;
+  state.players[0].ready = true;
+  for (const player of state.players.slice(1)) {
+    player.actionsRemaining = 0;
+    player.ready = true;
+  }
+
+  const next = dispatchCommand(state, { type: 'CommitCoalitionIntent' }, content);
+
+  assert.equal(next.customTracks.gulf_posture?.value, 2);
+  assert.equal(next.regions.GulfHormuzCorridor.extractionTokens, 1);
+  assert.equal(next.domains.EmptyStomach.progress, state.domains.EmptyStomach.progress + 1);
+  assert.equal(next.domains.FossilGrip.progress, state.domains.FossilGrip.progress + 1);
+  assert.equal(next.globalGaze, state.globalGaze + 1);
+  assert.equal(next.eventLog.some((event) => event.sourceId === 'threshold_gulf_posture_1'), true);
+  assert.equal(next.eventLog.some((event) => event.sourceId === 'threshold_gulf_posture_2'), true);
 });
 
 test('symbolic mode reveals exactly three active beacons', () => {

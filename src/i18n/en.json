@@ -455,6 +455,12 @@
       "coalitionDeskSections": "Coalition desk sections",
       "queuedCount": "{{count}} queued",
       "focusSeatAbbrev": "S{{seat}}",
+      "trackBar": "Movement and pressure tracks",
+      "trackDirectionHigherBetter": "Higher means stronger movement leverage.",
+      "trackDirectionHigherWorse": "Higher means escalating system pressure.",
+      "trackDirectionChipHigherBetter": "Higher = leverage",
+      "trackDirectionChipHigherWorse": "Higher = pressure",
+      "phaseOverlayControls": "Gameplay display controls",
       "extractionTokens": "Extraction Tokens",
       "extractionPool": "Extraction Pool",
       "globalGaze": "Global Gaze",
@@ -1147,43 +1153,43 @@
     },
     "domains": {
       "WarMachine": {
-        "name": "War Machine",
-        "description": "Militarism, bases, and logistics of permanent intervention."
+        "name": "Anti-War Fracture",
+        "description": "Breaking militarism, basing, and the logistics of permanent intervention."
       },
       "DyingPlanet": {
-        "name": "Dying Planet",
-        "description": "Ecological defense against flood, fire, extraction, and collapse."
+        "name": "Earth Defense",
+        "description": "Collective defense of land, water, and climate against flood, fire, extraction, and collapse."
       },
       "GildedCage": {
-        "name": "Gilded Cage",
-        "description": "Freedom from carceral control, dispossession, and managed rights."
+        "name": "Carceral Breach",
+        "description": "Breaking carceral control, dispossession, and managed rights regimes."
       },
       "SilencedTruth": {
-        "name": "Silenced Truth",
-        "description": "Evidence, press freedom, and the ability to circulate testimony."
+        "name": "Open Signal",
+        "description": "Keeping evidence, press freedom, and testimony in public circulation."
       },
       "EmptyStomach": {
-        "name": "Empty Stomach",
-        "description": "Food sovereignty, debt resistance, and survival beyond austerity."
+        "name": "Food Sovereignty",
+        "description": "Building food sovereignty, debt refusal, and survival beyond austerity."
       },
       "FossilGrip": {
-        "name": "Fossil Grip",
-        "description": "Energy justice against pipeline rule, sacrifice zones, and fuel empires."
+        "name": "Extraction Rupture",
+        "description": "Advancing energy justice against pipeline rule, sacrifice zones, and fuel empires."
       },
       "StolenVoice": {
-        "name": "Stolen Voice",
-        "description": "Cultural survival, language, art, and memory against erasure."
+        "name": "Living Memory",
+        "description": "Defending language, art, culture, and collective memory against erasure."
       },
       "RevolutionaryWave": {
-        "name": "Revolutionary Wave",
+        "name": "Popular Momentum",
         "description": "The momentum, hope, and collective presence of people in the streets."
       },
       "PatriarchalGrip": {
-        "name": "Patriarchal Grip",
-        "description": "Regime control over people, hair, and public life."
+        "name": "Patriarchal Rupture",
+        "description": "Breaking regime control over people, hair, and public life."
       },
       "UnfinishedJustice": {
-        "name": "Unfinished Justice",
+        "name": "Justice Reckoning",
         "description": "The collective memory of those fallen and the demand for structural accountability."
       }
     },
@@ -1689,23 +1695,23 @@
         "passive": "Organize gains +2 Comrades in Gaza-West Bank and Launch Campaign gains +1 there.",
         "weakness": "Global Appeal costs +1 Evidence.",
         "mandateTitle": "Hold the Ground of Return",
-        "mandateDescription": "End with Gaza-West Bank at 2 or fewer Extraction Tokens, Witness Corridors at 4 or more, and Egyptian Corridor Posture at 3 or more."
+        "mandateDescription": "End with Gaza-West Bank at 2 or fewer Extraction Tokens, Witness Networks at 4 or more, and Rafah Corridor Opening at 3 or more."
       },
       "gaza_west_bank_witness_medics": {
         "name": "Gaza / West Bank Witness and Medics Network",
         "shortName": "Witness",
-        "passive": "Investigate gains +1 Evidence in Gaza-West Bank and campaigns on Witness Corridors gain +1.",
+        "passive": "Investigate gains +1 Evidence in Gaza-West Bank and campaigns on Witness Networks gain +1.",
         "weakness": "Defend actions gain no home-region bonus.",
         "mandateTitle": "Nothing Must Vanish",
-        "mandateDescription": "End with Witness Corridors at 5 or more, Gaza-West Bank at 2 or fewer Extraction Tokens, and Global Gaze at 10 or more."
+        "mandateDescription": "End with Witness Networks at 5 or more, Gaza-West Bank at 2 or fewer Extraction Tokens, and Global Gaze at 10 or more."
       },
       "venezuelan_communal_councils": {
         "name": "Venezuelan Communal Councils",
         "shortName": "Communes",
-        "passive": "Organize gains +2 Comrades in Caribbean Siege and campaigns on Bread Under Siege gain +1 there.",
+        "passive": "Organize gains +2 Comrades in Caribbean Siege and campaigns on Communal Provision gain +1 there.",
         "weakness": "Global Appeal costs +1 Evidence.",
         "mandateTitle": "Keep the Communes Breathing",
-        "mandateDescription": "End with Caribbean Siege at 2 or fewer Extraction Tokens, Bread Under Siege at 4 or more, and Saudi Posture at least Hedge."
+        "mandateDescription": "End with Caribbean Siege at 2 or fewer Extraction Tokens, Communal Provision at 4 or more, and Gulf Distance From War at 1 or more."
       },
       "cuban_cdr_neighborhood_defense": {
         "name": "Cuban CDR and Neighborhood Defense Networks",
@@ -1713,13 +1719,13 @@
         "passive": "Investigate gains +1 Evidence in Caribbean Siege and Defend gains +1 there.",
         "weakness": "Organize outside Caribbean Siege gains no home bonus.",
         "mandateTitle": "Protect the Blockaded Memory",
-        "mandateDescription": "End with Witness Corridors at 3 or more, Sanctions Breach at 3 or more, and Caribbean Siege at 2 or fewer Extraction Tokens."
+        "mandateDescription": "End with Witness Networks at 3 or more, Sanctions Breach at 3 or more, and Caribbean Siege at 2 or fewer Extraction Tokens."
       },
       "corridor_workers_refuge_networks": {
         "name": "Corridor Workers and Refuge Networks",
         "shortName": "Corridors",
         "passive": "Investigate gains +1 Evidence in Red Sea-Suez Corridor and campaigns on Chokepoint Breakage gain +1.",
-        "weakness": "Global Appeal costs +1 Evidence when Gulf Blowback is 4 or higher.",
+        "weakness": "Global Appeal costs +1 Evidence when Gulf War Exposure is 4 or higher.",
         "mandateTitle": "Open the Passage, Not the War",
         "mandateDescription": "End with Red Sea-Suez Corridor at 2 or fewer Extraction Tokens, Gulf-Hormuz Corridor at 2 or fewer, and Chokepoint Breakage at 4 or more."
       }
@@ -2247,7 +2253,7 @@
       },
       "sup_corr_gaza_archive_stream": {
         "name": "Gaza Archive Stream",
-        "text": "Acting faction gets +2 on a Witness Corridors campaign. Phones, martyr lists, clinic logs, and burial records keep evidence moving against erasure."
+        "text": "Acting faction gets +2 on a Witness Networks campaign. Phones, martyr lists, clinic logs, and burial records keep evidence moving against erasure."
       },
       "sup_corr_prisoner_letter_chain": {
         "name": "Prisoner Letter Chain",
@@ -2259,15 +2265,15 @@
       },
       "sup_corr_black_sea_grain_solidarity": {
         "name": "Black Sea Grain Solidarity",
-        "text": "Acting faction gets +2 on a Bread Under Siege campaign. Grain routes and convoy information are reclaimed for food survival instead of war planning."
+        "text": "Acting faction gets +2 on a Communal Provision campaign. Grain routes and convoy information are reclaimed for food survival instead of war planning."
       },
       "sup_corr_cuban_memory_brigade": {
         "name": "Cuban Memory Brigade",
-        "text": "Acting faction gets +2 on a Witness Corridors campaign. Songs, classrooms, and neighborhood memory keep blockade trauma politically legible and hard to erase."
+        "text": "Acting faction gets +2 on a Witness Networks campaign. Songs, classrooms, and neighborhood memory keep blockade trauma politically legible and hard to erase."
       },
       "sup_corr_communal_defense_assembly": {
         "name": "Communal Defense Assembly",
-        "text": "Acting faction gets +2 on a Bread Under Siege campaign. An assembly redistributes risk, restores discipline, and turns survival into coordinated strategy."
+        "text": "Acting faction gets +2 on a Communal Provision campaign. An assembly redistributes risk, restores discipline, and turns survival into coordinated strategy."
       },
       "crs_corr_rafah_gate_choked": {
         "name": "Rafah Gate Choked Again",
@@ -2315,7 +2321,7 @@
       },
       "crs_corr_monroe_message_to_caracas": {
         "name": "Monroe Message to Caracas and Havana",
-        "text": "Raise War Machine by 1, add 1 Extraction to Caribbean Siege, and lower Witness Corridors by 1. Threats to Caracas and Havana harden the blockade line and warn the hemisphere that disobedient sovereignty will be punished."
+        "text": "Raise War Machine by 1, add 1 Extraction to Caribbean Siege, and lower Witness Networks by 1. Threats to Caracas and Havana harden the blockade line and warn the hemisphere that disobedient sovereignty will be punished."
       },
       "sys_corr_trump_operation_epic_fury": {
         "name": "Trump Orders Operation Epic Fury",
@@ -2383,6 +2389,32 @@
         "dramatization": "Tear gas, chants, funerals, and barricades. The square fills, empties, and fills again while the System searches for a decisive break.",
         "gameplay": "Keep Cairo politically alive while managing nationwide pressure. If The Square empties too long, Revolutionary Wave recedes; martyrdom can restore momentum, but at severe human cost.",
         "moralCenter": "No single hero saves this table. Collective endurance keeps the uprising alive, even when victory remains partial.",
+        "domains": {
+          "WarMachine": {
+            "name": "Security Rupture",
+            "description": "Cracking the Ministry of Interior, CSF, and the military apparatus."
+          },
+          "SilencedTruth": {
+            "name": "Open Signal",
+            "description": "Keeping social media, satellite TV, and citizen journalism in motion."
+          },
+          "EmptyStomach": {
+            "name": "Bread & Dignity",
+            "description": "Labor strikes, bread riots, and economic justice."
+          },
+          "RevolutionaryWave": {
+            "name": "Popular Momentum",
+            "description": "The uprising’s collective momentum across streets, unions, and neighborhoods."
+          },
+          "PatriarchalGrip": {
+            "name": "Patriarchal Rupture",
+            "description": "Breaking regime control over people, identity, and public life."
+          },
+          "UnfinishedJustice": {
+            "name": "Justice Reckoning",
+            "description": "Forcing a reckoning with old-regime holdovers and military trials."
+          }
+        },
         "specialRules": {
           "the_square": {
             "label": "The Square",
@@ -2402,6 +2434,40 @@
         "dramatization": "Headscarves burn, classrooms become organizing cells, and prison walls answer with silence and fear. The chant keeps moving anyway.",
         "gameplay": "Lower Patriarchal Grip while sustaining witness networks under heavy crackdown. Symbolic gains matter, but they collapse without structural pressure management.",
         "moralCenter": "Women's liberation is collective liberation. Every gain is real, and none arrives without risk.",
+        "domains": {
+          "WarMachine": {
+            "name": "Security Rupture",
+            "description": "Cracking the IRGC, Basij, and riot-police grip."
+          },
+          "DyingPlanet": {
+            "name": "Land-Water Defense",
+            "description": "Defending land, water, and life against extraction and ecological collapse."
+          },
+          "GildedCage": {
+            "name": "Carceral Breach",
+            "description": "Breaking carceral control, dispossession, and managed-rights discipline."
+          },
+          "SilencedTruth": {
+            "name": "Open Signal",
+            "description": "Bypassing the national firewall and keeping testimony moving."
+          },
+          "EmptyStomach": {
+            "name": "Bread & Dignity",
+            "description": "Building economic justice through bazaar strikes and daily survival."
+          },
+          "FossilGrip": {
+            "name": "Energy Justice",
+            "description": "Advancing energy justice against sacrifice zones, fuel empires, and extractive rule."
+          },
+          "StolenVoice": {
+            "name": "Living Memory",
+            "description": "Protecting language, art, and collective memory against erasure."
+          },
+          "PatriarchalGrip": {
+            "name": "Patriarchal Rupture",
+            "description": "Breaking regime control over bodies, hair, and public life."
+          }
+        },
         "specialRules": {
           "hijab_enforcement": {
             "label": "Hijab Enforcement",
@@ -2425,6 +2491,32 @@
           "repression_cycle": {
             "name": "Repression Cycle",
             "description": "How far colonial repression has escalated against the movement."
+          }
+        },
+        "domains": {
+          "WarMachine": {
+            "name": "Colonial Army Fracture",
+            "description": "Fracturing the colonial army, counter-insurgency doctrine, and force projection."
+          },
+          "GildedCage": {
+            "name": "Detention Network Broken",
+            "description": "Breaking interrogation centers, detention grids, and disappearance as colonial rule."
+          },
+          "SilencedTruth": {
+            "name": "International Witness",
+            "description": "Documentation, testimony, and transnational witness."
+          },
+          "UnfinishedJustice": {
+            "name": "Justice Reckoning",
+            "description": "Forcing institutions that shield colonial crimes toward public reckoning."
+          },
+          "RevolutionaryWave": {
+            "name": "Liberation Cohesion",
+            "description": "The movement’s capacity to stay collectively aligned under pressure."
+          },
+          "EmptyStomach": {
+            "name": "Settler Veto Fracture",
+            "description": "Breaking settler political pressure, economic veto, and reactionary mobilization."
           }
         },
         "specialRules": {
@@ -2478,16 +2570,16 @@
             "description": "Economic disruption through labor refusal and civil disobedience."
           },
           "GildedCage": {
-            "name": "Anti-Detention Pressure",
-            "description": "The demand for the return of exiled leaders and the release of political detainees."
+            "name": "Detention Breach",
+            "description": "Breaking detention policy by forcing the return of exiled leaders and the release of political detainees."
           },
           "StolenVoice": {
-            "name": "Mass Representation",
-            "description": "Pluralist political representation that outgrows elite negotiation."
+            "name": "Mass Voice",
+            "description": "Pluralist political representation and popular voice that outgrow elite negotiation."
           },
           "UnfinishedJustice": {
-            "name": "Martyrs’ Reckoning",
-            "description": "The collective memory of those fallen, fueling continued resistance."
+            "name": "Justice for the Fallen",
+            "description": "Collective memory of the fallen transformed into public reckoning and continued resistance."
           }
         },
         "regions": {
@@ -2515,15 +2607,15 @@
         "moralCenter": "No northern savior arrives. The table lives or dies by movement endurance, witness, and survival structures built by the people under attack.",
         "domains": {
           "WarMachine": {
-            "name": "War Machine Fracture",
+            "name": "Anti-War Fracture",
             "description": "Breaking basing chains, arms corridors, and the political tempo of escalation."
           },
           "SilencedTruth": {
-            "name": "Witness Corridors",
+            "name": "Witness Networks",
             "description": "Keeping testimony, archives, medics, and public proof in motion under bombardment and blackout."
           },
           "EmptyStomach": {
-            "name": "Bread Under Siege",
+            "name": "Communal Provision",
             "description": "Holding food and daily survival against siege, sanctions, and manipulated scarcity."
           },
           "GildedCage": {
@@ -2537,50 +2629,38 @@
         },
         "customTracks": {
           "egypt_corridor": {
-            "name": "Egyptian Corridor Posture",
-            "description": "0-6 track: from sealed containment to pressured opening and mediated passage."
+            "name": "Rafah Corridor Opening",
+            "description": "0-6 track: from sealed containment toward pressured opening and life-saving passage."
           },
           "turkey_corridor": {
-            "name": "Turkish Corridor Posture",
-            "description": "0-6 track: from NATO contradiction under management to more visible rupture and corridor pressure."
+            "name": "Northern Corridor Fracture",
+            "description": "0-6 track: from managed NATO contradiction toward visible rupture and corridor pressure."
           },
           "jordan_corridor": {
-            "name": "Jordanian Corridor Posture",
-            "description": "0-6 track: from containment priority to fragile opening under Palestine-adjacent pressure."
+            "name": "Jordan Relief Opening",
+            "description": "0-6 track: from containment priority toward a fragile opening under Palestine-adjacent pressure."
           },
           "qatar_corridor": {
-            "name": "Qatari Mediation Posture",
-            "description": "0-6 track: mediation capacity under pressure, useful when witness and negotiation both still move."
+            "name": "Mediation Window",
+            "description": "0-6 track: mediation capacity under pressure while witness and negotiation still move."
           },
           "gulf_blowback": {
-            "name": "Gulf Blowback",
+            "name": "Gulf War Exposure",
             "description": "Shared host-state exposure to retaliatory fire, insurance panic, and basing instability."
           },
-          "saudi_posture": {
-            "name": "Saudi Posture",
-            "description": "0-2 track: 0 host, 1 hedge, 2 distance."
-          },
-          "uae_posture": {
-            "name": "UAE Posture",
-            "description": "0-2 track: 0 host, 1 hedge, 2 distance."
-          },
-          "bahrain_posture": {
-            "name": "Bahrain Posture",
-            "description": "0-2 track: 0 host, 1 hedge, 2 distance."
-          },
-          "kuwait_posture": {
-            "name": "Kuwait Posture",
-            "description": "0-2 track: 0 host, 1 hedge, 2 distance."
+          "gulf_posture": {
+            "name": "Gulf Distance From War",
+            "description": "0-2 track: 0 host, 1 hedge, 2 distance from direct war alignment."
           }
         },
         "specialRules": {
           "regional_powers_layer": {
             "label": "Regional Powers / Corridor States",
-            "description": "Egypt, Turkey, Jordan, and Qatar use individual posture tracks while the Gulf hosts sit inside a shared blowback subsystem."
+            "description": "Egypt, Turkey, Jordan, and Qatar use 0-6 opening tracks. Gulf positioning is aggregated into one distance-from-war track under a shared Gulf War Exposure meter."
           },
           "gulf_host_target_subsystem": {
             "label": "Host-and-Target Gulf Subsystem",
-            "description": "Saudi Arabia, UAE, Bahrain, and Kuwait are not one camp. They hedge, host, or distance under one shared Gulf Blowback meter."
+            "description": "As Gulf War Exposure rises, Gulf states are pushed toward hedging or distance. That aggregated posture can open space for the coalition without displacing the movements from the center."
           },
           "atlantic_fracture": {
             "label": "Atlantic Fracture",

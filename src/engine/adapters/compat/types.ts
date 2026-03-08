@@ -389,6 +389,17 @@ export interface ScenarioBoardDefinition {
   svgIdConvention?: string;
 }
 
+export interface CustomTrackDefinition {
+  id: string;
+  name: string;
+  description: string;
+  initialValue: number;
+  min: number;
+  max: number;
+  thresholds: number[];
+  direction: 'higher_is_better' | 'higher_is_worse';
+}
+
 export interface RulesetDefinition {
   id: string;
   name: string;
@@ -414,15 +425,7 @@ export interface RulesetDefinition {
     startingComradesByFaction?: Partial<Record<FactionId, number>>;
     startingEvidenceByFaction?: Partial<Record<FactionId, number>>;
   };
-  customTracks?: Array<{
-    id: string;
-    name: string;
-    description: string;
-    initialValue: number;
-    min: number;
-    max: number;
-    thresholds: number[];
-  }>;
+  customTracks?: CustomTrackDefinition[];
   specialRules?: Array<{
     id: string;
     label: string;

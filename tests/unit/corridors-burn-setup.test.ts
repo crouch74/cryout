@@ -36,10 +36,25 @@ test('when_the_corridors_burn initializes faction-specific starting resources an
   assert.equal(state.regions.CaribbeanSiege.comradesPresent[2], 12);
   assert.equal(state.regions.CaribbeanSiege.comradesPresent[3], 8);
   assert.equal(state.regions.RedSeaSuezCorridor.comradesPresent[4], 8);
-  assert.equal(state.globalGaze, 9);
-  assert.equal(state.northernWarMachine, 6);
+  assert.equal(state.globalGaze, 7);
+  assert.equal(state.northernWarMachine, 8);
+  assert.deepEqual((content.ruleset.customTracks ?? []).map((track) => track.id), [
+    'egypt_corridor',
+    'turkey_corridor',
+    'jordan_corridor',
+    'qatar_corridor',
+    'gulf_blowback',
+    'gulf_posture',
+  ]);
   assert.equal(state.customTracks.egypt_corridor?.value, 2);
+  assert.equal(state.customTracks.turkey_corridor?.value, 3);
+  assert.equal(state.customTracks.jordan_corridor?.value, 2);
   assert.equal(state.customTracks.qatar_corridor?.value, 3);
   assert.equal(state.customTracks.gulf_blowback?.value, 1);
+  assert.equal(state.customTracks.gulf_posture?.value, 1);
+  assert.equal(state.customTracks.saudi_posture, undefined);
+  assert.equal(state.customTracks.uae_posture, undefined);
+  assert.equal(state.customTracks.bahrain_posture, undefined);
+  assert.equal(state.customTracks.kuwait_posture, undefined);
   assert.equal(content.ruleset.setup?.startingEvidenceByFaction?.corridor_workers_refuge_networks, 2);
 });

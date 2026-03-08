@@ -21,16 +21,23 @@ export function FrontTrackBar({
   const highlightedRows = useTransientHighlightKeys(rowSignatures, 2800, suspendHighlights);
 
   return (
-    <section className="front-track-bar" aria-label={t('ui.game.domains', 'Domains')}>
+    <section className="front-track-bar" aria-label={t('ui.game.trackBar', 'Movement and pressure tracks')}>
       {rows.map((row) => (
         <article
           key={row.id}
-          className={`front-track-row front-track-domain-${row.icon} is-${row.severity} ${highlightedRows.has(row.id) || highlightedIds?.has(row.id) === true ? 'is-changing' : ''}`.trim()}
+          className={`front-track-row front-track-domain-${row.icon} is-${row.severity} is-${row.direction} ${highlightedRows.has(row.id) || highlightedIds?.has(row.id) === true ? 'is-changing' : ''}`.trim()}
           title={row.tooltip}
         >
           <div className="front-track-head">
             <Icon type={row.icon} size="md" title={row.label} />
-            <span>{row.shortLabel}</span>
+            <div className="front-track-head-copy">
+              <span>{row.shortLabel}</span>
+              <small>
+                {row.direction === 'higher_is_worse'
+                  ? t('ui.game.trackDirectionChipHigherWorse', 'Higher = pressure')
+                  : t('ui.game.trackDirectionChipHigherBetter', 'Higher = leverage')}
+              </small>
+            </div>
           </div>
           <div className="front-track-meter" aria-hidden="true">
             <div className="front-track-pips">

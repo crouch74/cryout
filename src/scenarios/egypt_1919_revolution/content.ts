@@ -31,20 +31,20 @@ const domains: DomainDefinition[] = [
   },
   {
     id: 'GildedCage',
-    name: 'Anti-Detention Pressure',
-    description: 'The demand for the return of exiled leaders and the release of political detainees.',
+    name: 'Detention Breach',
+    description: 'Breaking detention policy by forcing the return of exiled leaders and the release of political detainees.',
     initialProgress: 1,
   },
   {
     id: 'StolenVoice',
-    name: 'Mass Representation',
-    description: 'Pluralist political representation that outgrows elite negotiation.',
+    name: 'Mass Voice',
+    description: 'Pluralist political representation and popular voice that outgrow elite negotiation.',
     initialProgress: 0,
   },
   {
     id: 'UnfinishedJustice',
-    name: 'Martyrs’ Reckoning',
-    description: 'The collective memory of those fallen, fueling continued resistance.',
+    name: 'Justice for the Fallen',
+    description: 'Collective memory of the fallen transformed into public reckoning and continued resistance.',
     initialProgress: 1,
   },
 ];

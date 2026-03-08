@@ -10,9 +10,10 @@ interface PhaseProgressProps {
   activeContent?: ReactNode;
   activeHint?: string;
   activeHelpContent?: ReactNode;
+  overlayControls?: ReactNode;
 }
 
-export function PhaseProgress({ phase, activeContent, activeHint, activeHelpContent }: PhaseProgressProps) {
+export function PhaseProgress({ phase, activeContent, activeHint, activeHelpContent, overlayControls }: PhaseProgressProps) {
   const steps = getPhaseProgressSteps(phase);
   const activeIndex = Math.max(0, steps.findIndex((step) => step.state === 'active'));
   const phaseSignature = useMemo(() => ({ phase }), [phase]);
@@ -21,6 +22,11 @@ export function PhaseProgress({ phase, activeContent, activeHint, activeHelpCont
 
   return (
     <nav className={`phase-progress-nav ${isAdvancing ? 'is-advancing' : ''}`.trim()} aria-label={t('ui.game.turnProgress', 'Turn progress')}>
+      {overlayControls ? (
+        <div className="phase-progress-overlay-controls" aria-label={t('ui.game.phaseOverlayControls', 'Gameplay display controls')}>
+          {overlayControls}
+        </div>
+      ) : null}
       <PrintedTrack
         ariaLabel={t('ui.game.turnProgress', 'Turn progress')}
         steps={steps.map(({ step, copy, verb, urgency }, index) => {

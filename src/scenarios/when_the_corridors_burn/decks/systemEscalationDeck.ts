@@ -17,7 +17,7 @@ export const systemCards: SystemCardDefinition[] = [
     id: 'sys_corr_hegseth_forward_posture',
     deck: 'system',
     name: 'Pete Hegseth Announces Forward Posture',
-    text: 'Raise War Machine by 1, add 1 Extraction to Gulf-Hormuz, and raise Gulf Blowback by 1. Forward-posture rhetoric normalizes more basing and more carriers.',
+    text: 'Raise War Machine by 1, add 1 Extraction to Gulf-Hormuz, and raise Gulf War Exposure by 1. Forward-posture rhetoric normalizes more basing and more carriers.',
     onReveal: [
       { type: 'modify_war_machine', delta: 1 },
       { type: 'add_extraction', region: 'GulfHormuzCorridor', amount: 1 },
@@ -39,7 +39,7 @@ export const systemCards: SystemCardDefinition[] = [
     id: 'sys_corr_centcom_basing_web',
     deck: 'system',
     name: 'U.S. Central Command Basing Web',
-    text: 'Raise War Machine by 1, add 1 Extraction to Gulf-Hormuz, and raise Gulf Blowback by 1. The Gulf basing lattice keeps sorties, refueling, and coercive logistics moving.',
+    text: 'Raise War Machine by 1, add 1 Extraction to Gulf-Hormuz, and raise Gulf War Exposure by 1. The Gulf basing lattice keeps sorties, refueling, and coercive logistics moving.',
     onReveal: [
       { type: 'modify_war_machine', delta: 1 },
       { type: 'add_extraction', region: 'GulfHormuzCorridor', amount: 1 },
@@ -85,7 +85,7 @@ export const systemCards: SystemCardDefinition[] = [
     id: 'sys_corr_israel_katz_corridor_threats',
     deck: 'system',
     name: 'Israel Katz Corridor Threats',
-    text: 'Lower Global Gaze by 1, reduce Egypt Corridor by 1, and increase future outreach costs by 1. Expulsion threats and corridor-control language punish any opening at Rafah.',
+    text: 'Lower Global Gaze by 1, reduce Rafah Corridor Opening by 1, and increase future outreach costs by 1. Expulsion threats and corridor-control language punish any opening at Rafah.',
     onReveal: [
       { type: 'modify_gaze', delta: -1 },
       { type: 'modify_custom_track', trackId: 'egypt_corridor', delta: -1, clamp: { min: 0, max: 6 } },
@@ -108,7 +108,7 @@ export const systemCards: SystemCardDefinition[] = [
     id: 'sys_corr_palantir_target_stack',
     deck: 'system',
     name: 'Palantir Target Stack',
-    text: 'Raise War Machine by 1, add 1 Extraction to Gaza-West Bank, lower Witness Corridors by 1, and give future campaigns -1 total modifier. Data fusion compresses the path from surveillance to strike.',
+    text: 'Raise War Machine by 1, add 1 Extraction to Gaza-West Bank, lower Witness Networks by 1, and give future campaigns -1 total modifier. Data fusion compresses the path from surveillance to strike.',
     onReveal: [
       { type: 'modify_war_machine', delta: 1 },
       { type: 'add_extraction', region: 'GazaWestBank', amount: 1 },
@@ -130,7 +130,7 @@ export const systemCards: SystemCardDefinition[] = [
     id: 'sys_corr_meta_visibility_drop',
     deck: 'system',
     name: 'Meta Visibility Drop',
-    text: 'Lower Global Gaze by 1, lower Witness Corridors by 1, and reduce future resistance draws by 1. Platform throttling buries testimony and slows organizing.',
+    text: 'Lower Global Gaze by 1, lower Witness Networks by 1, and reduce future resistance draws by 1. Platform throttling buries testimony and slows organizing.',
     onReveal: [
       { type: 'modify_gaze', delta: -1 },
       { type: 'modify_domain', domain: 'SilencedTruth', delta: -1, clamp: { min: 0, max: 12 } },
@@ -152,7 +152,7 @@ export const systemCards: SystemCardDefinition[] = [
     id: 'sys_corr_trafigura_glencore_insurance_surge',
     deck: 'system',
     name: 'Trafigura / Glencore Insurance Surge',
-    text: 'Add 1 Extraction to Red Sea-Suez and Gulf-Hormuz, then raise Gulf Blowback by 1. Commodity traders pass maritime panic straight into fuel and food costs.',
+    text: 'Add 1 Extraction to Red Sea-Suez and Gulf-Hormuz, then raise Gulf War Exposure by 1. Commodity traders pass maritime panic straight into fuel and food costs.',
     onReveal: [
       { type: 'add_extraction', region: 'RedSeaSuezCorridor', amount: 1 },
       { type: 'add_extraction', region: 'GulfHormuzCorridor', amount: 1 },

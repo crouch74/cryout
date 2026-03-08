@@ -37,7 +37,6 @@ export function PlayerStrip({
             <div className="seat-chip-frame">
               <Icon type="seat" size="sm" title={t('ui.game.seat', 'Seat {{seat}}', { seat: summary.seat + 1 })} />
               <div className="seat-chip-info">
-                <span className="seat-chip-label">{t('ui.game.focusSeatAbbrev', 'S{{seat}}', { seat: summary.seat + 1 })}</span>
                 <strong className="seat-chip-name">{summary.shortName}</strong>
               </div>
             </div>

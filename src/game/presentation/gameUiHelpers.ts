@@ -117,6 +117,7 @@ export interface FrontTrackRow {
   value: number;
   max: number;
   tooltip: string;
+  direction: 'higher_is_better' | 'higher_is_worse';
   severity: Severity;
 }
 
@@ -212,10 +213,7 @@ const CORRIDORS_BURN_TRACK_ICONS: Record<string, IconType> = {
   jordan_corridor: 'defend',
   qatar_corridor: 'internationalOutreach',
   gulf_blowback: 'crisis',
-  saudi_posture: 'frontFossil',
-  uae_posture: 'coordinateDigital',
-  bahrain_posture: 'warMachine',
-  kuwait_posture: 'defense',
+  gulf_posture: 'frontWave',
 };
 
 const ALGERIA_TRACK_ICONS: Record<string, IconType> = {
@@ -295,6 +293,30 @@ function getSeverityByBands(value: number, bands: { watch: number; danger: numbe
     return 'watch';
   }
   return 'steady';
+}
+
+function getTrackSeverity(
+  value: number,
+  max: number,
+  direction: 'higher_is_better' | 'higher_is_worse',
+  bands: { watch: number; danger: number; critical: number },
+): Severity {
+  if (direction === 'higher_is_worse') {
+    return getSeverityByBands(value, bands);
+  }
+
+  const remaining = Math.max(0, max - value);
+  return getSeverityByBands(remaining, bands);
+}
+
+function getTrackDirectionTooltip(
+  description: string,
+  direction: 'higher_is_better' | 'higher_is_worse',
+) {
+  const directionCopy = direction === 'higher_is_worse'
+    ? t('ui.game.trackDirectionHigherWorse', 'Higher means escalating system pressure.')
+    : t('ui.game.trackDirectionHigherBetter', 'Higher means stronger movement leverage.');
+  return `${description} ${directionCopy}`.trim();
 }
 
 export const GAME_A11Y_LABELS = {
@@ -662,8 +684,12 @@ export function getFrontTrackRows(state: EngineState, content: CompiledContent):
     color: 'var(--color-domain-justice)',
     value: state.customTracks[track.id]?.value ?? track.initialValue,
     max: track.max,
-    tooltip: localizeScenarioTrackField(content.ruleset.id, track.id, 'description', track.description),
-    severity: getSeverityByBands(state.customTracks[track.id]?.value ?? track.initialValue, {
+    tooltip: getTrackDirectionTooltip(
+      localizeScenarioTrackField(content.ruleset.id, track.id, 'description', track.description),
+      track.direction,
+    ),
+    direction: track.direction,
+    severity: getTrackSeverity(state.customTracks[track.id]?.value ?? track.initialValue, track.max, track.direction, {
       watch: track.thresholds[0] ?? Math.ceil(track.max * 0.4),
       danger: track.thresholds[1] ?? Math.ceil(track.max * 0.7),
       critical: track.thresholds[2] ?? Math.ceil(track.max * 0.9),
@@ -678,8 +704,12 @@ export function getFrontTrackRows(state: EngineState, content: CompiledContent):
     color: DOMAIN_TRACK_COLORS[domainId],
     value: state.domains[domainId].progress,
     max: 12,
-    tooltip: localizeDomainField(domainId, 'description', content.domains[domainId].description, content.ruleset.id),
-    severity: getSeverityByBands(state.domains[domainId].progress, { watch: 4, danger: 7, critical: 10 }),
+    tooltip: getTrackDirectionTooltip(
+      localizeDomainField(domainId, 'description', content.domains[domainId].description, content.ruleset.id),
+      'higher_is_better',
+    ),
+    direction: 'higher_is_better' as const,
+    severity: getTrackSeverity(state.domains[domainId].progress, 12, 'higher_is_better', { watch: 4, danger: 7, critical: 10 }),
   }));
 
   return [...customTrackRows, ...domainRows];

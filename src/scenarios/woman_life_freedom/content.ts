@@ -14,50 +14,50 @@ import { systemCards } from './decks/systemEscalationDeck.ts';
 const domains: DomainDefinition[] = [
     {
         id: 'WarMachine',
-        name: 'State Security',
-        description: 'IRGC, Basij, and the riot police.',
+        name: 'Security Rupture',
+        description: 'Cracking the IRGC, Basij, and riot-police grip.',
         initialProgress: 3, // Starts at 9 pressure
     },
     {
         id: 'DyingPlanet',
-        name: 'Dying Planet',
-        description: 'Ecological defense against flood, fire, extraction, and collapse.',
+        name: 'Land-Water Defense',
+        description: 'Defending land, water, and life against extraction and ecological collapse.',
         initialProgress: 1,
     },
     {
         id: 'GildedCage',
-        name: 'Gilded Cage',
-        description: 'Freedom from carceral control, dispossession, and managed rights.',
+        name: 'Carceral Breach',
+        description: 'Breaking carceral control, dispossession, and managed-rights discipline.',
         initialProgress: 0,
     },
     {
         id: 'SilencedTruth',
-        name: 'Digital Intranet',
-        description: 'Bypassing the national firewall and getting video out.',
+        name: 'Open Signal',
+        description: 'Bypassing the national firewall and keeping testimony moving.',
         initialProgress: 1,
     },
     {
         id: 'EmptyStomach',
-        name: 'Empty Stomach',
-        description: 'Economic justice and bazaar strikes.',
+        name: 'Bread & Dignity',
+        description: 'Building economic justice through bazaar strikes and daily survival.',
         initialProgress: 0,
     },
     {
         id: 'FossilGrip',
-        name: 'Fossil Grip',
-        description: 'Energy justice against pipeline rule, sacrifice zones, and fuel empires.',
+        name: 'Energy Justice',
+        description: 'Advancing energy justice against sacrifice zones, fuel empires, and extractive rule.',
         initialProgress: 0,
     },
     {
         id: 'StolenVoice',
-        name: 'Stolen Voice',
-        description: 'Cultural survival, language, art, and memory against erasure.',
+        name: 'Living Memory',
+        description: 'Protecting language, art, and collective memory against erasure.',
         initialProgress: 0,
     },
     {
         id: 'PatriarchalGrip',
-        name: 'Patriarchal Grip',
-        description: 'Regime control over people, hair, and public life.',
+        name: 'Patriarchal Rupture',
+        description: 'Breaking regime control over bodies, hair, and public life.',
         initialProgress: 0,
     }
 ];

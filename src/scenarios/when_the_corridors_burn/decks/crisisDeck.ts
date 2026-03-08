@@ -5,7 +5,7 @@ export const crisisCards: CrisisCardDefinition[] = [
     id: 'crs_corr_rafah_gate_choked',
     deck: 'crisis',
     name: 'Rafah Gate Choked Again',
-    text: 'Lower Egypt Corridor by 1. Crossing restrictions and inspection delays trap the wounded, squeeze medicine, and close another exit from Gaza.',
+    text: 'Lower Rafah Corridor Opening by 1. Crossing restrictions and inspection delays trap the wounded, squeeze medicine, and close another exit from Gaza.',
     effects: [
       { type: 'modify_custom_track', trackId: 'egypt_corridor', delta: -1, clamp: { min: 0, max: 6 } },
     ],
@@ -41,7 +41,7 @@ export const crisisCards: CrisisCardDefinition[] = [
     id: 'crs_corr_suez_queue_stalls',
     deck: 'crisis',
     name: 'Suez Queue Stalls',
-    text: 'Lower Bread Under Siege by 1. Canal delays stack containers, slow grain, and sharpen food pressure far beyond the canal itself.',
+    text: 'Lower Communal Provision by 1. Canal delays stack containers, slow grain, and sharpen food pressure far beyond the canal itself.',
     effects: [
       { type: 'modify_domain', domain: 'EmptyStomach', delta: -1, clamp: { min: 0, max: 12 } },
     ],
@@ -50,7 +50,7 @@ export const crisisCards: CrisisCardDefinition[] = [
     id: 'crs_corr_hormuz_insurance_panic',
     deck: 'crisis',
     name: 'Hormuz Insurance Panic',
-    text: 'Lower Global Gaze by 1 and raise Gulf Blowback by 1. Insurers reprice passage, tankers hesitate, and Gulf households are dragged deeper into war exposure.',
+    text: 'Lower Global Gaze by 1 and raise Gulf War Exposure by 1. Insurers reprice passage, tankers hesitate, and Gulf households are dragged deeper into war exposure.',
     effects: [
       { type: 'modify_gaze', delta: -1 },
       { type: 'modify_custom_track', trackId: 'gulf_blowback', delta: 1 },
@@ -60,7 +60,7 @@ export const crisisCards: CrisisCardDefinition[] = [
     id: 'crs_corr_gulf_base_alarm',
     deck: 'crisis',
     name: 'Gulf Base Alarm',
-    text: 'Raise War Machine by 1 and raise Gulf Blowback by 1. Retaliatory fire puts host-state bases on alert and spreads fear through workers, ports, and civilian infrastructure.',
+    text: 'Raise War Machine by 1 and raise Gulf War Exposure by 1. Retaliatory fire puts host-state bases on alert and spreads fear through workers, ports, and civilian infrastructure.',
     effects: [
       { type: 'modify_war_machine', delta: 1 },
       { type: 'modify_custom_track', trackId: 'gulf_blowback', delta: 1 },
@@ -88,7 +88,7 @@ export const crisisCards: CrisisCardDefinition[] = [
     id: 'crs_corr_black_sea_grain_fire',
     deck: 'crisis',
     name: 'Black Sea Grain Fire',
-    text: 'Raise Global Gaze by 1 and lower Bread Under Siege by 1. Port strikes burn grain capacity and fold another front into hunger politics.',
+    text: 'Raise Global Gaze by 1 and lower Communal Provision by 1. Port strikes burn grain capacity and fold another front into hunger politics.',
     effects: [
       { type: 'modify_gaze', delta: 1 },
       { type: 'modify_domain', domain: 'EmptyStomach', delta: -1, clamp: { min: 0, max: 12 } },
@@ -98,7 +98,7 @@ export const crisisCards: CrisisCardDefinition[] = [
     id: 'crs_corr_karoline_leavitt_press_discipline',
     deck: 'crisis',
     name: 'Karoline Leavitt Press Discipline',
-    text: 'Lower Global Gaze by 1 and lower Witness Corridors by 1. Official talking points narrow what counts as credible witness and push Gaza testimony off the agenda.',
+    text: 'Lower Global Gaze by 1 and lower Witness Networks by 1. Official talking points narrow what counts as credible witness and push Gaza testimony off the agenda.',
     effects: [
       { type: 'modify_gaze', delta: -1 },
       { type: 'modify_domain', domain: 'SilencedTruth', delta: -1, clamp: { min: 0, max: 12 } },
@@ -108,7 +108,7 @@ export const crisisCards: CrisisCardDefinition[] = [
     id: 'crs_corr_monroe_message_to_caracas',
     deck: 'crisis',
     name: 'Monroe Message to Caracas and Havana',
-    text: 'Raise War Machine by 1 and lower Witness Corridors by 1. Threats to Caracas and Havana harden the blockade line and warn the hemisphere that disobedient sovereignty will be punished.',
+    text: 'Raise War Machine by 1 and lower Witness Networks by 1. Threats to Caracas and Havana harden the blockade line and warn the hemisphere that disobedient sovereignty will be punished.',
     effects: [
       { type: 'modify_war_machine', delta: 1 },
       { type: 'modify_domain', domain: 'SilencedTruth', delta: -1, clamp: { min: 0, max: 12 } },

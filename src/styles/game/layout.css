@@ -2136,6 +2136,21 @@ html[dir='rtl'] .deck-reveal-deck-label {
   color: var(--skin-text-primary);
 }
 
+.front-track-head-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.front-track-head-copy small {
+  font-family: var(--font-data);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--skin-text-primary) 60%, transparent);
+}
+
 .front-track-head .ui-icon {
   color: var(--track-color);
 }
@@ -2472,6 +2487,74 @@ html[dir='rtl'] .deck-reveal-deck-label {
 .phase-progress-nav {
   position: relative;
   z-index: var(--z-panel);
+  display: grid;
+  gap: var(--space-1);
+}
+
+.phase-progress-overlay-controls {
+  position: relative;
+  z-index: var(--z-panel);
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  padding: 4px 6px;
+  max-width: 100%;
+  border-radius: var(--radius-12);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--panel-rim) 82%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--skin-text-inverse) 96%, transparent), color-mix(in srgb, var(--ui-surface-paper-strong) 92%, var(--ui-surface-panel) 8%)),
+    var(--skin-layer-surface);
+  box-shadow: var(--shadow-level-1);
+}
+
+.phase-progress-display-controls {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-1);
+}
+
+.phase-progress-overlay-controls .locale-icon-trigger,
+.phase-progress-overlay-controls .engraved-plate {
+  background: color-mix(in srgb, var(--color-background) 26%, transparent) !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  min-height: 36px;
+  min-width: 40px;
+  padding: 4px 8px !important;
+  border-radius: var(--radius-10) !important;
+  color: var(--text-1) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.phase-progress-overlay-controls .locale-icon-trigger:hover,
+.phase-progress-overlay-controls .locale-icon-trigger:active,
+.phase-progress-overlay-controls .engraved-plate:hover,
+.phase-progress-overlay-controls .engraved-plate:active {
+  background: color-mix(in srgb, var(--color-background) 34%, transparent) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.phase-progress-overlay-controls .locale-icon-trigger:focus-visible,
+.phase-progress-overlay-controls .engraved-plate:focus-visible {
+  outline: var(--border-width-strong) solid color-mix(in srgb, var(--legacy-color-ffffff) 58%, var(--color-accent) 42%) !important;
+  outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+  .phase-progress-overlay-controls {
+    justify-self: stretch;
+  }
+
+  .phase-progress-display-controls {
+    justify-content: flex-end;
+  }
 }
 
 .phase-progress-nav .printed-track,

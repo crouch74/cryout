@@ -14,14 +14,14 @@ import { systemCards } from './decks/systemEscalationDeck.ts';
 const domains: DomainDefinition[] = [
     {
         id: 'WarMachine',
-        name: 'State Security',
-        description: 'Ministry of Interior, CSF, and the military apparatus.',
+        name: 'Security Rupture',
+        description: 'Cracking the Ministry of Interior, CSF, and the military apparatus.',
         initialProgress: 2,
     },
     {
         id: 'SilencedTruth',
-        name: 'Digital Front',
-        description: 'Social media, satellite TV, and citizen journalism.',
+        name: 'Open Signal',
+        description: 'Keeping social media, satellite TV, and citizen journalism in motion.',
         initialProgress: 1,
     },
     {
@@ -32,20 +32,20 @@ const domains: DomainDefinition[] = [
     },
     {
         id: 'RevolutionaryWave',
-        name: 'Revolutionary Wave',
-        description: 'Momentum of the uprising.',
+        name: 'Popular Momentum',
+        description: 'The uprising’s collective momentum across streets, unions, and neighborhoods.',
         initialProgress: 0,
     },
     {
         id: 'PatriarchalGrip',
-        name: 'Patriarchal Grip',
-        description: 'Regime control over people, identity, and public life.',
+        name: 'Patriarchal Rupture',
+        description: 'Breaking regime control over people, identity, and public life.',
         initialProgress: 0,
     },
     {
         id: 'UnfinishedJustice',
-        name: 'Unfinished Justice',
-        description: 'Holdovers from the old regime and military trials.',
+        name: 'Justice Reckoning',
+        description: 'Forcing a reckoning with old-regime holdovers and military trials.',
         initialProgress: 0,
     }
 ];

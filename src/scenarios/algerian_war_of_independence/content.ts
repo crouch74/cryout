@@ -14,14 +14,14 @@ import { systemCards } from './decks/systemEscalationDeck.ts';
 const domains: DomainDefinition[] = [
     {
         id: 'WarMachine',
-        name: 'French Colonial Army',
-        description: 'The colonial army, counter-insurgency doctrine, and force projection.',
+        name: 'Colonial Army Fracture',
+        description: 'Fracturing the colonial army, counter-insurgency doctrine, and force projection.',
         initialProgress: 3,
     },
     {
         id: 'GildedCage',
-        name: 'Torture & Detention Network',
-        description: 'Interrogation centers, detention grids, and disappearance.',
+        name: 'Detention Network Broken',
+        description: 'Breaking interrogation centers, detention grids, and disappearance as colonial rule.',
         initialProgress: 2,
     },
     {
@@ -32,8 +32,8 @@ const domains: DomainDefinition[] = [
     },
     {
         id: 'UnfinishedJustice',
-        name: 'Colonial Impunity',
-        description: 'Institutions that shield colonial crimes from consequence.',
+        name: 'Justice Reckoning',
+        description: 'Forcing institutions that shield colonial crimes toward public reckoning.',
         initialProgress: 2,
     },
     {
@@ -44,8 +44,8 @@ const domains: DomainDefinition[] = [
     },
     {
         id: 'EmptyStomach',
-        name: 'Settler Bloc',
-        description: 'Settler political pressure, economic veto, and reactionary mobilization.',
+        name: 'Settler Veto Fracture',
+        description: 'Breaking settler political pressure, economic veto, and reactionary mobilization.',
         initialProgress: 2,
     }
 ];
@@ -374,6 +374,7 @@ export const compatRuleset: RulesetDefinition = {
             min: 0,
             max: 10,
             thresholds: [5, 7, 9],
+            direction: 'higher_is_worse',
         },
     ],
     specialRules: [

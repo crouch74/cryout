@@ -42,7 +42,7 @@ When the corridors burn, victory is not clean. Gaza is not suddenly free. Lebano
 | complexity | `High` |
 | difficulty | `Very High, release-tuned to hard-but-playable.` |
 | supported victory modes | `Liberation`, `Symbolic` |
-| setup summary | `6 fronts, 5 factions, 7 domains, 9 regional-power tracks, 40-card deck architecture.` |
+| setup summary | `6 fronts, 5 factions, 5 domains, 6 regional-power tracks, 40-card deck architecture.` |
 
 > **Boxed pitch:** Hold Gaza at the center while the same system tightens Lebanon, Hormuz, Suez, Havana, Caracas, and the Black Sea. Open corridors, preserve witness, and force fractures inside a war bloc built from basing, sanctions, finance, and media discipline.
 
@@ -147,9 +147,9 @@ Use a **hybrid subsystem**:
 
 | Layer | Model | Why |
 | --- | --- | --- |
-| Egypt, Turkey, Jordan, Qatar | Individual `0-6` stance tracks | Each state has a distinct mediation/containment logic and should not collapse into one axis |
-| Gulf Blowback | Shared `0-6` pressure track | Retaliation, insurer panic, basing exposure, and energy shock are coupled |
-| Saudi, UAE, Bahrain, Kuwait | Individual `0-2` posture flags | Their room to maneuver is narrower and best represented as host / hedge / distance rather than full tracks |
+| Egypt, Turkey, Jordan, Qatar | Individual `0-6` opening tracks | Each state has a distinct mediation/containment logic and should not collapse into one axis |
+| Gulf War Exposure | Shared `0-6` pressure track | Retaliation, insurer panic, basing exposure, and energy shock are coupled |
+| Gulf Distance From War | Shared `0-2` posture track | The four Gulf monarchy micro-flags collapse into one readable hedge-to-distance axis |
 
 ## Exact mechanics
 
@@ -169,10 +169,7 @@ Banding is interpretive; the hard coded one-off effect fires at `4`.
 | Track / Flag | States | Initial | Threshold |
 | --- | --- | --- | --- |
 | `gulf_blowback` | shared exposure | `1` | At `4`: `+1 Global Gaze`, `+1 War Machine`, set `gulfTargetsExposed` |
-| `saudi_posture` | `0 host / 1 hedge / 2 distance` | `1` | At `2`: remove `1 Extraction` from Gulf-Hormuz |
-| `uae_posture` | `0 host / 1 hedge / 2 distance` | `0` | At `2`: `FossilGrip +1` |
-| `bahrain_posture` | `0 host / 1 hedge / 2 distance` | `0` | At `2`: `+1 Global Gaze` |
-| `kuwait_posture` | `0 host / 1 hedge / 2 distance` | `1` | At `2`: `EmptyStomach +1` |
+| `gulf_posture` | aggregated Gulf hedge / distance posture | `1` | At `1`: remove `1 Extraction` from Gulf-Hormuz and `EmptyStomach +1`; at `2`: `+1 Global Gaze`, `FossilGrip +1` |
 
 ## Why each is not simply ally / enemy
 
@@ -194,16 +191,16 @@ Banding is interpretive; the hard coded one-off effect fires at `4`.
 | mediate | Raise Egypt / Qatar / Jordan tracks to `4`; trigger extraction relief or coalition evidence |
 | stall | Use Turkey or Gulf posture cards to deny smooth system pressure |
 | contain | Low Egypt / Jordan values keep crossings and witness constrained |
-| hedge | Saudi / Kuwait `1` posture; neither full rupture nor full host discipline |
-| open corridors | Egypt 4, Qatar 4, Jordan 4, Saudi 2, UAE 2 |
-| reinforce the System | Gulf Blowback growth plus low posture values increases crisis severity and basing stability |
+| hedge | Gulf posture `1`; neither full rupture nor full host discipline |
+| open corridors | Egypt 4, Qatar 4, Jordan 4, Gulf posture 1-2 |
+| reinforce the System | Gulf War Exposure growth plus low posture values increases crisis severity and basing stability |
 | fracture escalation bloc | Spain card, Turkey pressure, Gulf distancing, and Qatar evidence spike combine to break system tempo |
 
 ## Grouping recommendations
 
 - Keep **Egypt, Turkey, Jordan, Qatar** separate in core.
-- Keep **Gulf Blowback** shared in core.
-- Keep **Saudi, UAE, Bahrain, Kuwait** as separate flags inside the shared Gulf box.
+- Keep **Gulf War Exposure** shared in core.
+- Keep **Gulf Distance From War** as the single aggregated Gulf posture track in core.
 
 ## Optional advanced rules recommendation
 
@@ -223,7 +220,7 @@ Banding is interpretive; the hard coded one-off effect fires at `4`.
 | Pete Hegseth | leader | public articulation of forward basing and military posture | Gulf-Hormuz, War Machine | one-off card tag |
 | John Ratcliffe | leader | intelligence inflation and threat framing | Black Sea, War Machine, Global Gaze | one-off card tag |
 | Karoline Leavitt | leader | briefing-room narrative discipline | Gaza-West Bank, Silenced Truth | crisis amplifier |
-| U.S. Central Command | institution | basing web and operational tempo across the Gulf | Gulf-Hormuz, Gulf Blowback, War Machine | persistent system engine |
+| U.S. Central Command | institution | basing web and operational tempo across the Gulf | Gulf-Hormuz, Gulf War Exposure, War Machine | persistent system engine |
 | Benjamin Netanyahu | leader | widening Israeli war-state front logic | Gaza-West Bank, Lebanon, War Machine | persistent system engine |
 | Israel Katz | leader | corridor threat politics, expulsion language, pressure on crossings | Gaza-West Bank, Egypt track, Global Gaze | crisis amplifier |
 | IDF | institution | armed execution layer of the war-state | Gaza-West Bank, Lebanon | narrative / flavor only |
@@ -296,7 +293,7 @@ Banding is interpretive; the hard coded one-off effect fires at `4`.
 | --- | --- | --- | --- | --- | --- | --- |
 | Gaza-West Bank | genocide, siege, raids, prison expansion, and forced disappearance | Moral center of the scenario and anchor of public-victory legitimacy | System and Crisis cards hit it most often; Egypt and witness tracks can relieve it | War Machine, Gilded Cage, Silenced Truth, Empty Stomach | Most named war-state pressure concentrates here | `2` |
 | Lebanon-Northern Front | widened war frontier and displacement corridor | Shows how Palestine is used to justify regional expansion | Takes periodic pressure from Netanyahu line and Beirut strikes | War Machine, Silenced Truth, Revolutionary Wave | Turkey 4 removes `1 Extraction` here | `1` |
-| Gulf-Hormuz Corridor | basing, retaliation, energy chokepoint, insurer panic | Converts war into shipping and oil discipline | Gulf Blowback, Hegseth, CENTCOM, BlackRock, Trafigura all converge here | War Machine, Fossil Grip, Empty Stomach | Saudi 2 removes `1 Extraction`; multiple crises stack here | `1` |
+| Gulf-Hormuz Corridor | basing, retaliation, energy chokepoint, insurer panic | Converts war into shipping and oil discipline | Gulf War Exposure, Hegseth, CENTCOM, BlackRock, Trafigura all converge here | War Machine, Fossil Grip, Empty Stomach | Gulf posture 1 removes `1 Extraction`; multiple crises stack here | `1` |
 | Red Sea-Suez Corridor | maritime disruption, dock labor, canal delay, Yemeni intervention | Makes logistics a battlefield instead of a background | Shipping shocks add extraction and food pressure | Empty Stomach, Fossil Grip, Silenced Truth | Best front for Corridor Workers and shipping beacon play | `1` |
 | Caribbean Siege | sanctions, banking discipline, oil coercion, Monroe messaging | Keeps Cuba and Venezuela politically central among the weak | OFAC, DOJ, Cuba banking, Venezuela oil waiver, Monroe messaging all strike here | Gilded Cage, Empty Stomach, Stolen Voice, Fossil Grip | Only front with two dedicated home factions | `1` |
 | Black Sea-Eastern Furnace | ongoing Russian war, grain and port disruption | Keeps overextension and food politics inside the same war system | Lower start pressure, but UK / crisis escalation can wake it quickly | War Machine, Empty Stomach, Silenced Truth, Fossil Grip | Feeds corridor-war logic without displacing Palestine | `0` |
@@ -422,8 +419,8 @@ Because the scenario now starts with only one front already near a red band, sev
 | Domain | Initial |
 | --- | --- |
 | War Machine Fracture | `1` |
-| Witness Corridors | `2` |
-| Bread Under Siege | `1` |
+| Witness Networks | `2` |
+| Communal Provision | `1` |
 | Sanctions Breach | `1` |
 | Chokepoint Breakage | `0` |
 | Memory Refusal | `0` |
@@ -444,11 +441,8 @@ Because the scenario now starts with only one front already near a red band, sev
 | Turkey Corridor | `3` |
 | Jordan Corridor | `2` |
 | Qatar Corridor | `3` |
-| Gulf Blowback | `1` |
-| Saudi Posture | `1` |
-| UAE Posture | `0` |
-| Bahrain Posture | `0` |
-| Kuwait Posture | `1` |
+| Gulf War Exposure | `1` |
+| Gulf Distance From War | `1` |
 
 ## Deck composition counts
 
@@ -532,7 +526,7 @@ All three Beacons must be active and complete.
 | Extraction breach | active | Any front reaching `6` means the system has reimposed corridor control beyond recoverable coalition capacity |
 | Comrades exhausted | active | Coalition-wide `0` Comrades after grace rounds means the movement cannot keep bodies, care, or organization in motion |
 | Crisis deck empty | reserved, not a separate v1 loss hook | The release build maps late collapse into sudden-death cadence rather than a separate deck-exhaustion defeat |
-| Terminal war escalation | represented indirectly | In v1 this is expressed through War Machine penalties, Gulf Blowback, and the late-round defeat clock rather than an instant `War Machine = 12` loss |
+| Terminal war escalation | represented indirectly | In v1 this is expressed through War Machine penalties, Gulf War Exposure, and the late-round defeat clock rather than an instant `War Machine = 12` loss |
 | Sudden death round | active at `13` | If no breakthrough has been secured by then, the corridor-war condition has closed the window |
 
 # 18. CARD ARCHITECTURE
@@ -592,7 +586,7 @@ All three Beacons must be active and complete.
 | Jordanian Hospital Witness | Resistance Action | Medical testimony crosses a brittle border | `jordan_corridor +1`; `Global Gaze +1` | Jordanian medical / witness channel | Gaza, Jordan track | Grounded in Jordan’s medical and diplomatic position |
 | Venezuelan Communal Kitchens | Resistance Action | Survival becomes organized refusal | add `4 Comrades` to Caribbean for acting seat; `EmptyStomach +1` | Venezuelan communes | Caribbean, Empty Stomach | Grounded in commune-based survival practice |
 | Cuban Radio Brigade | Resistance Action | Signal and memory move together | acting seat gains `2 Evidence`; `StolenVoice +1` | Cuban neighborhood / communication structures | Caribbean, Stolen Voice | Grounded in CDR and neighborhood communication logic; projected |
-| Street-to-Strait Coordination | Resistance Action | Movements synchronize across the map | `saudi_posture +1`; `uae_posture +1`; draw `1` resistance card | corridor workers, dockworkers, witness networks | Gulf, Red Sea | Projected composite of cross-front coordination |
+| Street-to-Strait Coordination | Resistance Action | Movements synchronize across the map | `gulf_posture +1`; draw `1` resistance card | corridor workers, dockworkers, witness networks | Gulf, Red Sea | Projected composite of cross-front coordination |
 | Spain Breaks Ranks | Resistance Support | A public fracture opens anti-war space | support `+2` on `WarMachine` campaigns | Pedro Sanchez / Jose Manuel Albares context | Europe fracture, War Machine | Grounded in Spain’s public refusal to join escalation |
 | Gaza Archive Stream | Resistance Support | Lists and footage refuse disappearance | support `+2` on `SilencedTruth` campaigns | Palestinian witness networks | Gaza, Silenced Truth | Grounded in ongoing documentation practice in Gaza |
 | Prisoner Letter Chain | Resistance Support | Carceral routes become testimony routes | support `+2` on `GildedCage` campaigns | prisoners, family networks | Gaza / Caribbean, Gilded Cage | Grounded in prison-letter and detention witness traditions; projected |

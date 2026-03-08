@@ -1521,6 +1521,12 @@ export function GameSessionScreen({
             activeContent={phaseProgressControls}
             activeHint={phaseControlHint}
             activeHelpContent={phaseHelpContent}
+            overlayControls={(
+              <div className="phase-progress-display-controls">
+                <ThemeSwitcher showLabel={false} compact />
+                <LocaleSwitcher showLabel={false} compact />
+              </div>
+            )}
           />
 
           <section className={`coalition-file-shell ${actionBarEnabled ? '' : 'is-phase-locked'}`.trim()}>
@@ -1585,8 +1591,6 @@ export function GameSessionScreen({
             suspendHighlights={highlightSuspended}
             utilities={(
               <div className="status-ribbon-utilities-group">
-                <ThemeSwitcher showLabel={false} compact />
-                <LocaleSwitcher showLabel={false} compact />
                 <ThemePlate
                   label={(
                     <>

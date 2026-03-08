@@ -214,6 +214,48 @@ test('phase and preview helpers expose calibrated presentation copy', () => {
   assert.equal(preview.some((chip) => chip.tone === 'benefit'), true);
 });
 
+test('front track rows expose direction-aware copy for leverage and pressure tracks', () => {
+  const corridorsContent = compileContent('when_the_corridors_burn');
+  const corridorsState = initializeGame({
+    type: 'StartGame',
+    rulesetId: 'when_the_corridors_burn',
+    mode: 'LIBERATION',
+    humanPlayerCount: 4,
+    seatFactionIds: [
+      'palestinian_sumud_committees',
+      'gaza_west_bank_witness_medics',
+      'venezuelan_communal_councils',
+      'cuban_cdr_neighborhood_defense',
+      'corridor_workers_refuge_networks',
+    ],
+    seatOwnerIds: [0, 1, 2, 3, 0],
+    seed: 20260307,
+  });
+  const algeriaContent = compileContent('algerian_war_of_independence');
+  const algeriaState = initializeGame({
+    type: 'StartGame',
+    rulesetId: 'algerian_war_of_independence',
+    mode: 'LIBERATION',
+    humanPlayerCount: 4,
+    seatFactionIds: ['fln_urban_cells', 'kabyle_maquis', 'rural_organizing_committees', 'border_solidarity_networks'],
+    seatOwnerIds: [0, 1, 2, 3],
+    seed: 4242,
+  });
+
+  const corridorsRows = getFrontTrackRows(corridorsState, corridorsContent);
+  const algeriaRows = getFrontTrackRows(algeriaState, algeriaContent);
+  const gulfPosture = corridorsRows.find((row) => row.id === 'gulf_posture');
+  const gulfBlowback = corridorsRows.find((row) => row.id === 'gulf_blowback');
+  const repressionCycle = algeriaRows.find((row) => row.id === 'repression_cycle');
+
+  assert.equal(gulfPosture?.direction, 'higher_is_better');
+  assert.match(gulfPosture?.tooltip ?? '', /movement leverage/i);
+  assert.equal(gulfBlowback?.direction, 'higher_is_worse');
+  assert.match(gulfBlowback?.tooltip ?? '', /system pressure/i);
+  assert.equal(repressionCycle?.direction, 'higher_is_worse');
+  assert.match(repressionCycle?.tooltip ?? '', /system pressure/i);
+});
+
 test('region danger states escalate by extraction thresholds', () => {
   assert.equal(getRegionDangerState(2).tone, 'safe');
   assert.equal(getRegionDangerState(4).tone, 'strained');
@@ -269,6 +311,9 @@ test('game session screen source keeps the compressed board layout contract', ()
   assert.match(source, /externalHighlightKeys/);
   assert.match(source, /getNextUnfinishedCoalitionSeat/);
   assert.match(source, /FrontTrackBar/);
+  assert.match(source, /overlayControls/);
+  assert.equal(source.match(/<ThemeSwitcher/g)?.length, 1);
+  assert.equal(source.match(/<LocaleSwitcher/g)?.length, 1);
   assert.match(source, /Commit Prepared Moves/);
   assert.match(source, /QueueIntent/);
   assert.match(source, /advancePhase/);
@@ -286,6 +331,14 @@ test('game session screen source keeps the compressed board layout contract', ()
   assert.doesNotMatch(source, /whyBoardShifted/);
   assert.doesNotMatch(source, /setContextMode\('mandate'\)/);
   assert.doesNotMatch(source, /<footer/);
+});
+
+test('player strip source removes visible seat abbreviations while keeping seat icons', () => {
+  const source = readFileSync(new URL('../../src/game/hud/PlayerStrip.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /Icon type="seat"/);
+  assert.doesNotMatch(source, /focusSeatAbbrev/);
+  assert.doesNotMatch(source, /seat-chip-label/);
 });
 
 test('terminal presenter builds contextual victory and defeat summaries', () => {
@@ -370,7 +423,18 @@ test('phase progress source keeps the active question-mark help affordance', () 
   assert.match(source, /activeHint/);
   assert.match(source, /phase-help-trigger/);
   assert.match(source, /phase-progress-help-popover/);
+  assert.match(source, /phase-progress-overlay-controls/);
   assert.match(source, /aria-expanded/);
+});
+
+test('phase progress styles keep top controls responsive and direction-safe', () => {
+  const source = readFileSync(new URL('../../src/styles/game/layout.css', import.meta.url), 'utf8');
+
+  assert.match(source, /\.phase-progress-overlay-controls/);
+  assert.match(source, /justify-self:\s*end/);
+  assert.match(source, /max-width:\s*100%/);
+  assert.match(source, /@media \(max-width: 900px\)/);
+  assert.match(source, /justify-self:\s*stretch/);
 });
 
 test('world map source no longer renders the clipped launch campaign overlay', () => {
