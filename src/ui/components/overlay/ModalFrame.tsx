@@ -1,6 +1,7 @@
 import { useId, useRef, type AriaRole, type ReactNode, type RefObject } from 'react';
 import { Modal } from '../../modal/Modal.tsx';
 import { PaperSheet } from '../../layout/PaperSheet.tsx';
+import { DialogDescription, DialogTitle } from '../../primitives/index.ts';
 import './modal-frame.css';
 
 interface ModalFrameProps {
@@ -43,15 +44,13 @@ export function ModalFrame({
   return (
     <Modal
       open={open}
-      titleId={titleId}
-      describedById={description ? descriptionId : undefined}
+      accessibilityTitle={title}
+      accessibilityDescription={description}
       dismissEnabled={dismissEnabled}
       onRequestClose={onRequestClose}
       initialFocusRef={initialFocusRef ?? fallbackFocusRef}
       shellClassName={shellClassName}
       className={className}
-      a11yTitle={typeof title === 'string' ? title : 'Dialog'}
-      a11yDescription={typeof description === 'string' ? description : undefined}
     >
       <PaperSheet
         tone="folio"
@@ -62,14 +61,20 @@ export function ModalFrame({
         <div ref={fallbackFocusRef} tabIndex={-1} />
         {hideHeader ? (
           <div className="visually-hidden">
-            <span id={titleId}>{title}</span>
-            {description ? <span id={descriptionId}>{description}</span> : null}
+            <DialogTitle id={titleId}>{title}</DialogTitle>
+            {description ? <DialogDescription id={descriptionId}>{description}</DialogDescription> : null}
           </div>
         ) : null}
         {!hideHeader ? (
           <header className="modal-frame-header">
-            <h2 id={titleId}>{title}</h2>
-            {description ? <p id={descriptionId}>{description}</p> : null}
+            <DialogTitle asChild>
+              <h2 id={titleId}>{title}</h2>
+            </DialogTitle>
+            {description ? (
+              <DialogDescription asChild>
+                <p id={descriptionId}>{description}</p>
+              </DialogDescription>
+            ) : null}
           </header>
         ) : null}
         {children}

@@ -20,38 +20,29 @@ import { getModalRoot } from './ModalRoot.tsx';
 
 interface ModalProps {
   open: boolean;
-  titleId?: string;
-  describedById?: string;
+  accessibilityTitle?: ReactNode;
+  accessibilityDescription?: ReactNode;
   dismissEnabled?: boolean;
   onRequestClose?: () => void;
   initialFocusRef?: RefObject<HTMLElement | null>;
   children: ReactNode;
   className?: string;
   shellClassName?: string;
-  a11yTitle?: string;
-  a11yDescription?: string;
 }
 
 export function Modal({
   open,
-  titleId,
-  describedById,
+  accessibilityTitle,
+  accessibilityDescription,
   dismissEnabled = true,
   onRequestClose,
   initialFocusRef,
   children,
   className = '',
   shellClassName = '',
-  a11yTitle,
-  a11yDescription,
 }: ModalProps) {
-  const generatedTitleId = useId();
-  const generatedDescriptionId = useId();
-  const hiddenTitleId = `${generatedTitleId}-radix-title`;
-  const resolvedTitleId = titleId
-    ? `${hiddenTitleId} ${titleId}`
-    : hiddenTitleId;
-  const resolvedDescriptionId = describedById ?? (a11yDescription ? generatedDescriptionId : undefined);
+  const accessibilityTitleId = useId();
+  const accessibilityDescriptionId = useId();
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
   const { motionMode } = useThemeSettings();
@@ -91,10 +82,10 @@ export function Modal({
         }
       }}
     >
-      <DialogPortal container={portalRoot} forceMount>
+      <DialogPortal container={portalRoot}>
         {open ? (
           <LazyMotion features={domAnimation}>
-            <DialogOverlay asChild forceMount>
+            <DialogOverlay asChild>
               <m.div
                 className={`modal-shell ${shellClassName}`.trim()}
                 role="presentation"
@@ -105,10 +96,9 @@ export function Modal({
               />
             </DialogOverlay>
             <DialogContent
-              forceMount
               asChild
-              aria-labelledby={resolvedTitleId}
-              aria-describedby={resolvedDescriptionId}
+              aria-labelledby={accessibilityTitleId}
+              aria-describedby={accessibilityDescription ? accessibilityDescriptionId : undefined}
               onOpenAutoFocus={(event) => {
                 if (initialFocusRef?.current) {
                   event.preventDefault();
@@ -142,14 +132,16 @@ export function Modal({
                 exit={canAnimate ? { opacity: 0, y: 10, scale: 0.98 } : undefined}
                 transition={canAnimate ? { duration: 0.2, ease: [0.18, 0.85, 0.24, 1] } : undefined}
               >
-                <DialogTitle id={hiddenTitleId} className="visually-hidden">
-                  {a11yTitle ?? 'Dialog'}
-                </DialogTitle>
-                {!describedById && a11yDescription ? (
-                  <DialogDescription id={generatedDescriptionId} className="visually-hidden">
-                    {a11yDescription}
-                  </DialogDescription>
-                ) : null}
+                <div className="visually-hidden">
+                  <DialogTitle id={accessibilityTitleId}>
+                    {accessibilityTitle ?? 'Dialog'}
+                  </DialogTitle>
+                  {accessibilityDescription ? (
+                    <DialogDescription id={accessibilityDescriptionId}>
+                      {accessibilityDescription}
+                    </DialogDescription>
+                  ) : null}
+                </div>
                 {children}
               </m.div>
             </DialogContent>

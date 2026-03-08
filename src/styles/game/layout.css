@@ -2142,15 +2142,6 @@ html[dir='rtl'] .deck-reveal-deck-label {
   min-width: 0;
 }
 
-.front-track-head-copy small {
-  font-family: var(--font-data);
-  font-size: 0.58rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--skin-text-primary) 60%, transparent);
-}
-
 .front-track-head .ui-icon {
   color: var(--track-color);
 }
@@ -2200,6 +2191,80 @@ html[dir='rtl'] .deck-reveal-deck-label {
   font-weight: 700;
   color: var(--skin-text-primary);
   font-variant-numeric: tabular-nums;
+}
+
+.front-track-row:focus-visible {
+  outline: none;
+  border-radius: var(--radius-10);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--track-color) 28%, transparent);
+}
+
+.front-track-tooltip {
+  position: relative;
+  z-index: var(--z-toast);
+  max-width: min(320px, calc(100vw - 32px));
+  display: grid;
+  gap: var(--space-1);
+  padding: 11px 13px;
+  border-radius: var(--radius-12);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--skin-border-strong) 28%, transparent);
+  background:
+    var(--texture-paper-noise),
+    radial-gradient(circle at top, color-mix(in srgb, var(--skin-text-inverse) 88%, transparent), transparent 62%),
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--skin-text-inverse) 98%, transparent),
+      color-mix(in srgb, var(--ui-surface-paper) 92%, var(--ui-surface-panel) 8%)),
+    var(--ui-surface-paper);
+  background-size: 200px 200px, 100% 100%, 100% 100%, auto;
+  box-shadow:
+    0 22px 48px color-mix(in srgb, var(--skin-layer-scrim) 30%, transparent),
+    0 8px 18px color-mix(in srgb, var(--skin-layer-scrim) 16%, transparent);
+  color: var(--ui-copy-primary);
+  pointer-events: none;
+  transform-origin: var(--radix-tooltip-content-transform-origin);
+  animation: status-pill-tooltip-in var(--duration-quick) var(--motion-ease-standard);
+  backdrop-filter: blur(8px);
+}
+
+.front-track-tooltip[data-state='closed'] {
+  animation: status-pill-tooltip-out var(--duration-instant) var(--motion-ease-standard);
+}
+
+.front-track-tooltip::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
+  z-index: -1;
+  border-radius: calc(var(--radius-12) + 10px);
+  background: radial-gradient(circle, color-mix(in srgb, var(--track-color) 14%, transparent), transparent 70%);
+  filter: blur(18px);
+  opacity: 0.9;
+}
+
+.front-track-tooltip strong {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  color: var(--skin-text-primary);
+}
+
+.front-track-tooltip-section {
+  display: grid;
+  gap: 3px;
+}
+
+.front-track-tooltip-label {
+  font-family: var(--font-data);
+  font-size: 0.63rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--skin-text-primary) 62%, transparent);
+}
+
+.front-track-tooltip p {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
 }
 
 .status-pill,
@@ -2487,41 +2552,85 @@ html[dir='rtl'] .deck-reveal-deck-label {
 .phase-progress-nav {
   position: relative;
   z-index: var(--z-panel);
-  display: grid;
-  gap: var(--space-1);
+  padding-top: 52px;
 }
 
 .phase-progress-overlay-controls {
-  position: relative;
-  z-index: var(--z-panel);
-  justify-self: end;
+  position: absolute;
+  inset-inline-end: 0;
+  top: 0;
+  z-index: calc(var(--z-panel) + 1);
   display: inline-flex;
   align-items: center;
-  flex-wrap: wrap;
+  justify-content: flex-end;
+  pointer-events: none;
+  min-height: 44px;
+  border-radius: var(--radius-12);
+}
+
+.phase-progress-display-controls {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  pointer-events: auto;
+}
+
+.phase-progress-display-menu {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.phase-progress-display-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  min-width: 40px;
+  padding: 0 10px;
+  border-radius: var(--radius-10);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--panel-rim) 82%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--skin-text-inverse) 96%, transparent), color-mix(in srgb, var(--ui-surface-paper-strong) 92%, var(--ui-surface-panel) 8%)),
+    var(--skin-layer-surface);
+  box-shadow: var(--shadow-level-1);
+  color: var(--text-1);
+}
+
+.phase-progress-display-popover {
+  position: absolute;
+  inset-inline-end: 0;
+  top: calc(100% + 8px);
+  display: inline-flex;
+  align-items: center;
   gap: var(--space-1);
   padding: 4px 6px;
-  max-width: 100%;
   border-radius: var(--radius-12);
   border: var(--border-width-thin) solid color-mix(in srgb, var(--panel-rim) 82%, transparent);
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--skin-text-inverse) 96%, transparent), color-mix(in srgb, var(--ui-surface-paper-strong) 92%, var(--ui-surface-panel) 8%)),
     var(--skin-layer-surface);
   box-shadow: var(--shadow-level-1);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition:
+    opacity var(--motion-fast),
+    transform var(--motion-fast),
+    visibility var(--motion-fast);
 }
 
-.phase-progress-display-controls {
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: var(--space-1);
+.phase-progress-display-menu:hover .phase-progress-display-popover,
+.phase-progress-display-menu:focus-within .phase-progress-display-popover {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
 }
 
 .phase-progress-overlay-controls .locale-icon-trigger,
-.phase-progress-overlay-controls .engraved-plate {
+.phase-progress-overlay-controls .engraved-plate,
+.phase-progress-display-trigger {
   background: color-mix(in srgb, var(--color-background) 26%, transparent) !important;
-  border: 0 !important;
-  box-shadow: none !important;
   min-height: 36px;
   min-width: 40px;
   padding: 4px 8px !important;
@@ -2535,25 +2644,36 @@ html[dir='rtl'] .deck-reveal-deck-label {
 .phase-progress-overlay-controls .locale-icon-trigger:hover,
 .phase-progress-overlay-controls .locale-icon-trigger:active,
 .phase-progress-overlay-controls .engraved-plate:hover,
-.phase-progress-overlay-controls .engraved-plate:active {
+.phase-progress-overlay-controls .engraved-plate:active,
+.phase-progress-display-trigger:hover,
+.phase-progress-display-trigger:active {
   background: color-mix(in srgb, var(--color-background) 34%, transparent) !important;
-  box-shadow: none !important;
   transform: none !important;
 }
 
 .phase-progress-overlay-controls .locale-icon-trigger:focus-visible,
-.phase-progress-overlay-controls .engraved-plate:focus-visible {
+.phase-progress-overlay-controls .engraved-plate:focus-visible,
+.phase-progress-display-trigger:focus-visible {
   outline: var(--border-width-strong) solid color-mix(in srgb, var(--legacy-color-ffffff) 58%, var(--color-accent) 42%) !important;
   outline-offset: 2px;
 }
 
 @media (max-width: 900px) {
+  .phase-progress-nav {
+    padding-top: 48px;
+  }
+
   .phase-progress-overlay-controls {
-    justify-self: stretch;
+    inset-inline: 0;
   }
 
   .phase-progress-display-controls {
     justify-content: flex-end;
+  }
+
+  .phase-progress-display-popover {
+    max-width: min(100vw - 32px, 220px);
+    flex-wrap: wrap;
   }
 }
 

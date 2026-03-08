@@ -5,6 +5,8 @@ import { DiceResolutionAnimation } from './DiceResolutionAnimation.tsx';
 import { Modal } from '../../ui/modal/Modal.tsx';
 import { PaperSheet } from '../../ui/layout/PaperSheet.tsx';
 import {
+  DialogDescription,
+  DialogTitle,
   TooltipContent,
   TooltipPortal,
   TooltipProvider,
@@ -45,21 +47,23 @@ export function CampaignResultModal({
   return (
     <Modal
       open={open}
-      titleId={titleId}
-      describedById={descriptionId}
+      accessibilityTitle={presentation.title}
+      accessibilityDescription={presentation.description}
       dismissEnabled={dismissEnabled}
       onRequestClose={onRequestClose}
       initialFocusRef={dismissEnabled ? continueButtonRef : undefined}
       shellClassName="campaign-result-shell"
       className="campaign-result-modal"
-      a11yTitle={presentation.title}
-      a11yDescription={presentation.description}
     >
       <PaperSheet tone="folio" className="campaign-result-sheet" aria-label={presentation.a11yLabel}>
         <header className="campaign-result-header">
           <span className="engraved-eyebrow">{presentation.actionLabel}</span>
-          <h2 id={titleId}>{presentation.title}</h2>
-          <p id={descriptionId}>{presentation.description}</p>
+          <DialogTitle asChild>
+            <h2 id={titleId}>{presentation.title}</h2>
+          </DialogTitle>
+          <DialogDescription asChild>
+            <p id={descriptionId}>{presentation.description}</p>
+          </DialogDescription>
         </header>
 
         <div className="campaign-result-meta" aria-label={presentation.a11yLabel}>

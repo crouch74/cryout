@@ -29,6 +29,7 @@ import {
 } from '../../i18n/index.ts';
 import { getEventSourceLabel, localizeDisabledReason } from './historyPresentation.ts';
 import type { IconType } from '../../ui/icon/iconTypes.ts';
+import type { DomainSelector, Effect, RegionSelector } from '../../engine/adapters/compat/types.ts';
 
 type NormalizedPhase = 'SYSTEM' | 'COALITION' | 'RESOLUTION';
 type Severity = 'steady' | 'watch' | 'danger' | 'critical';
@@ -116,7 +117,9 @@ export interface FrontTrackRow {
   color: string;
   value: number;
   max: number;
-  tooltip: string;
+  tooltipNarrative: string;
+  tooltipDirection: string;
+  tooltipMaterial?: string;
   direction: 'higher_is_better' | 'higher_is_worse';
   severity: Severity;
 }
@@ -310,13 +313,140 @@ function getTrackSeverity(
 }
 
 function getTrackDirectionTooltip(
-  description: string,
   direction: 'higher_is_better' | 'higher_is_worse',
 ) {
-  const directionCopy = direction === 'higher_is_worse'
+  return direction === 'higher_is_worse'
     ? t('ui.game.trackDirectionHigherWorse', 'Higher means escalating system pressure.')
     : t('ui.game.trackDirectionHigherBetter', 'Higher means stronger movement leverage.');
-  return `${description} ${directionCopy}`.trim();
+}
+
+function formatSignedAmount(value: number) {
+  return value > 0 ? `+${formatNumber(value)}` : formatNumber(value);
+}
+
+function isConcreteDomainId(domain: DomainSelector, content: CompiledContent): domain is DomainId {
+  return typeof domain === 'string' && Object.hasOwn(content.domains, domain);
+}
+
+function isConcreteRegionId(region: RegionSelector, content: CompiledContent): region is keyof typeof content.regions {
+  return typeof region === 'string' && Object.hasOwn(content.regions, region);
+}
+
+function summarizeTrackEffect(effect: Effect, content: CompiledContent) {
+  switch (effect.type) {
+    case 'modify_gaze':
+      return t('ui.game.trackEffectGlobalGaze', 'Global Gaze {{delta}}.', { delta: formatSignedAmount(effect.delta) });
+    case 'modify_war_machine':
+      return t('ui.game.trackEffectWarMachine', 'War Machine {{delta}}.', { delta: formatSignedAmount(effect.delta) });
+    case 'modify_domain':
+      return isConcreteDomainId(effect.domain, content)
+        ? t('ui.game.trackEffectDomain', '{{domain}} {{delta}}.', {
+          domain: localizeDomainField(effect.domain, 'name', content.domains[effect.domain].name, content.ruleset.id),
+          delta: formatSignedAmount(effect.delta),
+        })
+        : '';
+    case 'modify_custom_track': {
+      const track = content.ruleset.customTracks?.find((candidate) => candidate.id === effect.trackId);
+      return track
+        ? t('ui.game.trackEffectCustomTrack', '{{track}} {{delta}}.', {
+          track: localizeScenarioTrackField(content.ruleset.id, track.id, 'name', track.name),
+          delta: formatSignedAmount(effect.delta),
+        })
+        : '';
+    }
+    case 'remove_extraction':
+    case 'add_extraction':
+      return isConcreteRegionId(effect.region, content)
+        ? t(
+          effect.type === 'remove_extraction' ? 'ui.game.trackEffectExtractionDown' : 'ui.game.trackEffectExtractionUp',
+          effect.type === 'remove_extraction'
+            ? '{{region}} loses {{count}} Extraction Token.'
+            : '{{region}} gains {{count}} Extraction Token.',
+          {
+            region: localizeRegionField(effect.region, 'name', content.regions[effect.region].name),
+            count: formatNumber(effect.amount),
+          },
+        )
+        : '';
+    case 'gain_evidence':
+      return typeof effect.seat === 'number'
+        ? t('ui.game.trackEffectSeatGainsEvidence', 'Seat {{seat}} gains {{count}} Evidence.', {
+          seat: formatNumber(effect.seat + 1),
+          count: formatNumber(effect.amount),
+        })
+        : '';
+    case 'lose_evidence':
+      return typeof effect.seat === 'number'
+        ? t('ui.game.trackEffectSeatLosesEvidence', 'Seat {{seat}} loses {{count}} Evidence.', {
+          seat: formatNumber(effect.seat + 1),
+          count: formatNumber(effect.amount),
+        })
+        : '';
+    case 'remove_comrades':
+      return effect.region === 'target_region' && effect.seat === 'acting_player'
+        ? t('ui.game.trackEffectActingSeatLosesComrade', 'At max, the acting seat loses 1 Comrade in the target region.')
+        : '';
+    default:
+      return '';
+  }
+}
+
+function summarizeThresholdEffects(effects: Effect[], content: CompiledContent) {
+  if (effects.length === 0) {
+    return '';
+  }
+
+  const evidenceEffects = effects.filter(
+    (effect): effect is Extract<Effect, { type: 'gain_evidence' | 'lose_evidence' }> => effect.type === 'gain_evidence' || effect.type === 'lose_evidence',
+  );
+  const allSeatsCovered = evidenceEffects.length > 0 && evidenceEffects.length === content.ruleset.factions.length;
+  const sameEvidenceEffect = evidenceEffects.length === effects.length
+    && evidenceEffects.every((effect) => typeof effect.seat === 'number' && effect.amount === evidenceEffects[0]?.amount && effect.type === evidenceEffects[0]?.type);
+
+  if (allSeatsCovered && sameEvidenceEffect) {
+    const firstEffect = evidenceEffects[0];
+    return firstEffect?.type === 'gain_evidence'
+      ? t('ui.game.trackEachSeatGainsEvidence', 'Each seat gains {{count}} Evidence.', { count: formatNumber(firstEffect.amount) })
+      : t('ui.game.trackEachSeatLosesEvidence', 'Each seat loses {{count}} Evidence.', { count: formatNumber(firstEffect?.amount ?? 0) });
+  }
+
+  return effects
+    .map((effect) => summarizeTrackEffect(effect, content))
+    .filter(Boolean)
+    .join(' ');
+}
+
+function getCustomTrackMaterialImpact(trackId: string, content: CompiledContent) {
+  const notes: string[] = [];
+  const thresholdRules = content.ruleset.scenarioHooks?.thresholdRules?.filter((rule) => rule.trackId === trackId) ?? [];
+  thresholdRules.forEach((rule) => {
+    const effectSummary = summarizeThresholdEffects(rule.effects, content);
+    if (!effectSummary) {
+      return;
+    }
+    notes.push(t('ui.game.trackThresholdMaterialImpact', 'At {{threshold}}+: {{effect}}', {
+      threshold: formatNumber(rule.threshold),
+      effect: effectSummary,
+    }));
+  });
+
+  const maxTrackPenalty = content.ruleset.scenarioHooks?.maxTrackRoundPenalty;
+  if (maxTrackPenalty?.trackId === trackId) {
+    const effectSummary = summarizeThresholdEffects(maxTrackPenalty.effects, content);
+    if (effectSummary) {
+      notes.push(t('ui.game.trackMaxMaterialImpact', 'At max: {{effect}}', { effect: effectSummary }));
+    }
+  }
+
+  if (trackId === 'repression_cycle' && content.ruleset.scenarioHooks?.evidenceGainRaisesRepression) {
+    notes.unshift(
+      t('ui.game.trackEvidenceRaisesRepression', 'Whenever Evidence rises, this track rises by {{count}}.', {
+        count: formatNumber(content.ruleset.scenarioHooks.evidenceGainRepressionDelta ?? 1),
+      }),
+    );
+  }
+
+  return notes.join(' ');
 }
 
 export const GAME_A11Y_LABELS = {
@@ -684,10 +814,9 @@ export function getFrontTrackRows(state: EngineState, content: CompiledContent):
     color: 'var(--color-domain-justice)',
     value: state.customTracks[track.id]?.value ?? track.initialValue,
     max: track.max,
-    tooltip: getTrackDirectionTooltip(
-      localizeScenarioTrackField(content.ruleset.id, track.id, 'description', track.description),
-      track.direction,
-    ),
+    tooltipNarrative: localizeScenarioTrackField(content.ruleset.id, track.id, 'description', track.description),
+    tooltipDirection: getTrackDirectionTooltip(track.direction),
+    tooltipMaterial: getCustomTrackMaterialImpact(track.id, content) || undefined,
     direction: track.direction,
     severity: getTrackSeverity(state.customTracks[track.id]?.value ?? track.initialValue, track.max, track.direction, {
       watch: track.thresholds[0] ?? Math.ceil(track.max * 0.4),
@@ -704,10 +833,8 @@ export function getFrontTrackRows(state: EngineState, content: CompiledContent):
     color: DOMAIN_TRACK_COLORS[domainId],
     value: state.domains[domainId].progress,
     max: 12,
-    tooltip: getTrackDirectionTooltip(
-      localizeDomainField(domainId, 'description', content.domains[domainId].description, content.ruleset.id),
-      'higher_is_better',
-    ),
+    tooltipNarrative: localizeDomainField(domainId, 'description', content.domains[domainId].description, content.ruleset.id),
+    tooltipDirection: getTrackDirectionTooltip('higher_is_better'),
     direction: 'higher_is_better' as const,
     severity: getTrackSeverity(state.domains[domainId].progress, 12, 'higher_is_better', { watch: 4, danger: 7, critical: 10 }),
   }));
